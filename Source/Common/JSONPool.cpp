@@ -2,22 +2,19 @@
 #include "Common/JSONPool.h"
 
 namespace FEX::JSON {
-json_t* PoolInit(jsonPool_t* Pool);
-json_t* PoolAlloc(jsonPool_t* Pool);
+static json_t* PoolInit(jsonPool_t* Pool) {
+  auto* alloc = static_cast<JsonAllocator*>(Pool);
+  return &*alloc->json_objects.emplace(alloc->json_objects.end());
+}
+
+static json_t* PoolAlloc(jsonPool_t* Pool) {
+  auto* alloc = static_cast<JsonAllocator*>(Pool);
+  return &*alloc->json_objects.emplace(alloc->json_objects.end());
+}
 
 JsonAllocator::JsonAllocator()
   : jsonPool_t {
-      .init = FEX::JSON::PoolInit,
-      .alloc = FEX::JSON::PoolAlloc,
+      .init = PoolInit,
+      .alloc = PoolAlloc,
     } {}
-
-json_t* PoolInit(jsonPool_t* Pool) {
-  JsonAllocator* alloc = static_cast<JsonAllocator*>(Pool);
-  return &*alloc->json_objects.emplace(alloc->json_objects.end());
-}
-
-json_t* PoolAlloc(jsonPool_t* Pool) {
-  JsonAllocator* alloc = static_cast<JsonAllocator*>(Pool);
-  return &*alloc->json_objects.emplace(alloc->json_objects.end());
-}
 } // namespace FEX::JSON
