@@ -598,16 +598,6 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
 #endif
   HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
 
-  if (!Is64BitMode()) {
-    ///< Always disable AVX and AVX2 in 32-bit mode.
-    // When AVX256 is enabled, signal frames start using significantly more stack space.
-    //   - 16bytes * 16 registers = 256 bytes for XMM registers.
-    //   - 32bytes * 16 registers = 512 bytes for YMM registers.
-    // There are known game failures on real x86 hardware where a 32-bit game is running up against the wall on stack space on non-AVX
-    // hardware and then explodes when run on AVX hardware. This is to guard against that.
-    HostFeatures.SupportsAVX = false;
-  }
-
   OverrideFeatures(&HostFeatures, ForceSVEWidth());
   return HostFeatures;
 }
