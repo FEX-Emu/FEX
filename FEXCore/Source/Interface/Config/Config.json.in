@@ -161,6 +161,14 @@
         "Desc": [
           "Allows the user to pass additional arguments to the application"
         ]
+      },
+      "DisableL2Cache": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Disables FEXCore's JIT L2 cache lookup. Saving memory.",
+          "Can potentially introduce more stutters."
+        ]
       }
     },
     "Debug": {
