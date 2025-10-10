@@ -466,7 +466,8 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, boo
     Thread->CPUBackend->ClearCache();
   } else {
     // Clear L1+L2 cache of this thread, and clear L3 cache across any threads using it
-    Thread->LookupCache->ClearCache();
+    auto lk = Thread->LookupCache->AcquireWriteLock();
+    Thread->LookupCache->ClearCache(lk);
   }
   Allocator::VirtualDontNeed(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
 }
@@ -868,7 +869,7 @@ static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* T
   // Accessing FrontendDecoder is safe as the thread's code invalidation mutex must be locked here.
   Thread->FrontendDecoder->ResetExecutableRangeCache();
 
-  auto lk = Thread->LookupCache->AcquireLock();
+  auto lk = Thread->LookupCache->AcquireWriteLock();
   auto& CodePages = Thread->LookupCache->Shared->CodePages;
 
   auto lower = CodePages.lower_bound(Start >> 12);
@@ -881,7 +882,7 @@ static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* T
   bool InvalidatedAnyEntries = false;
   for (const auto& PageEntries : Accumulator) {
     for (const auto& Entry : PageEntries) {
-      if (ContextImpl::ThreadRemoveCodeEntry(Thread, Entry)) {
+      if (ContextImpl::ThreadRemoveCodeEntry(Thread, Entry, lk)) {
         InvalidatedAnyEntries = true;
       }
     }
@@ -898,11 +899,12 @@ void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* T
   InvalidateGuestThreadCodeRange(Thread, Accumulator, Start, Length);
 }
 
-bool ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
+bool ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP,
+                                        const FEXCore::LookupCacheWriteLockToken& lk) {
   LogMan::Throw::AFmt(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to "
                                                                                                          "be unique_locked here");
 
-  return Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
+  return Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP, lk);
 }
 
 void ContextImpl::ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {
