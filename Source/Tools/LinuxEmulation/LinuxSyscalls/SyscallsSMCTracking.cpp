@@ -165,7 +165,7 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
 }
 
 void SyscallHandler::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Start, Length);
+  InvalidateCodeRangeIfNecessary(Thread, Start, Length);
 }
 
 std::optional<FEXCore::ExecutableFileSectionInfo>
@@ -223,10 +223,10 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
       }
     }
 
-    LateMetadata = FEX::HLE::_SyscallHandler->TrackMmap(Thread, Result, length, prot, flags, fd, offset);
+    LateMetadata = TrackMmap(Thread, Result, length, prot, flags, fd, offset);
   }
 
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Result, Size);
+  InvalidateCodeRangeIfNecessary(Thread, Result, Size);
 
   if (LateMetadata) {
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
@@ -250,7 +250,7 @@ uint64_t SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThread
     auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(VMATracking.Mutex, Thread);
 
     if (reinterpret_cast<uintptr_t>(addr) < 0x1'0000'0000ULL) {
-      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Munmap(addr, length);
+      Result = Get32BitAllocator()->Munmap(addr, length);
       if (FEX::HLE::HasSyscallError(Result)) {
         return Result;
       }
@@ -260,9 +260,9 @@ uint64_t SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThread
         return -errno;
       }
     }
-    FEX::HLE::_SyscallHandler->TrackMunmap(Thread, addr, length);
+    TrackMunmap(Thread, addr, length);
   }
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size);
 
   if (length) {
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
@@ -277,23 +277,22 @@ uint64_t SyscallHandler::GuestMremap(bool Is64Bit, FEXCore::Core::InternalThread
   uint64_t Result {};
 
   {
-    auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
+    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
     if (Is64Bit) {
       Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
       if (Result == -1) {
         return -errno;
       }
     } else {
-      Result =
-        reinterpret_cast<uint64_t>(FEX::HLE::_SyscallHandler->Get32BitAllocator()->Mremap(old_address, old_size, new_size, flags, new_address));
+      Result = reinterpret_cast<uint64_t>(Get32BitAllocator()->Mremap(old_address, old_size, new_size, flags, new_address));
       if (FEX::HLE::HasSyscallError(Result)) {
         return Result;
       }
     }
-    FEX::HLE::_SyscallHandler->TrackMremap(Thread, reinterpret_cast<uint64_t>(old_address), old_size, new_size, flags, Result);
+    TrackMremap(Thread, reinterpret_cast<uint64_t>(old_address), old_size, new_size, flags, Result);
   }
 
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessaryOnRemap(Thread, reinterpret_cast<uint64_t>(old_address), Result, old_size, new_size);
+  InvalidateCodeRangeIfNecessaryOnRemap(Thread, reinterpret_cast<uint64_t>(old_address), Result, old_size, new_size);
   return Result;
 }
 
@@ -301,17 +300,16 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
   uint64_t Result {};
 
   {
-    auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
+    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
     Result = ::mprotect(addr, len, prot);
     if (Result == -1) {
       return -errno;
     }
 
-    FEX::HLE::_SyscallHandler->TrackMprotect(Thread, addr, len, prot);
+    TrackMprotect(Thread, addr, len, prot);
   }
 
-
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len);
   return Result;
 }
 
@@ -320,7 +318,7 @@ uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadS
   uint64_t Length {};
 
   {
-    auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
+    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
     if (Is64Bit) {
       Result = reinterpret_cast<uint64_t>(::shmat(shmid, shmaddr, shmflg));
       if (Result == -1) {
@@ -328,7 +326,7 @@ uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadS
       }
     } else {
       uint32_t Addr;
-      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmat(shmid, shmaddr, shmflg, &Addr);
+      Result = Get32BitAllocator()->Shmat(shmid, shmaddr, shmflg, &Addr);
       if (FEX::HLE::HasSyscallError(Result)) {
         return Result;
       }
@@ -341,10 +339,10 @@ uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadS
     LOGMAN_THROW_A_FMT(res != -1, "shmctl IPC_STAT failed");
 
     Length = stat.shm_segsz;
-    FEX::HLE::_SyscallHandler->TrackShmat(Thread, shmid, Result, shmflg, Length);
+    TrackShmat(Thread, shmid, Result, shmflg, Length);
   }
 
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Result, Length);
+  InvalidateCodeRangeIfNecessary(Thread, Result, Length);
   return Result;
 }
 
@@ -352,23 +350,23 @@ uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadS
   uint64_t Result {};
   uint64_t Length {};
   {
-    auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
+    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
     if (Is64Bit) {
       Result = ::shmdt(shmaddr);
       if (Result == -1) {
         return -errno;
       }
     } else {
-      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(shmaddr);
+      Result = Get32BitAllocator()->Shmdt(shmaddr);
       if (FEX::HLE::HasSyscallError(Result)) {
         return Result;
       }
     }
 
-    Length = FEX::HLE::_SyscallHandler->TrackShmdt(Thread, reinterpret_cast<uintptr_t>(shmaddr));
+    Length = TrackShmdt(Thread, reinterpret_cast<uintptr_t>(shmaddr));
   }
 
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length);
   return Result;
 }
 
