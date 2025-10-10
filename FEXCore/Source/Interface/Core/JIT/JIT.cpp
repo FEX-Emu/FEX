@@ -565,7 +565,7 @@ uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEX
   auto lk_inval = GuardSignalDeferringSection<std::shared_lock>(static_cast<Context::ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
   // Lock here is necessary to prevent simultaneous linking and delinking
-  auto lk = Thread->LookupCache->AcquireLock();
+  auto lk = Thread->LookupCache->AcquireWriteLock();
 
   // For non-calls, this would extend into the block's code, however that's fine as an out-of-range adr would never
   // be generated avoiding any false positives.
@@ -578,14 +578,17 @@ uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEX
 
     if (KnownCallMarkerInst == ExpectedKnownCallMarkerInst) {
       BranchEmit.bl(BranchOffset);
-      Thread->LookupCache->AddBlockLink(GuestRip, Record, [](FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
-        DirectBlockDelinker(Frame, Record, true);
-      });
+      Thread->LookupCache->AddBlockLink(
+        GuestRip, Record,
+        [](FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) { DirectBlockDelinker(Frame, Record, true); }, lk);
     } else {
       BranchEmit.b(BranchOffset);
-      Thread->LookupCache->AddBlockLink(GuestRip, Record, [](FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
-        DirectBlockDelinker(Frame, Record, false);
-      });
+      Thread->LookupCache->AddBlockLink(
+        GuestRip, Record,
+        [](FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
+          DirectBlockDelinker(Frame, Record, false);
+        },
+        lk);
     }
 
     std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(CallerAddress)).store(BranchInst, std::memory_order::relaxed);
@@ -604,7 +607,7 @@ uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEX
     std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(JumpThunkStartAddress)).store(LdrInst, std::memory_order::relaxed);
     ARMEmitter::Emitter::ClearICache(reinterpret_cast<void*>(JumpThunkStartAddress), 4);
 
-    Thread->LookupCache->AddBlockLink(GuestRip, Record, IndirectBlockDelinker);
+    Thread->LookupCache->AddBlockLink(GuestRip, Record, IndirectBlockDelinker, lk);
   }
 
   return HostCode;
@@ -689,13 +692,13 @@ void Arm64JITCore::EmitDetectionString() {
 void Arm64JITCore::ClearCache() {
   // NOTE: Holding on to the reference here is required to ensure validity of the WriteLock mutex
   auto PrevCodeBuffer = CurrentCodeBuffer;
-  std::lock_guard lk(PrevCodeBuffer->LookupCache->WriteLock);
+  auto lk = PrevCodeBuffer->LookupCache->AcquireWriteLock();
 
   auto CodeBuffer = GetEmptyCodeBuffer();
   SetBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
   EmitDetectionString();
 
-  ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache);
+  ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache, lk);
 }
 
 Arm64JITCore::~Arm64JITCore() {}
@@ -1065,7 +1068,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
                                                                                                    "doesn't match up!\n");
       if (auto Prev = CheckCodeBufferUpdate()) {
         Allocator::VirtualDontNeed(ThreadState->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
-        ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
+        auto lk = ThreadState->LookupCache->AcquireWriteLock();
+        ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache, lk);
       }
 
       // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
