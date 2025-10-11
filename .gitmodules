@@ -49,3 +49,6 @@
 [submodule "External/range-v3"]
 	path = External/range-v3
 	url = https://github.com/ericniebler/range-v3.git
+[submodule "External/rpmalloc"]
+	path = External/rpmalloc
+	url = https://github.com/FEX-Emu/rpmalloc.git
