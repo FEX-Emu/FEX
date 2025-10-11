@@ -360,9 +360,7 @@ namespace CPU {
       LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
     }
 
-#ifndef _WIN32
-    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Ptr, Size, "FEXMemJIT");
-#endif
+    FEXCore::Allocator::VirtualName("FEXMemJIT", reinterpret_cast<void*>(Ptr), Size);
 
     LookupCache = fextl::make_unique<GuestToHostMap>();
   }

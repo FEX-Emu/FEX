@@ -53,7 +53,7 @@ void* FEX_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t off
   }
 
   if (flags & MAP_ANONYMOUS) {
-    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Result, length, "FEXMem");
+    VirtualName("FEXMem", Result, length);
   }
   return Result;
 }
@@ -93,7 +93,7 @@ void* DisableSBRKAllocations() {
   // calls won't allocate any memory through that.
   void* AlignedBRK = reinterpret_cast<void*>(FEXCore::AlignUp(reinterpret_cast<uintptr_t>(StartingSBRK), FEXCore::Utils::FEX_PAGE_SIZE));
   void* AfterBRK =
-    mmap(AlignedBRK, FEXCore::Utils::FEX_PAGE_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE | MAP_NORESERVE, -1, 0);
+    ::mmap(AlignedBRK, FEXCore::Utils::FEX_PAGE_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE | MAP_NORESERVE, -1, 0);
   if (AfterBRK == INVALID_PTR) {
     // Couldn't allocate the page after the aligned brk? This should never happen.
     // FEXCore::LogMan isn't configured yet so we just need to print the message.
@@ -294,7 +294,7 @@ fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
       --StackRegionIt;
 
       auto Alloc =
-        mmap(StackRegionIt->Ptr, StackRegionIt->Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
+        ::mmap(StackRegionIt->Ptr, StackRegionIt->Size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED, -1, 0);
 
       LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({},{:x}) failed", fmt::ptr(StackRegionIt->Ptr), StackRegionIt->Size);
       LogMan::Throw::AFmt(Alloc == StackRegionIt->Ptr, "mmap returned {} instead of {}", Alloc, fmt::ptr(StackRegionIt->Ptr));
@@ -305,7 +305,7 @@ fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
 
   // Block remaining memory gaps
   for (auto RegionIt = Regions.begin(); RegionIt != Regions.end(); ++RegionIt) {
-    auto Alloc = mmap(RegionIt->Ptr, RegionIt->Size, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+    auto Alloc = ::mmap(RegionIt->Ptr, RegionIt->Size, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
 
     LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({},{:x}) failed", fmt::ptr(RegionIt->Ptr), RegionIt->Size);
     LogMan::Throw::AFmt(Alloc == RegionIt->Ptr, "mmap returned {} instead of {}", Alloc, fmt::ptr(RegionIt->Ptr));

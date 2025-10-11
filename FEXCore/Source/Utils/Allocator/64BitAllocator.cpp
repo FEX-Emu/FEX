@@ -168,6 +168,7 @@ private:
     LOGMAN_THROW_A_FMT(Res != -1, "Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno,
                        strerror(errno));
 
+    FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData);
     LiveVMARegion* LiveRange = new (reinterpret_cast<void*>(ReservedRegion->Base)) LiveVMARegion();
 
     // Copy over the reserved data
@@ -505,6 +506,8 @@ void OSAllocator_64Bit::AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::
     // This enables the kernel to use transparent large pages in the allocator which can reduce memory pressure
     ::madvise(it.Ptr, ObjectAllocSize, MADV_HUGEPAGE);
 
+    FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(it.Ptr), ObjectAllocSize);
+
     ObjectAlloc = new (it.Ptr) Alloc::ForwardOnlyIntrusiveArenaAllocator(it.Ptr, ObjectAllocSize);
     ReservedRegions = ObjectAlloc->new_construct(ReservedRegions, ObjectAlloc);
     LiveRegions = ObjectAlloc->new_construct(LiveRegions, ObjectAlloc);
@@ -601,6 +604,8 @@ fextl::unique_ptr<T> make_alloc_unique(FEXCore::Allocator::MemoryRegion& Base, A
   if (ptr == MAP_FAILED) {
     ERROR_AND_DIE_FMT("Couldn't allocate memory region");
   }
+
+  FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(ptr), MinPage);
 
   // Remove the page from the base region.
   // Could be zero after this.

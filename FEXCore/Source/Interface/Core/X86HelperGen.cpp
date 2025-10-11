@@ -51,7 +51,9 @@ void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
 
   if (Is64BitMode()) {
     // 64bit mode can have its sigret handler anywhere
-    return FEXCore::Allocator::VirtualAlloc(Size);
+    auto Result = FEXCore::Allocator::VirtualAlloc(Size);
+    FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(Result), Size);
+    return Result;
   }
 
   // First 64bit page

@@ -32,6 +32,7 @@ void* StackTracker::AllocateStackObject() {
 
   if (Ptr == nullptr) {
     Ptr = FEXCore::Allocator::mmap(nullptr, FEX::LinuxEmulation::Threads::STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(Ptr), FEX::LinuxEmulation::Threads::STACK_SIZE);
   }
 
   return Ptr;

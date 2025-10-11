@@ -190,6 +190,8 @@ uint64_t SyscallHandler::write_ldt(FEXCore::Core::CpuStateFrame* Frame, void* pt
   const auto new_ldt_entries = reinterpret_cast<FEXCore::Core::CPUState::gdt_segment*>(
     FEXCore::Allocator::mmap(nullptr, new_ldt_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 
+  FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(new_ldt_entries), new_ldt_size);
+
   if (old_ldt) {
     // Copy old entries if they existed.
     memcpy(new_ldt_entries, old_ldt, old_ldt_entries * LDT_ENTRY_SIZE);
