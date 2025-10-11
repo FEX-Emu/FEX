@@ -4,6 +4,7 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/memory.h>
 
 #include <array>
@@ -92,6 +93,8 @@ private:
 
   void EmitDispatcher();
   uint64_t GenerateABICall(FallbackABI ABI);
+
+  FEX_CONFIG_OPT(DisableL2Cache, DISABLEL2CACHE);
 };
 
 } // namespace FEXCore::CPU
