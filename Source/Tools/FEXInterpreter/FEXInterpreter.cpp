@@ -422,9 +422,10 @@ int main(int argc, char** argv, char** const envp) {
   fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
   fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
 
+  const auto PageSize = sysconf(_SC_PAGESIZE);
   if (Loader.Is64BitMode()) {
     // Destroy the 48th bit if it exists
-    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
+    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists(PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE);
   } else {
     // Reserve [0x1_0000_0000, 0x2_0000_0000).
     // Safety net if 32-bit address calculation overflows in to 64-bit range.
@@ -432,7 +433,7 @@ int main(int argc, char** argv, char** const envp) {
     Low4GB = FEXCore::Allocator::StealMemoryRegion(First64BitAddr, First64BitAddr + First64BitAddr);
 
     // Setup our userspace allocator
-    FEXCore::Allocator::SetupHooks();
+    FEXCore::Allocator::SetupHooks(PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE);
     Allocator = FEX::HLE::CreatePassthroughAllocator();
 
     // Now that the upper 32-bit address space is blocked for future allocations,
