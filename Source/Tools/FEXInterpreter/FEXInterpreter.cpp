@@ -145,9 +145,10 @@ void Init() {
 namespace FEX::Allocator {
 
 fextl::vector<FEXCore::Allocator::MemoryRegion> InitMemoryRegions(bool Is64Bit) {
+  const auto PageSize = sysconf(_SC_PAGESIZE);
   if (Is64Bit) {
     // Destroy the 48th bit if it exists
-    return FEXCore::Allocator::Setup48BitAllocatorIfExists();
+    return FEXCore::Allocator::Setup48BitAllocatorIfExists(PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE);
   }
 
   // Reserve [0x1_0000_0000, 0x2_0000_0000).
@@ -161,8 +162,10 @@ fextl::unique_ptr<FEX::HLE::MemAllocator> InitAllocator(bool Is64Bit) {
     return {};
   }
 
+  const auto PageSize = sysconf(_SC_PAGESIZE);
+
   // Setup our userspace allocator
-  FEXCore::Allocator::SetupHooks();
+  FEXCore::Allocator::SetupHooks(PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE);
   auto Allocator = FEX::HLE::CreatePassthroughAllocator();
 
   // Now that the upper 32-bit address space is blocked for future allocations,

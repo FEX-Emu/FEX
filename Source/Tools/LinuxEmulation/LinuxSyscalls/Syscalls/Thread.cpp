@@ -68,6 +68,8 @@ static void* ThreadHandler(void* Data) {
     Thread->Thread->ThreadStats->TID.store(Thread->ThreadInfo.TID, std::memory_order_relaxed);
   }
 
+  FEXCore::Allocator::InitializeThread();
+
   FEX::HLE::_SyscallHandler->RegisterTLSState(Thread);
 
   // Now notify the thread that we are initialized
@@ -176,6 +178,7 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
 
 uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame,
                         FEX::HLE::clone3_args* CloneArgs) {
+  FEXCore::Allocator::InitializeThread();
   auto GuestArgs = &CloneArgs->args;
   uint64_t flags = GuestArgs->flags;
   auto NewThread = Thread;
