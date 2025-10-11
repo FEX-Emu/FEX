@@ -52,3 +52,6 @@
 [submodule "External/unordered_dense"]
 	path = External/unordered_dense
 	url = https://github.com/martinus/unordered_dense.git
+[submodule "External/rpmalloc"]
+	path = External/rpmalloc
+	url = https://github.com/FEX-Emu/rpmalloc.git
