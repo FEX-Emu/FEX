@@ -53,6 +53,8 @@ void ThreadManager::StatAlloc::Initialize() {
     goto err;
   }
 
+  FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(Base), MAX_STATS_SIZE);
+
   // Allocate a small working shared space for now, grow as necessary.
   {
     auto SharedBase = FEXCore::Allocator::mmap(Base, CurrentSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
@@ -175,6 +177,9 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
   // Allocate the call-ret stack with guard pages on both sides
   auto AllocBase =
     reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(nullptr, CALLRET_STACK_ALLOC_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+
+  FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(AllocBase), CALLRET_STACK_ALLOC_SIZE);
+
   // Set the base used for invalidation to the start past the guard pages
   ThreadStateObject->Thread->CallRetStackBase = reinterpret_cast<void*>(AllocBase + FEXCore::Utils::FEX_PAGE_SIZE);
   ::mprotect(ThreadStateObject->Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE, PROT_READ | PROT_WRITE);
@@ -199,6 +204,7 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
       const auto new_ldt_size = InheritThread->ldt_entry_count * FEX::HLE::SyscallHandler::LDT_ENTRY_SIZE;
       ThreadStateObject->ldt_entries = reinterpret_cast<FEXCore::Core::CPUState::gdt_segment*>(
         FEXCore::Allocator::mmap(nullptr, new_ldt_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+      FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(ThreadStateObject->ldt_entries), new_ldt_size);
 
       ThreadStateObject->ldt_entry_count = InheritThread->ldt_entry_count;
       memcpy(ThreadStateObject->ldt_entries, InheritThread->ldt_entries, new_ldt_size);

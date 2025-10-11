@@ -300,6 +300,8 @@ void SeccompEmulator::DeserializeFilters(FEXCore::Core::CpuStateFrame* Frame, in
 
     ::mprotect(Ptr, SFilter.CodeSize, PROT_READ | PROT_EXEC);
 
+    FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(Ptr), SFilter.CodeSize);
+
     auto& it =
       Filters.emplace_back(SeccompFilterInfo {(SeccompFilterFunc)Ptr, 1, SFilter.CodeSize, SFilter.FilterInstructions, SFilter.ShouldLog});
     TotalFilterInstructions += SFilter.FilterInstructions;
