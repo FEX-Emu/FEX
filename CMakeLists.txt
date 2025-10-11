@@ -20,7 +20,7 @@ option(ENABLE_ASSERTIONS "Enables assertions in build" FALSE)
 option(ENABLE_GDB_SYMBOLS "Enables GDBSymbols integration support" ${HAVE_GDB_JIT_READER_H})
 option(ENABLE_STRICT_WERROR "Enables stricter -Werror for CI" FALSE)
 option(ENABLE_WERROR "Enables -Werror" FALSE)
-option(ENABLE_JEMALLOC "Enables jemalloc allocator" TRUE)
+option(ENABLE_FEX_ALLOCATOR "Enables allocator for FEX" TRUE)
 option(ENABLE_JEMALLOC_GLIBC_ALLOC "Enables jemalloc glibc allocator" TRUE)
 option(ENABLE_OFFLINE_TELEMETRY "Enables FEX offline telemetry" TRUE)
 option(ENABLE_COMPILE_TIME_TRACE "Enables time trace compile option" FALSE)
@@ -52,7 +52,7 @@ string(FIND ${CMAKE_BASE_NAME} mingw CONTAINS_MINGW)
 if (NOT CONTAINS_MINGW EQUAL -1)
   message (STATUS "Mingw build")
   set (MINGW_BUILD TRUE)
-  set (ENABLE_JEMALLOC TRUE)
+  set (ENABLE_FEX_ALLOCATOR TRUE)
   set (ENABLE_JEMALLOC_GLIBC_ALLOC FALSE)
 endif()
 
@@ -279,12 +279,12 @@ elseif (NOT MINGW_BUILD)
     " Use at your own risk!")
 endif()
 
-if (ENABLE_JEMALLOC)
-  # The jemalloc subproject that all FEXCore fextl objects allocate through.
-  add_subdirectory(External/jemalloc/)
+if (ENABLE_FEX_ALLOCATOR)
+  # The rpmalloc subproject that all FEXCore fextl objects allocate through.
+  add_subdirectory(External/rpmalloc/)
 elseif (NOT MINGW_BUILD)
   message (STATUS
-    " jemalloc disabled!\n"
+    " FEX allocator is disabled!\n"
     " This is not a recommended configuration!\n"
     " This will very explicitly break 32-bit application execution!\n"
     " Use at your own risk!")
