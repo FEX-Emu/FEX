@@ -235,7 +235,8 @@ int main(int argc, char** argv, char** const envp) {
 
   if (!Loader.Is64BitMode()) {
     // Setup our userspace allocator
-    FEXCore::Allocator::SetupHooks();
+    const auto PageSize = sysconf(_SC_PAGESIZE);
+    FEXCore::Allocator::SetupHooks(PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE);
     Allocator = FEX::HLE::CreatePassthroughAllocator();
   }
 #endif
