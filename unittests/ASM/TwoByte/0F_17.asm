@@ -19,7 +19,7 @@ movaps xmm1, [rdx + 32]
 
 hlt
 
-align 16
+align 4096
 .data:
 dq 0x4142434445464748
 dq 0x5152535455565758

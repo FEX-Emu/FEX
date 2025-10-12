@@ -63,6 +63,7 @@ mov rsp, qword [rel .data_result + (8 * 7)]
 
 hlt
 
+align 4096
 .data_big:
 dq 83403126337775.0
 

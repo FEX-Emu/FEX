@@ -84,6 +84,7 @@ mov edx, dword [rel .results + (4 * 3)]
 
 hlt
 
+align 4096
 .results:
 dd 0, 0, 0, 0, 0, 0, 0, 0
 ; 4096 bytes of random data.

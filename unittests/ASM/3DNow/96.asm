@@ -68,11 +68,9 @@ pfrcp mm1, [rel data5]
 
 hlt
 
-section .bss
-align 8
-result resd 1
+align 4096
+result: dd 0
 
-section .data:
 align 8
 data1:
 dd -1.0

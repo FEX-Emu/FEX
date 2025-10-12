@@ -32,6 +32,7 @@ movups xmm0, [rel .data_result]
 
 hlt
 
+align 4096
 ; This or zero are incorrect results
 .data1:
 dt 2.0

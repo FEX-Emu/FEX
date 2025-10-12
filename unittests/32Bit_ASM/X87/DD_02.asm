@@ -10,21 +10,21 @@
 }
 %endif
 
-lea edx, [data]
+lea edx, [rel data]
 fld tword [edx + 8 * 0]
 
-lea edx, [data3]
+lea edx, [rel data3]
 fst qword [edx + 8 * 0]
 
 mov eax, [edx + 4 * 0]
 mov ebx, [edx + 4 * 1]
 
-lea edx, [data2]
+lea edx, [rel data2]
 fld tword [edx + 8 * 0]
 
 hlt
 
-align 8
+align 4096
 data:
   dt 2.0
   dq 0

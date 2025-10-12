@@ -91,13 +91,12 @@ and r9, rax
 
 hlt
 
-section .bss
-result1: resd 1
-result2: resd 1
-result3: resd 1
-result4: resd 1
+align 4096
+result1: dd 0
+result2: dd 0
+result3: dd 0
+result4: dd 0
 
-section .data
 align 64
 
 arg1: 

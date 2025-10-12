@@ -111,6 +111,7 @@ movups xmm11, [rel .result_12]
 
 hlt
 
+align 4096
 ; Positive
 .source_80bit:
 dq 0x8000_0000_0000_0002

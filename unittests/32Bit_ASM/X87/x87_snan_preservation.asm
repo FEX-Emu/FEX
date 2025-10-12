@@ -18,7 +18,7 @@ mov esp, 0xe0000040
 ; Returns NaN triple: 6 (0b110) for quiet NaN
 
 finit
-mov edx, .data
+lea edx, [rel .data]
 fld tword [edx] ; load snan
 fstp qword [edx + 16] ; store snan as 64bit qnan
 
@@ -29,7 +29,7 @@ CHECK_NAN_TRIPLE_64
 
 hlt
 
-align 8
+align 4096
 .data:
   dq 0xa000000000000000  ; signaling NaN significand
   dw 0x7fff              ; signaling NaN exponent  

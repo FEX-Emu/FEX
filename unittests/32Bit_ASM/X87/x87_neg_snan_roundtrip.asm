@@ -26,7 +26,7 @@ CHECK_NAN_TRIPLE_80
 
 hlt
 
-align 16
+align 4096
 .data:
   dq 0xa000000000000000  ; signaling nan significand  
   dw 0xffff              ; signaling nan exponent

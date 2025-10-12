@@ -52,6 +52,7 @@ wrgsbase rax
 
 hlt
 
+align 4096
 .data_backup:
 dq 0
 dq 0

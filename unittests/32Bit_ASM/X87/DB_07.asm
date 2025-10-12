@@ -7,16 +7,16 @@
 }
 %endif
 
-lea edx, [data]
+lea edx, [rel data]
 fld tword [edx + 8 * 0]
 
-lea edx, [data2]
+lea edx, [rel data2]
 fstp tword [edx + 8 * 0]
 fld tword [edx + 8 * 0]
 
 hlt
 
-align 8
+align 4096
 data:
   dt 2.0
   dq 0

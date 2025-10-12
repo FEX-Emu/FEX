@@ -50,6 +50,7 @@ mov rdi, qword [rel .data_res_neg_64]
 
 hlt
 
+align 4096
 ; One-integer larger than what int16_t can hold
 .double_larger_than_int16:
 dq 32768.0

@@ -54,7 +54,7 @@ vmovaps ymm8, [rel .data_bad]
 
 hlt
 
-align 32
+align 4096
 .data:
 dd 0x3F800000, 0x00800000, 0x7F7FFFFF, 0x7FC00000 ; 1.0, FLT_MIN, FLT_MAX, QNaN
 dd 0x40600000, 0x7F800000, 0xFF800000, 0x00000001 ; 3.5, +inf, -inf, FLT_TRUE_MIN

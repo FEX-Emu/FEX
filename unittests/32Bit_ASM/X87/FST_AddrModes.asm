@@ -15,11 +15,6 @@
 }
 %endif
 
-section .bss
-base resb 4096
-
-section .text
-
 ; Setup
 fld1
 lea edx, [rel base]
@@ -42,3 +37,9 @@ mov edi, dword [edx + esi + 0xa]
 mov esp, dword [edx + esi * 4 + 0xa]
 
 hlt
+
+align 4096
+section .bss
+base resb 4096
+
+section .text

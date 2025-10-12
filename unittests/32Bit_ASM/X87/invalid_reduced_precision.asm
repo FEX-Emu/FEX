@@ -9,12 +9,12 @@
 
 ; Test Invalid Operation with reduced precision (64-bit)
 ; Set precision control to 64-bit (PC = 10b)
-fnstcw [.saved_cw]
-mov ax, [.saved_cw]
+fnstcw [rel .saved_cw]
+mov ax, [rel .saved_cw]
 and ax, 0xFCFF
 or ax, 0x0200
-mov [.new_cw], ax
-fldcw [.new_cw]
+mov [rel .new_cw], ax
+fldcw [rel .new_cw]
 
 ; Perform invalid operation: 0.0 / 0.0
 fldz
@@ -25,9 +25,10 @@ fstsw ax
 and eax, 1
 
 ; Restore original control word
-fldcw [.saved_cw]
+fldcw [rel .saved_cw]
 
 hlt
 
+align 4096
 .saved_cw:  dw 0
 .new_cw:    dw 0

@@ -14,11 +14,6 @@
 }
 %endif
 
-section .bss
-base resb 4096
-
-section .text
-
 ; Setup
 fld1
 lea rdx, [rel base]
@@ -41,3 +36,7 @@ mov r9d, dword [rdx + rsi + 0xa]
 mov r10d, dword [rdx + rsi * 4 + 0xa]
 
 hlt
+
+align 4096
+base:
+times 4096 db 0
