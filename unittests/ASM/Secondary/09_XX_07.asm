@@ -47,7 +47,7 @@ setne r9b
 
 test_64bit:
 rdseed rcx
-jnc test_32bit
+jnc test_64bit
 
 mov r8, 0x0
 cmp rcx, r8
