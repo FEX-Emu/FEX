@@ -11,21 +11,6 @@
 }
 %endif
 
-
-section .data
-align 4
-midpoint:
-  dd 1.5
-samidpoint:
-  dd 1.50001
-sbmidpoint:
-  dd 1.49999
-
-section .bss
-align 4
-tmp resd 1
-
-section .text
 ; Rounding tests to ensure rounding modes are actually working
 ;; Mid-point
 finit
@@ -161,3 +146,15 @@ fistp dword [rel tmp]
 or ecx, dword [rel tmp]
 
 hlt
+
+align 4096
+midpoint:
+  dd 1.5
+samidpoint:
+  dd 1.50001
+sbmidpoint:
+  dd 1.49999
+
+align 4
+tmp:
+dd 0

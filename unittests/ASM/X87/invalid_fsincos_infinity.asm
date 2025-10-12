@@ -21,6 +21,7 @@ and rax, 1
 
 hlt
 
+align 4096
 .pos_inf:
 dq 0
 dw 0

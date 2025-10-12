@@ -28,6 +28,7 @@ mov rdx, [rel .test + 8]
 
 hlt
 
+align 4096
 .test:
 db 0, 0, 0, 0, 0, 0, 0, 0
 db 0, 0, 0, 0, 0, 0, 0, 0

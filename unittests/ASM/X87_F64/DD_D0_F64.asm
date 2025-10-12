@@ -22,7 +22,7 @@ mov rbx, [rdx]
 
 hlt
 
-align 8
+align 4096
 data:
   dt 2.0
   dq 0

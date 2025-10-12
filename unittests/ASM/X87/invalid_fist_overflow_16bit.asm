@@ -6,17 +6,6 @@
 }
 %endif
 
-section .rodata
-.thirty: dq 30
-
-section .bss
-.dummy: resw 1
-
-section .text
-global _start
-
-_start:
-
 ; Test FIST with 16-bit overflow = Invalid Operation (should set bit 0 of status word)
 ; Create a large number that will overflow int16
 
@@ -33,3 +22,7 @@ fstsw ax
 and rax, 1
 
 hlt
+
+align 4096
+.thirty: dq 30
+.dummy: dw 0

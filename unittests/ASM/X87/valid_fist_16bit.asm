@@ -7,17 +7,6 @@
 }
 %endif
 
-section .rodata
-.value: dq 12345.75
-
-section .bss
-.result: resw 1
-
-section .text
-global _start
-
-_start:
-
 ; Test FIST with valid 16-bit conversion
 ; Load a value that fits in int16 range
 
@@ -34,3 +23,7 @@ and rax, 1
 movzx rbx, word [rel .result]
 
 hlt
+
+align 4096
+.value: dq 12345.75
+.result: dw 0

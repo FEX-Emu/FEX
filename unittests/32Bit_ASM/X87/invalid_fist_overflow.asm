@@ -21,6 +21,7 @@ and eax, 1
 
 hlt
 
+align 4096
 .large_value:
   dt 1e20
 .data:

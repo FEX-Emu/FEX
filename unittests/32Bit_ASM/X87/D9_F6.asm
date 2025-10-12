@@ -20,16 +20,6 @@
 ; Then do fincstp and store the stack values into MMX registers through memory
 ; such that MM0 has the value of ST0 and so on.
 
-section .bss
-align 8
-temp: resq 1
-stack: resq 8
-
-section .text
-global _start
-
-_start:
-
 mov eax, 0x3ff00000 ; 1.0
 mov [rel temp], eax
 fld dword [rel temp]
@@ -100,3 +90,7 @@ movq mm6, [rel stack + 8 * 6]
 movq mm7, [rel stack + 8 * 7]
 
 hlt
+
+align 4096
+temp: dq 0
+stack: times 8 dq 0

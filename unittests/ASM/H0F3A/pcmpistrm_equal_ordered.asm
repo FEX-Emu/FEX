@@ -124,7 +124,7 @@ movaps xmm1, [rel .flags]
 
 hlt
 
-align 32
+align 4096
 .data:
 dq 0x6550206F6F006C6C ; "ll" with junk following it
 dq 0x21212121656C706F

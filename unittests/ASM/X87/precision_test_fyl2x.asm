@@ -123,6 +123,7 @@ movups xmm11, [rel .result_12]
 
 hlt
 
+align 4096
 .source_1:
 dq 64
 

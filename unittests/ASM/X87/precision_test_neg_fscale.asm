@@ -147,6 +147,7 @@ movups xmm11, [rel .result_12]
 
 hlt
 
+align 4096
 ; Negative
 .source_1:
 dq 0x8222_2222_2222_2222

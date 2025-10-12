@@ -8,7 +8,7 @@
 }
 %endif
 
-lea edx, [.data]
+lea edx, [rel .data]
 
 mov eax, -1
 mov ebx, -1
@@ -21,6 +21,7 @@ mov bx, word [edx + 8 * 1]
 
 hlt
 
+align 4096
 .data:
 dq 0x3f800000
 dq 0

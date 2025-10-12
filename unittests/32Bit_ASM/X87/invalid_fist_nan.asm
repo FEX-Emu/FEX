@@ -22,5 +22,6 @@ and eax, 1
 
 hlt
 
+align 4096
 .data:
   dd 0

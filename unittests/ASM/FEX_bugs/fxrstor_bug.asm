@@ -57,7 +57,7 @@ pand xmm7, [rel .x87_mask]
 
 hlt
 
-align 16
+align 4096
 .save_data:
 times 64 dq 0
 

@@ -15,22 +15,6 @@
 }
 %endif
 
-
-section .data
-align 4
-nmidpoint:
-  dd -1.5
-nsamidpoint:
-  dd -1.49999
-nsbmidpoint:
-  dd -1.50001
-
-section .bss
-align 4
-tmp resd 1
-
-section .text
-
 ; Rounding tests to ensure rounding modes are actually working
 ;;; Negative tests
 ;; Mid-point
@@ -174,3 +158,15 @@ mov bp, word [rel tmp]
 or edi, ebp
 
 hlt
+
+align 4096
+nmidpoint:
+  dd -1.5
+nsamidpoint:
+  dd -1.49999
+nsbmidpoint:
+  dd -1.50001
+
+align 4
+tmp:
+dd 0

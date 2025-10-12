@@ -52,7 +52,7 @@ roundpd xmm7, [rdx + 8 * 0], 00000100b
 
 hlt
 
-align 16
+align 4096
 .data:
 dq 0.5, -0.5
 dq 0, 0

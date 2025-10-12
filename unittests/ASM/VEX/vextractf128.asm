@@ -29,7 +29,7 @@ vmovapd ymm15, [rel .scratch2]
 
 hlt
 
-align 32
+align 4096
 .data:
 dq 0xAAAAAAAABBBBBBBB
 dq 0xCCCCCCCCDDDDDDDD

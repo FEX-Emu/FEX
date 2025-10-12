@@ -22,7 +22,7 @@
 }
 %endif
 
-lea edx, [.data]
+lea edx, [rel .data]
 
 fldz
 fild word [edx + 2 * 1]
@@ -81,6 +81,7 @@ psrldq xmm7, 6
 
 hlt
 
+align 4096
 .data:
 dw 0
 dw 2
