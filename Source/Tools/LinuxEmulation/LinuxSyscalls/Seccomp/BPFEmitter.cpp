@@ -384,6 +384,8 @@ uint64_t BPFEmitter::JITFilter(uint32_t flags, const sock_fprog* prog) {
 
   SetBuffer((uint8_t*)FEXCore::Allocator::mmap(nullptr, FuncSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0), FuncSize);
 
+  FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(GetBufferBase()), FuncSize);
+
   const auto CodeBegin = GetCursorAddress<uint8_t*>();
 
   uint64_t Result = HandleEmission<false, EmissionErrorCheck>(flags, prog);
