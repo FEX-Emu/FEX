@@ -117,7 +117,9 @@ auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uin
   case F_DUPFD_CLOEXEC:
   case F_GETFD:
   case F_SETFD:
-  case F_GETFL: break;
+  case F_GETFL:
+  case F_ADD_SEALS:
+  case F_GET_SEALS: break;
 
   default: LOGMAN_MSG_A_FMT("Unhandled fcntl64: 0x{:x}", cmd); break;
   }
