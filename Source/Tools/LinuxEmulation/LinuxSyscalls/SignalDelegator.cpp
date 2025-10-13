@@ -579,80 +579,77 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
   ucontext_t* _context = (ucontext_t*)UContext;
   auto SigInfo = *static_cast<siginfo_t*>(Info);
 
-  constexpr bool SupportDeferredSignals = true;
-  if (SupportDeferredSignals) {
-    auto MustDeferSignal = (Thread->CurrentFrame->State.DeferredSignalRefCount.Load() != 0);
+  auto MustDeferSignal = (Thread->CurrentFrame->State.DeferredSignalRefCount.Load() != 0);
 
-    if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR && SigInfo.si_addr == reinterpret_cast<void*>(&Thread->InterruptFaultPage)) {
-      if (!MustDeferSignal) {
-        // We just reached the end of the outermost signal-deferring section and faulted to check for pending signals.
-        // Pull a signal frame off the stack.
+  if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR && SigInfo.si_addr == reinterpret_cast<void*>(&Thread->InterruptFaultPage)) {
+    if (!MustDeferSignal) {
+      // We just reached the end of the outermost signal-deferring section and faulted to check for pending signals.
+      // Pull a signal frame off the stack.
 
-        mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_READ | PROT_WRITE);
+      mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_READ | PROT_WRITE);
 
-        if (ThreadObject->SignalInfo.DeferredSignalFrames.empty()) {
-          // No signals to defer. Just set the fault page back to RW and continue execution.
-          // This occurs as a minor race condition between the refcount decrement and the access to the fault page.
-          return;
-        }
-
-        const auto& Top = ThreadObject->SignalInfo.DeferredSignalFrames.back();
-        Signal = Top.Signal;
-        SigInfo = Top.Info;
-        // sig mask has been updated at the defer time, recover the original mask
-        memcpy(&_context->uc_sigmask, &Top.SigMask, sizeof(uint64_t));
-        ThreadObject->SignalInfo.DeferredSignalFrames.pop_back();
-
-        // Until we re-protect the page to PROT_NONE, FEX will now *permanently* defer signals and /not/ check them.
-        //
-        // In order to return /back/ to a sane state, we wait for the rt_sigreturn to happen.
-        // rt_sigreturn will check if there are any more deferred signals to handle
-        // - If there are deferred signals
-        //   - mprotect back to PROT_NONE
-        //   - sigreturn will trampoline out to the previous fault address check, SIGSEGV and restart
-        // - If there are *no* deferred signals
-        //  - No need to mprotect, it is already RW
-      } else {
-#ifdef _M_ARM_64
-        // If RefCount != 0 then that means we hit an access with nested signal-deferring sections.
-        // Increment the PC past the `str zr, [x1]` to continue code execution until we reach the outermost section.
-        ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetPc(UContext) + 4);
+      if (ThreadObject->SignalInfo.DeferredSignalFrames.empty()) {
+        // No signals to defer. Just set the fault page back to RW and continue execution.
+        // This occurs as a minor race condition between the refcount decrement and the access to the fault page.
         return;
-#else
-        // X86 should always be doing a refcount compare and branch since we can't guarantee instruction size.
-        // ARM64 just always does the access to reduce branching overhead.
-        ERROR_AND_DIE_FMT("X86 shouldn't hit this InterruptFaultPage");
-#endif
       }
-    } else if (FaultSafeUserMemAccess::TryHandleSafeFault(Signal, SigInfo, UContext)) {
-      ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
+
+      const auto& Top = ThreadObject->SignalInfo.DeferredSignalFrames.back();
+      Signal = Top.Signal;
+      SigInfo = Top.Info;
+      // sig mask has been updated at the defer time, recover the original mask
+      memcpy(&_context->uc_sigmask, &Top.SigMask, sizeof(uint64_t));
+      ThreadObject->SignalInfo.DeferredSignalFrames.pop_back();
+
+      // Until we re-protect the page to PROT_NONE, FEX will now *permanently* defer signals and /not/ check them.
+      //
+      // In order to return /back/ to a sane state, we wait for the rt_sigreturn to happen.
+      // rt_sigreturn will check if there are any more deferred signals to handle
+      // - If there are deferred signals
+      //   - mprotect back to PROT_NONE
+      //   - sigreturn will trampoline out to the previous fault address check, SIGSEGV and restart
+      // - If there are *no* deferred signals
+      //  - No need to mprotect, it is already RW
     } else {
-      if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
-        // If the signal is asynchronous (as determined by si_code) and FEX is in a state of needing
-        // to defer the signal, then add the signal to the thread's signal queue.
-        LOGMAN_THROW_A_FMT(ThreadObject->SignalInfo.DeferredSignalFrames.size() != ThreadObject->SignalInfo.DeferredSignalFrames.capacity(),
-                           "Deferred signals vector hit "
-                           "capacity size. This will "
-                           "likely crash! Asserting now!");
+#ifdef _M_ARM_64
+      // If RefCount != 0 then that means we hit an access with nested signal-deferring sections.
+      // Increment the PC past the `str zr, [x1]` to continue code execution until we reach the outermost section.
+      ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetPc(UContext) + 4);
+      return;
+#else
+      // X86 should always be doing a refcount compare and branch since we can't guarantee instruction size.
+      // ARM64 just always does the access to reduce branching overhead.
+      ERROR_AND_DIE_FMT("X86 shouldn't hit this InterruptFaultPage");
+#endif
+    }
+  } else if (FaultSafeUserMemAccess::TryHandleSafeFault(Signal, SigInfo, UContext)) {
+    ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
+  } else {
+    if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
+      // If the signal is asynchronous (as determined by si_code) and FEX is in a state of needing
+      // to defer the signal, then add the signal to the thread's signal queue.
+      LOGMAN_THROW_A_FMT(ThreadObject->SignalInfo.DeferredSignalFrames.size() != ThreadObject->SignalInfo.DeferredSignalFrames.capacity(),
+                         "Deferred signals vector hit "
+                         "capacity size. This will "
+                         "likely crash! Asserting now!");
 
-        ThreadObject->SignalInfo.DeferredSignalFrames.emplace_back(ThreadStateObject::DeferredSignalState {
-          .Info = SigInfo,
-          .Signal = Signal,
-          .SigMask = _context->uc_sigmask.__val[0],
-        });
+      ThreadObject->SignalInfo.DeferredSignalFrames.emplace_back(ThreadStateObject::DeferredSignalState {
+        .Info = SigInfo,
+        .Signal = Signal,
+        .SigMask = _context->uc_sigmask.__val[0],
+      });
 
-        uint64_t NewMask = GetNewSigMask(Signal);
+      uint64_t NewMask = GetNewSigMask(Signal);
 
-        // Update our host signal mask so we don't hit race conditions with signals
-        // This allows us to maintain the expected signal mask through the guest signal handling and then all the way back again
-        memcpy(&_context->uc_sigmask, &NewMask, sizeof(uint64_t));
+      // Update our host signal mask so we don't hit race conditions with signals
+      // This allows us to maintain the expected signal mask through the guest signal handling and then all the way back again
+      memcpy(&_context->uc_sigmask, &NewMask, sizeof(uint64_t));
 
-        // Now update the faulting page permissions so it will fault on write.
-        mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_NONE);
+      // Now update the faulting page permissions so it will fault on write.
+      mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_NONE);
 
-        // Postpone the remainder of signal handling logic until we process the SIGSEGV triggered by writing to InterruptFaultPage.
-        return;
-      }
+      // Postpone the remainder of signal handling logic until we process the SIGSEGV triggered by writing to InterruptFaultPage.
+      return;
     }
   }
 
