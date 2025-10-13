@@ -35,7 +35,7 @@ auto VMAFlags::fromFlags(int Flags) -> VMAFlags {
 }
 
 /// List Operations ///
-inline void VMATracking::ListCheckVMALinks(VMAEntry* VMA) {
+static inline void ListCheckVMALinks(const VMAEntry* VMA) {
   if (VMA) {
     LOGMAN_THROW_A_FMT(VMA->ResourceNextVMA != VMA, "VMA tracking error");
     LOGMAN_THROW_A_FMT(VMA->ResourcePrevVMA != VMA, "VMA tracking error");
@@ -44,7 +44,7 @@ inline void VMATracking::ListCheckVMALinks(VMAEntry* VMA) {
 
 // Removes a VMA from corresponding MappedResource list
 // Returns true if list is empty
-bool VMATracking::ListRemove(VMAEntry* VMA) {
+static bool ListRemove(VMAEntry* VMA) {
   LOGMAN_THROW_A_FMT(VMA->Resource != nullptr, "VMA tracking error");
 
   // if it has prev, make prev to next
@@ -78,7 +78,7 @@ bool VMATracking::ListRemove(VMAEntry* VMA) {
 
 // Replaces a VMA in corresponding MappedResource list
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void VMATracking::ListReplace(VMAEntry* VMA, VMAEntry* NewVMA) {
+static void ListReplace(VMAEntry* VMA, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(VMA->Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(VMA->Resource == NewVMA->Resource, "VMA tracking error");
@@ -107,7 +107,7 @@ void VMATracking::ListReplace(VMAEntry* VMA, VMAEntry* NewVMA) {
 
 // Inserts a VMA in corresponding MappedResource list
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void VMATracking::ListInsertAfter(VMAEntry* AfterVMA, VMAEntry* NewVMA) {
+static void ListInsertAfter(VMAEntry* AfterVMA, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(NewVMA->Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(AfterVMA->Resource == NewVMA->Resource, "VMA tracking error");
@@ -128,7 +128,7 @@ void VMATracking::ListInsertAfter(VMAEntry* AfterVMA, VMAEntry* NewVMA) {
 
 // Prepends a VMA
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void VMATracking::ListPrepend(MappedResource* Resource, VMAEntry* NewVMA) {
+static void ListPrepend(MappedResource* Resource, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(NewVMA->Resource == Resource, "VMA tracking error");

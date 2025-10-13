@@ -115,13 +115,8 @@ struct VMATracking {
   inline auto InsertMappedResource(const MRID& mrid, MappedResource Resource) {
     return MappedResources.emplace(mrid, std::move(Resource));
   }
-private:
-  bool ListRemove(VMAEntry* Mapping);
-  void ListReplace(VMAEntry* Mapping, VMAEntry* NewMapping);
-  void ListInsertAfter(VMAEntry* Mapping, VMAEntry* NewMapping);
-  void ListPrepend(MappedResource* Resource, VMAEntry* NewVMA);
-  static void ListCheckVMALinks(VMAEntry* VMA);
 
+private:
   MappedResource::ContainerType MappedResources;
 };
 
