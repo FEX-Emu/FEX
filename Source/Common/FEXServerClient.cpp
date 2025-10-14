@@ -131,7 +131,7 @@ fextl::string GetServerMountFolder() {
 fextl::string GetServerSocketName() {
   FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
   if (ServerSocketPath().empty()) {
-    return fextl::fmt::format("{}.FEXServer.Socket", ::geteuid());
+    return fextl::fmt::format("{}.FEXServer.Socket", ::getuid());
   }
   return ServerSocketPath;
 }
@@ -148,7 +148,7 @@ fextl::string GetServerSocketPath() {
   auto Folder = GetTempFolder();
 
   if (name.empty()) {
-    return fextl::fmt::format("{}/{}.FEXServer.Socket", Folder, ::geteuid());
+    return fextl::fmt::format("{}/{}.FEXServer.Socket", Folder, ::getuid());
   } else {
     return fextl::fmt::format("{}/{}", Folder, name);
   }
@@ -299,6 +299,14 @@ int ConnectToAndStartServer(std::string_view InterpreterPath) {
       // Wait for a result on the pipe that isn't EINTR
       while (poll(&PollFD, 1, -1) == -1 && errno == EINTR)
         ;
+
+      // Check if child signaled an error
+      uint64_t error = 0;
+      ssize_t bytes_read = read(fds[0], &error, sizeof(error));
+      close(fds[0]);
+      if (bytes_read > 0 && error != 0) {
+        return -1;
+      }
 
       for (size_t i = 0; i < 5; ++i) {
         ServerFD = ConnectToServer(ConnectionOption::Default);
