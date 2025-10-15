@@ -188,13 +188,21 @@ SourceWithAST::SourceWithAST(std::string_view input, bool silent_compile)
 
     bool runInvocation(std::shared_ptr<clang::CompilerInvocation> invocation, clang::FileManager* files,
                        std::shared_ptr<clang::PCHContainerOperations> pch, clang::DiagnosticConsumer* diag_consumer) override {
-#if LLVM_VERSION_MAJOR >= 20
+#if LLVM_VERSION_MAJOR >= 21
+      auto diagnostics =
+        clang::CompilerInstance::createDiagnostics(files->getVirtualFileSystem(), invocation->getDiagnosticOpts(), diag_consumer, false);
+#elif LLVM_VERSION_MAJOR == 20
       auto diagnostics =
         clang::CompilerInstance::createDiagnostics(files->getVirtualFileSystem(), &invocation->getDiagnosticOpts(), diag_consumer, false);
 #else
       auto diagnostics = clang::CompilerInstance::createDiagnostics(&invocation->getDiagnosticOpts(), diag_consumer, false);
 #endif
+
+#if LLVM_VERSION_MAJOR >= 21
+      ast = clang::ASTUnit::LoadFromCompilerInvocation(invocation, std::move(pch), nullptr, std::move(diagnostics), files);
+#else
       ast = clang::ASTUnit::LoadFromCompilerInvocation(invocation, std::move(pch), std::move(diagnostics), files);
+#endif
       return (ast != nullptr);
     }
   } tool_action {ast};
