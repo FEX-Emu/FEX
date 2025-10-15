@@ -18,9 +18,15 @@ class TestDiagnosticConsumer : public clang::TextDiagnosticPrinter {
   std::optional<std::string> first_error;
 
 public:
+#if LLVM_VERSION_MAJOR >= 21
+  TestDiagnosticConsumer(bool silent_, clang::DiagnosticOptions& diag_opts)
+    : clang::TextDiagnosticPrinter(llvm::errs(), diag_opts)
+    , silent(silent_) {}
+#else
   TestDiagnosticConsumer(bool silent_)
     : clang::TextDiagnosticPrinter(llvm::errs(), new clang::DiagnosticOptions)
     , silent(silent_) {}
+#endif
 
   void HandleDiagnostic(clang::DiagnosticsEngine::Level level, const clang::Diagnostic& diag) override {
     if (level >= clang::DiagnosticsEngine::Error && !first_error) {
@@ -118,7 +124,13 @@ struct fex_gen_config;
 
   auto invocation = clang::tooling::ToolInvocation(args, &action, files.get(), std::make_shared<clang::PCHContainerOperations>());
 
+#if LLVM_VERSION_MAJOR >= 21
+  clang::DiagnosticOptions diag_opts;
+  TestDiagnosticConsumer consumer(silent, diag_opts);
+#else
   TestDiagnosticConsumer consumer(silent);
+#endif
+
   invocation.setDiagnosticConsumer(&consumer);
 
   // Process the actual ToolAction.
