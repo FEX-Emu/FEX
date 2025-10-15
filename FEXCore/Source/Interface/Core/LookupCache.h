@@ -141,22 +141,24 @@ public:
     // L2 and L3 need to be locked
     auto lk = Shared->AcquireWriteLock();
 
-    // Try L2
-    const auto PageIndex = (Address & (VirtualMemSize - 1)) >> 12;
-    const auto PageOffset = Address & (0x0FFF);
+    if (!DisableL2Cache()) {
+      // Try L2
+      const auto PageIndex = (Address & (VirtualMemSize - 1)) >> 12;
+      const auto PageOffset = Address & (0x0FFF);
 
-    const auto Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
-    auto LocalPagePointer = Pointers[PageIndex];
+      const auto Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+      auto LocalPagePointer = Pointers[PageIndex];
 
-    // Do we a page pointer for this address?
-    if (LocalPagePointer) {
-      // Find there pointer for the address in the blocks
-      auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
+      // Do we a page pointer for this address?
+      if (LocalPagePointer) {
+        // Find there pointer for the address in the blocks
+        auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
 
-      if (BlockPointers[PageOffset].GuestCode == Address) {
-        L1Entry.GuestCode = Address;
-        L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
-        return L1Entry.HostCode;
+        if (BlockPointers[PageOffset].GuestCode == Address) {
+          L1Entry.GuestCode = Address;
+          L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
+          return L1Entry.HostCode;
+        }
       }
     }
 
@@ -209,22 +211,24 @@ public:
       // and it hasn't been thoroughly tested
     }
 
-    // Do full map
-    Address = Address & (VirtualMemSize - 1);
-    uint64_t PageOffset = Address & (0x0FFF);
-    Address >>= 12;
+    if (!DisableL2Cache()) {
+      // Do full map
+      Address = Address & (VirtualMemSize - 1);
+      uint64_t PageOffset = Address & (0x0FFF);
+      Address >>= 12;
 
-    uintptr_t* Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
-    uint64_t LocalPagePointer = Pointers[Address];
-    if (!LocalPagePointer) {
-      // Page for this code didn't even exist, nothing to do
-      return ErasedAny;
+      uintptr_t* Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+      uint64_t LocalPagePointer = Pointers[Address];
+      if (!LocalPagePointer) {
+        // Page for this code didn't even exist, nothing to do
+        return ErasedAny;
+      }
+
+      // Page exists, just set the offset to zero
+      auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
+      BlockPointers[PageOffset].GuestCode = 0;
+      BlockPointers[PageOffset].HostCode = 0;
     }
-
-    // Page exists, just set the offset to zero
-    auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
-    BlockPointers[PageOffset].GuestCode = 0;
-    BlockPointers[PageOffset].HostCode = 0;
     return true;
   }
 
@@ -268,34 +272,37 @@ private:
     L1Entry.GuestCode = Address;
     L1Entry.HostCode = HostCode;
 
-    // Do ful map
-    auto FullAddress = Address;
-    Address = Address & (VirtualMemSize - 1);
+    if (!DisableL2Cache()) {
+      // Do ful map
+      auto FullAddress = Address;
+      Address = Address & (VirtualMemSize - 1);
 
-    uint64_t PageOffset = Address & (0x0FFF);
-    Address >>= 12;
-    uintptr_t* Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
-    uint64_t LocalPagePointer = Pointers[Address];
-    if (!LocalPagePointer) {
-      // We don't have a page pointer for this address
-      // Allocate one now if we can
-      uintptr_t NewPageBacking = AllocateBackingForPage();
-      if (!NewPageBacking) {
-        // Couldn't allocate, clear L2 and retry
-        ClearL2Cache(lk);
-        CacheBlockMapping(Address, HostCode, lk);
-        return;
+      uint64_t PageOffset = Address & (0x0FFF);
+      Address >>= 12;
+
+      uintptr_t* Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+      uint64_t LocalPagePointer = Pointers[Address];
+      if (!LocalPagePointer) {
+        // We don't have a page pointer for this address
+        // Allocate one now if we can
+        uintptr_t NewPageBacking = AllocateBackingForPage();
+        if (!NewPageBacking) {
+          // Couldn't allocate, clear L2 and retry
+          ClearL2Cache(lk);
+          CacheBlockMapping(Address, HostCode, lk);
+          return;
+        }
+        Pointers[Address] = NewPageBacking;
+        LocalPagePointer = NewPageBacking;
       }
-      Pointers[Address] = NewPageBacking;
-      LocalPagePointer = NewPageBacking;
+
+      // Add the new pointer to the page block
+      auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
+
+      // This silently replaces existing mappings
+      BlockPointers[PageOffset].GuestCode = FullAddress;
+      BlockPointers[PageOffset].HostCode = HostCode;
     }
-
-    // Add the new pointer to the page block
-    auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
-
-    // This silently replaces existing mappings
-    BlockPointers[PageOffset].GuestCode = FullAddress;
-    BlockPointers[PageOffset].HostCode = HostCode;
   }
 
   uintptr_t AllocateBackingForPage() {
@@ -326,5 +333,7 @@ private:
 
   FEXCore::Context::ContextImpl* ctx;
   uint64_t VirtualMemSize {};
+
+  FEX_CONFIG_OPT(DisableL2Cache, DISABLEL2CACHE);
 };
 } // namespace FEXCore
