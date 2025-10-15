@@ -8,6 +8,7 @@ $end_info$
 */
 
 #include "Common/FDUtils.h"
+#include "Common/FileMappingBaseAddress.h"
 
 #include <filesystem>
 #include <sys/shm.h>
@@ -23,6 +24,7 @@ $end_info$
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/Utils/TypeDefines.h>
 #include <FEXHeaderUtils/Filesystem.h>
+#include <Linux/Utils/ELFParser.h>
 
 namespace FEX::HLE {
 // SMC interactions
@@ -193,6 +195,22 @@ FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXC
     return {0, 0, false};
   }
   return {Entry->first, Entry->second.Length, Entry->second.Prot.Writable};
+}
+
+static fextl::vector<Elf64_Phdr> ReadELFHeaders(int FD, std::span<std::byte> HeaderData = {}) {
+  std::string_view ELFMagic = ELFMAG;
+  if (HeaderData.data()) {
+    if (HeaderData.size_bytes() < ELFMagic.size() || std::memcmp(ELFMagic.data(), HeaderData.data(), ELFMagic.size()) != 0) {
+      // Not an ELF file
+      return {};
+    }
+  } else {
+    // Read from FD in case the caller didn't have a mapped header available
+  }
+
+  ELFParser Parser;
+  Parser.ReadElf(dup(FD));
+  return std::move(Parser.phdrs);
 }
 
 void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags,
@@ -383,15 +401,17 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
   if (!(flags & MAP_ANONYMOUS)) {
     struct stat64 buf;
     fstat64(fd, &buf);
-    VMATracking::MRID mrid {buf.st_dev, buf.st_ino};
+
+    const VMATracking::MRID mrid {buf.st_dev, buf.st_ino};
 
     char Tmp[PATH_MAX];
     auto PathLength = FEX::get_fdpath(fd, Tmp);
 
     auto [ResourceIt, ResourceEnd] = VMATracking.FindResources(mrid);
     bool Inserted = false;
-    if (ResourceIt == ResourceEnd) {
-      // Create a new MappedResource for previously unseen file
+    const bool MappedELFHeaderAgain = ResourceIt != ResourceEnd && offset == 0 && !ResourceIt->second.ProgramHeaders.empty();
+    if (ResourceIt == ResourceEnd || MappedELFHeaderAgain) {
+      // Create a new MappedResource for previously unseen file and for re-mappings of an ELF header
       ResourceIt = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
       ResourceIt->second.Iterator = ResourceIt;
       Inserted = true;
@@ -400,9 +420,31 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
 
     // Only handle FDs that are backed by regular files that are executable
     if (PathLength != -1 && S_ISREG(buf.st_mode) && (buf.st_mode & S_IXUSR)) {
+      // ELF files that are mapped multiple times get a separate MappedResource for each base virtual address
       if (Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
+
+        // Read ELF headers if applicable
+        Resource->ProgramHeaders = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
+        // If this assumption is broken, we can't reliably cluster subsequent mappings by their base address
+        LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
+                                                                            "file");
+      } else if (ResourceIt->second.ProgramHeaders.empty()) {
+        // Not an ELF file, so we don't need to distinguish between different base addresses
+      } else {
+        // Mapped a non-header section of an ELF file.
+        // Look up the corresponding MappedResource using the expected base address.
+
+        ResourceIt = std::find_if(ResourceIt, ResourceEnd, [&](const VMATracking::MappedResource::ContainerType::value_type& ResourcePair) {
+          auto& Resource = ResourcePair.second;
+          auto ExpectedBase = FEXCore::InferMappingBaseAddress(
+            Resource.ProgramHeaders, addr, Size, offset,
+            (ProtMapping.Executable ? PF_X : 0) | (ProtMapping.Writable ? PF_W : 0) | (ProtMapping.Readable ? PF_R : 0));
+          return ExpectedBase == Resource.FirstVMA->Base;
+        });
+        LOGMAN_THROW_A_FMT(ResourceIt != ResourceEnd, "ERROR: Could not find base for file mapping at {:#x} (offset {:#x})", addr, offset);
+        Resource = &ResourceIt->second;
       }
 
       const fextl::string Filename = FHU::Filesystem::GetFilename(Resource->MappedFile->Filename);
@@ -429,8 +471,6 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
     Iter = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
     Resource = &Iter->second;
     Resource->Iterator = Iter;
-  } else {
-    Resource = nullptr;
   }
 
   VMATracking.TrackVMARange(CTX, Resource, addr, offset, Size, VMATracking::VMAFlags::fromFlags(flags), ProtMapping);
