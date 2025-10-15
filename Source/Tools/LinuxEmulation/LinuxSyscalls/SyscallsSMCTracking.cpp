@@ -174,15 +174,13 @@ std::optional<FEXCore::ExecutableFileSectionInfo>
 SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) {
   auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, &Thread);
 
-  // Get the first mapping after GuestAddr, or end
-  // GuestAddr is inclusive
-  // If the write spans two pages, they will be flushed one at a time (generating two faults)
-  auto Entry = VMATracking.FindVMAEntry(GuestAddr);
-  if (Entry == VMATracking.VMAs.end() || !Entry->second.Resource) {
+  auto EntryIt = VMATracking.FindVMAEntry(GuestAddr);
+  if (EntryIt == VMATracking.VMAs.end() || !EntryIt->second.Resource) {
     return std::nullopt;
   }
 
-  return FEXCore::ExecutableFileSectionInfo {*Entry->second.Resource->MappedFile, Entry->second.Base - Entry->second.Offset};
+  auto& [MappingBaseAddr, Entry] = *EntryIt;
+  return FEXCore::ExecutableFileSectionInfo {*Entry.Resource->MappedFile, Entry.Resource->FirstVMA->Base};
 }
 
 FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) {
