@@ -29,6 +29,7 @@
 namespace FEXCore {
 class SignalDelegator;
 class ThunkHandler;
+struct LookupCacheWriteLockToken;
 
 namespace Core {
   struct DebugData;
@@ -233,7 +234,7 @@ public:
 
   ContextImpl(const FEXCore::HostFeatures& Features);
 
-  static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
+  static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, const FEXCore::LookupCacheWriteLockToken& lk);
 
   static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP);
 
