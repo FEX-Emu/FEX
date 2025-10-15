@@ -8,6 +8,8 @@
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
+#include <elf.h>
+
 namespace FEX::HLE::VMATracking {
 ///// VMA (Virtual Memory Area) tracking /////
 
@@ -46,6 +48,8 @@ struct MappedResource {
   VMAEntry* FirstVMA;
   uint64_t Length; // 0 if not fixed size
   ContainerType::iterator Iterator;
+
+  fextl::vector<Elf64_Phdr> ProgramHeaders;
 };
 
 union VMAProt {
