@@ -28,7 +28,7 @@ X86GeneratedCode::X86GeneratedCode() {
   CodePtr = AllocateGuestCodeSpace(CODE_SIZE);
 
   constexpr std::array<uint8_t, 2> SignalReturnCode = {
-    0x0F, 0x37, // CALLBACKRET FEX Instruction
+    0x0F, 0x3E, // CALLBACKRET FEX Instruction
   };
 
   CallbackReturn = reinterpret_cast<uint64_t>(CodePtr);
