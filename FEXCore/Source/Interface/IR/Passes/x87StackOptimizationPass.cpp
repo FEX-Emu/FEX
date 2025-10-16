@@ -204,7 +204,7 @@ private:
     case OpSize::i32Bit:
     case OpSize::i64Bit: {
       StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
-      IREmit->_StoreMem(FPRClass, Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
+      IREmit->_StoreMemFPR(Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
 
