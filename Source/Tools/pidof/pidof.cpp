@@ -93,7 +93,14 @@ bool FindWineFEXApplication(int64_t PID, std::string_view exe, const std::vector
       continue;
     }
 
-    const auto filename = std::filesystem::read_symlink(Entry.path()).filename().string();
+    std::error_code ec {};
+    const auto symlink_path = std::filesystem::read_symlink(Entry.path(), ec);
+    // If error reading symlink then skip.
+    if (ec) {
+      continue;
+    }
+
+    const auto filename = symlink_path.filename().string();
     if (filename.find("arm64ecfex.dll") != filename.npos || filename.find("wow64fex.dll") != filename.npos) {
       return true;
     }
