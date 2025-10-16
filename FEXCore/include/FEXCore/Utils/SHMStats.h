@@ -44,7 +44,7 @@ enum class AppType : uint8_t {
 struct ThreadStatsHeader {
   uint8_t Version;
   AppType app_type;
-  uint8_t _pad[2];
+  uint16_t ThreadStatsSize;
   char fex_version[48];
   std::atomic<uint32_t> Head;
   std::atomic<uint32_t> Size;
