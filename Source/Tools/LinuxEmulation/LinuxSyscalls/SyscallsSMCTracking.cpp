@@ -388,14 +388,16 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
     char Tmp[PATH_MAX];
     auto PathLength = FEX::get_fdpath(fd, Tmp);
 
-    if (PathLength != -1) {
-      auto [Iter, Inserted] = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
-      Resource = &Iter->second;
+    auto [Iter, Inserted] = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
+    Resource = &Iter->second;
+    if (Inserted) {
+      Resource->Iterator = Iter;
+    }
 
+    if (PathLength != -1) {
       if (Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
-        Resource->Iterator = Iter;
       }
 
       const fextl::string Filename = FHU::Filesystem::GetFilename(Resource->MappedFile->Filename);
