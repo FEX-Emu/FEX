@@ -17,18 +17,6 @@
 ; move results to general purpose registers and check them there
 ; so that hostrunner tests work properly.
 
-section .data
-    nzer: dq -0.0
-
-section .bss
-    expz: resq 1
-    sigz: resq 1
-    expnz: resq 1
-    signz: resq 1
-
-section .text
-global _start
-_start:
 finit
 fldz
 fxtract
@@ -48,3 +36,10 @@ mov rdx, [rel signz]
 
 hlt
 
+
+align 4096
+nzer: dq -0.0
+expz: dq 0
+sigz: dq 0
+expnz: dq 0
+signz: dq 0

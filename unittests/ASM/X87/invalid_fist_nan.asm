@@ -21,6 +21,6 @@ and rax, 1
 
 hlt
 
-align 8
+align 4096
 data:
   dd 0

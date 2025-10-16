@@ -45,11 +45,9 @@ vpinsrd xmm2, xmm2, eax, 0
 vpinsrd xmm3, xmm3, eax, 0
 hlt
 
-section .bss
-align 32
-result: resq 2
+align 4096
+result: times 2 dq 0
 
-section .data
 align 32
 arg1:
 dq 0x3F8000003F800000 ; 1.0

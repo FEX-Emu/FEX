@@ -104,11 +104,11 @@ movups xmm11, [rel .res_data_11]
 
 hlt
 
-align 16
+align 4096
 .precisionMask:
 dd 0xfff00000
 dd 0xffffffff
-dd 0xffffffff 
+dd 0xffffffff
 dd 0xffffffff
 
 

@@ -51,16 +51,14 @@ and ebx, eax
 
 hlt
 
-section .bss
-align 32
-result11: resd 1
-result12: resd 1
-result21: resd 1
-result22: resd 1
-result31: resd 1
-result32: resd 1
+align 4096
+result11: dd 0
+result12: dd 0
+result21: dd 0
+result22: dd 0
+result31: dd 0
+result32: dd 0
 
-section .data
 align 32
 data1:
 dd 1.0

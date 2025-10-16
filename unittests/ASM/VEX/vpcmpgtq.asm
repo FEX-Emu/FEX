@@ -43,7 +43,7 @@ vpcmpgtq xmm14, xmm4, [rel .data0]
 
 hlt
 
-align 32
+align 4096
 .data0:
 dq 0
 dq 0

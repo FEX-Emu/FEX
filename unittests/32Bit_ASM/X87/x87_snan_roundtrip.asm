@@ -16,7 +16,7 @@ mov esp, 0xe0000040
 ; Returns NaN triple: 5 (0b101) for signaling NaN
 
 finit
-mov edx, .data
+lea edx, [rel .data]
 fld tword [edx] ; load nan 80bit
 fstp tword [edx + 16] ; store nan as 80bit
 
@@ -27,7 +27,7 @@ CHECK_NAN_TRIPLE_80
 
 hlt
 
-align 16
+align 4096
 .data:
   dq 0xa000000000000000  ; signaling nan significand  
   dw 0x7fff              ; signaling nan exponent

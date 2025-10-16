@@ -18,18 +18,18 @@ mov esp, 0xe0000040
 ; Returns NaN triple: 6 (0b110) for quiet NaN (converted from signaling)
 
 finit
-lea edx, [.data]
+lea edx, [rel .data]
 fld tword [edx] ; load snan
 fstp dword [edx + 16] ; store snan as 32bit qnan
 
 ; Check the stored 32-bit value using NaN triple macro
-lea edx, [.data + 16]
+lea edx, [rel .data + 16]
 movss xmm0, [edx]    ; Load 32-bit float into xmm0
 CHECK_NAN_TRIPLE_32
 
 hlt
 
-align 8
+align 4096
 .data:
   dq 0xa000000000000000  ; signaling NaN significand
   dw 0x7fff              ; signaling NaN exponent  

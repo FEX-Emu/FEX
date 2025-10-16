@@ -111,5 +111,6 @@ mov r15, [rel .data + (15 * 8)]
 
 hlt
 
+align 4096
 .data:
 times 16 dq 0x4142434445464748

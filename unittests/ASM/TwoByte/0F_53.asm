@@ -15,7 +15,7 @@
 %macro same_pdwords 1 ; receives the xmms register
     movd eax, %1
     movd xmm15, eax
-    pshufd xmm15, xmm15, 0 ; has the lower 32bits of %1 accross all lanes 
+    pshufd xmm15, xmm15, 0 ; has the lower 32bits of %1 accross all lanes
     pcmpeqd xmm15, %1 ; has equalty mask on all lanes
     movmskps eax, xmm15 ; gets sign bit of each lane into eax
     cmp eax, 0b1111
@@ -50,18 +50,17 @@ and r9, rax
 
 hlt
 
-section .bss
-result1: resd 1
-result2: resd 1
+align 4096
+result1: dd 0
+result2: dd 0
 
-section .data
 align 64
 
-arg1: 
+arg1:
 dq 0x3f8000003f800000 ; 1.0
 dq 0x3f8000003f800000
 
-arg2: 
+arg2:
 dq 0x4080000040800000 ; 4.0
 dq 0x4080000040800000
 

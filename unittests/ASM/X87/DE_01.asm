@@ -32,6 +32,7 @@ movups xmm1, [rel data2]
 
 hlt
 
+align 4096
 data2:
 dq 0
 dq 0

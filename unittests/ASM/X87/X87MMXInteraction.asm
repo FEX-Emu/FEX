@@ -13,15 +13,9 @@
 }
 %endif
 
-section .bss
-  x87env: resb 108
-
-section .text
-global _start
 ; Checks that after moving from X87 to MMX States, the
 ; values are correct and that MMX register writes, puts the top 16 bits as
 ; all 1s.
-_start:
 finit ; enters x87 state
 
 fldpi ; goes in mm7
@@ -51,3 +45,6 @@ mov r10, qword [rel x87env + 78]
 mov r11w, word [rel x87env + 86]
 
 hlt
+
+align 4096
+x87env: times 108 db 0

@@ -40,16 +40,13 @@ check_relerr rel eresult2, rel result2, rel tolerance
 
 hlt
 
+align 4096
+result1 dd 0
+result2 dd 0
 
-section .bss
-align 32
-result1 resd 1
-result2 resd 1
-
-section .data
 align 16
 
-arg1: 
+arg1:
 dq 0x3f8000003f800000 ; 1.0
 dq 0x3f8000003f800000
 
@@ -61,7 +58,7 @@ arg3:
 dq 0xdeadbeef00000000 ; 0.0
 dq 0xbadc0ffebadc0ffe
 
-eresult1: 
+eresult1:
 dd 0x3f800000 ; 1.0
 
 eresult2:

@@ -34,7 +34,8 @@ mov     qword [rbp-0x9f0], rax
 mov     qword [rbp-0x9e8], rdx
 
 hlt
-align 16
+
+align 4096
 .data:
 times 4096 db 0
 .data_mid:

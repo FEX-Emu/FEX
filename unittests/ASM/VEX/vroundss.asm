@@ -61,7 +61,7 @@ vroundss xmm7, xmm7, [rdx], 00000100b
 
 hlt
 
-align 32
+align 4096
 .data:
 dd 0.5, -0.5, 1.5, -1.5
 dd 0.5, -0.5, 1.5, -1.5

@@ -24,5 +24,6 @@ and eax, 1
 
 hlt
 
+align 4096
 .forty: dd 40
 .dummy: dd 0

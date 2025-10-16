@@ -16,18 +16,18 @@ mov esp, 0xe0000040
 ; Returns NaN triple: 6 (0b110) for quiet NaN
 
 finit
-lea edx, [.data]
+lea edx, [rel .data]
 fld tword [edx] ; load qnan 80bit
 fstp qword [edx + 16] ; store qnan as 64bit
 
 ; Check the stored 64-bit value using NaN triple macro
-lea edx, [.data + 16]
+lea edx, [rel .data + 16]
 movsd xmm0, [edx]    ; Load 64-bit double into xmm0
 CHECK_NAN_TRIPLE_64
 
 hlt
 
-align 8
+align 4096
 .data:
   dq 0xc000000000000000  ; quiet NaN significand
   dw 0x7fff              ; NaN exponent

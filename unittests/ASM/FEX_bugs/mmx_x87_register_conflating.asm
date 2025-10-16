@@ -110,7 +110,8 @@ movups xmm7, [rel .temp_x87_result + (3 * 16)]
 movups xmm8, [rel .temp_x87_result + (4 * 16)]
 
 hlt
-align 32
+
+align 4096
 
 .temp_x87_result:
 times (16 * 8) db 0

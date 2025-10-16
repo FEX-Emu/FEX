@@ -25,9 +25,9 @@ CHECK_NAN_TRIPLE_80
 
 hlt
 
-align 16
+align 4096
 data:
-  dq 0xa000000000000000  ; signaling nan significand  
+  dq 0xa000000000000000  ; signaling nan significand
   dw 0x7fff              ; signaling nan exponent
   dw 0, 0, 0             ; padding to 16 bytes
   dq 0, 0                ; space for 80-bit result (16 bytes)

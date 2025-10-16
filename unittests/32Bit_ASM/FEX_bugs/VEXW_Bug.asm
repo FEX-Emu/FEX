@@ -69,7 +69,7 @@ vpinsrd xmm5, dword [rel .data_temp + 8], 1
 
 hlt
 
-align 16
+align 4096
 .data_xmm0:
 dq 0x400c000000000000, 0x400c000000000000
 .data_xmm1:

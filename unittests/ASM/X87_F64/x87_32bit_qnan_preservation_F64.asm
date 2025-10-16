@@ -27,7 +27,7 @@ CHECK_NAN_TRIPLE_32
 
 hlt
 
-align 8
+align 4096
 data:
   dq 0xc000000000000000  ; quiet NaN significand
   dw 0x7fff              ; NaN exponent

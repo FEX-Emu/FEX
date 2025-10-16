@@ -71,7 +71,7 @@ pextrd [rel result4], xmm3, 0
 pinsrd xmm3, esi, 0
 check_relerr rel eresult4, rel result4, rel tolerance
 
-; no need to test the other results which are the same, 
+; no need to test the other results which are the same,
 ; we can just zero them.
 pinsrd xmm4, esi, 0
 pinsrd xmm5, esi, 0
@@ -79,17 +79,15 @@ pinsrd xmm6, esi, 0
 pinsrd xmm7, esi, 0
 hlt
 
-section .bss
-align 32
-result1 resd 1
-result2 resd 1
-result3 resd 1
-result4 resd 1
+align 4096
+result1 dd 0
+result2 dd 0
+result3 dd 0
+result4 dd 0
 
-section .data
 align 16
 
-arg1: 
+arg1:
 dq 0x414243443f800000 ; 1.0
 dq 0x5152535455565758
 
@@ -109,13 +107,13 @@ arg5:
 dq 0x4142434441c80000 ; 25.0
 dq 0x5152535455565758
 
-eresult1: 
+eresult1:
 dd 0x3f800000 ; 1.0
 
 eresult2:
 dd 0x3f000000 ; 0.5
 
-eresult3: 
+eresult3:
 dd 0x3eaaaaab ; 1/3 = 0.(3)
 
 eresult4:
