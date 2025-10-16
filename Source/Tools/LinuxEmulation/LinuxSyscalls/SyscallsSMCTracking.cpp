@@ -394,7 +394,8 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
       Resource->Iterator = Iter;
     }
 
-    if (PathLength != -1) {
+    // Only handle FDs that are backed by regular files that are executable
+    if (PathLength != -1 && S_ISREG(buf.st_mode) && (buf.st_mode & S_IXUSR)) {
       if (Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
