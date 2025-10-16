@@ -504,47 +504,6 @@ struct FEX_PACKED X80SoftFloat {
     return std::bit_cast<float>(Result);
   }
 
-  bool IsSignalingNaN() const {
-    return (Exponent == 0x7FFF) && (Significand & 0x8000000000000000ULL) && !(Significand & 0x4000000000000000ULL) && // Bit 62 clear (signaling)
-           (Significand & 0x3FFFFFFFFFFFFFFFULL);
-  }
-
-  bool IsQuietNaN() const {
-    return (Exponent == 0x7FFF) && (Significand & 0x8000000000000000ULL) && (Significand & 0x4000000000000000ULL); // Bit 62 set (quiet)
-  }
-
-  // Helper to detect if this is any NaN
-  bool IsNaN() const {
-    return IsSignalingNaN() || IsQuietNaN();
-  }
-
-  // X87 value to F64 while preserving signaling nan property
-  double ToF64_PreserveNan(softfloat_state* state) const {
-    if (IsSignalingNaN()) {
-      // we keep it as a signaling nan in ieee754 in 64bits
-      uint64_t sign_bit = Sign ? 0x8000000000000000ULL : 0;
-      uint64_t exp_bits = 0x7FF0000000000000ULL;
-      uint64_t x87_frac = Significand & 0x3FFFFFFFFFFFFFFFULL;
-      uint64_t ieee_frac = (x87_frac >> 11) & 0x0007FFFFFFFFFFFFULL;
-
-      if (ieee_frac == 0) {
-        ieee_frac = 1;
-      }
-      ieee_frac &= ~0x0008000000000000ULL;
-
-      uint64_t result_bits = sign_bit | exp_bits | ieee_frac;
-      return std::bit_cast<double>(result_bits);
-    } else if (IsQuietNaN()) {
-      const float64_t Result = extF80_to_f64(state, *this);
-      uint64_t result_bits = std::bit_cast<uint64_t>(Result);
-      result_bits |= 0x0008000000000000ULL;
-      return std::bit_cast<double>(result_bits);
-    } else {
-      const float64_t Result = extF80_to_f64(state, *this);
-      return std::bit_cast<double>(Result);
-    }
-  }
-
   double ToF64(softfloat_state* state) const {
     const float64_t Result = extF80_to_f64(state, *this);
     return std::bit_cast<double>(Result);
@@ -623,39 +582,6 @@ struct FEX_PACKED X80SoftFloat {
 
   X80SoftFloat(softfloat_state* state, const double rhs) {
     *this = f64_to_extF80(state, std::bit_cast<float64_t>(rhs));
-  }
-
-  // Create X80SoftFloat from double while preserving NaN signaling properties
-  static X80SoftFloat FromF64_PreserveNaN(softfloat_state* state, double value) {
-    uint64_t bits = std::bit_cast<uint64_t>(value);
-
-    // Check if it's a nan
-    if ((bits & 0x7FF0000000000000ULL) == 0x7FF0000000000000ULL && (bits & 0x000FFFFFFFFFFFFFULL) != 0) {
-
-      X80SoftFloat result;
-      result.Sign = (bits >> 63) & 1;
-      result.Exponent = 0x7FFF;
-
-      bool is_signaling = !(bits & 0x0008000000000000ULL);
-      uint64_t ieee_payload = bits & 0x0007FFFFFFFFFFFFULL;
-
-      // set bit 63 required for x87
-      result.Significand = 0x8000000000000000ULL;
-
-      if (is_signaling) { // clear bit 62 for signaling nan
-        result.Significand &= ~0x4000000000000000ULL;
-      } else { // clear bit 62 for quiet nan
-        result.Significand |= 0x4000000000000000ULL;
-      }
-
-      // ieee754 51-bit payload -> x87 62-bit payload
-      result.Significand |= (ieee_payload << 11) & 0x3FFFFFFFFFFFFFFFULL;
-
-      return result;
-    }
-
-    // For non-NaN values, use standard conversion
-    return X80SoftFloat(state, value);
   }
 
   X80SoftFloat(softfloat_state* state, BIGFLOAT rhs) {

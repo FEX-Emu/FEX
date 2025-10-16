@@ -208,7 +208,6 @@ public:
     FEX_CONFIG_OPT(GDBSymbols, GDBSYMBOLS);
     FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
     FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
-    FEX_CONFIG_OPT(x87StrictReducedPrecision, X87STRICTREDUCEDPRECISION);
     FEX_CONFIG_OPT(DisableTelemetry, DISABLETELEMETRY);
     FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
     FEX_CONFIG_OPT(SmallTSCScale, SMALLTSCSCALE);
@@ -321,13 +320,6 @@ protected:
       AtomicTSOEmulationEnabled = Config.TSOEnabled;
       VectorAtomicTSOEmulationEnabled = Config.TSOEnabled && Config.VectorTSOEnabled;
       MemcpyAtomicTSOEmulationEnabled = Config.TSOEnabled && Config.MemcpySetTSOEnabled;
-    }
-  }
-
-  void UpdateX87PrecisionConfig() {
-    // If strict reduced precision is enabled, automatically enable reduced precision
-    if (Config.x87StrictReducedPrecision() && !Config.x87ReducedPrecision()) {
-      FEXCore::Config::Set(FEXCore::Config::CONFIG_X87REDUCEDPRECISION, "1");
     }
   }
 
