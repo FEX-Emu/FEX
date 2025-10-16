@@ -27,6 +27,7 @@ public:
     SUCCESS,
     INVALID_INST,
     NOEXEC_INST,
+    PARTIAL_DECODE_INST,
   };
 
   // New Frontend decoding
