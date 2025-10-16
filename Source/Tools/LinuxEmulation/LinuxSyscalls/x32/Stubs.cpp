@@ -25,13 +25,26 @@ struct CpuStateFrame;
 }
 
 namespace FEX::HLE::x32 {
+auto modify_ldt(FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+  SYSCALL_STUB(readdir);
+}
+
+auto readdir(FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+  SYSCALL_STUB(readdir);
+}
+
+auto vm86old(FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+  return -ENOSYS;
+}
+
+auto vm86(FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+  return -ENOSYS;
+}
+
 void RegisterStubs(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL_X32(modify_ldt, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { SYSCALL_STUB(readdir); });
-
-  REGISTER_SYSCALL_IMPL_X32(readdir, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { SYSCALL_STUB(readdir); });
-
-  REGISTER_SYSCALL_IMPL_X32(vm86old, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { return -ENOSYS; });
-
-  REGISTER_SYSCALL_IMPL_X32(vm86, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { return -ENOSYS; });
+  REGISTER_SYSCALL_IMPL_X32(modify_ldt, modify_ldt);
+  REGISTER_SYSCALL_IMPL_X32(readdir, readdir);
+  REGISTER_SYSCALL_IMPL_X32(vm86old, vm86old);
+  REGISTER_SYSCALL_IMPL_X32(vm86, vm86);
 }
 } // namespace FEX::HLE::x32
