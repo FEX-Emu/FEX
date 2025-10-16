@@ -407,14 +407,6 @@
           "Emulates X87 floating point using 64-bit precision. This reduces emulation accuracy and may result in rendering bugs."
         ]
       },
-      "X87StrictReducedPrecision": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Enables stricter X87 floating point behavior when X87ReducedPrecision is enabled.",
-          "Adds additional checks and implementations like NaN propagation for better compatibility."
-        ]
-      },
       "ABILocalFlags": {
         "Type": "bool",
         "Default": "false",

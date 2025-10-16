@@ -158,9 +158,7 @@ public:
     : Features(Features)
     , GPROpSize(GPROpSize) {
     FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
-    FEX_CONFIG_OPT(StrictReducedPrecision, X87STRICTREDUCEDPRECISION);
     ReducedPrecisionMode = ReducedPrecision;
-    StrictReducedPrecisionMode = StrictReducedPrecision;
   }
   void Run(IREmitter* Emit) override;
 
@@ -168,12 +166,10 @@ private:
   const FEXCore::HostFeatures& Features;
   const OpSize GPROpSize;
   bool ReducedPrecisionMode;
-  bool StrictReducedPrecisionMode;
   FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
 
   // Helpers
   Ref RotateRight8(uint32_t V, Ref Amount);
-  Ref SilenceNaN(Ref Value);
 
   void F80SplitStore_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
     Ref AddrNode = IR->GetNode(Op->Addr);
@@ -208,9 +204,6 @@ private:
     case OpSize::i32Bit:
     case OpSize::i64Bit: {
       StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
-      if (!ReducedPrecisionMode || StrictReducedPrecisionMode) {
-        StackNode = SilenceNaN(StackNode);
-      }
       IREmit->_StoreMemFPR(Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
@@ -241,10 +234,6 @@ private:
     OpSize Align = Op->Align;
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
-
-    if ((!ReducedPrecisionMode || StrictReducedPrecisionMode) && Op->StoreSize != OpSize::f80Bit) {
-      StackNode = SilenceNaN(StackNode);
-    }
 
     switch (Op->StoreSize) {
     case OpSize::i32Bit: {
@@ -497,15 +486,6 @@ inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_
 
 inline Ref X87StackOptimization::RotateRight8(uint32_t V, Ref Amount) {
   return IREmit->_Lshr(OpSize::i32Bit, GetConstant(V | (V << 8)), Amount);
-}
-
-inline Ref X87StackOptimization::SilenceNaN(Ref Value) {
-  Ref GPRValue = IREmit->_VExtractToGPR(OpSize::i64Bit, OpSize::i64Bit, Value, 0);
-
-  IREmit->_FCmp(OpSize::i64Bit, Value, Value); // Comparison with itself should set VS if nan
-  Ref QuietNaNGPR = IREmit->_Or(OpSize::i64Bit, GPRValue, IREmit->_Constant(0x0008000000000000ULL));
-  Ref SilencedValue = IREmit->_VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, QuietNaNGPR);
-  return IREmit->_NZCVSelectV(OpSize::i64Bit, CondClass::VS, SilencedValue, Value);
 }
 
 inline std::optional<X87StackOptimization::StackMemberInfo> X87StackOptimization::MigrateToSlowPath_IfInvalid(uint8_t Offset) {
