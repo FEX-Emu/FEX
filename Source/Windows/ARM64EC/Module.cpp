@@ -640,7 +640,12 @@ NTSTATUS ProcessInit() {
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, "1");
 
-  FEXCore::Profiler::Init("", "");
+  {
+    FEX_CONFIG_OPT(TraceProfiler, TRACEPROFILER);
+    if (TraceProfiler()) {
+      FEXCore::Profiler::Init("", "");
+    }
+  }
 
   FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
   ExtendedMetaData = FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig());

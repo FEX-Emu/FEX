@@ -480,7 +480,12 @@ int main(int argc, char** argv, char** const envp) {
     free(data);
   }
 
-  FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
+  {
+    FEX_CONFIG_OPT(TraceProfiler, TRACEPROFILER);
+    if (TraceProfiler()) {
+      FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
+    }
+  }
 
   bool SupportsAVX {};
   fextl::unique_ptr<FEXCore::Context::Context> CTX;

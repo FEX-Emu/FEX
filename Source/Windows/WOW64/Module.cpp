@@ -516,7 +516,12 @@ void BTCpuProcessInit() {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, "0");
 
-  FEXCore::Profiler::Init("", "");
+  {
+    FEX_CONFIG_OPT(TraceProfiler, TRACEPROFILER);
+    if (TraceProfiler()) {
+      FEXCore::Profiler::Init("", "");
+    }
+  }
 
   FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
   ExtendedMetaData = FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig());
