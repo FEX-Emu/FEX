@@ -20,12 +20,12 @@
         "NP 0x0f 0x3a 0x0f"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1056]",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1072]",
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "palignr mm0, mm1, 1": {
@@ -34,14 +34,14 @@
         "NP 0x0f 0x3a 0x0f"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1056]",
-        "ldr d3, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1072]",
+        "ldr d3, [x28, #1056]",
         "ext v2.8b, v2.8b, v3.8b, #1",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "palignr mm0, mm1, 255": {
@@ -50,12 +50,12 @@
         "NP 0x0f 0x3a 0x0f"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
+        "strb w20, [x28, #1202]",
         "movi v2.2d, #0x0",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "roundps xmm0, xmm1, 00000000b": {
@@ -474,7 +474,7 @@
         "0x66 0x0f 0x3a 0x0e"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2656]",
+        "ldr x0, [x28, #2672]",
         "ldr q2, [x0, #3440]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]

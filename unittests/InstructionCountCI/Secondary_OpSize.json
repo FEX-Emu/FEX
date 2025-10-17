@@ -112,10 +112,10 @@
       "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0x2a",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "sxtl v2.2d, v2.2s",
         "scvtf v16.2d, v2.2d"
       ]
@@ -131,28 +131,28 @@
       "ExpectedInstructionCount": 8,
       "Comment": "0x66 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
+        "strb w20, [x28, #1202]",
         "frint32z v2.2d, v16.2d",
         "fcvtzs v2.2d, v2.2d",
         "xtn v2.2s, v2.2d",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "cvtpd2pi mm0, xmm0": {
       "ExpectedInstructionCount": 8,
       "Comment": "0x66 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
+        "strb w20, [x28, #1202]",
         "frint32x v2.2d, v16.2d",
         "fcvtzs v2.2d, v2.2d",
         "xtn v2.2s, v2.2d",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "ucomisd xmm0, xmm1": {
@@ -525,7 +525,7 @@
         "0x66 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -539,7 +539,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v2.16b}, v3.16b"
       ]
@@ -677,7 +677,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q3, [x0, #2480]",
         "tbl v16.16b, {v2.16b}, v3.16b"
       ]

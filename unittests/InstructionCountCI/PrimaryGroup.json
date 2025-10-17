@@ -2979,21 +2979,21 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "ldrh w21, [x8, #4]",
-        "ldrh w22, [x28, #930]",
+        "ldrh w22, [x28, #962]",
         "mov w23, #0x4",
         "movk w23, #0x1, lsl #16",
         "stp x23, x22, [x8, #-16]!",
-        "strh w21, [x28, #930]",
+        "strh w21, [x28, #962]",
         "ubfx w22, w21, #2, #1",
         "and w21, w21, #0xfff8",
         "add x0, x28, x22, lsl #3",
-        "ldr x22, [x0, #1168]",
+        "ldr x22, [x0, #1184]",
         "ldr x21, [x22, w21, uxtw]",
         "lsr x22, x21, #32",
         "and w23, w22, #0xff000000",
         "orr w21, w23, w21, lsr #16",
         "bfi w21, w22, #16, #8",
-        "str w21, [x28, #948]"
+        "str w21, [x28, #980]"
       ]
     },
     "push rax": {
@@ -3009,17 +3009,17 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8]",
         "ldrh w21, [x8, #4]",
-        "strh w21, [x28, #930]",
+        "strh w21, [x28, #962]",
         "ubfx w22, w21, #2, #1",
         "and w21, w21, #0xfff8",
         "add x0, x28, x22, lsl #3",
-        "ldr x22, [x0, #1168]",
+        "ldr x22, [x0, #1184]",
         "ldr x21, [x22, w21, uxtw]",
         "lsr x22, x21, #32",
         "and w23, w22, #0xff000000",
         "orr w21, w23, w21, lsr #16",
         "bfi w21, w22, #16, #8",
-        "str w21, [x28, #948]"
+        "str w21, [x28, #980]"
       ]
     },
     "mov byte [rax], 0": {
