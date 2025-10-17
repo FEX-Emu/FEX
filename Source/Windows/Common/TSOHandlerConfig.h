@@ -28,7 +28,9 @@ public:
     uint64_t Flags = (StrictInProcessSplitLocks() ? FEX_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
                      (ParanoidTSO() ? 0 : FEX_UNALIGN_ATOMIC_BACKPATCH) | FEX_UNALIGN_ATOMIC_EMULATE;
 
-    NtSetInformationProcess(NtCurrentProcess(), ProcessFexUnalignAtomic, &Flags, sizeof(Flags));
+    if (NtSetInformationProcess(NtCurrentProcess(), ProcessFexUnalignAtomic, &Flags, sizeof(Flags)) == STATUS_SUCCESS) {
+      LogMan::Msg::IFmt("FEX: Kernel unaligned atomics enabled!");
+    }
   }
 
   FEXCore::ArchHelpers::Arm64::UnalignedHandlerType GetUnalignedHandlerType() const {

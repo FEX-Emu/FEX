@@ -272,7 +272,9 @@ void SetupKernelUnalignedAtomics() {
   uint64_t Flags = (StrictInProcessSplitLocks() ? PR_ARM64_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
                    (ParanoidTSO() ? 0 : PR_ARM64_UNALIGN_ATOMIC_BACKPATCH) | PR_ARM64_UNALIGN_ATOMIC_EMULATE;
 
-  prctl(PR_ARM64_SET_UNALIGN_ATOMIC, Flags, 0, 0, 0);
+  if (prctl(PR_ARM64_SET_UNALIGN_ATOMIC, Flags, 0, 0, 0) != -1) {
+    LogMan::Msg::IFmt("FEX: Kernel unaligned atomics enabled!");
+  }
 }
 } // namespace FEX::UnalignedAtomic
 
