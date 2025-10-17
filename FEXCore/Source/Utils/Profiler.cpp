@@ -70,6 +70,10 @@ static std::array<const char*, 2> TraceFSDirectories {
 };
 
 void Init() {
+  FEX_CONFIG_OPT(EnableGpuvisProfiling, ENABLEGPUVISPROFILING);
+  if (!EnableGpuvisProfiling()) {
+    return;
+  }
   for (auto Path : TraceFSDirectories) {
 #ifdef _WIN32
     constexpr auto flags = O_WRONLY;
