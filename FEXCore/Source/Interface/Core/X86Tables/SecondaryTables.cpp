@@ -100,10 +100,11 @@ constexpr std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps = []() co
     {0x34, 1, X86InstInfo{"SYSENTER",   TYPE_INST, FLAGS_NO_OVERLAY,                                                                             0}},
     {0x35, 1, X86InstInfo{"SYSEXIT",    TYPE_INST, FLAGS_NO_OVERLAY,                                                                             0}},
     {0x36, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0}},
+    {0x37, 1, X86InstInfo{"GETSEC",     TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0}},
     {0x38, 1, X86InstInfo{"",           TYPE_0F38_TABLE, FLAGS_NO_OVERLAY,                                                                       0}},
     {0x39, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0}},
     {0x3A, 1, X86InstInfo{"",           TYPE_0F3A_TABLE, FLAGS_NO_OVERLAY,                                                                       0}},
-    {0x3B, 4, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0}},
+    {0x3B, 3, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0}},
 
     {0x40, 1, X86InstInfo{"CMOVO",      TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                               0}},
     {0x41, 1, X86InstInfo{"CMOVNO",     TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                               0}},
@@ -299,7 +300,7 @@ constexpr std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps = []() co
     // FEX reserved instructions
     // Unused x86 encoding instruction.
 
-    {0x37, 1, X86InstInfo{"CALLBACKRET",  TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                                          0}},
+    {0x3E, 1, X86InstInfo{"CALLBACKRET",  TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                                          0}},
 
     // This was originally used by VIA to jump to its alternative instruction set. Used for OP_THUNK
     {0x3F, 1, X86InstInfo{"ALTINST",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            0}},
