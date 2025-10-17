@@ -423,11 +423,17 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
 
-        // Read ELF headers if applicable
-        Resource->ProgramHeaders = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
-        // If this assumption is broken, we can't reliably cluster subsequent mappings by their base address
-        LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
-                                                                            "file");
+        // Read ELF headers if applicable.
+        // For performance, skip ELF checks if we're not mapping the file header
+        bool CheckForElfFile = (offset == 0);
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+        CheckForElfFile = true;
+#endif
+        if (CheckForElfFile) {
+          Resource->ProgramHeaders = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
+          LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
+                                                                              "file");
+        }
       } else if (ResourceIt->second.ProgramHeaders.empty()) {
         // Not an ELF file, so we don't need to distinguish between different base addresses
       } else {
