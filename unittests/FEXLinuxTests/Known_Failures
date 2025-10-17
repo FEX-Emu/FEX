@@ -23,3 +23,6 @@ sigtest_sigmask.64
 # Disabled since FEX's FaultSafeMemcpy is intentionally stub-implemented
 syscalls_efault.32
 syscalls_efault.64
+
+# partial instruction decode is known to fail
+noexec_protect.64

@@ -1047,8 +1047,11 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
     // Put an invalid instruction in the stream so the core can raise SIGILL if hit
     // Error while decoding instruction. We don't know the table or instruction size
     DecodeInst->TableInfo = nullptr;
+    auto Result = ErrorDuringDecoding  ? DecodedBlockStatus::INVALID_INST :
+                  DecodeInst->InstSize ? DecodedBlockStatus::PARTIAL_DECODE_INST :
+                                         DecodedBlockStatus::NOEXEC_INST;
     DecodeInst->InstSize = 0;
-    return ErrorDuringDecoding ? DecodedBlockStatus::INVALID_INST : DecodedBlockStatus::NOEXEC_INST;
+    return Result;
   } else if (!DecodeInst->TableInfo || (DecodeInst->TableInfo->Type == TYPE_INST && !DecodeInst->TableInfo->OpcodeDispatcher.OpDispatch)) {
     // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
     return DecodedBlockStatus::INVALID_INST;
@@ -1450,7 +1453,10 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
           EraseBlock = true;
         } else {
           LogMan::Msg::EFmt("{} instruction in entry block: {:X}",
-                            BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST ? "Invalid" : "NoExec", OpAddress);
+                            BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST ? "Invalid" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::NOEXEC_INST  ? "NoExec" :
+                                                                                       "PartialDecode",
+                            OpAddress);
         }
         break;
       }

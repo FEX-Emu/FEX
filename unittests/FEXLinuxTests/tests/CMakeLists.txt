@@ -31,6 +31,7 @@ foreach(TEST ${TESTS})
 
   add_executable(${TEST_NAME}.${BITNESS} ${TEST})
   target_link_libraries(${TEST_NAME}.${BITNESS} PRIVATE Catch2::Catch2WithMain)
+  target_include_directories(${TEST_NAME}.${BITNESS} PRIVATE include/)
 endforeach()
 
 target_link_libraries(pthread_cancel.${BITNESS} PRIVATE pthread)
