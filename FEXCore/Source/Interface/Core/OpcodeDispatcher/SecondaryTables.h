@@ -145,7 +145,7 @@ constexpr DispatchTableEntry OpDispatch_TwoByteOpTable[] = {
 
 #ifndef _WIN32
   // FEX reserved instructions
-  {0x37, 1, &OpDispatchBuilder::CallbackReturnOp},
+  {0x3E, 1, &OpDispatchBuilder::CallbackReturnOp},
   {0x3F, 1, &OpDispatchBuilder::ThunkOp},
 #endif
 };
