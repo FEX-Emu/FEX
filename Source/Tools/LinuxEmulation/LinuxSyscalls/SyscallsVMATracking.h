@@ -8,6 +8,8 @@
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
+#include <elf.h>
+
 namespace FEX::HLE::VMATracking {
 ///// VMA (Virtual Memory Area) tracking /////
 
@@ -30,15 +32,24 @@ struct MRID {
 
 struct VMAEntry;
 
-// Used to all MAP_SHARED VMAs of a system resource.
+/**
+ * Meta data associated to one system resource.
+ *
+ * Typically there is one instance of this type per ELF/PE file or special device.
+ * However if an ELF/PE file is mapped multiple times at different base addresses,
+ * there will be one separate MappedResource for each base address. The MRID
+ * is the same in this case.
+ */
 struct MappedResource {
-  using ContainerType = fextl::map<MRID, MappedResource>;
+  using ContainerType = fextl::multimap<MRID, MappedResource>;
 
   fextl::unique_ptr<FEXCore::ExecutableFileInfo> MappedFile;
   // Pointer to lowest memory range this file is mapped to
   VMAEntry* FirstVMA;
   uint64_t Length; // 0 if not fixed size
   ContainerType::iterator Iterator;
+
+  fextl::vector<Elf64_Phdr> ProgramHeaders;
 };
 
 union VMAProt {
@@ -114,6 +125,14 @@ struct VMATracking {
   // Adds a new `MappedResource` to track.
   inline auto InsertMappedResource(const MRID& mrid, MappedResource Resource) {
     return MappedResources.emplace(mrid, std::move(Resource));
+  }
+
+  // Returns an iterator pair spanning the range of all MappedResources matching the given MRID.
+  // Typically there is only one associated resource, however sometimes the same file gets mapped
+  // multiple times at different base addresses. In that case, each MappedResource will cover an
+  // exclusive set of VMAEntries that refer to a consistent base mapping address.
+  inline auto FindResources(const MRID& mrid) {
+    return MappedResources.equal_range(mrid);
   }
 
 private:
