@@ -1028,11 +1028,11 @@
       "Comment": "GROUP9 0xF3 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x0, nzcv",
-        "str w0, [x28, #1000]",
-        "str x25, [x28, #1024]",
+        "str w0, [x28, #1032]",
+        "str x25, [x28, #432]",
         "str x8, [x28, #320]",
         "mov w0, #0x100",
-        "str x0, [x28, #1456]",
+        "str x0, [x28, #1472]",
         "sub sp, sp, #0x10 (16)",
         "mov w8, #0xa8",
         "mov x0, sp",
@@ -1040,11 +1040,11 @@
         "svc #0x0",
         "ldp w0, w1, [sp]",
         "sub sp, sp, #0x10 (16)",
-        "ldr x25, [x28, #1024]",
-        "ldr w8, [x28, #1000]",
+        "ldr x25, [x28, #432]",
+        "ldr w8, [x28, #1032]",
         "msr nzcv, x8",
         "ldr x8, [x28, #320]",
-        "str xzr, [x28, #1456]",
+        "str xzr, [x28, #1472]",
         "orr x20, x0, x1, lsl #12",
         "mov w4, w20"
       ]
@@ -1054,11 +1054,11 @@
       "Comment": "GROUP9 0xF3 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x0, nzcv",
-        "str w0, [x28, #1000]",
-        "str x25, [x28, #1024]",
+        "str w0, [x28, #1032]",
+        "str x25, [x28, #432]",
         "str x8, [x28, #320]",
         "mov w0, #0x100",
-        "str x0, [x28, #1456]",
+        "str x0, [x28, #1472]",
         "sub sp, sp, #0x10 (16)",
         "mov w8, #0xa8",
         "mov x0, sp",
@@ -1066,11 +1066,11 @@
         "svc #0x0",
         "ldp w0, w1, [sp]",
         "sub sp, sp, #0x10 (16)",
-        "ldr x25, [x28, #1024]",
-        "ldr w8, [x28, #1000]",
+        "ldr x25, [x28, #432]",
+        "ldr w8, [x28, #1032]",
         "msr nzcv, x8",
         "ldr x8, [x28, #320]",
-        "str xzr, [x28, #1456]",
+        "str xzr, [x28, #1472]",
         "orr x20, x0, x1, lsl #12",
         "mov w4, w20"
       ]
@@ -1086,13 +1086,13 @@
       "Type": "MMX",
       "Comment": "GROUP12 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "ushr v2.8h, v2.8h, #15",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psrlw mm0, 16": {
@@ -1100,13 +1100,13 @@
       "Type": "MMX",
       "Comment": "GROUP12 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "movi v2.2d, #0x0",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psrlw xmm0, 0": {
@@ -1142,13 +1142,13 @@
       "Type": "MMX",
       "Comment": "GROUP12 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "sshr v2.8h, v2.8h, #15",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psraw mm0, 16": {
@@ -1156,13 +1156,13 @@
       "Type": "MMX",
       "Comment": "GROUP12 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "sshr v2.8h, v2.8h, #15",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psraw xmm0, 0": {
@@ -1198,13 +1198,13 @@
       "Type": "MMX",
       "Comment": "GROUP12 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "shl v2.8h, v2.8h, #15",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psllw mm0, 16": {
@@ -1212,13 +1212,13 @@
       "Type": "MMX",
       "Comment": "GROUP12 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "movi v2.2d, #0x0",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psllw xmm0, 0": {
@@ -1254,13 +1254,13 @@
       "Type": "MMX",
       "Comment": "GROUP13 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "ushr v2.4s, v2.4s, #31",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psrld mm0, 32": {
@@ -1268,13 +1268,13 @@
       "Type": "MMX",
       "Comment": "GROUP13 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "movi v2.2d, #0x0",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psrld xmm0, 0": {
@@ -1310,13 +1310,13 @@
       "Type": "MMX",
       "Comment": "GROUP13 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "sshr v2.4s, v2.4s, #31",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psrad mm0, 32": {
@@ -1324,13 +1324,13 @@
       "Type": "MMX",
       "Comment": "GROUP13 0x0F 0xC7 /3",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "sshr v2.4s, v2.4s, #31",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psrad xmm0, 0": {
@@ -1366,13 +1366,13 @@
       "Type": "MMX",
       "Comment": "GROUP13 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "shl v2.4s, v2.4s, #31",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "pslld mm0, 32": {
@@ -1380,13 +1380,13 @@
       "Type": "MMX",
       "Comment": "GROUP13 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "movi v2.2d, #0x0",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "pslld xmm0, 0": {
@@ -1422,13 +1422,13 @@
       "Type": "MMX",
       "Comment": "GROUP14 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "ushr v2.2d, v2.2d, #63",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psrlq mm0, 64": {
@@ -1436,13 +1436,13 @@
       "Type": "MMX",
       "Comment": "GROUP14 0x0F 0xC7 /2",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "movi v2.2d, #0x0",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psrlq xmm0, 0": {
@@ -1501,13 +1501,13 @@
       "Type": "MMX",
       "Comment": "GROUP14 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "shl v2.2d, v2.2d, #63",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psllq mm0, 64": {
@@ -1515,13 +1515,13 @@
       "Type": "MMX",
       "Comment": "GROUP14 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "movi v2.2d, #0x0",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "psllq xmm0, 0": {
@@ -1550,61 +1550,61 @@
       "ExpectedInstructionCount": 68,
       "Comment": "GROUP15 0x0F 0xAE /0",
       "ExpectedArm64ASM": [
-        "ldrh w20, [x28, #1184]",
+        "ldrh w20, [x28, #1200]",
         "strh w20, [x4]",
-        "ldrb w20, [x28, #1019]",
+        "ldrb w20, [x28, #1051]",
         "lsl x20, x20, #11",
-        "ldrb w21, [x28, #1016]",
+        "ldrb w21, [x28, #1048]",
         "orr x20, x20, x21, lsl #8",
-        "ldrb w21, [x28, #1017]",
+        "ldrb w21, [x28, #1049]",
         "orr x20, x20, x21, lsl #9",
-        "ldrb w21, [x28, #1018]",
+        "ldrb w21, [x28, #1050]",
         "orr x20, x20, x21, lsl #10",
-        "ldrb w21, [x28, #1022]",
+        "ldrb w21, [x28, #1054]",
         "orr x20, x20, x21, lsl #14",
-        "ldrb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1040]",
         "orr x20, x20, x21",
         "strh w20, [x4, #2]",
-        "ldrb w20, [x28, #1186]",
+        "ldrb w20, [x28, #1202]",
         "strb w20, [x4, #4]",
-        "ldrb w20, [x28, #1019]",
+        "ldrb w20, [x28, #1051]",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #32]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #48]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #64]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #80]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #96]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #112]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #128]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #144]",
         "stp q16, q17, [x4, #160]",
         "stp q18, q19, [x4, #192]",
@@ -1614,7 +1614,7 @@
         "stp q26, q27, [x4, #320]",
         "stp q28, q29, [x4, #352]",
         "stp q30, q31, [x4, #384]",
-        "ldr w20, [x28, #940]",
+        "ldr w20, [x28, #972]",
         "and w20, w20, #0xffc0",
         "mov w21, #0xffff",
         "stp w20, w21, [x4, #24]"
@@ -1624,14 +1624,14 @@
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /0",
       "ExpectedArm64ASM": [
-        "ldr w4, [x28, #968]"
+        "ldr w4, [x28, #1000]"
       ]
     },
     "rdfsbase rax": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /0",
       "ExpectedArm64ASM": [
-        "ldr x4, [x28, #968]"
+        "ldr x4, [x28, #1000]"
       ]
     },
     "fxrstor [rax]": {
@@ -1639,34 +1639,34 @@
       "Comment": "GROUP15 0x0F 0xAE /1",
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
-        "strh w20, [x28, #1184]",
+        "strh w20, [x28, #1200]",
         "ldrh w20, [x4, #2]",
         "ubfx w21, w20, #11, #3",
-        "strb w21, [x28, #1019]",
+        "strb w21, [x28, #1051]",
         "ubfx w21, w20, #8, #1",
         "ubfx w22, w20, #9, #1",
         "ubfx w23, w20, #10, #1",
         "ubfx w24, w20, #14, #1",
         "ubfx w20, w20, #0, #1",
-        "strb w21, [x28, #1016]",
-        "strb w22, [x28, #1017]",
-        "strb w23, [x28, #1018]",
-        "strb w24, [x28, #1022]",
-        "strb w20, [x28, #1008]",
+        "strb w21, [x28, #1048]",
+        "strb w22, [x28, #1049]",
+        "strb w23, [x28, #1050]",
+        "strb w24, [x28, #1054]",
+        "strb w20, [x28, #1040]",
         "ldrb w20, [x4, #4]",
-        "strb w20, [x28, #1186]",
+        "strb w20, [x28, #1202]",
         "ldp q2, q3, [x4, #32]",
-        "str q2, [x28, #1040]",
-        "str q3, [x28, #1056]",
+        "str q2, [x28, #1056]",
+        "str q3, [x28, #1072]",
         "ldp q2, q3, [x4, #64]",
-        "str q2, [x28, #1072]",
-        "str q3, [x28, #1088]",
+        "str q2, [x28, #1088]",
+        "str q3, [x28, #1104]",
         "ldp q2, q3, [x4, #96]",
-        "str q2, [x28, #1104]",
-        "str q3, [x28, #1120]",
+        "str q2, [x28, #1120]",
+        "str q3, [x28, #1136]",
         "ldp q2, q3, [x4, #128]",
-        "str q2, [x28, #1136]",
-        "str q3, [x28, #1152]",
+        "str q2, [x28, #1152]",
+        "str q3, [x28, #1168]",
         "ldp q16, q17, [x4, #160]",
         "ldp q18, q19, [x4, #192]",
         "ldp q20, q21, [x4, #224]",
@@ -1677,7 +1677,7 @@
         "ldp q30, q31, [x4, #384]",
         "ldr w20, [x4, #24]",
         "and w20, w20, #0xffc0",
-        "str w20, [x28, #940]",
+        "str w20, [x28, #972]",
         "ubfx w21, w20, #13, #3",
         "rbit w1, w21",
         "lsr w1, w1, #30",
@@ -1692,14 +1692,14 @@
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /1",
       "ExpectedArm64ASM": [
-        "ldr w4, [x28, #960]"
+        "ldr w4, [x28, #992]"
       ]
     },
     "rdgsbase rax": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /1",
       "ExpectedArm64ASM": [
-        "ldr x4, [x28, #960]"
+        "ldr x4, [x28, #992]"
       ]
     },
     "ldmxcsr [rax]": {
@@ -1708,7 +1708,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x4]",
         "and w20, w20, #0xffc0",
-        "str w20, [x28, #940]",
+        "str w20, [x28, #972]",
         "ubfx w21, w20, #13, #3",
         "rbit w1, w21",
         "lsr w1, w1, #30",
@@ -1724,21 +1724,21 @@
       "Comment": "GROUP15 0x0F 0xAE /2",
       "ExpectedArm64ASM": [
         "mov w20, w4",
-        "str x20, [x28, #968]"
+        "str x20, [x28, #1000]"
       ]
     },
     "wrfsbase rax": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /2",
       "ExpectedArm64ASM": [
-        "str x4, [x28, #968]"
+        "str x4, [x28, #1000]"
       ]
     },
     "stmxcsr [rax]": {
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP15 0x0F 0xAE /3",
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #940]",
+        "ldr w20, [x28, #972]",
         "and w20, w20, #0xffc0",
         "str w20, [x4]"
       ]
@@ -1748,14 +1748,14 @@
       "Comment": "GROUP15 0x0F 0xAE /3",
       "ExpectedArm64ASM": [
         "mov w20, w4",
-        "str x20, [x28, #960]"
+        "str x20, [x28, #992]"
       ]
     },
     "wrgsbase rax": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP15 0x0F 0xAE /3",
       "ExpectedArm64ASM": [
-        "str x4, [x28, #960]"
+        "str x4, [x28, #992]"
       ]
     },
     "xsave [rax]": {
@@ -1765,61 +1765,61 @@
         "ubfx x20, x4, #0, #1",
         "cbnz x20, #+0x8",
         "b #+0xe4",
-        "ldrh w20, [x28, #1184]",
+        "ldrh w20, [x28, #1200]",
         "strh w20, [x4]",
-        "ldrb w20, [x28, #1019]",
+        "ldrb w20, [x28, #1051]",
         "lsl x20, x20, #11",
-        "ldrb w21, [x28, #1016]",
+        "ldrb w21, [x28, #1048]",
         "orr x20, x20, x21, lsl #8",
-        "ldrb w21, [x28, #1017]",
+        "ldrb w21, [x28, #1049]",
         "orr x20, x20, x21, lsl #9",
-        "ldrb w21, [x28, #1018]",
+        "ldrb w21, [x28, #1050]",
         "orr x20, x20, x21, lsl #10",
-        "ldrb w21, [x28, #1022]",
+        "ldrb w21, [x28, #1054]",
         "orr x20, x20, x21, lsl #14",
-        "ldrb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1040]",
         "orr x20, x20, x21",
         "strh w20, [x4, #2]",
-        "ldrb w20, [x28, #1186]",
+        "ldrb w20, [x28, #1202]",
         "strb w20, [x4, #4]",
-        "ldrb w20, [x28, #1019]",
+        "ldrb w20, [x28, #1051]",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #32]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #48]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #64]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #80]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #96]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #112]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #128]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "add x0, x28, x20, lsl #4",
-        "ldr q2, [x0, #1040]",
+        "ldr q2, [x0, #1056]",
         "str q2, [x4, #144]",
         "ubfx x20, x4, #1, #1",
         "cbnz x20, #+0x8",
@@ -1854,7 +1854,7 @@
         "ubfx x20, x4, #1, #2",
         "cbnz x20, #+0x8",
         "b #+0x14",
-        "ldr w20, [x28, #940]",
+        "ldr w20, [x28, #972]",
         "and w20, w20, #0xffc0",
         "mov w21, #0xffff",
         "stp w20, w21, [x4, #24]",
@@ -1879,46 +1879,45 @@
         "cbnz x20, #+0x8",
         "b #+0x7c",
         "ldrh w20, [x4]",
-        "strh w20, [x28, #1184]",
+        "strh w20, [x28, #1200]",
         "ldrh w20, [x4, #2]",
         "ubfx w21, w20, #11, #3",
-        "strb w21, [x28, #1019]",
+        "strb w21, [x28, #1051]",
         "ubfx w21, w20, #8, #1",
         "ubfx w22, w20, #9, #1",
         "ubfx w23, w20, #10, #1",
         "ubfx w24, w20, #14, #1",
         "ubfx w20, w20, #0, #1",
-        "strb w21, [x28, #1016]",
-        "strb w22, [x28, #1017]",
-        "strb w23, [x28, #1018]",
-        "strb w24, [x28, #1022]",
-        "strb w20, [x28, #1008]",
+        "strb w21, [x28, #1048]",
+        "strb w22, [x28, #1049]",
+        "strb w23, [x28, #1050]",
+        "strb w24, [x28, #1054]",
+        "strb w20, [x28, #1040]",
         "ldrb w20, [x4, #4]",
-        "strb w20, [x28, #1186]",
+        "strb w20, [x28, #1202]",
         "ldp q2, q3, [x4, #32]",
-        "str q2, [x28, #1040]",
-        "str q3, [x28, #1056]",
+        "str q2, [x28, #1056]",
+        "str q3, [x28, #1072]",
         "ldp q2, q3, [x4, #64]",
-        "str q2, [x28, #1072]",
-        "str q3, [x28, #1088]",
+        "str q2, [x28, #1088]",
+        "str q3, [x28, #1104]",
         "ldp q2, q3, [x4, #96]",
-        "str q2, [x28, #1104]",
-        "str q3, [x28, #1120]",
+        "str q2, [x28, #1120]",
+        "str q3, [x28, #1136]",
         "ldp q2, q3, [x4, #128]",
-        "str q2, [x28, #1136]",
-        "str q3, [x28, #1152]",
+        "str q2, [x28, #1152]",
+        "str q3, [x28, #1168]",
         "b #+0x4c",
         "mov w20, #0x37f",
-        "strh w20, [x28, #1184]",
-        "strb wzr, [x28, #1019]",
-        "strb wzr, [x28, #1186]",
-        "strb wzr, [x28, #1016]",
-        "strb wzr, [x28, #1017]",
-        "strb wzr, [x28, #1018]",
-        "strb wzr, [x28, #1022]",
-        "strb wzr, [x28, #1008]",
+        "strh w20, [x28, #1200]",
+        "strb wzr, [x28, #1051]",
+        "strb wzr, [x28, #1202]",
+        "strb wzr, [x28, #1048]",
+        "strb wzr, [x28, #1049]",
+        "strb wzr, [x28, #1050]",
+        "strb wzr, [x28, #1054]",
+        "strb wzr, [x28, #1040]",
         "movi v2.2d, #0x0",
-        "str q2, [x28, #1040]",
         "str q2, [x28, #1056]",
         "str q2, [x28, #1072]",
         "str q2, [x28, #1088]",
@@ -1926,6 +1925,7 @@
         "str q2, [x28, #1120]",
         "str q2, [x28, #1136]",
         "str q2, [x28, #1152]",
+        "str q2, [x28, #1168]",
         "ldr x20, [x4, #512]",
         "ubfx x20, x20, #1, #1",
         "cbnz x20, #+0x8",
@@ -1995,7 +1995,7 @@
         "b #+0x34",
         "ldr w20, [x4, #24]",
         "and w20, w20, #0xffc0",
-        "str w20, [x28, #940]",
+        "str w20, [x28, #972]",
         "ubfx w21, w20, #13, #3",
         "rbit w1, w21",
         "lsr w1, w1, #30",
