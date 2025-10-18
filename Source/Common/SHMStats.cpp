@@ -13,10 +13,11 @@ void StatAllocBase::SaveHeader(FEXCore::SHMStats::AppType AppType) {
   Head = reinterpret_cast<FEXCore::SHMStats::ThreadStatsHeader*>(Base);
   Head->Size.store(CurrentSize, std::memory_order_relaxed);
   Head->Version = FEXCore::SHMStats::STATS_VERSION;
+  Head->app_type = AppType;
+  Head->ThreadStatsSize = sizeof(FEXCore::SHMStats::ThreadStats);
 
   std::string_view GitString = GIT_DESCRIBE_STRING;
   strncpy(Head->fex_version, GitString.data(), std::min(GitString.size(), sizeof(Head->fex_version)));
-  Head->app_type = AppType;
 
   Stats = reinterpret_cast<FEXCore::SHMStats::ThreadStats*>(reinterpret_cast<uint64_t>(Base) + sizeof(FEXCore::SHMStats::ThreadStatsHeader));
 

@@ -39,10 +39,12 @@ enum class AppType : uint8_t {
   WIN_WOW64,
 };
 
+// Only append new members to the end of {ThreadStatsHeader, ThreadStats} to allow old tools time to support new information.
+// FEX isn't guaranteeing /not/ breaking compatibility with versions, but trying to not cause too much churn.
 struct ThreadStatsHeader {
   uint8_t Version;
   AppType app_type;
-  uint8_t _pad[2];
+  uint16_t ThreadStatsSize;
   char fex_version[48];
   std::atomic<uint32_t> Head;
   std::atomic<uint32_t> Size;
@@ -62,6 +64,9 @@ struct ThreadStats {
   uint64_t AccumulatedSMCCount;
   uint64_t AccumulatedFloatFallbackCount;
 };
+
+// Ensure 16-byte alignment to take advantage of ARM single-copy atomicity.
+static_assert(sizeof(ThreadStats) % 16 == 0, "Needs to be 16-byte aligned!");
 
 template<typename T, size_t FlatOffset = 0>
 class AccumulationBlock final {
