@@ -338,6 +338,13 @@
           "Enables FEX's low-overhead sampling profile statistics.",
           "Requires a supported version of Mangohud to see the results"
         ]
+      },
+      "TraceProfiler": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enables FEX's gpuvis trace profiler."
+        ]
       }
     },
     "Hacks": {
