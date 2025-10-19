@@ -1027,6 +1027,7 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
   if (ThreadTID == GetCurrentThreadId()) {
     FEX::Windows::DeinitCRTThread();
   }
+
   return STATUS_SUCCESS;
 }
 
