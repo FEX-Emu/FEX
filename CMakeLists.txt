@@ -322,7 +322,7 @@ endif()
 if (ENABLE_FEX_ALLOCATOR)
   # The rpmalloc subproject that all FEXCore fextl objects allocate through.
   add_subdirectory(External/rpmalloc/)
-elseif (NOT MINGW_BUILD)
+elseif (NOT MINGW)
   message (STATUS
     " FEX allocator is disabled!\n"
     " This is not a recommended configuration!\n"
