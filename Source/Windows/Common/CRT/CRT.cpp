@@ -3,6 +3,7 @@
 #include <windef.h>
 #include <winternl.h>
 #include <wine/debug.h>
+#include <rpmalloc/rpmalloc.h>
 #include "CRT.h"
 
 extern "C" {
@@ -39,6 +40,8 @@ void RunFuncArray(TFuncIt Begin, TFuncIt End, TArgs... Args) {
 
 namespace FEX::Windows {
 void InitCRTProcess() {
+  rpmalloc_initialize(nullptr);
+
   auto GNUCtorBegin = &__CTOR_LIST__[1];
   auto GNUCtorEnd = GNUCtorBegin;
   while (*GNUCtorEnd != nullptr) {
@@ -53,10 +56,12 @@ void InitCRTProcess() {
 }
 
 void InitCRTThread() {
+  rpmalloc_thread_initialize();
   RunFuncArray(&XLA, &XLZ, nullptr, DLL_THREAD_ATTACH, nullptr);
 }
 
 void DeinitCRTThread() {
   RunFuncArray(&XLA, &XLZ, nullptr, DLL_THREAD_DETACH, nullptr);
+  rpmalloc_thread_finalize();
 }
 } // namespace FEX::Windows
