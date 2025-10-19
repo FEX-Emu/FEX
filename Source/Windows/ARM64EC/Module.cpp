@@ -56,6 +56,7 @@ $end_info$
 #include <winternl.h>
 #include <winnt.h>
 #include <wine/debug.h>
+#include <rpmalloc/rpmalloc.h>
 
 namespace Exception {
 class ECSyscallHandler;
@@ -622,6 +623,7 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
 }
 
 NTSTATUS ProcessInit() {
+  rpmalloc_initialize(nullptr);
   InitSyscalls();
 
   FEX::Windows::InitCRTProcess();
@@ -696,7 +698,11 @@ NTSTATUS ProcessInit() {
   return STATUS_SUCCESS;
 }
 
-void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {}
+void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {
+  if (After) {
+    rpmalloc_finalize();
+  }
+}
 
 class ScopedCallbackDisable {
 private:
@@ -934,6 +940,7 @@ void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After
 
 NTSTATUS ThreadInit() {
   std::scoped_lock Lock(ThreadCreationMutex);
+  rpmalloc_thread_initialize();
   FEX::Windows::InitCRTThread();
   static constexpr size_t EmulatorStackSize = 0x40000;
   const uint64_t EmulatorStack = reinterpret_cast<uint64_t>(::VirtualAlloc(nullptr, EmulatorStackSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
@@ -1049,6 +1056,8 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
   if (ThreadTID == GetCurrentThreadId()) {
     FEX::Windows::DeinitCRTThread();
   }
+
+  rpmalloc_thread_finalize();
   return STATUS_SUCCESS;
 }
 

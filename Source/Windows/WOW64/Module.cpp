@@ -56,6 +56,7 @@ $end_info$
 #include <winternl.h>
 #include <wine/debug.h>
 #include <wine/unixlib.h>
+#include <rpmalloc/rpmalloc.h>
 
 namespace ControlBits {
 // When this is unset, a thread can be safely interrupted and have its context recovered
@@ -503,6 +504,7 @@ public:
 };
 
 void BTCpuProcessInit() {
+  rpmalloc_initialize(nullptr);
   FEX::Windows::InitCRTProcess();
   const auto ExecutablePath = FEX::Windows::GetExecutableFilePath();
   FEX::Config::LoadConfig(ExecutablePath, _environ, FEX::ReadPortabilityInformation());
@@ -583,11 +585,16 @@ void BTCpuProcessInit() {
   }
 }
 
-void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {}
+void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {
+  if (After) {
+    rpmalloc_finalize();
+  }
+}
 
 void BTCpuThreadInit() {
   static constexpr size_t DefaultWow64CS {4};
   std::scoped_lock Lock(ThreadCreationMutex);
+  rpmalloc_thread_initialize();
   FEX::Windows::InitCRTThread();
   auto* Thread = CTX->CreateThread(0, 0);
 
@@ -669,6 +676,8 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
   if (Self) {
     FEX::Windows::DeinitCRTThread();
   }
+
+  rpmalloc_thread_finalize();
 }
 
 void* BTCpuGetBopCode() {
