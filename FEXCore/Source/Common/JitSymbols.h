@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+#include <FEXCore/Utils/TypeDefines.h>
 
 #include <FEXCore/fextl/memory.h>
 
@@ -12,7 +13,7 @@ namespace FEXCore {
 // Buffered JIT symbol tracking.
 struct JITSymbolBuffer {
   // Maximum buffer size to ensure we are a page in size.
-  constexpr static size_t BUFFER_SIZE = 4096 - (8 * 2);
+  constexpr static size_t BUFFER_SIZE = FEXCore::Utils::FEX_PAGE_SIZE - (8 * 2);
   // Maximum distance until the end of the buffer to do a write.
   constexpr static size_t NEEDS_WRITE_DISTANCE = BUFFER_SIZE - 64;
   // Maximum time threshhold to wait before a buffer write occurs.
@@ -27,7 +28,7 @@ struct JITSymbolBuffer {
   size_t Offset {};
   char Buffer[BUFFER_SIZE] {};
 };
-static_assert(sizeof(JITSymbolBuffer) == 4096, "Ensure this is one page in size");
+static_assert(sizeof(JITSymbolBuffer) == FEXCore::Utils::FEX_PAGE_SIZE, "Ensure this is one page in size");
 
 class JITSymbols final {
 public:

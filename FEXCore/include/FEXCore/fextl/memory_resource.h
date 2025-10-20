@@ -51,7 +51,7 @@ namespace pmr {
   protected:
     void* do_allocate(std::size_t bytes, std::size_t alignment) override {
       LOGMAN_THROW_A_FMT(bytes != 0, "Nope");
-      LOGMAN_THROW_A_FMT(alignment <= 4096, "Nope");
+      LOGMAN_THROW_A_FMT(alignment <= FEXCore::Utils::FEX_PAGE_SIZE, "Nope");
 
       // Wow, an actual use case of std::align in the wild.
       void* NewPointer = std::align(alignment, bytes, CurrentBuffer, CurrentBufferRemaining);
