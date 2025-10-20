@@ -149,8 +149,8 @@ ThreadCPUArea GetCPUArea() {
   return ThreadCPUArea(NtCurrentTeb());
 }
 
-bool IsEmulatorStackAddress(uint64_t Address) {
-  return Address <= GetCPUArea().EmulatorStackBase() && Address >= GetCPUArea().EmulatorStackLimit();
+bool IsEmulatorStackAddress(const ThreadCPUArea CPUArea, uint64_t Address) {
+  return Address <= CPUArea.EmulatorStackBase() && Address >= CPUArea.EmulatorStackLimit();
 }
 
 bool IsDispatcherAddress(uint64_t Address) {
@@ -349,8 +349,8 @@ struct alignas(16) KiUserExceptionDispatcherStackLayout {
   uint64_t Redzone[2];
 };
 
-static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context, bool IsJIT) {
-  auto Thread = GetCPUArea().ThreadState();
+static bool HandleUnalignedAccess(const ThreadCPUArea CPUArea, ARM64_NT_CONTEXT& Context, bool IsJIT) {
+  auto Thread = CPUArea.ThreadState();
   FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSIGBUSCount, 1);
   const auto Result =
     FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, HandlerConfig->GetUnalignedHandlerType(), Context.Pc, &Context.X0, IsJIT);
@@ -704,8 +704,9 @@ private:
 
 public:
   ScopedCallbackDisable() {
-    Prev = GetCPUArea().Area->InSyscallCallback;
-    GetCPUArea().Area->InSyscallCallback = true;
+    const auto CPUArea = GetCPUArea();
+    Prev = CPUArea.Area->InSyscallCallback;
+    CPUArea.Area->InSyscallCallback = true;
   }
 
   ~ScopedCallbackDisable() {
@@ -714,8 +715,7 @@ public:
 };
 
 // Returns true if exception dispatch should be halted and the execution context restored to NativeContext
-bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
-  const auto CPUArea = GetCPUArea();
+bool ResetToConsistentStateImpl(const ThreadCPUArea CPUArea, EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
   auto Thread = CPUArea.ThreadState();
   FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedSignalTime);
   LogMan::Msg::DFmt("Exception: Code: {:X} Address: {:X}", Exception->ExceptionCode, reinterpret_cast<uintptr_t>(Exception->ExceptionAddress));
@@ -758,7 +758,7 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
   }
 
   bool IsJIT = CTX->IsAddressInCodeBuffer(Thread, NativeContext->Pc);
-  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(*NativeContext, IsJIT)) {
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(CPUArea, *NativeContext, IsJIT)) {
     LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", NativeContext->Pc);
     return true;
   }
@@ -779,7 +779,7 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     return true;
   }
 
-  if (IsEmulatorStackAddress(reinterpret_cast<uint64_t>(__builtin_frame_address(0)))) {
+  if (IsEmulatorStackAddress(CPUArea, reinterpret_cast<uint64_t>(__builtin_frame_address(0)))) {
     Exception::RethrowGuestException(*Exception, *NativeContext);
     LogMan::Msg::DFmt("Rethrowing onto guest stack: {:X}", NativeContext->Sp);
     return true;
@@ -805,22 +805,22 @@ NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     }
   }
 
-  if (!GetCPUArea().ThreadState()) {
+  const auto CPUArea = GetCPUArea();
+  if (!CPUArea.ThreadState()) {
     return STATUS_SUCCESS;
   }
 
   {
-
     ScopedCallbackDisable guard;
-    Cont = ResetToConsistentStateImpl(Exception, GuestContext, NativeContext);
+    Cont = ResetToConsistentStateImpl(CPUArea, Exception, GuestContext, NativeContext);
   }
 
   if (Cont) {
     NtContinueNative(NativeContext, false);
   }
 
-  GetCPUArea().Area->InSimulation = false;
-  GetCPUArea().Area->InSyscallCallback = false;
+  CPUArea.Area->InSimulation = false;
+  CPUArea.Area->InSyscallCallback = false;
   return STATUS_SUCCESS;
 }
 
@@ -935,12 +935,12 @@ void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After
 NTSTATUS ThreadInit() {
   std::scoped_lock Lock(ThreadCreationMutex);
   FEX::Windows::InitCRTThread();
+  const auto CPUArea = GetCPUArea();
+
   static constexpr size_t EmulatorStackSize = 0x40000;
   const uint64_t EmulatorStack = reinterpret_cast<uint64_t>(::VirtualAlloc(nullptr, EmulatorStackSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
-  GetCPUArea().EmulatorStackLimit() = EmulatorStack;
-  GetCPUArea().EmulatorStackBase() = EmulatorStack + EmulatorStackSize;
-
-  const auto CPUArea = GetCPUArea();
+  CPUArea.EmulatorStackLimit() = EmulatorStack;
+  CPUArea.EmulatorStackBase() = EmulatorStack + EmulatorStackSize;
 
   auto* Thread = CTX->CreateThread(0, 0);
 
