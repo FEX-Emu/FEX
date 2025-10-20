@@ -8,6 +8,7 @@ $end_info$
 */
 
 #include "Common/FDUtils.h"
+#include "Common/FileMappingBaseAddress.h"
 
 #include <filesystem>
 #include <sys/shm.h>
@@ -23,6 +24,7 @@ $end_info$
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/Utils/TypeDefines.h>
 #include <FEXHeaderUtils/Filesystem.h>
+#include <Linux/Utils/ELFParser.h>
 
 namespace FEX::HLE {
 // SMC interactions
@@ -172,15 +174,13 @@ std::optional<FEXCore::ExecutableFileSectionInfo>
 SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) {
   auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, &Thread);
 
-  // Get the first mapping after GuestAddr, or end
-  // GuestAddr is inclusive
-  // If the write spans two pages, they will be flushed one at a time (generating two faults)
-  auto Entry = VMATracking.FindVMAEntry(GuestAddr);
-  if (Entry == VMATracking.VMAs.end() || !Entry->second.Resource) {
+  auto EntryIt = VMATracking.FindVMAEntry(GuestAddr);
+  if (EntryIt == VMATracking.VMAs.end() || !EntryIt->second.Resource) {
     return std::nullopt;
   }
 
-  return FEXCore::ExecutableFileSectionInfo {*Entry->second.Resource->MappedFile, Entry->second.Base - Entry->second.Offset};
+  auto& [MappingBaseAddr, Entry] = *EntryIt;
+  return FEXCore::ExecutableFileSectionInfo {*Entry.Resource->MappedFile, Entry.Resource->FirstVMA->Base};
 }
 
 FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) {
@@ -193,6 +193,22 @@ FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXC
     return {0, 0, false};
   }
   return {Entry->first, Entry->second.Length, Entry->second.Prot.Writable};
+}
+
+static fextl::vector<Elf64_Phdr> ReadELFHeaders(int FD, std::span<std::byte> HeaderData = {}) {
+  std::string_view ELFMagic = ELFMAG;
+  if (HeaderData.data()) {
+    if (HeaderData.size_bytes() < ELFMagic.size() || std::memcmp(ELFMagic.data(), HeaderData.data(), ELFMagic.size()) != 0) {
+      // Not an ELF file
+      return {};
+    }
+  } else {
+    // Read from FD in case the caller didn't have a mapped header available
+  }
+
+  ELFParser Parser;
+  Parser.ReadElf(dup(FD));
+  return std::move(Parser.phdrs);
 }
 
 void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags,
@@ -383,19 +399,56 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
   if (!(flags & MAP_ANONYMOUS)) {
     struct stat64 buf;
     fstat64(fd, &buf);
-    VMATracking::MRID mrid {buf.st_dev, buf.st_ino};
+
+    const VMATracking::MRID mrid {buf.st_dev, buf.st_ino};
 
     char Tmp[PATH_MAX];
     auto PathLength = FEX::get_fdpath(fd, Tmp);
 
-    if (PathLength != -1) {
-      auto [Iter, Inserted] = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
-      Resource = &Iter->second;
+    auto [ResourceIt, ResourceEnd] = VMATracking.FindResources(mrid);
+    bool Inserted = false;
+    const bool MappedELFHeaderAgain = ResourceIt != ResourceEnd && offset == 0 && !ResourceIt->second.ProgramHeaders.empty();
+    if (ResourceIt == ResourceEnd || MappedELFHeaderAgain) {
+      // Create a new MappedResource for previously unseen file and for re-mappings of an ELF header
+      ResourceIt = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
+      ResourceIt->second.Iterator = ResourceIt;
+      Inserted = true;
+    }
+    Resource = &ResourceIt->second;
 
+    // Only handle FDs that are backed by regular files that are executable
+    if (PathLength != -1 && S_ISREG(buf.st_mode) && (buf.st_mode & S_IXUSR)) {
+      // ELF files that are mapped multiple times get a separate MappedResource for each base virtual address
       if (Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
-        Resource->Iterator = Iter;
+
+        // Read ELF headers if applicable.
+        // For performance, skip ELF checks if we're not mapping the file header
+        bool CheckForElfFile = (offset == 0);
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+        CheckForElfFile = true;
+#endif
+        if (CheckForElfFile) {
+          Resource->ProgramHeaders = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
+          LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
+                                                                              "file");
+        }
+      } else if (ResourceIt->second.ProgramHeaders.empty()) {
+        // Not an ELF file, so we don't need to distinguish between different base addresses
+      } else {
+        // Mapped a non-header section of an ELF file.
+        // Look up the corresponding MappedResource using the expected base address.
+
+        ResourceIt = std::find_if(ResourceIt, ResourceEnd, [&](const VMATracking::MappedResource::ContainerType::value_type& ResourcePair) {
+          auto& Resource = ResourcePair.second;
+          auto ExpectedBase = FEXCore::InferMappingBaseAddress(
+            Resource.ProgramHeaders, addr, Size, offset,
+            (ProtMapping.Executable ? PF_X : 0) | (ProtMapping.Writable ? PF_W : 0) | (ProtMapping.Readable ? PF_R : 0));
+          return ExpectedBase == Resource.FirstVMA->Base;
+        });
+        LOGMAN_THROW_A_FMT(ResourceIt != ResourceEnd, "ERROR: Could not find base for file mapping at {:#x} (offset {:#x})", addr, offset);
+        Resource = &ResourceIt->second;
       }
 
       const fextl::string Filename = FHU::Filesystem::GetFilename(Resource->MappedFile->Filename);
@@ -416,12 +469,12 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
   } else if (flags & MAP_SHARED) {
     VMATracking::MRID mrid {VMATracking::SpecialDev::Anon, AnonSharedId++};
 
-    auto [Iter, Inserted] = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
-    LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
+    auto [Iter, IterEnd] = VMATracking.FindResources(mrid);
+    LOGMAN_THROW_A_FMT(Iter == IterEnd, "VMA tracking error");
+
+    Iter = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
     Resource = &Iter->second;
     Resource->Iterator = Iter;
-  } else {
-    Resource = nullptr;
   }
 
   VMATracking.TrackVMARange(CTX, Resource, addr, offset, Size, VMATracking::VMAFlags::fromFlags(flags), ProtMapping);
@@ -477,11 +530,12 @@ void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState* Thread, uin
 void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uint64_t shmaddr, int shmflg, uint64_t Length) {
   VMATracking::MRID mrid {VMATracking::SpecialDev::SHM, static_cast<uint64_t>(shmid)};
 
-  auto [Iter, Inserted] = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, Length});
-  auto Resource = &Iter->second;
-  if (Inserted) {
-    Resource->Iterator = Iter;
+  auto [Iter, IterEnd] = VMATracking.FindResources(mrid);
+  if (Iter == IterEnd) {
+    Iter = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, Length});
+    Iter->second.Iterator = Iter;
   }
+  auto Resource = &Iter->second;
   VMATracking.TrackVMARange(CTX, Resource, shmaddr, 0, Length, VMATracking::VMAFlags::fromFlags(MAP_SHARED), VMATracking::VMAProt::fromSHM(shmflg));
 }
 

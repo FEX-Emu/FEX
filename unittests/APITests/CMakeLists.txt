@@ -1,11 +1,12 @@
 set (TESTS
   Allocator
   ArgumentParser
-  InterruptableConditionVariable
-  Filesystem
-  StringUtils
-  fextl_function
   ExtendedVolatileMetadata
+  fextl_function
+  FileMappingBaseAddress
+  Filesystem
+  InterruptableConditionVariable
+  StringUtils
   )
 
 list(APPEND LIBS Common FEXCore JemallocLibs)
