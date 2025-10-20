@@ -707,7 +707,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame* Frame, void* Ad
       DataSpaceMappedSize = 0;
     } else {
       uint64_t NewSize = NewEnd - DataSpace;
-      uint64_t NewSizeAligned = FEXCore::AlignUp(NewSize, 4096);
+      uint64_t NewSizeAligned = FEXCore::AlignUp(NewSize, FEXCore::Utils::FEX_PAGE_SIZE);
 
       if (NewSizeAligned < DataSpaceMappedSize) {
         // If we are shrinking the brk then munmap the ranges
@@ -721,7 +721,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame* Frame, void* Ad
 
         DataSpaceMappedSize = NewSizeAligned;
       } else if (NewSize > DataSpaceMappedSize) {
-        uint64_t AllocateNewSize = FEXCore::AlignUp(NewSize, 4096) - DataSpaceMappedSize;
+        uint64_t AllocateNewSize = FEXCore::AlignUp(NewSize, FEXCore::Utils::FEX_PAGE_SIZE) - DataSpaceMappedSize;
         if (!Is64BitMode() && (DataSpace + DataSpaceMappedSize + AllocateNewSize > 0x1'0000'0000ULL)) {
           // If we are 32bit and we tried going about the 32bit limit then out of memory
           return DataSpace + DataSpaceSize;

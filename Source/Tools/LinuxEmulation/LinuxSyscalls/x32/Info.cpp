@@ -142,7 +142,7 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
       uint32_t ShiftAmount {};
       if ((Host.totalram >> 32) != 0 || (Host.totalswap >> 32) != 0) {
 
-        while (Host.mem_unit < 4096) {
+        while (Host.mem_unit < FEXCore::Utils::FEX_PAGE_SIZE) {
           Host.mem_unit <<= 1;
           ++ShiftAmount;
         }

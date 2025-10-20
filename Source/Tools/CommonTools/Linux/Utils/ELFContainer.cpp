@@ -209,7 +209,7 @@ bool ELFContainer::LoadELF_32() {
   DynamicProgram = Header._32.e_type != ET_EXEC;
 
   // Default BRK size
-  BRKSize = 4096;
+  BRKSize = FEXCore::Utils::FEX_PAGE_SIZE;
 
   return true;
 }
@@ -344,7 +344,7 @@ void ELFContainer::CalculateMemoryLayouts() {
   }
 
   // Calculate BRK
-  MaxPhysAddr = FEXCore::AlignUp(MaxPhysAddr, 4096);
+  MaxPhysAddr = FEXCore::AlignUp(MaxPhysAddr, FEXCore::Utils::FEX_PAGE_SIZE);
   BRKBase = MaxPhysAddr;
   MaxPhysAddr += BRKSize;
 

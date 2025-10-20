@@ -3,6 +3,7 @@
 
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/TypeDefines.h>
 
 #include <ntstatus.h>
 #include <windef.h>
@@ -46,7 +47,7 @@ StatAlloc::StatAlloc(FEXCore::SHMStats::AppType AppType) {
   {
     MEMORY_FEX_STATS_SHM_INFORMATION Info {
       .shm_base = nullptr,
-      .map_size = 4096,
+      .map_size = FEXCore::Utils::FEX_PAGE_SIZE,
       .max_size = MAX_STATS_SIZE,
     };
     size_t Length {};
