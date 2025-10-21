@@ -6,17 +6,6 @@
 }
 %endif
 
-section .rodata
-.seventyfive: dq 75
-
-section .bss
-.dummy: resq 1
-
-section .text
-global _start
-
-_start:
-
 ; Test FIST with 64-bit overflow = Invalid Operation (should set bit 0 of status word)
 ; Create a very large number that will overflow int64
 
@@ -33,3 +22,7 @@ fstsw ax
 and rax, 1
 
 hlt
+
+align 4096
+.seventyfive: dq 75
+.dummy: dq 0

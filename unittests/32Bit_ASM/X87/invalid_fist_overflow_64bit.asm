@@ -24,5 +24,6 @@ and eax, 1
 
 hlt
 
+align 4096
 .seventyfive: dd 75
 .dummy: dq 0

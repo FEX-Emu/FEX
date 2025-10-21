@@ -23,7 +23,7 @@ ldmxcsr [rel .data_mxcsr]
 vaddps xmm1, xmm1, xmm2
 
 hlt
-align 32
+align 4096
 
 .data_three:
 dd 3.0, 0x00cfffff

@@ -28,6 +28,6 @@ fldcw [rel saved_cw]
 
 hlt
 
-align 8
+align 4096
 saved_cw:  dw 0
 new_cw:    dw 0

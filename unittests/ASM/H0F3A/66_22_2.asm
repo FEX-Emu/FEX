@@ -22,12 +22,10 @@ pinsrd xmm0, esi, 0
 mov eax, [rel val]
 hlt
 
-section .bss
-align 32
-val resd 1
+align 4096
+val: dd 0
 
-section .data
 align 128
-arg1: 
+arg1:
 dq 0x414243443f800000
 dq 0x5152535455565758

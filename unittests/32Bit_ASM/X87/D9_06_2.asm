@@ -8,7 +8,7 @@
 }
 %endif
 
-lea edx, [.data]
+lea edx, [rel .data]
 
 fld dword [edx + 8 * 0]
 o32 fstenv [edx + 8 * 3]
@@ -40,6 +40,7 @@ fld dword [edx + 8 * 1]
 
 hlt
 
+align 4096
 .data:
 dq 0x3f800000
 dq 0x40000000

@@ -42,7 +42,7 @@ vmovaps ymm9, [rel .scratch6]
 
 hlt
 
-align 32
+align 4096
 .data:
 dq 0xA76C4F06A12BFCE0
 dq 0x9B80767F1E6A060F

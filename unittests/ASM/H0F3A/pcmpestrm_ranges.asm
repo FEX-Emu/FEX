@@ -128,7 +128,7 @@ movaps xmm1, [rel .flags]
 
 hlt
 
-align 32
+align 4096
 .data:
 dq 0x998877665A417A61 ; "azAZ" (followed by junk)
 dq 0x55AACCBBFF223344

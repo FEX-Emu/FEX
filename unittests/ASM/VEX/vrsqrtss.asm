@@ -107,14 +107,12 @@ vpinsrd xmm11, xmm11, eax, 0
 
 hlt
 
-section .bss
-align 32
-result1: resq 2
-result2: resq 2
-result3: resq 2
-result4: resq 2
+align 4096
+result1: times 2 dq 0
+result2: times 2 dq 0
+result3: times 2 dq 0
+result4: times 2 dq 0
 
-section .data
 align 32
 arg1:
 dq 0x414243443F800000 ; 1.0
@@ -150,7 +148,7 @@ eresult1:
 dd 0x3F800000 ; 1.0
 
 eresult2:
-dd 0x3f000000 ; 0.5 
+dd 0x3f000000 ; 0.5
 
 eresult3:
 dd 0x3eaaaaab ; 1/3 = 0.(3)

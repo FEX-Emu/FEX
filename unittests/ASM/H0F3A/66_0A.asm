@@ -61,7 +61,7 @@ roundss xmm7, [rdx + 8 * 0], 00000100b
 
 hlt
 
-align 16
+align 4096
 .data:
 dd 0.5, -0.5, 1.5, -1.5
 dq 0, 0

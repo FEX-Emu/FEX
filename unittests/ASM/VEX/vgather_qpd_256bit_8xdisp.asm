@@ -100,7 +100,7 @@ vgatherqpd ymm3, [ymm0 * 8 + rax], ymm1
 
 hlt
 
-align 32
+align 4096
 
 ; Masks only care about the sign bit.
 .mask_0000:

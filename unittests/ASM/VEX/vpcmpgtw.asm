@@ -27,7 +27,7 @@ vpcmpgtw xmm5, xmm0, [rdx + 32 * 1]
 
 hlt
 
-align 32
+align 4096
 .data:
 dq 0x7172737475767778
 dq 0x4142434445464748

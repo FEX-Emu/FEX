@@ -14,6 +14,7 @@ movzx eax, word [rel data]
 mov ebx, dword [rel data + 2]
 hlt
 
+align 4096
 data:
 ; Limit
 dw 0

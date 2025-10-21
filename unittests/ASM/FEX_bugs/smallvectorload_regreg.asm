@@ -43,7 +43,8 @@ pextrb [rbx + rcx], xmm0, 0
 movaps xmm5, [rbx + rcx]
 
 hlt
-align 32
+
+align 4096
 .data:
 dq 0x7172737475767778
 dq 0x4142434445464748

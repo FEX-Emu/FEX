@@ -115,7 +115,7 @@ movaps xmm1, [rel .flags]
 
 hlt
 
-align 32
+align 4096
 .data:
 dq 0x6550206F6C6C6548 ; "Hello Pe"
 dq 0x00002121656C706F ; "ople!!\0\0"

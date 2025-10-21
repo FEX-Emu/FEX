@@ -93,14 +93,12 @@ check_relerr rel eresult4, rel result4, rel tolerance
 and r9, rax
 hlt
 
-section .bss
-align 32
-result1: resq 4
-result2: resq 4
-result3: resq 4
-result4: resq 4
+align 4096
+result1: times 4 dq 0
+result2: times 4 dq 0
+result3: times 4 dq 0
+result4: times 4 dq 0
 
-section .data
 align 32
 arg1:
 dq 0x3F8000003F800000 ; 1.0

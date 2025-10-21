@@ -48,14 +48,12 @@ pfrsqrt mm4, [rel data5] ; pfrsqrt(0.0) == inf
 pfrsqrt mm5, [rel data6] ; pfrsqrt(-0.0) == -inf
 hlt
 
-section .bss
-align 8
-result1: resb 32
-result2: resb 32
-result3: resb 32
-result4: resb 32
+align 4096
+result1: times 32 db 0
+result2: times 32 db 0
+result3: times 32 db 0
+result4: times 32 db 0
 
-section .data
 align 32
 data1:
 dd 1.0

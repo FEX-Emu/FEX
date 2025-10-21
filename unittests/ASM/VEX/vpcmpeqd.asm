@@ -27,7 +27,7 @@ vpcmpeqd xmm5, xmm0, [rdx + 32 * 1]
 
 hlt
 
-align 32
+align 4096
 .data:
 dq 0x71727374FFFFFFFF
 dq 0x41424344FFFFFFFF

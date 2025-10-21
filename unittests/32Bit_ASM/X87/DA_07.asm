@@ -8,7 +8,7 @@
 }
 %endif
 
-lea edx, [.data]
+lea edx, [rel .data]
 
 fld qword [edx + 8 * 0]
 fidivr dword [edx + 8 * 1]
@@ -17,7 +17,7 @@ fstp tword [rel data2]
 movups xmm0, [rel data2]
 
 ; Test negative
-lea edx, [.data_neg]
+lea edx, [rel .data_neg]
 
 fld qword [edx + 8 * 0]
 fidivr dword [edx + 8 * 1]
@@ -27,6 +27,7 @@ movups xmm1, [rel data2]
 
 hlt
 
+align 4096
 .data:
 dq 0x3ff0000000000000
 dq 2
