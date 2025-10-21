@@ -24,7 +24,7 @@ GuestToHostMap::GuestToHostMap()
 LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   : ctx {CTX} {
 
-  TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;
+  TotalCacheSize = ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE + L1_SIZE;
 
   // Block cache ends up looking like this
   // PageMemoryMap[VirtualMemoryRegion >> 12]
@@ -39,7 +39,8 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   // We need one pointer per page of virtual memory
   // At 64GB of virtual memory this will allocate 128MB of virtual memory space
   PagePointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::VirtualAlloc(TotalCacheSize, false, false));
-  FEXCore::Allocator::VirtualName("FEXMem_Lookup", reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE);
+  FEXCore::Allocator::VirtualName("FEXMem_Lookup", reinterpret_cast<void*>(PagePointer),
+                                  ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE);
   CTX->SyscallHandler->MarkOvercommitRange(PagePointer, TotalCacheSize);
 
   // Allocate our memory backing our pages
@@ -47,7 +48,7 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   // XXX: We can drop down to 16KB if we store 4byte offsets from the code base
   // We currently limit to 128MB of real memory for caching for the total cache size.
   // Can end up being inefficient if we compile a small number of blocks per page
-  PageMemory = PagePointer + ctx->Config.VirtualMemSize / 4096 * 8;
+  PageMemory = PagePointer + ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8;
   LOGMAN_THROW_A_FMT(PageMemory != -1ULL, "Failed to allocate page memory");
 
   // L1 Cache
@@ -70,7 +71,8 @@ LookupCache::~LookupCache() {
 void LookupCache::ClearL2Cache(const FEXCore::LookupCacheWriteLockToken& lk) {
   // Clear out the page memory
   // PagePointer and PageMemory are sequential with each other. Clear both at once.
-  FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE, false);
+  FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer),
+                                      ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE, false);
   AllocateOffset = 0;
 }
 

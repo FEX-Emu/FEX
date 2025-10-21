@@ -98,7 +98,7 @@ private:
     // Align UsedPages so it pads to the next page.
     // Necessary to take advantage of madvise zero page pooling.
     using FlexBitElementType = uint64_t;
-    alignas(4096) FEXCore::FlexBitSet<FlexBitElementType> UsedPages;
+    alignas(FEXCore::Utils::FEX_PAGE_SIZE) FEXCore::FlexBitSet<FlexBitElementType> UsedPages;
 
     // This returns the size of the LiveVMARegion in addition to the flex set that tracks the used data
     // The LiveVMARegion lives at the start of the VMA region which means on initialization we need to set that
@@ -140,7 +140,7 @@ private:
     }
   };
 
-  static_assert(sizeof(LiveVMARegion) == 4096, "Needs to be the size of a page");
+  static_assert(sizeof(LiveVMARegion) == FEXCore::Utils::FEX_PAGE_SIZE, "Needs to be the size of a page");
 
   static_assert(std::is_trivially_copyable<LiveVMARegion>::value, "Needs to be trivially copyable");
   static_assert(offsetof(LiveVMARegion, UsedPages) == sizeof(LiveVMARegion), "FlexBitSet needs to be at the end");
@@ -474,7 +474,7 @@ int OSAllocator_64Bit::Munmap(void* addr, size_t length) {
         ::mmap(addr, length, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
       }
 
-      (*it)->FreeSpace += FreedPages * 4096;
+      (*it)->FreeSpace += FreedPages * FEXCore::Utils::FEX_PAGE_SIZE;
 
       // Set the last allocated page to the minimum of last page allocation or this slab
       // This will let us more quickly fill holes

@@ -129,7 +129,7 @@ namespace x64 {
         // Special case querying for flags
         // Since this is the syscall implementation, we need to return valid but unused data.
         // This will cause glibc to allocate a page of memory, but it ends up being unused.
-        args->opaque_state->size_of_opaque_state = 4096;
+        args->opaque_state->size_of_opaque_state = FEXCore::Utils::FEX_PAGE_SIZE;
         args->opaque_state->mmap_prot = PROT_NONE;
         args->opaque_state->mmap_flags = MAP_NORESERVE | MAP_ANONYMOUS | MAP_PRIVATE;
         args->rv = 0;
@@ -759,7 +759,7 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
     if (Mapping.VDSOSize >= 4) {
       // Reset to beginning
       lseek(VDSOFD, 0, SEEK_SET);
-      Mapping.VDSOSize = FEXCore::AlignUp(Mapping.VDSOSize, 4096);
+      Mapping.VDSOSize = FEXCore::AlignUp(Mapping.VDSOSize, FEXCore::Utils::FEX_PAGE_SIZE);
 
       // Map the VDSO file to memory
       Mapping.VDSOBase = Handler->GuestMmap(nullptr, nullptr, Mapping.VDSOSize, PROT_READ | PROT_EXEC, MAP_SHARED, VDSOFD, 0);

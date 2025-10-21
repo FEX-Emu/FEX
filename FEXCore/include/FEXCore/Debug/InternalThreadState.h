@@ -125,9 +125,9 @@ struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCo
   alignas(FEXCore::Utils::FEX_PAGE_SIZE) uint8_t InterruptFaultPage[FEXCore::Utils::FEX_PAGE_SIZE];
 };
 static_assert(std::is_standard_layout_v<FEXCore::Core::InternalThreadState>);
-static_assert(
-  (offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState)) < 4096,
-  "Fault page is outside of immediate range from CPU state");
+static_assert((offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState)) <
+                FEXCore::Utils::FEX_PAGE_SIZE,
+              "Fault page is outside of immediate range from CPU state");
 static_assert(sizeof(FEXCore::Core::InternalThreadState) == (FEXCore::Utils::FEX_PAGE_SIZE * 2));
 
 } // namespace FEXCore::Core
