@@ -423,14 +423,6 @@
           "Hand-written assembly can violate this assumption."
         ]
       },
-      "ParanoidTSO": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Makes TSO operations even more strict.",
-          "Forces vector loadstores to also become atomic."
-        ]
-      },
       "StallProcess": {
         "Type": "bool",
         "Default": "false",

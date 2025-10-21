@@ -206,7 +206,6 @@ public:
     FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
     FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
     FEX_CONFIG_OPT(GDBSymbols, GDBSYMBOLS);
-    FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
     FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
     FEX_CONFIG_OPT(DisableTelemetry, DISABLETELEMETRY);
     FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
@@ -312,10 +311,6 @@ protected:
       AtomicTSOEmulationEnabled = false;
       VectorAtomicTSOEmulationEnabled = false;
       MemcpyAtomicTSOEmulationEnabled = false;
-    } else if (Config.ParanoidTSO) {
-      AtomicTSOEmulationEnabled = true;
-      VectorAtomicTSOEmulationEnabled = true;
-      MemcpyAtomicTSOEmulationEnabled = true;
     } else {
       AtomicTSOEmulationEnabled = Config.TSOEnabled;
       VectorAtomicTSOEmulationEnabled = Config.TSOEnabled && Config.VectorTSOEnabled;

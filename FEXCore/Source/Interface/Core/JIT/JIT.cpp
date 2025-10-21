@@ -672,15 +672,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
 
   CurrentCodeBuffer = CodeBuffers.GetLatest();
   ThreadState->LookupCache->Shared = CurrentCodeBuffer->LookupCache.get();
-
-  // Setup dynamic dispatch.
-  if (ParanoidTSO()) {
-    RT_LoadMemTSO = &Arm64JITCore::Op_ParanoidLoadMemTSO;
-    RT_StoreMemTSO = &Arm64JITCore::Op_ParanoidStoreMemTSO;
-  } else {
-    RT_LoadMemTSO = &Arm64JITCore::Op_LoadMemTSO;
-    RT_StoreMemTSO = &Arm64JITCore::Op_StoreMemTSO;
-  }
 }
 
 void Arm64JITCore::EmitDetectionString() {
@@ -937,8 +928,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
       switch (IROp->Op) {
-#define REGISTER_OP_RT(op, x) \
-  case FEXCore::IR::IROps::OP_##op: std::invoke(RT_##x, this, IROp, CodeNode); break
 #define REGISTER_OP(op, x) \
   case FEXCore::IR::IROps::OP_##op: Op_##x(IROp, CodeNode); break
 

@@ -507,13 +507,8 @@ ApplicationWindow {
 
                     ButtonGroup {
                         id: tsoButtonGroup
-                        buttons: [tso1, tso2, tso3]
-                        // Trying to be too clever here will trigger property binding loops,
-                        // so require both TSOEnabled and ParanoidTSO to be listed in the config.
-                        // If they are not, the state will be displayed as undetermined.
-                        checkedButton: !(ConfigModel.has("TSOEnabled", refreshCache) && (ConfigModel.has("ParanoidTSO", refreshCache))) ? null
-                                        : ConfigModel.getBool("ParanoidTSO", refreshCache) ? tso3
-                                        : ConfigModel.getBool("TSOEnabled", refreshCache) ? tso2 : tso1
+                        buttons: [tso1, tso2]
+                        checkedButton: ConfigModel.getBool("TSOEnabled", refreshCache) ? tso2 : tso1
 
                         property int pendingItemChange: -1
 
@@ -524,8 +519,6 @@ ApplicationWindow {
 
                             var newIndex = pendingItemChange
                             var TSOEnabled = newIndex === 1
-                            var ParanoidTSO = newIndex === 2
-                            ConfigModel.setBool("ParanoidTSO", ParanoidTSO)
                             ConfigModel.setBool("TSOEnabled", TSOEnabled)
 
                             pendingItemChange = -1;
@@ -543,8 +536,6 @@ ApplicationWindow {
 
                             var newIndex = pendingItemChange
                             var TSOEnabled = newIndex === 1
-                            var ParanoidTSO = newIndex === 2
-                            ConfigModel.setBool("ParanoidTSO", ParanoidTSO)
                             ConfigModel.setBool("TSOEnabled", TSOEnabled)
 
                             pendingItemChange = -1;
@@ -584,12 +575,6 @@ ApplicationWindow {
                                     config: "HalfBarrierTSOEnabled"
                                 }
                             }
-                        }
-
-                        RadioButton {
-                            id: tso3
-                            text: qsTr("Overly accurate (paranoid TSO)")
-                            onToggled: tsoButtonGroup.onClickedButton(2)
                         }
                     }
 

@@ -12,8 +12,6 @@ struct InternalThreadState;
 
 namespace FEXCore::ArchHelpers::Arm64 {
 enum class UnalignedHandlerType {
-  ///< Don't backpatch code, instead handle inside SIGBUS handler.
-  Paranoid,
   ///< Backpatch unaligned access to half-barrier based atomic.
   HalfBarrier,
   ///< Backpatch unaligned access to non-atomic.
@@ -26,7 +24,7 @@ enum class UnalignedHandlerType {
  * This is an OS agnostic handler where the frontend must provide FEXCore with the information necessary to know if this is safe.
  * This does not check if the PC is within a JIT code buffer, the frontend must provide that safety with `CPUBackend::IsAddressInCodeBuffer`.
  *
- * @param ParanoidTSO If the unaligned fault needs to handled directly or can be backpatched.
+ * @param HandleType Type of TSO handling to use.
  * @param ProgramCounter The location in memory for the instruction that did the access
  * @param GPRs The array of GPRs from the signal context. This will be modified and the host context needs to be updated on signal return.
  *
