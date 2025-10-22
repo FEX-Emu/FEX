@@ -455,8 +455,8 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
 
     if (ThreadObject->ThreadInfo.clear_child_tid) {
-      std::atomic<uint32_t>* Addr = reinterpret_cast<std::atomic<uint32_t>*>(ThreadObject->ThreadInfo.clear_child_tid);
-      Addr->store(0);
+      auto Addr = std::atomic_ref<int32_t>(*ThreadObject->ThreadInfo.clear_child_tid);
+      Addr.store(0);
       syscall(SYSCALL_DEF(futex), ThreadObject->ThreadInfo.clear_child_tid, FUTEX_WAKE, ~0ULL, 0, 0, 0);
     }
 
