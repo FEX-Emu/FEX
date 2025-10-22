@@ -144,33 +144,33 @@ static __uint128_t LoadAcquire128(uint64_t Addr) {
 }
 
 static uint64_t LoadAcquire64(uint64_t Addr) {
-  std::atomic<uint64_t>* Atom = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
-  return Atom->load(std::memory_order_acquire);
+  auto Atom = std::atomic_ref<uint64_t>(*reinterpret_cast<uint64_t*>(Addr));
+  return Atom.load(std::memory_order_acquire);
 }
 
 static bool StoreCAS64(uint64_t& Expected, uint64_t Val, uint64_t Addr) {
-  std::atomic<uint64_t>* Atom = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
-  return Atom->compare_exchange_strong(Expected, Val);
+  auto Atom = std::atomic_ref<uint64_t>(*reinterpret_cast<uint64_t*>(Addr));
+  return Atom.compare_exchange_strong(Expected, Val);
 }
 
 static uint32_t LoadAcquire32(uint64_t Addr) {
-  std::atomic<uint32_t>* Atom = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
-  return Atom->load(std::memory_order_acquire);
+  auto Atom = std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(Addr));
+  return Atom.load(std::memory_order_acquire);
 }
 
 static bool StoreCAS32(uint32_t& Expected, uint32_t Val, uint64_t Addr) {
-  std::atomic<uint32_t>* Atom = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
-  return Atom->compare_exchange_strong(Expected, Val);
+  auto Atom = std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(Addr));
+  return Atom.compare_exchange_strong(Expected, Val);
 }
 
 static uint8_t LoadAcquire8(uint64_t Addr) {
-  std::atomic<uint8_t>* Atom = reinterpret_cast<std::atomic<uint8_t>*>(Addr);
-  return Atom->load(std::memory_order_acquire);
+  auto Atom = std::atomic_ref<uint8_t>(*reinterpret_cast<uint8_t*>(Addr));
+  return Atom.load(std::memory_order_acquire);
 }
 
 static bool StoreCAS8(uint8_t& Expected, uint8_t Val, uint64_t Addr) {
-  std::atomic<uint8_t>* Atom = reinterpret_cast<std::atomic<uint8_t>*>(Addr);
-  return Atom->compare_exchange_strong(Expected, Val);
+  auto Atom = std::atomic_ref<uint8_t>(*reinterpret_cast<uint8_t*>(Addr));
+  return Atom.compare_exchange_strong(Expected, Val);
 }
 
 static uint16_t DoLoad16(uint64_t Addr) {
@@ -211,8 +211,8 @@ static uint16_t DoLoad16(uint64_t Addr) {
         uint64_t Alignment = Addr & AlignmentMask;
         Addr &= ~AlignmentMask;
 
-        std::atomic<uint64_t>* Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
-        uint64_t TmpResult = Atomic->load();
+        auto Atomic = std::atomic_ref<uint64_t>(*reinterpret_cast<uint64_t*>(Addr));
+        uint64_t TmpResult = Atomic.load();
 
         // Zexts the result
         uint16_t Result = TmpResult >> (Alignment * 8);
@@ -224,8 +224,8 @@ static uint16_t DoLoad16(uint64_t Addr) {
         uint64_t Alignment = Addr & AlignmentMask;
         Addr &= ~AlignmentMask;
 
-        std::atomic<uint32_t>* Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
-        uint32_t TmpResult = Atomic->load();
+        auto Atomic = std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(Addr));
+        uint32_t TmpResult = Atomic.load();
 
         // Zexts the result
         uint16_t Result = TmpResult >> (Alignment * 8);
@@ -272,8 +272,8 @@ static uint32_t DoLoad32(uint64_t Addr) {
       uint64_t Alignment = Addr & AlignmentMask;
       Addr &= ~AlignmentMask;
 
-      std::atomic<uint64_t>* Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
-      uint64_t TmpResult = Atomic->load();
+      auto Atomic = std::atomic_ref<uint64_t>(*reinterpret_cast<uint64_t*>(Addr));
+      uint64_t TmpResult = Atomic.load();
 
       return TmpResult >> (Alignment * 8);
     }
@@ -465,7 +465,7 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
       // Fits within a 16byte region
       uint64_t Alignment = Addr & 0b1111;
       Addr &= ~0b1111ULL;
-      std::atomic<__uint128_t>* Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
+      auto Atomic128 = std::atomic_ref<__uint128_t>(*reinterpret_cast<__uint128_t*>(Addr));
 
       __uint128_t Mask = ~0ULL;
       Mask <<= Alignment * 8;
@@ -480,7 +480,7 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
       Expected <<= Alignment * 8;
 
       while (1) {
-        TmpExpected = Atomic128->load();
+        TmpExpected = Atomic128.load();
 
         // Set up expected
         TmpExpected &= NegMask;
@@ -491,7 +491,7 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
         TmpDesired &= NegMask;
         TmpDesired |= Desired;
 
-        bool CASResult = Atomic128->compare_exchange_strong(TmpExpected, TmpDesired);
+        bool CASResult = Atomic128.compare_exchange_strong(TmpExpected, TmpDesired);
         if (CASResult) {
           // Successful, so we are done
           return true;
@@ -710,7 +710,7 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
       // Fits within a 16byte region
       uint64_t Alignment = Addr & 0b1111;
       Addr &= ~0b1111ULL;
-      std::atomic<__uint128_t>* Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
+      auto Atomic128 = std::atomic_ref<__uint128_t>(*reinterpret_cast<__uint128_t*>(Addr));
 
       __uint128_t Mask = 0xFFFF;
       Mask <<= Alignment * 8;
@@ -719,7 +719,7 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
       __uint128_t TmpDesired {};
 
       while (1) {
-        TmpExpected = Atomic128->load();
+        TmpExpected = Atomic128.load();
 
         __uint128_t Desired = DesiredFunction(TmpExpected >> (Alignment * 8), DesiredSrc);
         Desired <<= Alignment * 8;
@@ -736,7 +736,7 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
         TmpDesired &= NegMask;
         TmpDesired |= Desired;
 
-        bool CASResult = Atomic128->compare_exchange_strong(TmpExpected, TmpDesired);
+        bool CASResult = Atomic128.compare_exchange_strong(TmpExpected, TmpDesired);
         if (CASResult) {
           // Successful, so we are done
           return Expected >> (Alignment * 8);
@@ -780,9 +780,9 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
         uint64_t TmpExpected {};
         uint64_t TmpDesired {};
 
-        std::atomic<uint64_t>* Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+        auto Atomic = std::atomic_ref<uint64_t>(*reinterpret_cast<uint64_t*>(Addr));
         while (1) {
-          TmpExpected = Atomic->load();
+          TmpExpected = Atomic.load();
 
           uint64_t Desired = DesiredFunction(TmpExpected >> (Alignment * 8), DesiredSrc);
           Desired <<= Alignment * 8;
@@ -799,7 +799,7 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
           TmpDesired &= NegMask;
           TmpDesired |= Desired;
 
-          bool CASResult = Atomic->compare_exchange_strong(TmpExpected, TmpDesired);
+          bool CASResult = Atomic.compare_exchange_strong(TmpExpected, TmpDesired);
           if (CASResult) {
             // Successful, so we are done
             return Expected >> (Alignment * 8);
@@ -843,9 +843,9 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
         uint32_t TmpExpected {};
         uint32_t TmpDesired {};
 
-        std::atomic<uint32_t>* Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
+        auto Atomic = std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(Addr));
         while (1) {
-          TmpExpected = Atomic->load();
+          TmpExpected = Atomic.load();
 
 
           uint32_t Desired = DesiredFunction(TmpExpected >> (Alignment * 8), DesiredSrc);
@@ -863,7 +863,7 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
           TmpDesired &= NegMask;
           TmpDesired |= Desired;
 
-          bool CASResult = Atomic->compare_exchange_strong(TmpExpected, TmpDesired);
+          bool CASResult = Atomic.compare_exchange_strong(TmpExpected, TmpDesired);
           if (CASResult) {
             // Successful, so we are done
             return Expected >> (Alignment * 8);
@@ -1010,7 +1010,7 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
       // Fits within a 16byte region
       uint64_t Alignment = Addr & 0b1111;
       Addr &= ~0b1111ULL;
-      std::atomic<__uint128_t>* Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
+      auto Atomic128 = std::atomic_ref<__uint128_t>(*reinterpret_cast<__uint128_t*>(Addr));
 
       __uint128_t Mask = ~0U;
       Mask <<= Alignment * 8;
@@ -1019,7 +1019,7 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
       __uint128_t TmpDesired {};
 
       while (1) {
-        __uint128_t TmpActual = Atomic128->load();
+        __uint128_t TmpActual = Atomic128.load();
 
         __uint128_t Desired = DesiredFunction(TmpActual >> (Alignment * 8), DesiredSrc);
         __uint128_t Expected = ExpectedFunction(TmpActual >> (Alignment * 8), ExpectedSrc);
@@ -1034,7 +1034,7 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
         TmpDesired &= NegMask;
         TmpDesired |= Desired << (Alignment * 8);
 
-        bool CASResult = Atomic128->compare_exchange_strong(TmpExpected, TmpDesired);
+        bool CASResult = Atomic128.compare_exchange_strong(TmpExpected, TmpDesired);
         if (CASResult) {
           // Stored successfully
           return Expected;
@@ -1078,9 +1078,9 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
       uint64_t TmpExpected {};
       uint64_t TmpDesired {};
 
-      std::atomic<uint64_t>* Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+      auto Atomic = std::atomic_ref<uint64_t>(*reinterpret_cast<uint64_t*>(Addr));
       while (1) {
-        uint64_t TmpActual = Atomic->load();
+        uint64_t TmpActual = Atomic.load();
 
         uint64_t Desired = DesiredFunction(TmpActual >> (Alignment * 8), DesiredSrc);
         uint64_t Expected = ExpectedFunction(TmpActual >> (Alignment * 8), ExpectedSrc);
@@ -1095,7 +1095,7 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
         TmpDesired &= NegMask;
         TmpDesired |= Desired << (Alignment * 8);
 
-        bool CASResult = Atomic->compare_exchange_strong(TmpExpected, TmpDesired);
+        bool CASResult = Atomic.compare_exchange_strong(TmpExpected, TmpDesired);
         if (CASResult) {
           // Stored successfully
           return Expected;
@@ -1240,7 +1240,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
     // Fits within a 16byte region
     uint64_t Alignment = Addr & AlignmentMask;
     Addr &= ~AlignmentMask;
-    std::atomic<__uint128_t>* Atomic128 = reinterpret_cast<std::atomic<__uint128_t>*>(Addr);
+    auto Atomic128 = std::atomic_ref<__uint128_t>(*reinterpret_cast<__uint128_t*>(Addr));
 
     __uint128_t Mask = ~0ULL;
     Mask <<= Alignment * 8;
@@ -1249,7 +1249,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
     __uint128_t TmpDesired {};
 
     while (1) {
-      __uint128_t TmpActual = Atomic128->load();
+      __uint128_t TmpActual = Atomic128.load();
 
       __uint128_t Desired = DesiredFunction(TmpActual >> (Alignment * 8), DesiredSrc);
       __uint128_t Expected = ExpectedFunction(TmpActual >> (Alignment * 8), ExpectedSrc);
@@ -1264,7 +1264,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
       TmpDesired &= NegMask;
       TmpDesired |= Desired << (Alignment * 8);
 
-      bool CASResult = Atomic128->compare_exchange_strong(TmpExpected, TmpDesired);
+      bool CASResult = Atomic128.compare_exchange_strong(TmpExpected, TmpDesired);
       if (CASResult) {
         // Stored successfully
         return Expected;
