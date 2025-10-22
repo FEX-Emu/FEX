@@ -63,6 +63,12 @@ struct ThreadStats {
   uint64_t AccumulatedSIGBUSCount;
   uint64_t AccumulatedSMCCount;
   uint64_t AccumulatedFloatFallbackCount;
+
+  uint64_t AccumulatedCacheMissCount;
+  uint64_t AccumulatedCacheReadLockTime;
+  uint64_t AccumulatedCacheWriteLockTime;
+
+  uint64_t AccumulatedJITCount;
 };
 
 // Ensure 16-byte alignment to take advantage of ARM single-copy atomicity.

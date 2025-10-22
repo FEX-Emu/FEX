@@ -2,6 +2,7 @@
 #pragma once
 #include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/SHMStats.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory_resource.h>
 #include <FEXCore/fextl/robin_map.h>
@@ -141,7 +142,10 @@ public:
     // L2 and L3 need to be locked
     uintptr_t HostPtr {};
     {
+      std::optional<FEXCore::SHMStats::AccumulationBlock<uint64_t>> LockTime(
+        Thread->ThreadStats ? &Thread->ThreadStats->AccumulatedCacheReadLockTime : nullptr);
       auto lk = Shared->AcquireWriteLock();
+      LockTime.reset();
 
       if (!DisableL2Cache()) {
         // Try L2
@@ -177,6 +181,8 @@ public:
     if (HostPtr && DynamicL1Cache()) {
       UpdateDynamicL1Stats(Thread);
     }
+
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedCacheMissCount, 1);
 
     return HostPtr;
   }
@@ -228,14 +234,21 @@ public:
 
   // Appends a list of Block {Address} to CodePages [Start, Start + Length)
   // Returns true if new pages are marked as containing code
-  bool AddBlockExecutableRange(const fextl::set<uint64_t>& Addresses, uint64_t Start, uint64_t Length) {
+  bool AddBlockExecutableRange(FEXCore::Core::InternalThreadState* Thread, const fextl::set<uint64_t>& Addresses, uint64_t Start, uint64_t Length) {
+    std::optional<FEXCore::SHMStats::AccumulationBlock<uint64_t>> LockTime(
+      Thread->ThreadStats ? &Thread->ThreadStats->AccumulatedCacheWriteLockTime : nullptr);
     auto lk = Shared->AcquireWriteLock();
+    LockTime.reset();
+
     return Shared->AddBlockExecutableRange(Addresses, Start, Length, lk);
   }
 
   // Adds to Guest -> Host code mapping
-  void AddBlockMapping(uint64_t Address, void* HostCode) {
+  void AddBlockMapping(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, void* HostCode) {
+    std::optional<FEXCore::SHMStats::AccumulationBlock<uint64_t>> LockTime(
+      Thread->ThreadStats ? &Thread->ThreadStats->AccumulatedCacheWriteLockTime : nullptr);
     auto lk = Shared->AcquireWriteLock();
+    LockTime.reset();
 
     Shared->AddBlockMapping(Address, HostCode, lk);
 
