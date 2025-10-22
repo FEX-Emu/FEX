@@ -4,6 +4,8 @@
 #ifdef _M_X86_64
 #include <xmmintrin.h>
 #include <immintrin.h>
+#else
+#include <cstdint>
 #endif
 
 namespace FEXCore {
