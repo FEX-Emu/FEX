@@ -335,6 +335,8 @@ int SyscallHandler::OpenCodeMapFile() {
     return -1;
   }
 
+  FM.SetProtectedCodeMapFD(CodeMapFD);
+
   // Ensure the file descriptor is closed on exec
   auto flags = fcntl(CodeMapFD, F_GETFD);
   fcntl(CodeMapFD, F_SETFD, flags | FD_CLOEXEC);

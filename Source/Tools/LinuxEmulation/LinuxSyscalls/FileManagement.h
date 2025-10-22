@@ -94,7 +94,10 @@ public:
   uint64_t Statfs(const char* path, void* buf);
 
   void UpdatePID(uint32_t PID);
-  bool IsRootFSFD(int dirfd, uint64_t inode) const;
+  // Helper to detect FEX-internal files from their inode and parent directory FD.
+  // This is useful to deal with Chromium/CEF, which closes any FDs reported in /proc/self/fd/.
+  bool IsProtectedFile(int ParentDirFD, uint64_t inode) const;
+  void SetProtectedCodeMapFD(int FD);
 
   fextl::string GetEmulatedPath(const char* pathname, bool FollowSymlink = false) const;
   fextl::string GetHostPath(fextl::string& Path, bool AliasedOnly) const;
@@ -188,6 +191,7 @@ private:
   int ProcFD {0};
   int64_t RootFSFDInode = 0;
   int64_t ProcFDInode = 0;
+  int64_t CodeMapInode = 0;
   dev_t ProcFSDev;
 };
 } // namespace FEX::HLE

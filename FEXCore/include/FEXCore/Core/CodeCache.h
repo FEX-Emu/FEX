@@ -117,6 +117,14 @@ public:
     KnownFileIds.clear();
   }
 
+  bool IsBackingFD(int FD) const {
+    if (FD == CodeMapFD) {
+      LogMan::Msg::DFmt("Hiding directory entry for code map FD");
+      return true;
+    }
+    return false;
+  }
+
   void AppendBlock(const FEXCore::ExecutableFileSectionInfo&, uint64_t Entry);
   void AppendLibraryLoad(const FEXCore::ExecutableFileInfo&);
   void AppendSetMainExecutable(const FEXCore::ExecutableFileInfo&);
