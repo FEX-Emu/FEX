@@ -617,36 +617,6 @@ static uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uin
   }
 }
 
-static bool HandleAtomicVectorStore(uint32_t Instr, uintptr_t ProgramCounter) {
-  uint32_t* PC = (uint32_t*)ProgramCounter;
-
-  uint32_t Size = (Instr >> 30) & 1;
-  uint32_t DataReg = Instr & 0x1F;
-
-  if (Size == 1) {
-    // 64-bit pair happens on paranoid vector stores
-    // [0] ldaxp(xzr, TMP3, MemSrc); // <- Can hit SIGBUS. Overwritten with DMB
-    // [1] stlxp(TMP3, TMP1, TMP2, MemSrc); // <- Can also hit SIGBUS
-    // [2] cbnz(TMP3, &B); // < Overwritten with DMB
-    if (DataReg == 31) {
-      uint32_t NextInstr = PC[1];
-      uint32_t AddrReg = (NextInstr >> 5) & 0x1F;
-      DataReg = NextInstr & 0x1F;
-      uint32_t DataReg2 = (NextInstr >> 10) & 0x1F;
-      uint32_t STP = (0b10 << 30) | (0b101001000000000 << 15) | (DataReg2 << 10) | (AddrReg << 5) | DataReg;
-
-      PC[0] = DMB;
-      PC[1] = STP;
-      PC[2] = DMB;
-      // Back up one instruction and have another go
-      ClearICache(&PC[0], 12);
-      return true;
-    }
-  }
-
-  return false;
-}
-
 template<typename T>
 using CASExpectedFn = T (*)(T Src, T Expected);
 template<typename T>
@@ -1976,8 +1946,7 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
   auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
   uint32_t* StrictSplitLockMutex {CTX->Config.StrictInProcessSplitLocks ? &CTX->StrictSplitLockMutex : nullptr};
 
-  // ParanoidTSO path doesn't modify any code.
-  if (HandleType == UnalignedHandlerType::Paranoid || !IsJIT) [[unlikely]] {
+  if (!IsJIT) [[unlikely]] {
     if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
         (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
       if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
@@ -2015,30 +1984,28 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDLUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
         return std::nullopt;
       }
-    } else if (!IsJIT) {
-      if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
-        if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0, &Thread->ExclusiveStore)) {
-          return 4;
-        }
-      } else if ((Instr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) { // STLXR*
-        uint32_t StatusReg = Instr << 11 >> 27;
-        // // Emulate exclusive store by validating the address and value against the last unaligned LDAXR*.
-        if (GPRs[AddrReg] != Thread->ExclusiveStore.Addr || Size > Thread->ExclusiveStore.Size) {
-          if (StatusReg != 31) {
-            GPRs[StatusReg] = 1;
-          }
-          return 4;
-        }
-        if (std::optional<uint64_t> Prev = DoCAS(Size, GPRs[DataReg], Thread->ExclusiveStore.Store, GPRs[AddrReg], StrictSplitLockMutex)) {
-          if (StatusReg != 31) {
-            GPRs[StatusReg] = !!memcmp(&Thread->ExclusiveStore.Store, &*Prev, Size);
-          }
-          Thread->ExclusiveStore.Size = 0;
-          return 4;
-        }
+    } else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
+      if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0, &Thread->ExclusiveStore)) {
+        return 4;
       }
-      return 0;
+    } else if ((Instr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) { // STLXR*
+      uint32_t StatusReg = Instr << 11 >> 27;
+      // // Emulate exclusive store by validating the address and value against the last unaligned LDAXR*.
+      if (GPRs[AddrReg] != Thread->ExclusiveStore.Addr || Size > Thread->ExclusiveStore.Size) {
+        if (StatusReg != 31) {
+          GPRs[StatusReg] = 1;
+        }
+        return 4;
+      }
+      if (std::optional<uint64_t> Prev = DoCAS(Size, GPRs[DataReg], Thread->ExclusiveStore.Store, GPRs[AddrReg], StrictSplitLockMutex)) {
+        if (StatusReg != 31) {
+          GPRs[StatusReg] = !!memcmp(&Thread->ExclusiveStore.Store, &*Prev, Size);
+        }
+        Thread->ExclusiveStore.Size = 0;
+        return 4;
+      }
     }
+    return 0;
   }
 
   const auto Frame = Thread->CurrentFrame;
@@ -2090,6 +2057,9 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
     if (BytesToSkip) {
       // Skip this instruction now
       return BytesToSkip;
+    } else {
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+      return std::nullopt;
     }
   }
 
@@ -2153,19 +2123,6 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
     ClearICache(&PC[-1], 8);
     // Back up one instruction and have another go
     return -4;
-  } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
-    /// This is handling the case of paranoid ARMv8.0-a atomic stores.
-    /// This backpatches the ldaxp+stlxp+cbnz if the previous `HandleCASPAL_ARMv8` didn't handle the case.
-    if (ArchHelpers::Arm64::HandleAtomicVectorStore(Instr, ProgramCounter)) {
-      return 0;
-    } else {
-      LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-      return std::nullopt;
-    }
-  } else if ((Instr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) { // STLXP
-    // Should not trigger - middle of an LDAXP/STAXP pair.
-    LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-    return std::nullopt;
   }
 
   // Check if another thread backpatched this instruction before this thread got here

@@ -870,9 +870,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
   HostHandlers[SIGKILL].Installed = true;
   HostHandlers[SIGSTOP].Installed = true;
 
-  if (ParanoidTSO()) {
-    UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::Paranoid;
-  } else if (HalfBarrierTSOEnabled()) {
+  if (HalfBarrierTSOEnabled()) {
     UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier;
   } else {
     UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::NonAtomic;
