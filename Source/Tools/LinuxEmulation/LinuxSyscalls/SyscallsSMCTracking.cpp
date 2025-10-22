@@ -175,7 +175,7 @@ SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& 
   auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, &Thread);
 
   auto EntryIt = VMATracking.FindVMAEntry(GuestAddr);
-  if (EntryIt == VMATracking.VMAs.end() || !EntryIt->second.Resource) {
+  if (EntryIt == VMATracking.VMAs.end() || !EntryIt->second.Resource || !EntryIt->second.Resource->MappedFile) {
     return std::nullopt;
   }
 
