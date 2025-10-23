@@ -16,35 +16,35 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x32 {
+auto io_getevents(FEXCore::Core::CpuStateFrame* Frame, aio_context_t ctx_id, long min_nr, long nr, struct io_event* events,
+                  struct timespec32* timeout) -> uint64_t {
+  struct timespec* timeout_ptr {};
+  struct timespec tp64 {};
+  if (timeout) {
+    FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
+    tp64 = *timeout;
+    timeout_ptr = &tp64;
+  }
+
+  uint64_t Result = ::syscall(SYSCALL_DEF(io_getevents), ctx_id, min_nr, nr, events, timeout_ptr);
+  SYSCALL_ERRNO();
+}
+
+auto io_pgetevents(FEXCore::Core::CpuStateFrame* Frame, aio_context_t ctx_id, long min_nr, long nr, struct io_event* events,
+                   struct timespec32* timeout, const struct io_sigset* usig) -> uint64_t {
+  struct timespec* timeout_ptr {};
+  struct timespec tp64 {};
+  if (timeout) {
+    FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
+    tp64 = *timeout;
+    timeout_ptr = &tp64;
+  }
+
+  uint64_t Result = ::syscall(SYSCALL_DEF(io_pgetevents), ctx_id, min_nr, nr, events, timeout_ptr, usig);
+  SYSCALL_ERRNO();
+}
 void RegisterIO(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL_X32(io_getevents,
-                            [](FEXCore::Core::CpuStateFrame* Frame, aio_context_t ctx_id, long min_nr, long nr, struct io_event* events,
-                               struct timespec32* timeout) -> uint64_t {
-                              struct timespec* timeout_ptr {};
-                              struct timespec tp64 {};
-                              if (timeout) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
-                                tp64 = *timeout;
-                                timeout_ptr = &tp64;
-                              }
-
-                              uint64_t Result = ::syscall(SYSCALL_DEF(io_getevents), ctx_id, min_nr, nr, events, timeout_ptr);
-                              SYSCALL_ERRNO();
-                            });
-
-  REGISTER_SYSCALL_IMPL_X32(io_pgetevents,
-                            [](FEXCore::Core::CpuStateFrame* Frame, aio_context_t ctx_id, long min_nr, long nr, struct io_event* events,
-                               struct timespec32* timeout, const struct io_sigset* usig) -> uint64_t {
-                              struct timespec* timeout_ptr {};
-                              struct timespec tp64 {};
-                              if (timeout) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
-                                tp64 = *timeout;
-                                timeout_ptr = &tp64;
-                              }
-
-                              uint64_t Result = ::syscall(SYSCALL_DEF(io_pgetevents), ctx_id, min_nr, nr, events, timeout_ptr, usig);
-                              SYSCALL_ERRNO();
-                            });
+  REGISTER_SYSCALL_IMPL_X32(io_getevents, io_getevents);
+  REGISTER_SYSCALL_IMPL_X32(io_pgetevents, io_pgetevents);
 }
 } // namespace FEX::HLE::x32
