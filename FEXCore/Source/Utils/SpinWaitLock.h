@@ -125,8 +125,8 @@ static inline uint64_t WFELoadAtomic(uint64_t* Futex) {
 
 template<typename T, typename TT = T>
 static inline void Wait(T* Futex, TT ExpectedValue) {
-  std::atomic<T>* AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
-  T Result = AtomicFutex->load();
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
+  T Result = AtomicFutex.load();
 
   // Early exit if possible.
   if (Result == ExpectedValue) {
@@ -149,9 +149,9 @@ template void Wait<uint64_t>(uint64_t*, uint64_t);
 
 template<typename T, typename TT>
 static inline bool Wait(T* Futex, TT ExpectedValue, const std::chrono::nanoseconds& Timeout) {
-  std::atomic<T>* AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
 
-  T Result = AtomicFutex->load();
+  T Result = AtomicFutex.load();
 
   // Early exit if possible.
   if (Result == ExpectedValue) {
@@ -187,8 +187,8 @@ template bool Wait<uint64_t>(uint64_t*, uint64_t, const std::chrono::nanoseconds
 #else
 template<typename T, typename TT>
 static inline void Wait(T* Futex, TT ExpectedValue) {
-  std::atomic<T>* AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
-  T Result = AtomicFutex->load();
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
+  T Result = AtomicFutex.load();
 
   // Early exit if possible.
   if (Result == ExpectedValue) {
@@ -196,15 +196,15 @@ static inline void Wait(T* Futex, TT ExpectedValue) {
   }
 
   do {
-    Result = AtomicFutex->load();
+    Result = AtomicFutex.load();
   } while (Result != ExpectedValue);
 }
 
 template<typename T, typename TT>
 static inline bool Wait(T* Futex, TT ExpectedValue, const std::chrono::nanoseconds& Timeout) {
-  std::atomic<T>* AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
 
-  T Result = AtomicFutex->load();
+  T Result = AtomicFutex.load();
 
   // Early exit if possible.
   if (Result == ExpectedValue) {
@@ -214,7 +214,7 @@ static inline bool Wait(T* Futex, TT ExpectedValue, const std::chrono::nanosecon
   const auto Begin = std::chrono::high_resolution_clock::now();
 
   do {
-    Result = AtomicFutex->load();
+    Result = AtomicFutex.load();
 
     const auto CurrentCycleCounter = std::chrono::high_resolution_clock::now();
     if ((CurrentCycleCounter - Begin) >= Timeout) {
@@ -230,12 +230,12 @@ static inline bool Wait(T* Futex, TT ExpectedValue, const std::chrono::nanosecon
 
 template<typename T>
 static inline void lock(T* Futex) {
-  std::atomic<T>* AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
   T Expected {};
   T Desired {1};
 
   // Try to CAS immediately.
-  if (AtomicFutex->compare_exchange_strong(Expected, Desired)) {
+  if (AtomicFutex.compare_exchange_strong(Expected, Desired)) {
     return;
   }
 
@@ -243,17 +243,17 @@ static inline void lock(T* Futex) {
     // Wait until the futex is unlocked.
     Wait(Futex, 0);
     Expected = 0;
-  } while (!AtomicFutex->compare_exchange_strong(Expected, Desired));
+  } while (!AtomicFutex.compare_exchange_strong(Expected, Desired));
 }
 
 template<typename T>
 static inline bool try_lock(T* Futex) {
-  std::atomic<T>* AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
   T Expected {};
   T Desired {1};
 
   // Try to CAS immediately.
-  if (AtomicFutex->compare_exchange_strong(Expected, Desired)) {
+  if (AtomicFutex.compare_exchange_strong(Expected, Desired)) {
     return true;
   }
 
@@ -262,8 +262,8 @@ static inline bool try_lock(T* Futex) {
 
 template<typename T>
 static inline void unlock(T* Futex) {
-  std::atomic<T>* AtomicFutex = reinterpret_cast<std::atomic<T>*>(Futex);
-  AtomicFutex->store(0);
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
+  AtomicFutex.store(0);
 }
 
 #undef SPINLOOP_8BIT
