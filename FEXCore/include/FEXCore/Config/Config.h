@@ -123,6 +123,12 @@ namespace DefaultValues {
     FEXCore::Config::DefaultValues::enum                                    \
   }
 
+// Get a configuration option as a single-shot.
+#define FEX_CONFIG_OPT_SINGLE(enum)                                    \
+  FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::enum> { \
+    FEXCore::Config::CONFIG_##enum,                                    \
+    FEXCore::Config::DefaultValues::enum                               \
+  }()
 #undef P
 } // namespace DefaultValues
 
