@@ -27,10 +27,10 @@
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1040]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
         "scvtf v0.2s, v2.2s",
         "ptrue p0.d, vl1",
         "mov z16.d, p0/m, z0.d"

@@ -1122,7 +1122,7 @@
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1134,7 +1134,7 @@
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q2, [x0, #32]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1146,7 +1146,7 @@
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q2, [x0, #48]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1171,7 +1171,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1185,7 +1185,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q3, [x0, #32]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1199,7 +1199,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2624]",
+        "ldr x0, [x28, #2640]",
         "ldr q3, [x0, #48]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1223,7 +1223,7 @@
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2616]",
+        "ldr x0, [x28, #2632]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1235,7 +1235,7 @@
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2616]",
+        "ldr x0, [x28, #2632]",
         "ldr q2, [x0, #32]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1247,7 +1247,7 @@
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2616]",
+        "ldr x0, [x28, #2632]",
         "ldr q2, [x0, #48]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1274,7 +1274,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2616]",
+        "ldr x0, [x28, #2632]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1288,7 +1288,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2616]",
+        "ldr x0, [x28, #2632]",
         "ldr q3, [x0, #32]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1302,7 +1302,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2616]",
+        "ldr x0, [x28, #2632]",
         "ldr q3, [x0, #48]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1326,7 +1326,7 @@
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2608]",
+        "ldr x0, [x28, #2624]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1338,7 +1338,7 @@
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2608]",
+        "ldr x0, [x28, #2624]",
         "ldr q2, [x0, #32]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1350,7 +1350,7 @@
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2608]",
+        "ldr x0, [x28, #2624]",
         "ldr q2, [x0, #48]",
         "tbl v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -1377,7 +1377,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2608]",
+        "ldr x0, [x28, #2624]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1391,7 +1391,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2608]",
+        "ldr x0, [x28, #2624]",
         "ldr q3, [x0, #32]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1405,7 +1405,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
-        "ldr x0, [x28, #2608]",
+        "ldr x0, [x28, #2624]",
         "ldr q3, [x0, #48]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -2288,7 +2288,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2632]",
+        "ldr x0, [x28, #2648]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -2302,7 +2302,7 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "ldr x0, [x28, #2632]",
+        "ldr x0, [x28, #2648]",
         "ldr q4, [x0, #16]",
         "tbl v16.16b, {v17.16b, v18.16b}, v4.16b",
         "tbl v2.16b, {v2.16b, v3.16b}, v4.16b",
@@ -2315,7 +2315,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2632]",
+        "ldr x0, [x28, #2648]",
         "ldr q2, [x0, #32]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -2329,7 +2329,7 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "ldr x0, [x28, #2632]",
+        "ldr x0, [x28, #2648]",
         "ldr q4, [x0, #32]",
         "tbl v16.16b, {v17.16b, v18.16b}, v4.16b",
         "tbl v2.16b, {v2.16b, v3.16b}, v4.16b",
@@ -2342,7 +2342,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2632]",
+        "ldr x0, [x28, #2648]",
         "ldr q2, [x0, #48]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
@@ -2356,7 +2356,7 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "ldr x0, [x28, #2632]",
+        "ldr x0, [x28, #2648]",
         "ldr q4, [x0, #48]",
         "tbl v16.16b, {v17.16b, v18.16b}, v4.16b",
         "tbl v2.16b, {v2.16b, v3.16b}, v4.16b",

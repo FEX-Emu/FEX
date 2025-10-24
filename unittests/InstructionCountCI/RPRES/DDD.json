@@ -17,15 +17,15 @@
         "0x0f 0x0f 0x86"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1056]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1072]",
         "frecpe v0.2s, v2.2s",
         "frecps v1.2s, v0.2s, v2.2s",
         "fmul v2.2s, v0.2s, v1.2s",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "pfrsqrtv mm0, mm1": {
@@ -34,10 +34,10 @@
         "0x0f 0x0f 0x87"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1056]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1072]",
         "fabs v3.4s, v2.4s",
         "frsqrte v0.2s, v3.2s",
         "fmul v1.2s, v0.2s, v0.2s",
@@ -45,8 +45,8 @@
         "fmul v3.2s, v0.2s, v1.2s",
         "movi v0.2s, #0x80, lsl #24",
         "bit v3.8b, v2.8b, v0.8b",
-        "str d3, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d3, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "pfrcp mm0, mm1": {
@@ -55,16 +55,16 @@
         "0x0f 0x0f 0x96"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1056]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1072]",
         "frecpe s0, s2",
         "frecps s1, s0, s2",
         "fmul s2, s0, s1",
         "dup v2.2s, v2.s[0]",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "pfrsqrt mm0, mm1": {
@@ -73,10 +73,10 @@
         "0x0f 0x0f 0x97"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "ldr d2, [x28, #1056]",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1072]",
         "fabs v3.4s, v2.4s",
         "frsqrte v0.2s, v3.2s",
         "fmul v1.2s, v0.2s, v0.2s",
@@ -85,8 +85,8 @@
         "movi v0.2s, #0x80, lsl #24",
         "bit v3.8b, v2.8b, v0.8b",
         "dup v2.2s, v3.s[0]",
-        "str d2, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     }
   }

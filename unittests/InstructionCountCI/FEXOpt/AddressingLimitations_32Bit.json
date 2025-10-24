@@ -301,14 +301,14 @@
     "mov ebx, fs:0x14": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #968]",
+        "ldr w20, [x28, #1000]",
         "ldr w6, [x20, #20]"
       ]
     },
     "mov ebx, gs:0x14": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #960]",
+        "ldr w20, [x28, #992]",
         "ldr w6, [x20, #20]"
       ]
     },
@@ -320,9 +320,9 @@
       "x86InstructionCount": 2,
       "ExpectedInstructionCount": 4,
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #960]",
+        "ldr w20, [x28, #992]",
         "ldr w4, [x20, #256]",
-        "ldr w20, [x28, #960]",
+        "ldr w20, [x28, #992]",
         "ldr w6, [x20, #20]"
       ]
     }

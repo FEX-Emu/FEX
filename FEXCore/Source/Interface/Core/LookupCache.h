@@ -131,46 +131,97 @@ public:
     Shared = &NewMap;
   }
 
-  uintptr_t FindBlock(uint64_t Address) {
+  uintptr_t FindBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) {
     // Try L1, no lock needed
-    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1PointerMask];
     if (L1Entry.GuestCode == Address) {
       return L1Entry.HostCode;
     }
 
     // L2 and L3 need to be locked
-    auto lk = Shared->AcquireWriteLock();
+    uintptr_t HostPtr {};
+    {
+      auto lk = Shared->AcquireWriteLock();
 
-    if (!DisableL2Cache()) {
-      // Try L2
-      const auto PageIndex = (Address & (VirtualMemSize - 1)) >> 12;
-      const auto PageOffset = Address & (0x0FFF);
+      if (!DisableL2Cache()) {
+        // Try L2
+        const auto PageIndex = (Address & (VirtualMemSize - 1)) >> 12;
+        const auto PageOffset = Address & (0x0FFF);
 
-      const auto Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
-      auto LocalPagePointer = Pointers[PageIndex];
+        const auto Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+        auto LocalPagePointer = Pointers[PageIndex];
 
-      // Do we a page pointer for this address?
-      if (LocalPagePointer) {
-        // Find there pointer for the address in the blocks
-        auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
+        // Do we a page pointer for this address?
+        if (LocalPagePointer) {
+          // Find there pointer for the address in the blocks
+          auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
 
-        if (BlockPointers[PageOffset].GuestCode == Address) {
-          L1Entry.GuestCode = Address;
-          L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
-          return L1Entry.HostCode;
+          if (BlockPointers[PageOffset].GuestCode == Address) {
+            L1Entry.GuestCode = Address;
+            L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
+            HostPtr = L1Entry.HostCode;
+          }
+        }
+      }
+
+      if (!HostPtr) {
+        // Try L3
+        auto HostCode = Shared->FindBlock(Address, lk);
+        if (HostCode) {
+          CacheBlockMapping(Address, HostCode.value(), lk);
+          HostPtr = HostCode.value();
         }
       }
     }
 
-    // Try L3
-    auto HostCode = Shared->FindBlock(Address, lk);
-    if (HostCode) {
-      CacheBlockMapping(Address, HostCode.value(), lk);
-      return HostCode.value();
+    if (HostPtr && DynamicL1Cache()) {
+      UpdateDynamicL1Stats(Thread);
     }
 
-    // Failed to find
-    return 0;
+    return HostPtr;
+  }
+
+  void UpdateDynamicL1Stats(FEXCore::Core::InternalThreadState* Thread) {
+    // If host pointer was found in L2 or L3, then add it to the counter.
+    // Keeping track not L1 misses, but specifically L2/L3 hits.
+    ++L2L3CacheHits;
+
+    const auto CurrentTime = std::chrono::system_clock::now();
+    const auto Period = CurrentTime - LastPeriod;
+    if (Period >= SamplePeriod) {
+      // If larger than the sample period then check if we need to increase L1 cache size.
+      const double AveragePerSecond = static_cast<double>(L2L3CacheHits) /
+                                      static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(Period).count()) * 1000.0;
+
+      if (AveragePerSecond >= DynamicL1CacheIncreaseCountHeuristic()) {
+        if (CurrentL1Entries < MAX_L1_ENTRIES) {
+          CurrentL1Entries <<= 1;
+          L1PointerMask = CurrentL1Entries - 1;
+
+          // Update the thread's L1 pointer mask to increase how much cache it uses.
+          // Since we're in C-code, this is safe to update here.
+          Thread->CurrentFrame->State.L1Mask = GetScaledL1PointerMask();
+        }
+      } else if (AveragePerSecond < DynamicL1CacheDecreaseCountHeuristic()) {
+        if (CurrentL1Entries > MIN_L1_ENTRIES) {
+          CurrentL1Entries >>= 1;
+          L1PointerMask = CurrentL1Entries - 1;
+
+          // Madvise the entries that we are dropping. Gives the memory back to the OS.
+          LookupCacheEntry* FirstZeroL1Entry = &reinterpret_cast<LookupCacheEntry*>(L1Pointer)[CurrentL1Entries];
+          size_t ZeroMemorySize = (MAX_L1_ENTRIES - CurrentL1Entries) * sizeof(LookupCacheEntry);
+          FEXCore::Allocator::VirtualDontNeed(FirstZeroL1Entry, ZeroMemorySize, false);
+
+          // Update the thread's L1 pointer mask to increase how much cache it uses.
+          // Since we're in C-code, this is safe to update here.
+          Thread->CurrentFrame->State.L1Mask = GetScaledL1PointerMask();
+        }
+      }
+
+      // Update Last period to start again.
+      LastPeriod = CurrentTime;
+      L2L3CacheHits = 0;
+    }
   }
 
   GuestToHostMap* Shared = nullptr;
@@ -190,7 +241,7 @@ public:
 
     // There is no need to update L1 or L2, they will get updated on first lookup
     // However, adding to L1 here increases performance
-    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1PointerMask];
     L1Entry.GuestCode = Address;
     L1Entry.HostCode = (uintptr_t)HostCode;
   }
@@ -202,7 +253,7 @@ public:
     bool ErasedAny = Shared->Erase(Frame, Address, lk);
 
     // Do L1
-    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1PointerMask];
     if (L1Entry.GuestCode == Address) {
       L1Entry.GuestCode = 0;
       ErasedAny = true;
@@ -244,15 +295,15 @@ public:
   uintptr_t GetL1Pointer() const {
     return L1Pointer;
   }
+  uintptr_t GetScaledL1PointerMask() const {
+    return L1PointerMask << FEXCore::ilog2(sizeof(LookupCache::LookupCacheEntry));
+  }
   uintptr_t GetPagePointer() const {
     return PagePointer;
   }
   uintptr_t GetVirtualMemorySize() const {
     return VirtualMemSize;
   }
-
-  constexpr static size_t L1_ENTRIES = 1 * 1024 * 1024; // Must be a power of 2
-  constexpr static size_t L1_ENTRIES_MASK = L1_ENTRIES - 1;
 
   // This needs to be taken before reads or writes to L2, L3, CodePages,
   // and before writes to L1. Concurrent access from a thread that this LookupCache doesn't belong to
@@ -268,7 +319,7 @@ public:
 private:
   void CacheBlockMapping(uint64_t Address, uintptr_t HostCode, const LookupCacheWriteLockToken& lk) {
     // Do L1
-    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1PointerMask];
     L1Entry.GuestCode = Address;
     L1Entry.HostCode = HostCode;
 
@@ -322,18 +373,32 @@ private:
   uintptr_t PagePointer;
   uintptr_t PageMemory;
   uintptr_t L1Pointer;
+  uintptr_t L1PointerMask;
 
   size_t TotalCacheSize;
 
+  // Start with 8k entries in L1 to give 128KB of L1 cache to each thread.
+  // Max out at 1 million entries to give each thread 16MB of L1 cache maximum.
+  constexpr static size_t MIN_L1_ENTRIES = 8 * 1024;        // Must be a power of 2
+  constexpr static size_t MAX_L1_ENTRIES = 1 * 1024 * 1024; // Must be a power of 2
+
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
   constexpr static size_t SIZE_PER_PAGE = FEXCore::Utils::FEX_PAGE_SIZE * sizeof(LookupCacheEntry);
-  constexpr static size_t L1_SIZE = L1_ENTRIES * sizeof(LookupCacheEntry);
+  constexpr static size_t MAX_L1_SIZE = MAX_L1_ENTRIES * sizeof(LookupCacheEntry);
 
   size_t AllocateOffset {};
 
   FEXCore::Context::ContextImpl* ctx;
   uint64_t VirtualMemSize {};
 
+  size_t CurrentL1Entries = MIN_L1_ENTRIES;
+  uint64_t L2L3CacheHits {};
+  std::chrono::time_point<std::chrono::system_clock> LastPeriod {};
+  constexpr static std::chrono::seconds SamplePeriod {1};
+  FEX_CONFIG_OPT(DynamicL1CacheIncreaseCountHeuristic, DYNAMICL1CACHEINCREASECOUNTHEURISTIC);
+  FEX_CONFIG_OPT(DynamicL1CacheDecreaseCountHeuristic, DYNAMICL1CACHEDECREASECOUNTHEURISTIC);
+
+  FEX_CONFIG_OPT(DynamicL1Cache, DYNAMICL1CACHE);
   FEX_CONFIG_OPT(DisableL2Cache, DISABLEL2CACHE);
 };
 } // namespace FEXCore
