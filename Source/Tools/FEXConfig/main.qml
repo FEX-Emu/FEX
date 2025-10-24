@@ -719,6 +719,11 @@ ApplicationWindow {
                 text: qsTr("Disable JIT optimization passes")
                 config: "O0"
             }
+
+            ConfigCheckBox {
+                text: qsTr("Disable L2 cache")
+                config: "DisableL2Cache"
+            }
         }
 
         // Libraries settings
