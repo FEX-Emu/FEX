@@ -1997,7 +1997,8 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
         }
         return 4;
       }
-      if (std::optional<uint64_t> Prev = DoCAS(Size, GPRs[DataReg], Thread->ExclusiveStore.Store, GPRs[AddrReg], StrictSplitLockMutex)) {
+      if (std::optional<uint64_t> Prev =
+            DoCAS(Size, DataReg == 31 ? 0 : GPRs[DataReg], Thread->ExclusiveStore.Store, GPRs[AddrReg], StrictSplitLockMutex)) {
         if (StatusReg != 31) {
           GPRs[StatusReg] = !!memcmp(&Thread->ExclusiveStore.Store, &*Prev, Size);
         }
