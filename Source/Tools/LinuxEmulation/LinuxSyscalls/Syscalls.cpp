@@ -8,6 +8,7 @@ $end_info$
 */
 
 #include "CodeLoader.h"
+#include "CodeMapWriter.h"
 
 #include "FEXHeaderUtils/StringArgumentParser.h"
 #include "Linux/Utils/ELFContainer.h"
@@ -764,7 +765,8 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::Signal
   , FM {_CTX}
   , CTX {_CTX}
   , SignalDelegation {_SignalDelegation}
-  , ThunkHandler {ThunkHandler} {
+  , ThunkHandler {ThunkHandler}
+  , CodeMapWriter {fextl::make_unique<CodeMapWriterImpl>()} {
   FEX::HLE::_SyscallHandler = this;
   HostKernelVersion = CalculateHostKernelVersion();
   GuestKernelVersion = CalculateGuestKernelVersion();
@@ -884,6 +886,11 @@ void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) 
 
 void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
   if (Child) {
+    if (CodeMapWriter) {
+      static_cast<CodeMapWriterImpl*>(CodeMapWriter.get())->InvalidateFDs();
+    }
+    CodeMapWriter = fextl::make_unique<CodeMapWriterImpl>();
+
     VMATracking.Mutex.StealAndDropActiveLocks();
   } else {
     VMATracking.Mutex.unlock();

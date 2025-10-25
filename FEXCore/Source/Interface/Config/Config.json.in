@@ -16,6 +16,13 @@
           "Maximum number of instruction to store in a block"
         ]
       },
+      "ReadOnlyCodeMaps": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "If true, code map dumping and processing will be disabled"
+        ]
+      },
       "HostFeatures": {
         "Type": "strenum",
         "Default": "FEXCore::Config::HostFeatures::OFF",
