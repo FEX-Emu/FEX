@@ -150,12 +150,6 @@ void OpDispatchBuilder::NOPOp(OpcodeArgs) {}
 void OpDispatchBuilder::RETOp(OpcodeArgs) {
   const auto GPRSize = GetGPROpSize();
 
-  // ABI Optimization: Flags don't survive calls or rets
-  if (CTX->Config.ABILocalFlags) {
-    _InvalidateFlags(~0UL); // all flags
-    InvalidatePF_AF();
-  }
-
   Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
   Ref NewRIP = Pop(GPRSize, SP);
 
@@ -518,12 +512,6 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   const auto GPRSize = GetGPROpSize();
 
   BlockSetRIP = true;
-
-  // ABI Optimization: Flags don't survive calls or rets
-  if (CTX->Config.ABILocalFlags) {
-    _InvalidateFlags(~0UL); // all flags
-    InvalidatePF_AF();
-  }
 
   // Call instruction only uses up to 32-bit signed displacement
   int64_t TargetOffset = Op->Src[0].Literal();

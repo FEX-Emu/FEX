@@ -434,7 +434,7 @@
         "Default": "true",
         "Desc": [
           "Use volatile metadata in PE files to inform TSO instructions when available.",
-	  "When metadata is unavailable falls back to the currently enabled TSO options."
+          "When metadata is unavailable falls back to the currently enabled TSO options."
         ]
       },
       "X87ReducedPrecision": {
@@ -442,15 +442,6 @@
         "Default": "false",
         "Desc": [
           "Emulates X87 floating point using 64-bit precision. This reduces emulation accuracy and may result in rendering bugs."
-        ]
-      },
-      "ABILocalFlags": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "When enabled enables an optimization around flags.",
-          "Assumes flags are not used across cals.",
-          "Hand-written assembly can violate this assumption."
         ]
       },
       "StallProcess": {
