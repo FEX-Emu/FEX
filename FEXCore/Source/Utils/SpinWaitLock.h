@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#pragma once
+
 #include <atomic>
 #include <chrono>
 #include <mutex>
