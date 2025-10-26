@@ -3,6 +3,8 @@
 #include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/SHMStats.h>
+#include "Utils/WritePriorityMutex.h"
+
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory_resource.h>
 #include <FEXCore/fextl/robin_map.h>
@@ -15,22 +17,35 @@
 #include <mutex>
 
 namespace FEXCore {
-
 struct LookupCacheWriteLockToken {
 private:
   // Only constructible by GuestToHostMap
   friend struct GuestToHostMap;
-  LookupCacheWriteLockToken(std::mutex& Mutex)
+  LookupCacheWriteLockToken(FEXCore::Utils::WritePriorityMutex::Mutex& Mutex)
     : Lock {Mutex} {}
-  std::lock_guard<std::mutex> Lock;
+  std::lock_guard<FEXCore::Utils::WritePriorityMutex::Mutex> Lock;
+};
+
+struct LookupCacheReadLockToken {
+private:
+  // Only constructible by GuestToHostMap
+  friend struct GuestToHostMap;
+  LookupCacheReadLockToken(FEXCore::Utils::WritePriorityMutex::Mutex& Mutex)
+    : Lock {Mutex} {}
+  std::shared_lock<FEXCore::Utils::WritePriorityMutex::Mutex> Lock;
 };
 
 struct GuestToHostMap {
-  std::mutex WriteLock;
+  FEXCore::Utils::WritePriorityMutex::Mutex Lock {};
 
   [[nodiscard]]
   LookupCacheWriteLockToken AcquireWriteLock() {
-    return LookupCacheWriteLockToken {WriteLock};
+    return LookupCacheWriteLockToken {Lock};
+  }
+
+  [[nodiscard]]
+  LookupCacheReadLockToken AcquireReadLock() {
+    return LookupCacheReadLockToken {Lock};
   }
 
   struct BlockLinkTag {
@@ -75,7 +90,7 @@ struct GuestToHostMap {
     BlockList[Address] = (uintptr_t)HostCode;
   }
 
-  std::optional<uintptr_t> FindBlock(uint64_t Address, const LookupCacheWriteLockToken&) {
+  std::optional<uintptr_t> FindBlock(uint64_t Address, const LookupCacheReadLockToken&) {
     auto HostCode = BlockList.find(Address);
     if (HostCode == BlockList.end()) {
       return std::nullopt;
@@ -144,7 +159,7 @@ public:
     {
       std::optional<FEXCore::SHMStats::AccumulationBlock<uint64_t>> LockTime(
         Thread->ThreadStats ? &Thread->ThreadStats->AccumulatedCacheReadLockTime : nullptr);
-      auto lk = Shared->AcquireWriteLock();
+      auto lk = Shared->AcquireReadLock();
       LockTime.reset();
 
       if (!DisableL2Cache()) {
@@ -302,7 +317,7 @@ public:
   }
 
   void ClearCache(const LookupCacheWriteLockToken&);
-  void ClearL2Cache(const LookupCacheWriteLockToken&);
+  void ClearL2Cache(const LookupCacheReadLockToken&);
   void ClearThreadLocalCaches(const LookupCacheWriteLockToken&);
 
   uintptr_t GetL1Pointer() const {
@@ -330,7 +345,7 @@ public:
   }
 
 private:
-  void CacheBlockMapping(uint64_t Address, uintptr_t HostCode, const LookupCacheWriteLockToken& lk) {
+  void CacheBlockMapping(uint64_t Address, uintptr_t HostCode, const LookupCacheReadLockToken& lk) {
     // Do L1
     auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1PointerMask];
     L1Entry.GuestCode = Address;
