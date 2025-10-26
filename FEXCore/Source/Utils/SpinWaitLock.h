@@ -186,6 +186,26 @@ template bool Wait<uint16_t>(uint16_t*, uint16_t, const std::chrono::nanoseconds
 template bool Wait<uint32_t>(uint32_t*, uint32_t, const std::chrono::nanoseconds&);
 template bool Wait<uint64_t>(uint64_t*, uint64_t, const std::chrono::nanoseconds&);
 
+template<typename T>
+static inline T OneShotWFEBitComparison(T* Futex, T Mask, T Comp) {
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
+  T Result = AtomicFutex.load();
+
+  // Early exit if possible.
+  if ((Result & Mask) == Comp) {
+    return Result;
+  }
+
+  Result = LoadExclusive(Futex);
+  if ((Result & Mask) == Comp) {
+    return Result;
+  }
+
+  // Waits for write and returns result.
+  Result = WFELoadAtomic(Futex);
+  return Result;
+}
+
 #else
 template<typename T, typename TT>
 static inline void Wait(T* Futex, TT ExpectedValue) {
