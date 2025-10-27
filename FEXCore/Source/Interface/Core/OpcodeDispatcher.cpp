@@ -3215,7 +3215,11 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     Ref Dest = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     // Store to memory where RDI points
-    _StoreMemGPRAutoTSO(Size, Dest, Src, Size);
+    if (CTX->IsMemcpyAtomicTSOEnabled()) {
+      _StoreMemGPRAutoTSO(Size, Dest, Src, Size);
+    } else {
+      _StoreMem(RegClass::GPR, Size, Src, Dest, Invalid(), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    }
 
     // Offset the pointer
     Ref TailDest = LoadGPRRegister(X86State::REG_RDI);
@@ -3283,10 +3287,15 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     Ref RSI = MakeSegmentAddress(X86State::REG_RSI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
     Ref RDI = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-    auto Src = _LoadMemGPRAutoTSO(Size, RSI, Size);
+    if (CTX->IsMemcpyAtomicTSOEnabled()) {
+      auto Src = _LoadMemGPRAutoTSO(Size, RSI, Size);
 
-    // Store to memory where RDI points
-    _StoreMemGPRAutoTSO(Size, RDI, Src, Size);
+      // Store to memory where RDI points
+      _StoreMemGPRAutoTSO(Size, RDI, Src, Size);
+    } else {
+      auto Src = _LoadMem(RegClass::GPR, Size, RSI, Invalid(), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+      _StoreMem(RegClass::GPR, Size, Src, RDI, Invalid(), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    }
 
     auto PtrDir = LoadDir(IR::OpSizeToSize(Size));
     RSI = Add(OpSize::i64Bit, RSI, PtrDir);
