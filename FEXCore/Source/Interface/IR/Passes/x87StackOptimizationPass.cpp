@@ -6,7 +6,6 @@
 #include "Interface/IR/PassManager.h"
 #include "FEXCore/IR/IR.h"
 #include "FEXCore/Utils/Profiler.h"
-#include "FEXCore/Utils/MathUtils.h"
 #include "FEXCore/Core/HostFeatures.h"
 #include "Interface/Core/Addressing.h"
 
@@ -293,10 +292,9 @@ private:
     StackMemberInfo() {}
     StackMemberInfo(Ref Data)
       : StackDataNode(Data) {}
-    StackMemberInfo(Ref Data, Ref Source, OpSize Size, bool Float)
+    StackMemberInfo(Ref Data, Ref Source, OpSize Size)
       : StackDataNode(Data)
-      , Source({Size, Source})
-      , InterpretAsFloat(Float) {}
+      , Source({Size, Source}) {}
     Ref StackDataNode {}; // Reference to the data in the Stack.
                           // This is the source data node in the stack format, possibly converted to 64/80 bits.
     struct StackMemberData final {
@@ -306,7 +304,6 @@ private:
     // Tuple is only valid if we have information about the Source of the Stack Data Node.
     // In it's valid then OpSize is the original source size and Ref is the original source node.
     std::optional<StackMemberData> Source {};
-    bool InterpretAsFloat {false}; // True if this is a floating point value, false if integer
   };
 
   // StackData, TopCache need to be always properly set to ensure
@@ -927,8 +924,13 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           StoreStackValueAtOffset_Slow(SourceNode);
         } else {
           auto* SourceNode = CurrentIR.GetNode(Op->X80Src);
-          auto* OriginalNode = CurrentIR.GetNode(Op->OriginalValue);
-          StackData.push(StackMemberInfo {SourceNode, OriginalNode, Op->LoadSize, Op->Float});
+          if (Op->OriginalValue.IsInvalid()) {
+            // No original value to track - just push the converted data
+            StackData.push(StackMemberInfo {SourceNode});
+          } else {
+            auto* OriginalNode = CurrentIR.GetNode(Op->OriginalValue);
+            StackData.push(StackMemberInfo {SourceNode, OriginalNode, Op->LoadSize});
+          }
         }
         break;
       }
@@ -993,9 +995,8 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // str w2, [x1]
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
-        if (!SlowPath && Value->Source && Value->Source->Size == Op->StoreSize && Value->InterpretAsFloat) {
-          const auto ClassType = Value->InterpretAsFloat ? RegClass::FPR : RegClass::GPR;
-          IREmit->_StoreMem(ClassType, Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align, OffsetType, OffsetScale);
+        if (!SlowPath && Value->Source && Value->Source->Size == Op->StoreSize) {
+          IREmit->_StoreMemFPR(Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align, OffsetType, OffsetScale);
           break;
         }
 

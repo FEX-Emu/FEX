@@ -17,7 +17,6 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/FPState.h>
 
-#include <cmath>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -69,7 +68,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
   if (Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     ConvertedData = _F80CVTTo(Data, ReadWidth);
   }
-  _PushStack(ConvertedData, Data, ReadWidth, true);
+  _PushStack(ConvertedData, Data, ReadWidth);
 }
 
 // Float LoaD operation with memory operand
@@ -81,7 +80,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
   // Read from memory
   Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
-  _PushStack(ConvertedData, Data, OpSize::i128Bit, true);
+  _PushStack(ConvertedData, Data, OpSize::i128Bit);
 }
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
@@ -93,7 +92,7 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
 void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant K) {
   // Update TOP
   Ref Data = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, K);
-  _PushStack(Data, Data, OpSize::i128Bit, true);
+  _PushStack(Data, Data, OpSize::i128Bit);
 }
 
 void OpDispatchBuilder::FILD(OpcodeArgs) {
@@ -124,7 +123,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
   Ref ConvertedData = _VLoadTwoGPRs(shifted, upper);
-  _PushStack(ConvertedData, Data, ReadWidth, false);
+  _PushStack(ConvertedData, Invalid(), ReadWidth);
 }
 
 void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
@@ -132,7 +131,7 @@ void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
   AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
 
   A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, false, false, Width);
-  _StoreStackMem(SourceSize, Width, A.Base, A.Index, OpSize::iInvalid, A.IndexType, A.IndexScale, /*Float=*/true);
+  _StoreStackMem(SourceSize, Width, A.Base, A.Index, OpSize::iInvalid, A.IndexType, A.IndexScale);
 
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
@@ -878,8 +877,8 @@ void OpDispatchBuilder::X87FXTRACT(OpcodeArgs) {
   _PopStackDestroy();
   auto Exp = _F80XTRACT_EXP(Top);
   auto Sig = _F80XTRACT_SIG(Top);
-  _PushStack(Exp, Exp, OpSize::f80Bit, true);
-  _PushStack(Sig, Sig, OpSize::f80Bit, true);
+  _PushStack(Exp, Invalid(), OpSize::f80Bit);
+  _PushStack(Sig, Invalid(), OpSize::f80Bit);
 }
 
 } // namespace FEXCore::IR
