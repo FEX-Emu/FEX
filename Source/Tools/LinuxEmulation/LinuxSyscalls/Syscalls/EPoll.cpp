@@ -16,12 +16,12 @@ $end_info$
 #include <sys/epoll.h>
 
 namespace FEX::HLE {
+auto epoll_create(FEXCore::Core::CpuStateFrame* Frame, int size) -> uint64_t {
+  uint64_t Result = ::epoll_create(size);
+  SYSCALL_ERRNO();
+}
 void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
-
-  REGISTER_SYSCALL_IMPL(epoll_create, [](FEXCore::Core::CpuStateFrame* Frame, int size) -> uint64_t {
-    uint64_t Result = epoll_create(size);
-    SYSCALL_ERRNO();
-  });
+  REGISTER_SYSCALL_IMPL(epoll_create, epoll_create);
 }
 } // namespace FEX::HLE
