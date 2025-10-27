@@ -227,7 +227,7 @@ namespace PThreads {
 
         // Move SP in to a temporary to store.
         mov x1, sp;
-        str x1,  [x0, #(19 * 8)];
+        str x1,  [x0, #(20 * 8)];
 
         // Return zero to signify this is the SetJump.
         mov x0, #0;
@@ -254,7 +254,7 @@ namespace PThreads {
         ldp d14, d15, [x0, #(18 * 8)];
 
         // Load SP in to temporary then move
-        ldr x0,  [x0, #(19 * 8)];
+        ldr x0,  [x0, #(20 * 8)];
         mov sp, x0;
 
         // Move value in to result register
