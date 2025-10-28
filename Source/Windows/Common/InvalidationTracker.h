@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/IntervalList.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 #include <string_view>
 
@@ -37,6 +38,8 @@ public:
 private:
   void DetectMonoBackpatcherBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC);
   void DisableSMCDetection();
+  void InvalidateIntervalInternal(uint64_t Address, uint64_t Size);
+
 
   FEXCore::IntervalList<uint64_t> XIntervals;
   FEXCore::IntervalList<uint64_t> RWXIntervals;
