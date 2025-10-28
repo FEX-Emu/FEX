@@ -62,7 +62,7 @@ struct CustomIRResult {
     , Data(Data) {}
 };
 
-using BlockDelinkerFunc = void (*)(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
+using BlockDelinkerFunc = void (*)(FEXCore::Context::ExitFunctionLinkData* Record);
 constexpr uint32_t TSC_SCALE_MAXIMUM = 1'000'000'000; ///< 1Ghz
 
 class CodeCache : public AbstractCodeCache {

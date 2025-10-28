@@ -88,7 +88,7 @@ struct GuestToHostMap {
     auto lower = BlockLinks->lower_bound({Address, nullptr});
     auto upper = BlockLinks->upper_bound({Address, reinterpret_cast<FEXCore::Context::ExitFunctionLinkData*>(UINTPTR_MAX)});
     for (auto it = lower; it != upper; it = BlockLinks->erase(it)) {
-      it->second(Frame, it->first.HostLink);
+      it->second(it->first.HostLink);
     }
 
     // Remove from BlockList
