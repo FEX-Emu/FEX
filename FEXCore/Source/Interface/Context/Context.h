@@ -155,7 +155,7 @@ public:
     return CodeCache;
   }
 
-  void OnCodeBufferAllocated(CPU::CodeBuffer&) override;
+  void OnCodeBufferAllocated(const std::shared_ptr<CPU::CodeBuffer> &) override;
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
   void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, InvalidatedEntryAccumulator& Accumulator, uint64_t Start,
                                 uint64_t Length) override;
@@ -348,5 +348,8 @@ private:
 
   bool MonoDetected = false;
   std::atomic<uint64_t> MonoBackpatcherBlock;
+
+  std::mutex CodeBufferListLock;
+  fextl::vector<std::weak_ptr<CPU::CodeBuffer>> CodeBufferList;
 };
 } // namespace FEXCore::Context
