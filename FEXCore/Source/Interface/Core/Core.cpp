@@ -459,9 +459,14 @@ void ContextImpl::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
 }
 #endif
 
-void ContextImpl::OnCodeBufferAllocated(CPU::CodeBuffer& Buffer) {
+void ContextImpl::OnCodeBufferAllocated(const fextl::shared_ptr<CPU::CodeBuffer>& Buffer) {
   if (Config.GlobalJITNaming()) {
-    Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
+    Symbols.RegisterJITSpace(Buffer->Ptr, Buffer->Size);
+  }
+
+  {
+    std::scoped_lock lk{CodeBufferListLock};
+    CodeBufferList.emplace_back(Buffer);
   }
 }
 
