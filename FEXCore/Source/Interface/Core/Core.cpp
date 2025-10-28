@@ -838,10 +838,14 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     Thread->CPUBackend->ClearRelocations();
   }
 
+  fextl::vector<uint64_t> CodePages;
+
   if (NeedsAddGuestCodeRanges) {
     // Track in the guest to host map all entrypoints for all pages the compiled block touches, if any page didn't previously
     // contain code, inform the frontend so it can setup SMC detection.
     auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
+    CodePages.reserve(BlockInfo->CodePages.size());
+    CodePages.insert(CodePages.end(), BlockInfo->CodePages.begin(), BlockInfo->CodePages.end());
     for (auto CodePage : BlockInfo->CodePages) {
       if (Thread->LookupCache->AddBlockExecutableRange(Thread, BlockInfo->EntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
         SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
@@ -850,8 +854,9 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   }
 
   // Insert to lookup cache
+
   for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
-    Thread->LookupCache->AddBlockMapping(Thread, GuestAddr, HostAddr);
+    Thread->LookupCache->AddBlockMapping(Thread, GuestAddr, CodePages, HostAddr);
   }
 
   return (uintptr_t)CodePtr;
@@ -878,48 +883,35 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   return (uintptr_t)CodePtr;
 }
 
-static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, InvalidatedEntryAccumulator& Accumulator,
-                                           uint64_t Start, uint64_t Length) {
-  // Ensures now-modified mappings aren't cached as being in their previous non-executable state.
+void ContextImpl::InvalidateCodeBuffersCodeRange(uint64_t Start, uint64_t Length) {
+  FEXCORE_PROFILE_SCOPED("InvalidateCodeBuffersCodeRange");
+
+  LogMan::Throw::AFmt(CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
+  std::scoped_lock lk {CodeBufferListLock};
+  auto it = CodeBufferList.begin();
+  while (it != CodeBufferList.end()) {
+    if (auto Strong = it->lock(); Strong) {
+      Strong->LookupCache->InvalidateRange(Start, Length);
+      it++;
+    } else {
+      it = CodeBufferList.erase(it);
+    }
+  }
+}
+
+void ContextImpl::InvalidateThreadCachedCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
+  LogMan::Throw::AFmt(CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
+
+ // Ensures now-modified mappings aren't cached as being in their previous non-executable state.
   // Accessing FrontendDecoder is safe as the thread's code invalidation mutex must be locked here.
   Thread->FrontendDecoder->ResetExecutableRangeCache();
 
-  auto lk = Thread->LookupCache->AcquireWriteLock();
-  auto& CodePages = Thread->LookupCache->Shared->CodePages;
+  if (Thread->LookupCache->InvalidateCacheRange(Start, Length)) {
+    FEXCORE_PROFILE_SCOPED("InvalidateCallRet");
 
-  auto lower = CodePages.lower_bound(Start >> 12);
-  auto upper = CodePages.upper_bound((Start + Length - 1) >> 12);
-
-  for (auto it = lower; it != upper; it++) {
-    Accumulator.emplace_back(std::move(it->second));
-  }
-
-  bool InvalidatedAnyEntries = false;
-  for (const auto& PageEntries : Accumulator) {
-    for (const auto& Entry : PageEntries) {
-      if (ContextImpl::ThreadRemoveCodeEntry(Thread, Entry, lk)) {
-        InvalidatedAnyEntries = true;
-      }
-    }
-  }
-
-  if (InvalidatedAnyEntries) {
     // This may cause access violations in the thread on Windows as zeroing is not atomic, this is handled by the frontend
     Allocator::VirtualDontNeed(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
   }
-}
-
-void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, InvalidatedEntryAccumulator& Accumulator,
-                                           uint64_t Start, uint64_t Length) {
-  InvalidateGuestThreadCodeRange(Thread, Accumulator, Start, Length);
-}
-
-bool ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP,
-                                        const FEXCore::LookupCacheWriteLockToken& lk) {
-  LogMan::Throw::AFmt(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to "
-                                                                                                         "be unique_locked here");
-
-  return Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP, lk);
 }
 
 void ContextImpl::ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {

@@ -87,12 +87,12 @@ void LookupCache::ClearL2Cache(const FEXCore::LookupCacheWriteLockToken& lk) {
 void LookupCache::ClearThreadLocalCaches(const LookupCacheWriteLockToken&) {
   // Clear L1 and L2 by clearing the full cache.
   FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), TotalCacheSize, false);
+  CachedCodePages.clear();
 }
 
 void LookupCache::ClearCache(const LookupCacheWriteLockToken& lk) {
   // Clear L1 and L2 by clearing the full cache.
-  FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), TotalCacheSize, false);
-
+  ClearThreadLocalCaches(lk);
   Shared->ClearCache(lk);
 }
 
