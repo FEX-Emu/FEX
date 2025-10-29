@@ -711,11 +711,6 @@ ApplicationWindow {
             }
 
             ConfigCheckBox {
-                text: qsTr("Unsafe local flags optimization")
-                config: "ABILocalFlags"
-            }
-
-            ConfigCheckBox {
                 text: qsTr("Disable JIT optimization passes")
                 config: "O0"
             }
