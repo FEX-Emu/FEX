@@ -42,9 +42,6 @@ enum OperatingMode {
 
 using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Length)>;
 
-// Nested vector of guest block entrypoints
-using InvalidatedEntryAccumulator = fextl::vector<fextl::vector<uint64_t>>;
-
 using CustomIREntrypointHandler = std::function<void(uintptr_t Entrypoint, IR::IREmitter*)>;
 
 using ExitHandler = std::function<void(Core::InternalThreadState* Thread)>;
@@ -141,8 +138,9 @@ public:
   virtual AbstractCodeCache& GetCodeCache() = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) = 0;
-  FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(
-    FEXCore::Core::InternalThreadState* Thread, InvalidatedEntryAccumulator& Accumulator, uint64_t Start, uint64_t Length) = 0;
+  FEX_DEFAULT_VISIBILITY virtual void InvalidateCodeBuffersCodeRange(uint64_t Start, uint64_t Length) = 0;
+  FEX_DEFAULT_VISIBILITY virtual void
+  InvalidateThreadCachedCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) = 0;
   FEX_DEFAULT_VISIBILITY virtual FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void

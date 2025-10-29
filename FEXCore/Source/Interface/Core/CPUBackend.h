@@ -81,7 +81,7 @@ namespace CPU {
     // Protects writes to the latest CodeBuffer and changes to LatestOffset
     FEXCore::ForkableUniqueMutex CodeBufferWriteMutex;
 
-    virtual void OnCodeBufferAllocated(CodeBuffer&) {};
+    virtual void OnCodeBufferAllocated(const std::shared_ptr<CodeBuffer>&) {};
 
   private:
     fextl::shared_ptr<CodeBuffer> Latest;

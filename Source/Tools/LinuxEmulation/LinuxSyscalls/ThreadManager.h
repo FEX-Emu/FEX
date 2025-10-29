@@ -208,10 +208,9 @@ public:
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
-    FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
-
+    CTX->InvalidateCodeBuffersCodeRange(Start, Length);
     for (auto& Thread : Threads) {
-      CTX->InvalidateGuestCodeRange(Thread->Thread, Accumulator, Start, Length);
+      CTX->InvalidateThreadCachedCodeRange(Thread->Thread, Start, Length);
     }
   }
 
@@ -223,10 +222,9 @@ public:
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
-    FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
-
+    CTX->InvalidateCodeBuffersCodeRange(Start, Length);
     for (auto& Thread : Threads) {
-      CTX->InvalidateGuestCodeRange(Thread->Thread, Accumulator, Start, Length);
+      CTX->InvalidateThreadCachedCodeRange(Thread->Thread, Start, Length);
     }
 
     // Callback while holding the locks.
