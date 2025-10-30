@@ -73,6 +73,8 @@ public:
   ContextImpl& CTX;
   bool IsGeneratingCache = false;
 
+  uint64_t ComputeCodeMapId(int FD) override;
+
   void LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
   bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) override;
 
