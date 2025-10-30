@@ -1036,11 +1036,26 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       case OP_F80STACKXCHANGE: {
         const auto* Op = IROp->C<IROp_F80StackXchange>();
         auto Offset = Op->SrcStack;
-        Ref ValueTop = LoadStackValue();
-        Ref ValueOffset = LoadStackValue(Offset);
 
-        StoreStackValue(ValueOffset);
-        StoreStackValue(ValueTop, Offset);
+        if (Offset == 0) {
+          // No-op
+          break;
+        }
+
+        const auto [ValidTop, StackMemberTop] = StackData.top(0);
+        const auto [ValidOffset, StackMemberOffset] = StackData.top(Offset);
+
+        if (ValidTop != StackSlot::VALID || ValidOffset != StackSlot::VALID) {
+          // Slow path: do actual memory operations
+          Ref ValueTop = LoadStackValue();
+          Ref ValueOffset = LoadStackValue(Offset);
+          StoreStackValue(ValueOffset);
+          StoreStackValue(ValueTop, Offset);
+        } else {
+          // Fast path: swap complete StackMemberInfo preserving Source metadata
+          StackData.setTop(StackMemberOffset, 0);
+          StackData.setTop(StackMemberTop, Offset);
+        }
         break;
       }
 
