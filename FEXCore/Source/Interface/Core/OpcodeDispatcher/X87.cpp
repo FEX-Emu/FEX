@@ -60,15 +60,13 @@ void OpDispatchBuilder::SetX87Top(Ref Value) {
 
 // Float LoaD operation with memory operand
 void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
-  const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
-
   Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], Width, Op->Flags);
   Ref ConvertedData = Data;
   // Convert to 80bit float
   if (Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
-    ConvertedData = _F80CVTTo(Data, ReadWidth);
+    ConvertedData = _F80CVTTo(Data, Width);
   }
-  _PushStack(ConvertedData, Data, ReadWidth);
+  _PushStack(ConvertedData, Data, Width);
 }
 
 // Float LoaD operation with memory operand
@@ -80,7 +78,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
   // Read from memory
   Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
-  _PushStack(ConvertedData, Data, OpSize::i128Bit);
+  _PushStack(ConvertedData, Invalid(), OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
@@ -92,7 +90,7 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
 void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant K) {
   // Update TOP
   Ref Data = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, K);
-  _PushStack(Data, Data, OpSize::i128Bit);
+  _PushStack(Data, Data, OpSize::f80Bit);
 }
 
 void OpDispatchBuilder::FILD(OpcodeArgs) {
@@ -123,11 +121,12 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
   Ref ConvertedData = _VLoadTwoGPRs(shifted, upper);
-  _PushStack(ConvertedData, Invalid(), ReadWidth);
+  _PushStack(ConvertedData, Invalid(), OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
-  const auto SourceSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  LOGMAN_THROW_A_FMT(Width == OpSize::i32Bit || Width == OpSize::i64Bit || Width == OpSize::f80Bit, "Invalid store width for FST");
+  const auto SourceSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::f80Bit;
   AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
 
   A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, false, false, Width);
@@ -877,8 +876,8 @@ void OpDispatchBuilder::X87FXTRACT(OpcodeArgs) {
   _PopStackDestroy();
   auto Exp = _F80XTRACT_EXP(Top);
   auto Sig = _F80XTRACT_SIG(Top);
-  _PushStack(Exp, Invalid(), OpSize::f80Bit);
-  _PushStack(Sig, Invalid(), OpSize::f80Bit);
+  _PushStack(Exp, Invalid(), OpSize::iInvalid);
+  _PushStack(Sig, Invalid(), OpSize::iInvalid);
 }
 
 } // namespace FEXCore::IR
