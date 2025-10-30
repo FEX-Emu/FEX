@@ -139,11 +139,9 @@ size_t malloc_usable_size(void* ptr);
 void* aligned_alloc(size_t a, size_t s);
 void aligned_free(void* ptr);
 
-FEX_DEFAULT_VISIBILITY extern void InitializeThread();
-
 #ifndef _WIN32
-void InitializeAllocator(size_t PageSize);
-void SetupAllocatorHooks(void* (*)(void* addr, size_t length, int prot, int flags, int fd, off_t offset), int (*)(void* addr, size_t length));
+void SetJemallocMmapHook(void* (*)(void* addr, size_t length, int prot, int flags, int fd, off_t offset));
+void SetJemallocMunmapHook(int (*)(void* addr, size_t length));
 #endif
 
 struct FEXAllocOperators {

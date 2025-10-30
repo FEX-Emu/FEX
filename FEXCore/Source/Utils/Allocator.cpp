@@ -122,21 +122,21 @@ void ReenableSBRKAllocations(void* Ptr) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-static void AssignHookOverrides(size_t PageSize) {
-  SetupAllocatorHooks(FEX_mmap, FEX_munmap);
+static void AssignHookOverrides() {
+  SetJemallocMmapHook(FEX_mmap);
+  SetJemallocMunmapHook(FEX_munmap);
   FEXCore::Allocator::mmap = FEX_mmap;
   FEXCore::Allocator::munmap = FEX_munmap;
-  InitializeAllocator(PageSize);
 }
 
-void SetupHooks(size_t PageSize) {
+void SetupHooks() {
   Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
-  AssignHookOverrides(PageSize);
+  AssignHookOverrides();
 }
 
 void ClearHooks() {
-  SetupAllocatorHooks(::mmap, ::munmap);
+  SetJemallocMmapHook(::mmap);
+  SetJemallocMunmapHook(::munmap);
   FEXCore::Allocator::mmap = ::mmap;
   FEXCore::Allocator::munmap = ::munmap;
 
@@ -314,7 +314,7 @@ fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
   return Regions;
 }
 
-fextl::vector<MemoryRegion> Setup48BitAllocatorIfExists(size_t PageSize) {
+fextl::vector<MemoryRegion> Setup48BitAllocatorIfExists() {
   size_t Bits = FEXCore::Allocator::DetermineVASize();
   if (Bits < 48) {
     return {};
@@ -325,7 +325,7 @@ fextl::vector<MemoryRegion> Setup48BitAllocatorIfExists(size_t PageSize) {
   auto Regions = StealMemoryRegion(Begin48BitVA, End48BitVA);
 
   Alloc64 = Alloc::OSAllocator::Create64BitAllocatorWithRegions(Regions);
-  AssignHookOverrides(PageSize);
+  AssignHookOverrides();
 
   return Regions;
 }
