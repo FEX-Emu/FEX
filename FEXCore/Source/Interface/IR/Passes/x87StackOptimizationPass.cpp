@@ -1035,11 +1035,22 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       case OP_F80STACKXCHANGE: {
         const auto* Op = IROp->C<IROp_F80StackXchange>();
         auto Offset = Op->SrcStack;
-        Ref ValueTop = LoadStackValue();
-        Ref ValueOffset = LoadStackValue(Offset);
 
-        StoreStackValue(ValueOffset);
-        StoreStackValue(ValueTop, Offset);
+        // Check if both stack slots are valid; migrate to slow path if not
+        auto TopValue = MigrateToSlowPath_IfInvalid(0);
+        auto OffsetValue = MigrateToSlowPath_IfInvalid(Offset);
+
+        if (SlowPath) {
+          // Slow path: do actual memory operations
+          Ref ValueTop = LoadStackValueAtOffset_Slow();
+          Ref ValueOffset = LoadStackValueAtOffset_Slow(Offset);
+          StoreStackValueAtOffset_Slow(ValueOffset);
+          StoreStackValueAtOffset_Slow(ValueTop, Offset);
+        } else {
+          // Fast path: swap complete StackMemberInfo preserving Source metadata
+          StackData.setTop(*OffsetValue, 0);
+          StackData.setTop(*TopValue, Offset);
+        }
         break;
       }
 
