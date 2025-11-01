@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-#include "Common/SoftFloat.h"
+#include "Common/VectorRegType.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -26,9 +26,7 @@
 #endif
 
 #include <array>
-#include <atomic>
 #include <bit>
-#include <condition_variable>
 #include <csignal>
 #include <cstring>
 
@@ -95,12 +93,12 @@ void Dispatcher::EmitDispatcher() {
 
   FillStaticRegs();
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
-  cbnz(ARMEmitter::Size::i32Bit, ENTRY_FILL_SRA_SINGLE_INST_REG, &CompileSingleStep);
+  (void)cbnz(ARMEmitter::Size::i32Bit, ENTRY_FILL_SRA_SINGLE_INST_REG, &CompileSingleStep);
 
   ARMEmitter::BiDirectionalLabel LoopTop {};
 
 #ifdef _M_ARM_64EC
-  b(&LoopTop);
+  (void)b(&LoopTop);
 
   AbsoluteLoopTopAddressEnterECFillSRA = GetCursorAddress<uint64_t>();
   ldr(STATE, EC_ENTRY_CPUAREA_REG, CPU_AREA_EMULATOR_DATA_OFFSET);
@@ -108,10 +106,10 @@ void Dispatcher::EmitDispatcher() {
 
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
   // Force a single instruction block if ENTRY_FILL_SRA_SINGLE_INST_REG is nonzero entering the JIT, used for inline SMC handling.
-  cbnz(ARMEmitter::Size::i32Bit, ENTRY_FILL_SRA_SINGLE_INST_REG, &CompileSingleStep);
+  (void)cbnz(ARMEmitter::Size::i32Bit, ENTRY_FILL_SRA_SINGLE_INST_REG, &CompileSingleStep);
 
   // Enter JIT
-  b(&LoopTop);
+  (void)b(&LoopTop);
 
   AbsoluteLoopTopAddressEnterEC = GetCursorAddress<uint64_t>();
   // Load ThreadState and write the target PC there
@@ -132,7 +130,7 @@ void Dispatcher::EmitDispatcher() {
   ldp<ARMEmitter::IndexType::OFFSET>(TMP1, TMP2, REG_CALLRET_SP);
   // EC_CALL_CHECKER_PC_REG is REG_PF which isn't touched by any of the above
   sub(ARMEmitter::Size::i64Bit, TMP1, EC_CALL_CHECKER_PC_REG, TMP1);
-  cbnz(ARMEmitter::Size::i64Bit, TMP1, &LoopTop);
+  (void)cbnz(ARMEmitter::Size::i64Bit, TMP1, &LoopTop);
 
   // If the entry at the TOS is for the target address, pop it and return to the JIT code
   add(ARMEmitter::Size::i64Bit, REG_CALLRET_SP, REG_CALLRET_SP, 0x10);
@@ -144,7 +142,7 @@ void Dispatcher::EmitDispatcher() {
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
 
-  Bind(&LoopTop);
+  (void)Bind(&LoopTop);
   AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
 
   // Load in our RIP
@@ -171,16 +169,16 @@ void Dispatcher::EmitDispatcher() {
   ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
   br(TMP2);
 
-  Bind(&l_NotECCode);
+  (void)Bind(&l_NotECCode);
 #endif
 
   ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
-  cbnz(ARMEmitter::Size::i32Bit, TMP1, &CompileSingleStep);
+  (void)cbnz(ARMEmitter::Size::i32Bit, TMP1, &CompileSingleStep);
 
   ARMEmitter::ForwardLabel NoBlock;
 
   if (DisableL2Cache()) {
-    b(&NoBlock);
+    (void)b(&NoBlock);
   } else {
     // This is the block cache lookup routine
     // It matches what is going on it LookupCache.h::FindBlock
@@ -203,7 +201,7 @@ void Dispatcher::EmitDispatcher() {
       ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 3);
 
       // If page pointer is zero then we have no block
-      cbz(ARMEmitter::Size::i64Bit, TMP1, &NoBlock);
+      (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &NoBlock);
 
       // Steal the page offset
       and_(ARMEmitter::Size::i64Bit, TMP2, TMP4, 0x0FFF);
@@ -218,10 +216,10 @@ void Dispatcher::EmitDispatcher() {
 
       // If the guest address doesn't match, Compile the block.
       sub(TMP2, TMP2, RipReg);
-      cbnz(ARMEmitter::Size::i64Bit, TMP2, &NoBlock);
+      (void)cbnz(ARMEmitter::Size::i64Bit, TMP2, &NoBlock);
 
       // Check the host address to see if it matches, else compile the block.
-      cbz(ARMEmitter::Size::i64Bit, TMP4, &NoBlock);
+      (void)cbz(ARMEmitter::Size::i64Bit, TMP4, &NoBlock);
 
       // If we've made it here then we have a real compiled block
       {
@@ -313,7 +311,7 @@ void Dispatcher::EmitDispatcher() {
 
   // Need to create the block
   {
-    Bind(&NoBlock);
+    (void)Bind(&NoBlock);
 
     EmitSignalGuardedRegion([&]() {
       SpillStaticRegs(TMP1);
@@ -347,7 +345,7 @@ void Dispatcher::EmitDispatcher() {
   }
 
   {
-    Bind(&CompileSingleStep);
+    (void)Bind(&CompileSingleStep);
 
     EmitSignalGuardedRegion([&]() {
       SpillStaticRegs(TMP1);
@@ -509,7 +507,7 @@ void Dispatcher::EmitDispatcher() {
     stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
 
     // Now go back to the regular dispatcher loop
-    b(&LoopTop);
+    (void)b(&LoopTop);
   }
 
   auto EmitLongALUOpHandler = [&](auto R, auto Offset) {
@@ -578,14 +576,15 @@ void Dispatcher::EmitDispatcher() {
     }
   }
 
-  Bind(&l_CTX);
+  (void)Bind(&l_CTX);
   dc64(reinterpret_cast<uintptr_t>(CTX));
-  Bind(&l_Sleep);
+  (void)Bind(&l_Sleep);
   dc64(reinterpret_cast<uint64_t>(SleepThread));
-  Bind(&l_CompileBlock);
+  (void)Bind(&l_CompileBlock);
   FEXCore::Utils::MemberFunctionToPointerCast PMFCompileBlock(&FEXCore::Context::ContextImpl::CompileBlock);
   dc64(PMFCompileBlock.GetConvertedPointer());
-  Bind(&l_CompileSingleStep);
+  (void)Bind(&l_CompileSingleStep);
+
   FEXCore::Utils::MemberFunctionToPointerCast PMFCompileSingleStep(&FEXCore::Context::ContextImpl::CompileSingleStep);
   dc64(PMFCompileSingleStep.GetConvertedPointer());
 
