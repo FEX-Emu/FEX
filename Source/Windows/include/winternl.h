@@ -540,6 +540,9 @@ NTSTATUS WINAPI RtlWow64SetThreadContext(HANDLE, const WOW64_CONTEXT*);
 void WINAPI Wow64ProcessPendingCrossProcessItems(void);
 NTSTATUS WINAPI Wow64SystemServiceEx(UINT, UINT*);
 NTSTATUS WINAPI RtlWow64SuspendThread(HANDLE, ULONG*);
+void WINAPI RtlAcquireSRWLockShared(RTL_SRWLOCK*);
+void WINAPI RtlReleaseSRWLockShared(RTL_SRWLOCK*);
+BOOLEAN WINAPI RtlTryAcquireSRWLockShared(RTL_SRWLOCK*);
 
 #ifdef __cplusplus
 }

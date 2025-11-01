@@ -28,6 +28,18 @@ void ReleaseSRWLockExclusive(PSRWLOCK SRWLock) {
   RtlReleaseSRWLockExclusive(SRWLock);
 }
 
+void AcquireSRWLockShared(PSRWLOCK SRWLock) {
+  RtlAcquireSRWLockShared(SRWLock);
+}
+
+void ReleaseSRWLockShared(PSRWLOCK SRWLock) {
+  RtlReleaseSRWLockShared(SRWLock);
+}
+
+DLLEXPORT_FUNC(BOOLEAN, TryAcquireSRWLockShared, (PSRWLOCK SRWLock)) {
+  return RtlTryAcquireSRWLockShared(SRWLock);
+}
+
 DLLEXPORT_FUNC(BOOLEAN, TryAcquireSRWLockExclusive, (PSRWLOCK SRWLock)) {
   return RtlTryAcquireSRWLockExclusive(SRWLock);
 }
