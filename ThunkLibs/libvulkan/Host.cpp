@@ -63,15 +63,15 @@ static void DoSetupWithInstance(VkInstance instance) {
 
 static X11Manager x11_manager;
 
-static void fexfn_impl_libvulkan_SetGuestXGetVisualInfo(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+static void fexfn_impl_libvulkan_Vulkan_SetGuestXGetVisualInfo(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXGetVisualInfo);
 }
 
-static void fexfn_impl_libvulkan_SetGuestXSync(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+static void fexfn_impl_libvulkan_Vulkan_SetGuestXSync(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXSync);
 }
 
-static void fexfn_impl_libvulkan_SetGuestXDisplayString(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+static void fexfn_impl_libvulkan_Vulkan_SetGuestXDisplayString(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXDisplayString);
 }
 
