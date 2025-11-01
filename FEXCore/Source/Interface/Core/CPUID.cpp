@@ -88,6 +88,7 @@ namespace ProductNames {
   static const char ARM_Blizzard_M2Pro[] = "Apple Blizzard (M2 Pro)";
   static const char ARM_Avalanche_M2Max[] = "Apple Avalanche (M2 Max)";
   static const char ARM_Blizzard_M2Max[] = "Apple Blizzard (M2 Max)";
+  static const char ARM_AppleSilicon[] = "Apple Silicon";
 
   static const char ARM_ORYON_1[] = "Oryon-1";
   static const char ARM_Ampere_1[] = "AmpereOne";
@@ -188,6 +189,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
     {0x61, 0x029, 1, ProductNames::ARM_Firestorm_M1Max}, // Apple Firestorm (M1 Max)
     {0x61, 0x025, 1, ProductNames::ARM_Firestorm_M1Pro}, // Apple Firestorm (M1 Pro)
     {0x61, 0x023, 1, ProductNames::ARM_Firestorm_M1},    // Apple Firestorm (M1)
+    {0x61, 0, 1, ProductNames::ARM_AppleSilicon},        // QEmu Apple Silicon
 
     {0x41, 0xd8c, 1, ProductNames::ARM_C1Ultra},   // C1-Ultra
     {0x41, 0xd90, 1, ProductNames::ARM_C1Premium}, // C1-Premium

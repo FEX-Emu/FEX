@@ -81,6 +81,8 @@ BigCoreIDs = {
             [ ["apple-a13", "0.0"], # If we aren't on 12.0+
               ["apple-a14", "12.0"], # Only exists in 12.0+
             ],
+        # QEmu HVF 10.2+
+        tuple([0x61, 0]): "apple-a13", # Can't determine variant, choose lowest.
 }
 
 LittleCoreIDs = {
