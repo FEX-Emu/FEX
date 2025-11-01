@@ -353,7 +353,6 @@ struct JITPointers {
     uint64_t ExitFunctionLinker {};
     uint64_t ThreadStopHandlerSpillSRA {};
     uint64_t ThreadPauseHandlerSpillSRA {};
-    uint64_t UnimplementedInstructionHandler {};
     uint64_t GuestSignal_SIGILL {};
     uint64_t GuestSignal_SIGTRAP {};
     uint64_t GuestSignal_SIGSEGV {};
@@ -371,8 +370,6 @@ struct JITPointers {
       // Process specific
       uint64_t LUDIV {};
       uint64_t LDIV {};
-      uint64_t LUREM {};
-      uint64_t LREM {};
 
       // Thread Specific
 
@@ -381,8 +378,6 @@ struct JITPointers {
        * @{ */
       uint64_t LUDIVHandler {};
       uint64_t LDIVHandler {};
-      uint64_t LUREMHandler {};
-      uint64_t LREMHandler {};
       /**  @} */
     } AArch64;
 
