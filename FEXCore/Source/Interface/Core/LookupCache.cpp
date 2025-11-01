@@ -39,6 +39,8 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   // We need one pointer per page of virtual memory
   // At 64GB of virtual memory this will allocate 128MB of virtual memory space
   PagePointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::VirtualAlloc(TotalCacheSize, false, false));
+  LOGMAN_THROW_A_FMT(PagePointer != -1ULL, "Failed to allocate PagePointer");
+
   FEXCore::Allocator::VirtualName("FEXMem_Lookup", reinterpret_cast<void*>(PagePointer),
                                   ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE);
   CTX->SyscallHandler->MarkOvercommitRange(PagePointer, TotalCacheSize);
@@ -49,13 +51,10 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   // We currently limit to 128MB of real memory for caching for the total cache size.
   // Can end up being inefficient if we compile a small number of blocks per page
   PageMemory = PagePointer + ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8;
-  LOGMAN_THROW_A_FMT(PageMemory != -1ULL, "Failed to allocate page memory");
 
   // L1 Cache
   L1Pointer = PageMemory + CODE_SIZE;
   FEXCore::Allocator::VirtualName("FEXMem_Lookup_L1", reinterpret_cast<void*>(L1Pointer), MAX_L1_SIZE);
-
-  LOGMAN_THROW_A_FMT(L1Pointer != -1ULL, "Failed to allocate L1Pointer");
 
   VirtualMemSize = ctx->Config.VirtualMemSize;
 
