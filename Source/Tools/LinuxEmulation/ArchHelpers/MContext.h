@@ -203,9 +203,12 @@ constexpr static uint64_t ESR1_DataAbort_Level_EL2 = 0b01;
 constexpr static uint64_t ESR1_DataAbort_Level_EL1 = 0b10;
 constexpr static uint64_t ESR1_DataAbort_Level_EL0 = 0b11;
 
+std::string_view GetESRName(uint64_t ESR);
+
 static inline uint32_t GetProtectFlags(void* ucontext) {
   uint64_t ESR = GetArmESR(ucontext);
-  LOGMAN_THROW_A_FMT((ESR & ESR1_EC) == ESR1_EC_DataAbort, "Unknown ESR1 EC type: 0x{:x} != 0x{:x}", ESR & ESR1_EC, ESR1_EC_DataAbort);
+  LOGMAN_THROW_A_FMT((ESR & ESR1_EC) == ESR1_EC_DataAbort, "Unknown ESR1 EC type: 0x{:x} != 0x{:x}. Received '{}'", ESR & ESR1_EC,
+                     ESR1_EC_DataAbort, GetESRName(ESR));
 
   uint32_t ProtectFlags {};
   if ((ESR & ESR1_DataAbort_Level) == ESR1_DataAbort_Level_EL0) {
