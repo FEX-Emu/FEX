@@ -22,18 +22,18 @@ template<>
 struct fex_gen_config<glXGetProcAddress> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
 
 // internal use
-void SetGuestMalloc(uintptr_t, uintptr_t);
-void SetGuestXSync(uintptr_t, uintptr_t);
-void SetGuestXGetVisualInfo(uintptr_t, uintptr_t);
-void SetGuestXDisplayString(uintptr_t, uintptr_t);
+void GL_SetGuestMalloc(uintptr_t, uintptr_t);
+void GL_SetGuestXSync(uintptr_t, uintptr_t);
+void GL_SetGuestXGetVisualInfo(uintptr_t, uintptr_t);
+void GL_SetGuestXDisplayString(uintptr_t, uintptr_t);
 template<>
-struct fex_gen_config<SetGuestMalloc> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+struct fex_gen_config<GL_SetGuestMalloc> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<SetGuestXSync> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+struct fex_gen_config<GL_SetGuestXSync> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<SetGuestXGetVisualInfo> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+struct fex_gen_config<GL_SetGuestXGetVisualInfo> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<SetGuestXDisplayString> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+struct fex_gen_config<GL_SetGuestXDisplayString> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
 
 template<typename>
 struct fex_gen_type {};
