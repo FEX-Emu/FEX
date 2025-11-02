@@ -50,19 +50,19 @@ host_layout<_XDisplay*>::~host_layout() {
 // Functions returning _XDisplay* should be handled explicitly via ptr_passthrough
 guest_layout<_XDisplay*> to_guest(host_layout<_XDisplay*>) = delete;
 
-static void fexfn_impl_libGL_SetGuestMalloc(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+static void fexfn_impl_libGL_GL_SetGuestMalloc(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &GuestMalloc);
 }
 
-static void fexfn_impl_libGL_SetGuestXGetVisualInfo(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+static void fexfn_impl_libGL_GL_SetGuestXGetVisualInfo(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXGetVisualInfo);
 }
 
-static void fexfn_impl_libGL_SetGuestXSync(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+static void fexfn_impl_libGL_GL_SetGuestXSync(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXSync);
 }
 
-static void fexfn_impl_libGL_SetGuestXDisplayString(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+static void fexfn_impl_libGL_GL_SetGuestXDisplayString(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &x11_manager.GuestXDisplayString);
 }
 

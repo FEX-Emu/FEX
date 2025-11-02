@@ -29,15 +29,15 @@ template<typename>
 struct fex_gen_type {};
 
 // internal use
-void SetGuestXSync(uintptr_t, uintptr_t);
-void SetGuestXGetVisualInfo(uintptr_t, uintptr_t);
-void SetGuestXDisplayString(uintptr_t, uintptr_t);
+void Vulkan_SetGuestXSync(uintptr_t, uintptr_t);
+void Vulkan_SetGuestXGetVisualInfo(uintptr_t, uintptr_t);
+void Vulkan_SetGuestXDisplayString(uintptr_t, uintptr_t);
 template<>
-struct fex_gen_config<SetGuestXSync> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+struct fex_gen_config<Vulkan_SetGuestXSync> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<SetGuestXGetVisualInfo> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+struct fex_gen_config<Vulkan_SetGuestXGetVisualInfo> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
 template<>
-struct fex_gen_config<SetGuestXDisplayString> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+struct fex_gen_config<Vulkan_SetGuestXDisplayString> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
 
 // So-called "dispatchable" handles are represented as opaque pointers.
 // In addition to marking them as such, API functions that create these objects
