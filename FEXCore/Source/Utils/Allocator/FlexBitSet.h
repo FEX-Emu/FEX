@@ -27,6 +27,11 @@ struct FlexBitSet final {
     Memory[Element / MinimumSizeBits] &= ~(1ULL << (Element % MinimumSizeBits));
     return Value;
   }
+  bool TestAndSet(size_t Element) {
+    bool Value = Get(Element);
+    Memory[Element / MinimumSizeBits] |= (1ULL << (Element % MinimumSizeBits));
+    return Value;
+  }
   void Set(size_t Element) {
     Memory[Element / MinimumSizeBits] |= (1ULL << (Element % MinimumSizeBits));
   }
