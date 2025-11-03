@@ -207,7 +207,7 @@ OSAllocator_64Bit::LiveVMARegion* OSAllocator_64Bit::FindLiveRegionForAddress(ui
     uintptr_t RegionBegin = (*it)->SlabInfo->Base;
     uintptr_t RegionEnd = RegionBegin + (*it)->SlabInfo->RegionSize;
 
-    if (Addr >= RegionBegin && Addr < RegionEnd) {
+    if (Addr >= RegionBegin && AddrEnd < RegionEnd) {
       LiveRegion = *it;
       // Leave our loop
       break;

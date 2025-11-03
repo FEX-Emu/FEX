@@ -2,7 +2,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_range.hpp>
 
-#include "Utils/Allocator/FlexBitSet.h"
 #include "Utils/Allocator/HostAllocator.h"
 #include <FEXCore/Utils/Allocator.h>
 #include <sys/mman.h>
@@ -13,7 +12,7 @@ bool HasSyscallError(T Result) {
   return reinterpret_cast<uint64_t>(Result) >= MAX_ERRNO;
 }
 
-TEST_CASE("FlexBitSet - Fixed replacement") {
+TEST_CASE("Allocator - Fixed replacement") {
   const auto RegionSize = 128 * 1024 * 1024;
   fextl::vector<FEXCore::Allocator::MemoryRegion> MemoryRegions {};
   for (size_t i = 0; i < 2; ++i) {
@@ -34,6 +33,35 @@ TEST_CASE("FlexBitSet - Fixed replacement") {
     auto NewBase = Allocator->Mmap(Base, 4096, PROT_NONE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     REQUIRE(Base == NewBase);
   }
+
+  // Leak the memory for now. Crashes if we try.
+  Allocator.release();
+}
+
+TEST_CASE("Allocator - Non-Fit") {
+  const auto RegionSize = 128 * 1024 * 1024;
+  fextl::vector<FEXCore::Allocator::MemoryRegion> MemoryRegions {};
+  for (size_t i = 0; i < 2; ++i) {
+    auto Ptr = mmap(nullptr, RegionSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    MemoryRegions.emplace_back(FEXCore::Allocator::MemoryRegion {
+      .Ptr = Ptr,
+      .Size = RegionSize,
+    });
+  }
+
+  auto Allocator = Alloc::OSAllocator::Create64BitAllocatorWithRegions(MemoryRegions);
+  auto Base = Allocator->Mmap(nullptr, RegionSize / 4, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  REQUIRE(!HasSyscallError(Base));
+
+  // Try to allocate within the whole VMA size minus a small amount.
+  // FEX had a bug where if the allocation fit within a VMA region, it would try and allocate past the end without checking.
+  // Only occurred when `MAP_FIXED` was used.
+  auto NewBase = Allocator->Mmap(Base, RegionSize - (4096 * 64), PROT_NONE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  // Must either fit in the VMA region, or fail.
+  // - If it matches previous allocation, then it fit in the VMA region.
+  //   - This can happen if FEX's allocator gains support for VMA merging.
+  // - If it errors, then it doesn't fit in the VMA region.
+  REQUIRE((NewBase == Base || HasSyscallError(NewBase)));
 
   // Leak the memory for now. Crashes if we try.
   Allocator.release();
