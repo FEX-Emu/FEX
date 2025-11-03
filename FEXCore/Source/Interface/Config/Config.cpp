@@ -30,14 +30,14 @@ class Context;
 }
 
 namespace FEXCore::Config {
-namespace DefaultValues {
+namespace detail {
 #define P(x) x
 #define OPT_BASE(type, group, enum, json, default) const P(type) P(enum) = P(default);
 #define OPT_STR(group, enum, json, default) const std::string_view P(enum) = P(default);
 #define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
 #define OPT_STRENUM(group, enum, json, default) const uint64_t P(enum) = FEXCore::ToUnderlying(P(default));
 #include <FEXCore/Config/ConfigValues.inl>
-} // namespace DefaultValues
+} // namespace detail
 
 enum Paths {
   PATH_DATA_DIR_LOCAL = 0,

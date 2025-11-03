@@ -104,27 +104,28 @@ static inline std::optional<fextl::string> EnumParser(const ArrayPairType& EnumP
 }
 
 namespace DefaultValues {
-#define P(x) x
-#define OPT_BASE(type, group, enum, json, default) extern const P(type) P(enum);
-#define OPT_STR(group, enum, json, default) extern const std::string_view P(enum);
-#define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
-#include <FEXCore/Config/ConfigValues.inl>
-
   namespace Type {
     using StringArrayType = fextl::list<fextl::string>;
-#define OPT_BASE(type, group, enum, json, default) using P(enum) = P(type);
-#define OPT_STR(group, enum, json, default) using P(enum) = fextl::string;
-#define OPT_STRARRAY(group, enum, json, default) using P(enum) = StringArrayType;
-#include <FEXCore/Config/ConfigValues.inl>
   } // namespace Type
-#define FEX_CONFIG_OPT(name, enum)                                          \
-  FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::enum> name { \
-    FEXCore::Config::CONFIG_##enum,                                         \
-    FEXCore::Config::DefaultValues::enum                                    \
-  }
-
-#undef P
 } // namespace DefaultValues
+
+namespace detail {
+  template<ConfigOption Option>
+  struct ConfigOptionInfo;
+#define DEFINE_METAINFO(type, enum, default)             \
+  template<>                                             \
+  struct ConfigOptionInfo<ConfigOption::CONFIG_##enum> { \
+    using Type = type;                                   \
+    static auto Default() {                              \
+      extern default;                                    \
+      return enum;                                       \
+    }                                                    \
+  };
+#define OPT_BASE(type, group, enum, json, default) DEFINE_METAINFO(type, enum, const type enum)
+#define OPT_STR(group, enum, json, default) DEFINE_METAINFO(fextl::string, enum, const std::string_view enum)
+#define OPT_STRARRAY(group, enum, json, default) DEFINE_METAINFO(DefaultValues::Type::StringArrayType, enum, const std::string_view enum)
+#include <FEXCore/Config/ConfigValues.inl>
+} // namespace detail
 
 FEX_DEFAULT_VISIBILITY void SetDataDirectory(std::string_view Path, bool Global);
 FEX_DEFAULT_VISIBILITY void SetConfigDirectory(const std::string_view Path, bool Global);
@@ -295,4 +296,23 @@ private:
 
   static void GetListIfExists(FEXCore::Config::ConfigOption Option, DefaultValues::Type::StringArrayType* List);
 };
+
+/**
+ * Wrapper around Value that automatically picks the default for the given ConfigOption
+ */
+template<ConfigOption Option>
+struct FEX_DEFAULT_VISIBILITY Getter : public Value<typename detail::ConfigOptionInfo<Option>::Type> {
+  using OptionInfo = detail::ConfigOptionInfo<Option>;
+  Getter()
+    : Value<typename OptionInfo::Type> {Option, OptionInfo::Default()} {}
+};
+
+/**
+ * Helper for reading a config value with caching.
+ *
+ * Typically this is used to declare class members so that the value is read
+ * on construction of the parent.
+ */
+#define FEX_CONFIG_OPT(name, enum) FEXCore::Config::Getter<FEXCore::Config::ConfigOption::CONFIG_##enum> name {}
+
 } // namespace FEXCore::Config
