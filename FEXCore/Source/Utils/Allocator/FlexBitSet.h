@@ -70,12 +70,17 @@ struct FlexBitSet final {
   template<bool WantUnset>
   BitsetScanResults BackwardScanForRange(size_t BeginningElement, size_t ElementCount, size_t MinimumElement) {
     bool FoundHole {};
-    for (size_t CurrentPage = BeginningElement; CurrentPage >= (MinimumElement + ElementCount);) {
+
+    // Final element to iterate to.
+    const size_t FinalElement = MinimumElement + ElementCount - 1;
+
+    for (size_t CurrentPage = BeginningElement; CurrentPage >= FinalElement;) {
       size_t Remaining = ElementCount;
-      LOGMAN_THROW_A_FMT(Remaining <= CurrentPage, "Scanning less than available range");
+      LOGMAN_THROW_A_FMT(CurrentPage <= BeginningElement && CurrentPage >= FinalElement, "BackwardScanForRange: Scanning less than "
+                                                                                         "available range");
 
       while (Remaining) {
-        if (this->Get(CurrentPage - Remaining) == WantUnset) {
+        if (this->Get(CurrentPage - Remaining + 1) == WantUnset) {
           // Has an intersecting range
           break;
         }
@@ -92,7 +97,7 @@ struct FlexBitSet final {
         CurrentPage -= Remaining;
       } else {
         // We have a slab range
-        return BitsetScanResults {CurrentPage - ElementCount, FoundHole};
+        return BitsetScanResults {CurrentPage - ElementCount + 1, FoundHole};
       }
     }
 
@@ -108,11 +113,15 @@ struct FlexBitSet final {
   BitsetScanResults ForwardScanForRange(size_t BeginningElement, size_t ElementCount, size_t ElementsInSet) {
     bool FoundHole {};
 
-    for (size_t CurrentElement = BeginningElement; CurrentElement < (ElementsInSet - ElementCount);) {
+    // Final element to iterate to.
+    const size_t FinalElement = ElementsInSet - ElementCount + 1;
+
+    for (size_t CurrentElement = BeginningElement; CurrentElement <= FinalElement;) {
       // If we have enough free space, check if we have enough free pages that are contiguous
       size_t Remaining = ElementCount;
 
-      LOGMAN_THROW_A_FMT((CurrentElement + Remaining - 1) < ElementsInSet, "Scanning less than available range");
+      LOGMAN_THROW_A_FMT(CurrentElement >= BeginningElement && CurrentElement <= FinalElement, "ForwardScanForRange: Scanning less than "
+                                                                                               "available range");
 
       while (Remaining) {
         if (this->Get(CurrentElement + Remaining - 1) == WantUnset) {
