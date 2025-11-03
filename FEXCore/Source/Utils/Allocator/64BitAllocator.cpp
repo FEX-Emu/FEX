@@ -405,14 +405,18 @@ again:
     // Mark the pages as used
     uintptr_t RegionBegin = LiveRegion->SlabInfo->Base;
     uintptr_t MappedBegin = (AllocatedOffset - RegionBegin) >> FEXCore::Utils::FEX_PAGE_SHIFT;
+    size_t PagesSet {};
 
     for (size_t i = 0; i < NumberOfPages; ++i) {
-      LiveRegion->UsedPages.Set(MappedBegin + i);
+      PagesSet += LiveRegion->UsedPages.TestAndSet(MappedBegin + i) == false;
     }
 
     // Change our last allocation region
     LiveRegion->LastPageAllocation = MappedBegin + NumberOfPages;
-    LiveRegion->FreeSpace -= length;
+    LiveRegion->FreeSpace -= PagesSet * FEXCore::Utils::FEX_PAGE_SIZE;
+    LOGMAN_THROW_A_FMT(LiveRegion->FreeSpace <= LiveRegion->SlabInfo->RegionSize,
+                       "Corrupt LiveRegion free space! 0x{:x} > 0x{:x}. After allocating 0x{:x} (0x{:x} overlapped)", LiveRegion->FreeSpace,
+                       LiveRegion->SlabInfo->RegionSize, length, PagesSet);
   }
 
   if (!AllocatedOffset) {
