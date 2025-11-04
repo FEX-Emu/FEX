@@ -68,7 +68,7 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs, IR::OpSize Width) {
   } else if (Width == OpSize::f80Bit) {
     ConvertedData = _F80CVT(OpSize::i64Bit, Data);
   }
-  _PushStack(ConvertedData, Data, ReadWidth, true);
+  _PushStack(ConvertedData, Data, ReadWidth);
 }
 
 void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
@@ -76,7 +76,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
   ConvertedData = _F80CVT(OpSize::i64Bit, ConvertedData);
-  _PushStack(ConvertedData, Data, OpSize::i64Bit, true);
+  _PushStack(ConvertedData, Data, OpSize::i64Bit);
 }
 
 void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
@@ -88,7 +88,7 @@ void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
 
 void OpDispatchBuilder::FLDF64_Const(OpcodeArgs, uint64_t Num) {
   auto Data = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(Num));
-  _PushStack(Data, Data, OpSize::i64Bit, true);
+  _PushStack(Data, Data, OpSize::i64Bit);
 }
 
 void OpDispatchBuilder::FILDF64(OpcodeArgs) {
@@ -100,7 +100,7 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
     Data = _Sbfe(OpSize::i64Bit, IR::OpSizeAsBits(ReadWidth), 0, Data);
   }
   auto ConvertedData = _Float_FromGPR_S(OpSize::i64Bit, ReadWidth == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, Data);
-  _PushStack(ConvertedData, Data, ReadWidth, false);
+  _PushStack(ConvertedData, Invalid(), ReadWidth);
 }
 
 void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
@@ -397,7 +397,7 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   Ref Exp = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, ExpZV, ExpNZV);
 
   _PopStackDestroy();
-  _PushStack(Exp, Exp, OpSize::i64Bit, true);
-  _PushStack(Sig, Sig, OpSize::i64Bit, true);
+  _PushStack(Exp, Invalid(), OpSize::i64Bit);
+  _PushStack(Sig, Invalid(), OpSize::i64Bit);
 }
 } // namespace FEXCore::IR
