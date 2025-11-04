@@ -53,4 +53,12 @@ public:
 namespace Alloc::OSAllocator {
 fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator();
 fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocatorWithRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions);
+static inline void ReleaseAllocatorWorkaround(fextl::unique_ptr<Alloc::HostAllocator>& Allocator) {
+  // XXX: This is currently a leak.
+  // We can't work around this yet until static initializers that allocate memory are completely removed from our codebase
+  // The allocator is also intrusively allocated, so the unique_ptr tries to double free the HostAllocator object.
+  // Luckily we only remove this on process shutdown, so the kernel will do the cleanup for us
+  Allocator.release();
+}
+
 } // namespace Alloc::OSAllocator

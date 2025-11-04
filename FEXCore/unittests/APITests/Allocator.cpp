@@ -34,8 +34,7 @@ TEST_CASE("Allocator - Fixed replacement") {
     REQUIRE(Base == NewBase);
   }
 
-  // Leak the memory for now. Crashes if we try.
-  Allocator.release();
+  Alloc::OSAllocator::ReleaseAllocatorWorkaround(Allocator);
 }
 
 TEST_CASE("Allocator - Non-Fit") {
@@ -63,6 +62,5 @@ TEST_CASE("Allocator - Non-Fit") {
   // - If it errors, then it doesn't fit in the VMA region.
   REQUIRE((NewBase == Base || HasSyscallError(NewBase)));
 
-  // Leak the memory for now. Crashes if we try.
-  Allocator.release();
+  Alloc::OSAllocator::ReleaseAllocatorWorkaround(Allocator);
 }
