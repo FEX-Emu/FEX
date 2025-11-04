@@ -87,13 +87,20 @@ bool FindWineFEXApplication(int64_t PID, std::string_view exe, const std::vector
   }
 
   // Wine was found, scan the mapped files to see if anything mapped "libarm64ecfex.dll" or "libwow64fex.dll"
-  for (const auto& Entry : std::filesystem::directory_iterator(fmt::format("/proc/{}/map_files", PID))) {
+
+  std::error_code ec {};
+  auto dir_iter = std::filesystem::directory_iterator(fmt::format("/proc/{}/map_files", PID), ec);
+  // If error reading symlink then skip.
+  if (ec) {
+    return false;
+  }
+
+  for (const auto& Entry : dir_iter) {
     // If not a symlink then skip.
     if (!Entry.is_symlink()) {
       continue;
     }
 
-    std::error_code ec {};
     const auto symlink_path = std::filesystem::read_symlink(Entry.path(), ec);
     // If error reading symlink then skip.
     if (ec) {
