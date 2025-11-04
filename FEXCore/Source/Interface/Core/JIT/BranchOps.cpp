@@ -328,8 +328,7 @@ DEF_OP(Thunk) {
 
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->ArgPtr));
 
-  auto thunkFn = static_cast<Context::ContextImpl*>(ThreadState->CTX)->ThunkHandler->LookupThunk(Op->ThunkNameHash);
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, (uintptr_t)thunkFn);
+  InsertNamedThunkRelocation(ARMEmitter::Reg::r2, Op->ThunkNameHash);
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
   } else {
