@@ -22,7 +22,7 @@ public:
   }
   [[nodiscard]] BranchEncodeSucceeded b(ARMEmitter::Condition Cond, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
-    if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) [[likely]] {
+    if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 0, Cond, Imm >> 2);
       return BranchEncodeSucceeded::Success;
@@ -55,7 +55,7 @@ public:
   }
   [[nodiscard]] BranchEncodeSucceeded bc(ARMEmitter::Condition Cond, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
-    if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) [[likely]] {
+    if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 1, Cond, Imm >> 2);
       return BranchEncodeSucceeded::Success;
@@ -116,7 +116,7 @@ public:
   }
   [[nodiscard]] BranchEncodeSucceeded b(const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
-    if (Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0)) [[likely]] {
+    if (Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b0001'01 << 26;
       UnconditionalBranch(Op, Imm >> 2);
       return BranchEncodeSucceeded::Success;
@@ -151,7 +151,7 @@ public:
 
   [[nodiscard]] BranchEncodeSucceeded bl(const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
-    if (Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0)) [[likely]] {
+    if (Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b1001'01 << 26;
       UnconditionalBranch(Op, Imm >> 2);
 
@@ -189,7 +189,7 @@ public:
   [[nodiscard]] BranchEncodeSucceeded cbz(ARMEmitter::Size s, ARMEmitter::Register rt, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
 
-    if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) [[likely]] {
+    if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b0011'0100 << 24;
       CompareAndBranch(Op, s, rt, Imm >> 2);
       return BranchEncodeSucceeded::Success;
@@ -227,7 +227,7 @@ public:
   [[nodiscard]] BranchEncodeSucceeded cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
 
-    if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) [[likely]] {
+    if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b0011'0101 << 24;
       CompareAndBranch(Op, s, rt, Imm >> 2);
       return BranchEncodeSucceeded::Success;
@@ -265,7 +265,7 @@ public:
   [[nodiscard]] BranchEncodeSucceeded tbz(ARMEmitter::Register rt, uint32_t Bit, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
 
-    if (Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0)) [[likely]] {
+    if (Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b0011'0110 << 24;
       TestAndBranch(Op, rt, Bit, Imm >> 2);
       return BranchEncodeSucceeded::Success;
@@ -303,7 +303,7 @@ public:
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0), "Unscaled offset too large");
 
-    if (Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0)) [[likely]] {
+    if (Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b0011'0111 << 24;
       TestAndBranch(Op, rt, Bit, Imm >> 2);
       return BranchEncodeSucceeded::Success;

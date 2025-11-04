@@ -662,7 +662,7 @@ public:
     case ForwardLabel::InstType::ADR: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      if (!IsADRRange(Imm)) [[unlikely]] {
+      if (!IsADRRange(Imm)) {
         // Can't bind.
         return false;
       }
@@ -678,7 +678,7 @@ public:
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
 
-      if (!(IsADRPRange(Imm) && IsADRPAligned(Imm))) [[unlikely]] {
+      if (!(IsADRPRange(Imm) && IsADRPAligned(Imm))) {
         // Can't bind.
         return false;
       }
@@ -695,7 +695,7 @@ public:
     case ForwardLabel::InstType::B: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      if (!(Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0))) [[unlikely]] {
+      if (!(Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0))) {
         // Can't bind.
         return false;
       }
@@ -711,7 +711,7 @@ public:
     case ForwardLabel::InstType::TEST_BRANCH: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      if (!(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0))) [[unlikely]] {
+      if (!(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0))) {
         // Can't bind.
         return false;
       }
@@ -728,7 +728,7 @@ public:
     case ForwardLabel::InstType::RELATIVE_LOAD: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      if (!(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0))) [[unlikely]] {
+      if (!(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0))) {
         // Can't bind.
         return false;
       }
