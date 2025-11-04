@@ -706,8 +706,15 @@ ApplicationWindow {
             }
 
             ConfigCheckBox {
+                id: x87ReducedPrecisionCheckbox
                 text: qsTr("Reduced x87 precision")
                 config: "X87ReducedPrecision"
+            }
+
+            ConfigCheckBox {
+                text: qsTr("Strict reduced x87 precision")
+                config: "X87StrictReducedPrecision"
+                enabled: x87ReducedPrecisionCheckbox.checked
             }
 
             ConfigCheckBox {
