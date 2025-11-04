@@ -529,6 +529,8 @@ void BTCpuProcessInit() {
 
   {
     auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine);
+    // AVX is unsupported for WOW64
+    HostFeatures.SupportsAVX = false;
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
