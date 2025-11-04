@@ -825,7 +825,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   this->IR = IR;
   RequiresFarARM64Jumps = false;
 
-  switch (static_cast<RestartOptions::Control>(FEXCore::LongJump::SetJump(RestartControl.RestartJump))) {
+  switch (static_cast<RestartOptions::Control>(FEXCore::UncheckedLongJump::SetJump(RestartControl.RestartJump))) {
   case RestartOptions::Control::Incoming:
     // Nothing
     break;

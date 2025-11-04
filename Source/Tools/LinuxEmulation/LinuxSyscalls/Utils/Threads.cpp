@@ -261,7 +261,7 @@ namespace PThreads {
       return STracker;
     }
 
-    void SetupLongJump(FEXCore::LongJump::JumpBuf* exit_resolver) {
+    void SetupLongJump(FEXCore::UncheckedLongJump::JumpBuf* exit_resolver) {
       _exit_resolver = exit_resolver;
     }
 
@@ -269,7 +269,7 @@ namespace PThreads {
     void LongJumpExit(FEX::HLE::ThreadStateObject* ThreadObject, uint32_t Status) {
       this->Status = Status;
       this->ThreadObject = ThreadObject;
-      FEXCore::LongJump::LongJump(*_exit_resolver, 1);
+      FEXCore::UncheckedLongJump::LongJump(*_exit_resolver, 1);
       FEX_UNREACHABLE;
     }
 
@@ -288,9 +288,9 @@ namespace PThreads {
     void* UserArg;
     void* Stack {};
 
-    // Use FEXCore's LongJump to avoid fortification checks.
+    // Use FEXCore's UncheckedLongJump to avoid fortification checks.
     // This avoids a false positive since glibc does not understand stack pivots.
-    FEXCore::LongJump::JumpBuf* _exit_resolver {};
+    FEXCore::UncheckedLongJump::JumpBuf* _exit_resolver {};
     FEX::HLE::ThreadStateObject* ThreadObject {};
     uint32_t Status {};
   };
@@ -301,11 +301,11 @@ namespace PThreads {
     PThread* Thread {reinterpret_cast<PThread*>(Ptr)};
     StackBase = Thread->GetPivotStack();
     STracker = Thread->GetStackTracker();
-    FEXCore::LongJump::JumpBuf exit_resolver {};
+    FEXCore::UncheckedLongJump::JumpBuf exit_resolver {};
 
     bool LongJumpExit {};
 
-    if (FEXCore::LongJump::SetJump(exit_resolver) == 0) {
+    if (FEXCore::UncheckedLongJump::SetJump(exit_resolver) == 0) {
       Thread->SetupLongJump(&exit_resolver);
       // Run the user function.
       // `Thread` object is dead after this function returns.

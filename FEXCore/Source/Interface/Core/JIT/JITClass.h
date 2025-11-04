@@ -68,7 +68,7 @@ private:
   const bool HostSupportsAFP {};
 
   struct RestartOptions {
-    FEXCore::LongJump::JumpBuf RestartJump;
+    FEXCore::UncheckedLongJump::JumpBuf RestartJump;
     enum class Control : uint64_t {
       Incoming = 0,
       EnableFarARM64Jumps = 1,
@@ -360,7 +360,7 @@ private:
 
     // We can support this but currently unnecessary.
     ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -371,7 +371,7 @@ private:
 
     // We can support this but currently unnecessary.
     ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -392,7 +392,7 @@ private:
       return;
     }
 
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -413,7 +413,7 @@ private:
       return;
     }
 
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -434,7 +434,7 @@ private:
       return;
     }
 
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -455,7 +455,7 @@ private:
       return;
     }
 
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -476,7 +476,7 @@ private:
       return;
     }
 
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -487,7 +487,7 @@ private:
 
     // We can support this but currently unnecessary.
     ERROR_AND_DIE_FMT("Long ADR currently unsupported!");
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -498,7 +498,7 @@ private:
 
     // We can support this but currently unnecessary.
     ERROR_AND_DIE_FMT("Long ADRP currently unsupported!");
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
@@ -513,7 +513,7 @@ private:
       return;
     }
 
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
+    FEXCore::UncheckedLongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory

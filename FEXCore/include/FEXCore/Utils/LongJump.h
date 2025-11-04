@@ -6,7 +6,7 @@
 
 // Reimplementation of longjmp without glibc fortification checks.
 // This is useful to avoid false positives reported by glibc.
-namespace FEXCore::LongJump {
+namespace FEXCore::UncheckedLongJump {
 // JumpBuf definition needs to be public because the frontend needs to understand it.
 #if defined(_M_ARM_64)
 struct JumpBuf {
@@ -34,4 +34,4 @@ struct JumpBuf {
 
 [[nodiscard]] FEX_DEFAULT_VISIBILITY uint64_t SetJump(JumpBuf& Buffer);
 [[noreturn]] FEX_DEFAULT_VISIBILITY void LongJump(JumpBuf& Buffer, uint64_t Value);
-} // namespace FEXCore::LongJump
+} // namespace FEXCore::UncheckedLongJump

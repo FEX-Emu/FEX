@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <FEXCore/Utils/LongJump.h>
 
-namespace FEXCore::LongJump {
+namespace FEXCore::UncheckedLongJump {
 #if defined(_M_ARM_64)
 [[nodiscard]]
 FEX_DEFAULT_VISIBILITY FEX_NAKED uint64_t SetJump(JumpBuf& Buffer) {
@@ -116,4 +116,4 @@ FEX_DEFAULT_VISIBILITY FEX_NAKED void LongJump(JumpBuf& Buffer, uint64_t Value) 
 }
 
 #endif
-} // namespace FEXCore::LongJump
+} // namespace FEXCore::UncheckedLongJump
