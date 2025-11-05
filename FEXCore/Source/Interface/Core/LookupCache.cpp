@@ -75,7 +75,7 @@ LookupCache::~LookupCache() {
   // These will get freed when their memory allocators are deallocated.
 }
 
-void LookupCache::ClearL2Cache(const FEXCore::LookupCacheWriteLockToken& lk) {
+void LookupCache::ClearL2Cache(const FEXCore::LookupCacheReadLockToken& lk) {
   // Clear out the page memory
   // PagePointer and PageMemory are sequential with each other. Clear both at once.
   FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer),
