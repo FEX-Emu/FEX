@@ -34,7 +34,7 @@ TEST_CASE("Allocator - Fixed replacement") {
     REQUIRE(Base == NewBase);
   }
 
-  Alloc::OSAllocator::ReleaseAllocatorWorkaround(Allocator);
+  Alloc::OSAllocator::ReleaseAllocatorWorkaround(std::move(Allocator));
 }
 
 TEST_CASE("Allocator - Non-Fit") {
@@ -62,5 +62,5 @@ TEST_CASE("Allocator - Non-Fit") {
   // - If it errors, then it doesn't fit in the VMA region.
   REQUIRE((NewBase == Base || HasSyscallError(NewBase)));
 
-  Alloc::OSAllocator::ReleaseAllocatorWorkaround(Allocator);
+  Alloc::OSAllocator::ReleaseAllocatorWorkaround(std::move(Allocator));
 }

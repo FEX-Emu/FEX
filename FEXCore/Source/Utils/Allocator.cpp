@@ -140,7 +140,7 @@ void ClearHooks() {
   FEXCore::Allocator::mmap = ::mmap;
   FEXCore::Allocator::munmap = ::munmap;
 
-  Alloc::OSAllocator::ReleaseAllocatorWorkaround(Alloc64);
+  Alloc::OSAllocator::ReleaseAllocatorWorkaround(std::move(Alloc64));
 }
 #pragma GCC diagnostic pop
 
