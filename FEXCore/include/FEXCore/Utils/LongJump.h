@@ -5,7 +5,8 @@
 #include <cstdint>
 
 // Reimplementation of longjmp without glibc fortification checks.
-// This is useful to avoid false positives reported by glibc.
+// This is useful when false positives need to be avoided or when using
+// a libc implementation that does not implement std::longjmp.
 namespace FEXCore::UncheckedLongJump {
 // JumpBuf definition needs to be public because the frontend needs to understand it.
 #if defined(_M_ARM_64)

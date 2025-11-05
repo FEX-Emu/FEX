@@ -825,6 +825,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   this->IR = IR;
   RequiresFarARM64Jumps = false;
 
+  // Prepare restart via long jump in case branch encoding fails.
+  // This uses UncheckedLongJump since we don't implement std::longjmp in WoA setups
   switch (static_cast<RestartOptions::Control>(FEXCore::UncheckedLongJump::SetJump(RestartControl.RestartJump))) {
   case RestartOptions::Control::Incoming:
     // Nothing
