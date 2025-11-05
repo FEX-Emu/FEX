@@ -36,24 +36,33 @@ public:
     DataProcessing_PCRel_Imm(Op, rd, Imm);
   }
 
-  void adr(ARMEmitter::Register rd, const BackwardLabel* Label) {
+  [[nodiscard]] BranchEncodeSucceeded adr(ARMEmitter::Register rd, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(IsADRRange(Imm), "Unscaled offset too large");
 
-    constexpr uint32_t Op = 0b0001'0000 << 24;
-    DataProcessing_PCRel_Imm(Op, rd, Imm);
+    if (IsADRRange(Imm)) {
+      constexpr uint32_t Op = 0b0001'0000 << 24;
+      DataProcessing_PCRel_Imm(Op, rd, Imm);
+      return BranchEncodeSucceeded::Success;
+    }
+
+    // Can't encode.
+    return BranchEncodeSucceeded::Failure;
   }
-  void adr(ARMEmitter::Register rd, ForwardLabel* Label) {
+  [[nodiscard]] BranchEncodeSucceeded adr(ARMEmitter::Register rd, ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::ADR});
     constexpr uint32_t Op = 0b0001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, 0);
+
+    // Forward label doesn't know if it can encode until Bind.
+    return BranchEncodeSucceeded::Success;
   }
 
-  void adr(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
+  [[nodiscard]] BranchEncodeSucceeded adr(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
-      adr(rd, &Label->Backward);
+      return adr(rd, &Label->Backward);
     } else {
-      adr(rd, &Label->Forward);
+      return adr(rd, &Label->Forward);
     }
   }
 
@@ -62,32 +71,42 @@ public:
     DataProcessing_PCRel_Imm(Op, rd, Imm);
   }
 
-  void adrp(ARMEmitter::Register rd, const BackwardLabel* Label) {
+  [[nodiscard]] BranchEncodeSucceeded adrp(ARMEmitter::Register rd, const BackwardLabel* Label) {
     int64_t Imm = reinterpret_cast<int64_t>(Label->Location) - (GetCursorAddress<int64_t>() & ~0xFFFLL);
     LOGMAN_THROW_A_FMT(IsADRPRange(Imm) && IsADRPAligned(Imm), "Unscaled offset too large");
 
-    constexpr uint32_t Op = 0b1001'0000 << 24;
-    DataProcessing_PCRel_Imm(Op, rd, Imm);
+    if (IsADRPRange(Imm) && IsADRPAligned(Imm)) {
+      constexpr uint32_t Op = 0b1001'0000 << 24;
+      DataProcessing_PCRel_Imm(Op, rd, Imm);
+      return BranchEncodeSucceeded::Success;
+    }
+
+    // Can't encode.
+    return BranchEncodeSucceeded::Failure;
   }
-  void adrp(ARMEmitter::Register rd, ForwardLabel* Label) {
+
+  [[nodiscard]] BranchEncodeSucceeded adrp(ARMEmitter::Register rd, ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::ADRP});
     constexpr uint32_t Op = 0b1001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, 0);
+
+    // Forward label doesn't know if it can encode until Bind.
+    return BranchEncodeSucceeded::Success;
   }
 
-  void adrp(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
+  [[nodiscard]] BranchEncodeSucceeded adrp(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
-      adrp(rd, &Label->Backward);
+      return adrp(rd, &Label->Backward);
     } else {
-      adrp(rd, &Label->Forward);
+      return adrp(rd, &Label->Forward);
     }
   }
 
-  void LongAddressGen(ARMEmitter::Register rd, const BackwardLabel* Label) {
+  [[nodiscard]] BranchEncodeSucceeded LongAddressGen(ARMEmitter::Register rd, const BackwardLabel* Label) {
     int64_t Imm = reinterpret_cast<int64_t>(Label->Location) - (GetCursorAddress<int64_t>());
     if (IsADRRange(Imm)) {
       // If the range is in ADR range then we can just use ADR.
-      adr(rd, Label);
+      return adr(rd, Label);
     } else if (IsADRPRange(Imm)) {
       int64_t ADRPImm = (reinterpret_cast<int64_t>(Label->Location) & ~0xFFFLL) - (GetCursorAddress<int64_t>() & ~0xFFFLL);
 
@@ -102,23 +121,28 @@ public:
         // Now even an add
         add(ARMEmitter::Size::i64Bit, rd, rd, AlignedOffset);
       }
-    } else {
-      LOGMAN_MSG_A_FMT("Unscaled offset too large");
-      FEX_UNREACHABLE;
+
+      return BranchEncodeSucceeded::Success;
     }
+
+    // Can't encode.
+    return BranchEncodeSucceeded::Failure;
   }
-  void LongAddressGen(ARMEmitter::Register rd, ForwardLabel* Label) {
+  [[nodiscard]] BranchEncodeSucceeded LongAddressGen(ARMEmitter::Register rd, ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::LONG_ADDRESS_GEN});
     // Emit a register index and a nop. These will be backpatched.
     dc32(rd.Idx());
     nop();
+
+    // Forward label doesn't know if it can encode until Bind.
+    return BranchEncodeSucceeded::Success;
   }
 
-  void LongAddressGen(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
+  [[nodiscard]] BranchEncodeSucceeded LongAddressGen(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
-      LongAddressGen(rd, &Label->Backward);
+      return LongAddressGen(rd, &Label->Backward);
     } else {
-      LongAddressGen(rd, &Label->Forward);
+      return LongAddressGen(rd, &Label->Forward);
     }
   }
 
@@ -862,12 +886,6 @@ public:
   }
 
 private:
-  static constexpr Condition InvertCondition(Condition cond) {
-    // These behave as always, so it makes no sense to allow inverting these.
-    LOGMAN_THROW_A_FMT(cond != Condition::CC_AL && cond != Condition::CC_NV, "Cannot invert CC_AL or CC_NV");
-    return static_cast<Condition>(FEXCore::ToUnderlying(cond) ^ 1);
-  }
-
   void and_(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint32_t n, uint32_t immr, uint32_t imms) {
     constexpr uint32_t Op = 0b001'0010'00 << 22;
     DataProcessing_Logical_Imm(Op, s, rd, rn, n, immr, imms);

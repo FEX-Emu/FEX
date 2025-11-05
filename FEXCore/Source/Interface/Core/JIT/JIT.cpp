@@ -11,8 +11,6 @@ desc: Main glue logic of the arm64 splatter backend
 $end_info$
 */
 
-#include "Common/SoftFloat.h"
-
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -30,6 +28,7 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/LongJump.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/TypeDefines.h>
@@ -37,7 +36,6 @@ $end_info$
 
 #include <cstdio>
 #include <cstring>
-#include <limits>
 #include <unistd.h>
 
 namespace {
@@ -742,11 +740,11 @@ void Arm64JITCore::EmitTFCheck() {
   // Note that this needs to be before the below suspend checks, as X86 checks this flag immediately after executing an instruction.
   ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
 
-  cbz(ARMEmitter::Size::i32Bit, TMP1, &l_TFUnset);
+  (void)cbz(ARMEmitter::Size::i32Bit, TMP1, &l_TFUnset);
 
   // X86 semantically checks TF after executing each instruction, so e.g. setting a context with TF set will execute a single instruction
   // and then raise an exception. However on the FEX side this is simpler to implement by checking at the start of each instruction, handle this by having bit 1 being unset in the flag state indicate that TF is blocked for a single instruction.
-  tbz(TMP1, 1, &l_TFBlocked);
+  (void)tbz(TMP1, 1, &l_TFBlocked);
 
   // Block TF for a single instruction when the frontend jumps to a new context by unsetting bit 1.
   ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
@@ -769,11 +767,11 @@ void Arm64JITCore::EmitTFCheck() {
   ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
   br(TMP1);
 
-  Bind(&l_TFBlocked);
+  (void)Bind(&l_TFBlocked);
   // If TF was blocked for this instruction, unblock it for the next.
   LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 0b11);
   strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
-  Bind(&l_TFUnset);
+  (void)Bind(&l_TFUnset);
 }
 
 void Arm64JITCore::EmitSuspendInterruptCheck() {
@@ -789,16 +787,16 @@ void Arm64JITCore::EmitSuspendInterruptCheck() {
 
   ldr(TMP2.W(), STATE_PTR(CpuStateFrame, SuspendDoorbell));
   ARMEmitter::ForwardLabel l_NoSuspend;
-  cbz(ARMEmitter::Size::i32Bit, TMP2, &l_NoSuspend);
+  (void)cbz(ARMEmitter::Size::i32Bit, TMP2, &l_NoSuspend);
   brk(SuspendMagic);
-  Bind(&l_NoSuspend);
+  (void)Bind(&l_NoSuspend);
 #endif
 }
 
 void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF) {
   // Get the address of the JITCodeHeader and store in to the core state.
   // Two instruction cost, each 1 cycle.
-  adr(TMP1, &HeaderLabel);
+  adr_OrRestart(TMP1, &HeaderLabel);
   str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader));
 
   if (CheckTF) {
@@ -822,16 +820,27 @@ void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool C
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                                    FEXCore::Core::DebugData* DebugData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
-
-  JumpTargets.clear();
-  CallReturnTargets.clear();
-  PendingJumpThunks.clear();
-  uint32_t SSACount = IR->GetSSACount();
-  JumpTargets.resize(IR->GetHeader()->BlockCount, {});
-
   this->Entry = Entry;
   this->DebugData = DebugData;
   this->IR = IR;
+  RequiresFarARM64Jumps = false;
+
+  // Prepare restart via long jump in case branch encoding fails.
+  // This uses UncheckedLongJump since we don't implement std::longjmp in WoA setups
+  switch (static_cast<RestartOptions::Control>(FEXCore::UncheckedLongJump::SetJump(RestartControl.RestartJump))) {
+  case RestartOptions::Control::Incoming:
+    // Nothing
+    break;
+  case RestartOptions::Control::EnableFarARM64Jumps: RequiresFarARM64Jumps = true; break;
+  default: ERROR_AND_DIE_FMT("Unhandled Arm64 restart condition!");
+  }
+
+  uint32_t SSACount = IR->GetSSACount();
+  JumpTargets.clear();
+  CallReturnTargets.clear();
+  PendingJumpThunks.clear();
+  JumpTargets.resize(IR->GetHeader()->BlockCount, {});
+
   CodeData.EntryPoints.clear();
 
   // Fairly excessive buffer range to make sure we don't overflow
@@ -846,7 +855,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Put the code header at the start of the data block.
   ARMEmitter::BackwardLabel JITCodeHeaderLabel {};
-  Bind(&JITCodeHeaderLabel);
+  (void)Bind(&JITCodeHeaderLabel);
   JITCodeHeader* CodeHeader = GetCursorAddress<JITCodeHeader*>();
   CursorIncrement(sizeof(JITCodeHeader));
 
@@ -894,7 +903,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
         if (PendingTargetLabel->Backward.Location) {
           EmitSuspendInterruptCheck();
         }
-        b(PendingTargetLabel);
+        b_OrRestart(PendingTargetLabel);
         PendingTargetLabel = nullptr;
       }
 
@@ -904,14 +913,14 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
         const auto IsReturnTarget = CallReturnTargets.try_emplace(Node).first;
         if (PendingTargetLabel) {
           // If there is a fallthrough branch to this block, skip over the entrypoint code.
-          b(Target);
+          b_OrRestart(Target);
         } else if (PendingCallReturnTargetLabel && PendingCallReturnTargetLabel != &IsReturnTarget->second) {
           // If we just emitted a call, but the block we're now emitting is not the return block so don't fallthrough.
-          b(PendingCallReturnTargetLabel);
+          b_OrRestart(PendingCallReturnTargetLabel);
         }
         PendingCallReturnTargetLabel = nullptr;
 
-        Bind(&IsReturnTarget->second);
+        BindOrRestart(&IsReturnTarget->second);
         CodeData.EntryPoints.emplace(BlockStartRIP, GetCursorAddress<uint8_t*>());
         DebugData->GuestOpcodes.push_back({BlockIROp->GuestEntryOffset, GetCursorAddress<uint8_t*>() - CodeData.BlockBegin});
 
@@ -920,12 +929,12 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
       if (PendingCallReturnTargetLabel) {
         // If there is still a pending call return target, then the block we're emitting is not the return block so don't fallthrough.
-        b(PendingCallReturnTargetLabel);
+        b_OrRestart(PendingCallReturnTargetLabel);
         PendingCallReturnTargetLabel = nullptr;
       }
       PendingTargetLabel = nullptr;
 
-      Bind(Target);
+      BindOrRestart(Target);
     }
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
@@ -950,7 +959,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     if (PendingTargetLabel->Backward.Location) {
       EmitSuspendInterruptCheck();
     }
-    b(PendingTargetLabel);
+    b_OrRestart(PendingTargetLabel);
   }
   PendingTargetLabel = nullptr;
 
@@ -961,21 +970,21 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
     ARMEmitter::ForwardLabel l_DoLink;
     uint64_t ThunkAddress = GetCursorAddress<uint64_t>();
-    Bind(&PendingJumpThunk.Label);
-    b(&l_DoLink);
+    BindOrRestart(&PendingJumpThunk.Label);
+    b_OrRestart(&l_DoLink);
     br(TMP1);
-    Bind(&l_DoLink);
+    BindOrRestart(&l_DoLink);
     ldr(TMP1, &l_ExitLink);
     blr(TMP1);
 
     // This is a ExitFunctionLinkData struct
-    Bind(&l_ExitLink);
+    BindOrRestart(&l_ExitLink);
     dc64(0);                                             // HostCode
     dc64(PendingJumpThunk.GuestRIP);                     // GuestRIP
     dc64(PendingJumpThunk.CallerAddress - ThunkAddress); // CallerOffset
   }
 
-  Bind(&l_ExitLink);
+  BindOrRestart(&l_ExitLink);
   dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
 
   // CodeSize not including the header or tail data.

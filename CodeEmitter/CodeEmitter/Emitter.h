@@ -586,6 +586,15 @@ concept IsXOrWRegister = std::is_same_v<T, XRegister> || std::is_same_v<T, WRegi
 template<typename T>
 concept IsQOrDRegister = std::is_same_v<T, QRegister> || std::is_same_v<T, DRegister>;
 
+template<typename T>
+concept IsLabel = std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+                  std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>;
+
+enum class BranchEncodeSucceeded {
+  Success,
+  Failure,
+};
+
 // Whether or not a given set of vector registers are sequential
 // in increasing order as far as the register file is concerned (modulo its size)
 //
@@ -638,19 +647,25 @@ public:
 
   // Bind a backward label to an address.
   // Address that is bound is the current emitter location.
-  void Bind(BackwardLabel* Label) {
+  [[nodiscard]] bool Bind(BackwardLabel* Label) {
     LOGMAN_THROW_A_FMT(Label->Location == nullptr, "Trying to bind a label twice");
     Label->Location = GetCursorAddress<uint8_t*>();
+
+    // Always binds because it is only storing a location.
+    return true;
   }
 
-  void Bind(const ForwardLabel::Reference* Label) {
+  [[nodiscard]] bool Bind(const ForwardLabel::Reference* Label) {
     uint8_t* CurrentAddress = GetCursorAddress<uint8_t*>();
     // Patch up the instructions
     switch (Label->Type) {
     case ForwardLabel::InstType::ADR: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      LOGMAN_THROW_A_FMT(IsADRRange(Imm), "Unscaled offset too large");
+      if (!IsADRRange(Imm)) {
+        // Can't bind.
+        return false;
+      }
       uint32_t InstMask = 0b11 << 29 | 0b1111'1111'1111'1111'111 << 5;
       uint32_t Offset = static_cast<uint32_t>(Imm) & 0x3F'FFFF;
       uint32_t Inst = *Instruction & ~InstMask;
@@ -662,7 +677,12 @@ public:
     case ForwardLabel::InstType::ADRP: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      LOGMAN_THROW_A_FMT(IsADRPRange(Imm) && IsADRPAligned(Imm), "Unscaled offset too large");
+
+      if (!(IsADRPRange(Imm) && IsADRPAligned(Imm))) {
+        // Can't bind.
+        return false;
+      }
+
       Imm >>= 12;
       uint32_t InstMask = 0b11 << 29 | 0b1111'1111'1111'1111'111 << 5;
       uint32_t Offset = static_cast<uint32_t>(Imm) & 0x3F'FFFF;
@@ -672,11 +692,13 @@ public:
       *Instruction = Inst;
       break;
     }
-
     case ForwardLabel::InstType::B: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      LOGMAN_THROW_A_FMT(Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0), "Unscaled offset too large");
+      if (!(Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0))) {
+        // Can't bind.
+        return false;
+      }
       Imm >>= 2;
       uint32_t InstMask = 0x3FF'FFFF;
       uint32_t Offset = static_cast<uint32_t>(Imm) & InstMask;
@@ -686,11 +708,13 @@ public:
 
       break;
     }
-
     case ForwardLabel::InstType::TEST_BRANCH: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      LOGMAN_THROW_A_FMT(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0), "Unscaled offset too large");
+      if (!(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0))) {
+        // Can't bind.
+        return false;
+      }
       Imm >>= 2;
       uint32_t InstMask = 0x3FFF;
       uint32_t Offset = static_cast<uint32_t>(Imm) & InstMask;
@@ -704,7 +728,10 @@ public:
     case ForwardLabel::InstType::RELATIVE_LOAD: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-      LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
+      if (!(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0))) {
+        // Can't bind.
+        return false;
+      }
       Imm >>= 2;
       uint32_t InstMask = 0x7'FFFF;
       uint32_t Offset = static_cast<uint32_t>(Imm) & InstMask;
@@ -753,27 +780,41 @@ public:
     }
     default: LOGMAN_MSG_A_FMT("Unexpected inst type in label fixup");
     }
+
+    return true;
   }
 
   // Bind a forward label to a location.
   // This walks all the instructions in the label's vector.
   // Then backpatching all instructions that have used the label.
-  void Bind(ForwardLabel* Label) {
+  [[nodiscard]] bool Bind(ForwardLabel* Label) {
+    bool Bound = true;
     if (Label->FirstInst.Location) {
-      Bind(&Label->FirstInst);
+      Bound &= Bind(&Label->FirstInst);
     }
     for (auto& Inst : Label->Insts) {
-      Bind(&Inst);
+      Bound &= Bind(&Inst);
     }
+
+    return Bound;
   }
 
   // Bind a bidirectional location to a location.
   // Binds both forwards and backwards depending on how the label was used.
-  void Bind(BiDirectionalLabel* Label) {
+  [[nodiscard]] bool Bind(BiDirectionalLabel* Label) {
+    bool Bound = true;
     if (!Label->Backward.Location) {
-      Bind(&Label->Backward);
+      Bound &= Bind(&Label->Backward);
     }
-    Bind(&Label->Forward);
+    Bound &= Bind(&Label->Forward);
+
+    return Bound;
+  }
+
+  static constexpr Condition InvertCondition(Condition cond) {
+    // These behave as always, so it makes no sense to allow inverting these.
+    LOGMAN_THROW_A_FMT(cond != Condition::CC_AL && cond != Condition::CC_NV, "Cannot invert CC_AL or CC_NV");
+    return static_cast<Condition>(FEXCore::ToUnderlying(cond) ^ 1);
   }
 
 #include <CodeEmitter/VixlUtils.inl>
