@@ -147,6 +147,7 @@ public:
 private:
   // Called from the thunk handler to handle the signal
   void HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObject, int Signal, void* Info, void* UContext);
+  bool HandleFrontendSIGSEGV(FEXCore::Core::InternalThreadState* Thread, int Signal, void* Info, void* UContext);
 
   /**
    * @brief Registers a signal handler for the host to handle a signal
