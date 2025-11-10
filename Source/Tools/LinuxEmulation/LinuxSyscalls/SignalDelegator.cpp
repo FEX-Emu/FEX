@@ -574,13 +574,32 @@ uint64_t SignalDelegator::GetNewSigMask(int Signal) const {
   return NewMask;
 }
 
+bool SignalDelegator::HandleFrontendSIGSEGV(FEXCore::Core::InternalThreadState* Thread, int Signal, void* Info, void* UContext) {
+  auto SigInfo = *static_cast<siginfo_t*>(Info);
+
+  if (FaultSafeUserMemAccess::TryHandleSafeFault(Signal, SigInfo, UContext)) {
+    ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
+  }
+
+#ifdef _M_ARM_64
+  if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR && SigInfo.si_addr >= reinterpret_cast<void*>(Thread->JITGuardPage) &&
+      SigInfo.si_addr < reinterpret_cast<void*>(Thread->JITGuardPage + FEXCore::Utils::FEX_PAGE_SIZE)) {
+    FEXCore::UncheckedLongJump::ManuallyLoadJumpBuf(Thread->RestartJump, Thread->JITGuardOverflowArgument,
+                                                    ArchHelpers::Context::GetArmGPRs(UContext), ArchHelpers::Context::GetArmFPRs(UContext),
+                                                    ArchHelpers::Context::GetArmPc(UContext));
+    return true;
+  }
+#endif
+
+  return false;
+}
+
 void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObject, int Signal, void* Info, void* UContext) {
   auto Thread = ThreadObject->Thread;
   ucontext_t* _context = (ucontext_t*)UContext;
   auto SigInfo = *static_cast<siginfo_t*>(Info);
 
   auto MustDeferSignal = (Thread->CurrentFrame->State.DeferredSignalRefCount.Load() != 0);
-
   if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR && SigInfo.si_addr == reinterpret_cast<void*>(&Thread->InterruptFaultPage)) {
     if (!MustDeferSignal) {
       // We just reached the end of the outermost signal-deferring section and faulted to check for pending signals.
@@ -622,35 +641,31 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
       ERROR_AND_DIE_FMT("X86 shouldn't hit this InterruptFaultPage");
 #endif
     }
-  } else if (FaultSafeUserMemAccess::TryHandleSafeFault(Signal, SigInfo, UContext)) {
-    ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
-  } else {
-    if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
-      // If the signal is asynchronous (as determined by si_code) and FEX is in a state of needing
-      // to defer the signal, then add the signal to the thread's signal queue.
-      LOGMAN_THROW_A_FMT(ThreadObject->SignalInfo.DeferredSignalFrames.size() != ThreadObject->SignalInfo.DeferredSignalFrames.capacity(),
-                         "Deferred signals vector hit "
-                         "capacity size. This will "
-                         "likely crash! Asserting now!");
+  } else if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
+    // If the signal is asynchronous (as determined by si_code) and FEX is in a state of needing
+    // to defer the signal, then add the signal to the thread's signal queue.
+    LOGMAN_THROW_A_FMT(ThreadObject->SignalInfo.DeferredSignalFrames.size() != ThreadObject->SignalInfo.DeferredSignalFrames.capacity(),
+                       "Deferred signals vector hit "
+                       "capacity size. This will "
+                       "likely crash! Asserting now!");
 
-      ThreadObject->SignalInfo.DeferredSignalFrames.emplace_back(ThreadStateObject::DeferredSignalState {
-        .Info = SigInfo,
-        .Signal = Signal,
-        .SigMask = _context->uc_sigmask.__val[0],
-      });
+    ThreadObject->SignalInfo.DeferredSignalFrames.emplace_back(ThreadStateObject::DeferredSignalState {
+      .Info = SigInfo,
+      .Signal = Signal,
+      .SigMask = _context->uc_sigmask.__val[0],
+    });
 
-      uint64_t NewMask = GetNewSigMask(Signal);
+    uint64_t NewMask = GetNewSigMask(Signal);
 
-      // Update our host signal mask so we don't hit race conditions with signals
-      // This allows us to maintain the expected signal mask through the guest signal handling and then all the way back again
-      memcpy(&_context->uc_sigmask, &NewMask, sizeof(uint64_t));
+    // Update our host signal mask so we don't hit race conditions with signals
+    // This allows us to maintain the expected signal mask through the guest signal handling and then all the way back again
+    memcpy(&_context->uc_sigmask, &NewMask, sizeof(uint64_t));
 
-      // Now update the faulting page permissions so it will fault on write.
-      mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_NONE);
+    // Now update the faulting page permissions so it will fault on write.
+    mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_NONE);
 
-      // Postpone the remainder of signal handling logic until we process the SIGSEGV triggered by writing to InterruptFaultPage.
-      return;
-    }
+    // Postpone the remainder of signal handling logic until we process the SIGSEGV triggered by writing to InterruptFaultPage.
+    return;
   }
 
   // Check for masked signals
@@ -935,8 +950,14 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
     return FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->HandleSIGILL(Thread, Signal, info, ucontext);
   };
 
+  const auto SigsegvHandler = [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) -> bool {
+    return FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->HandleFrontendSIGSEGV(Thread, Signal,
+                                                                                                                         info, ucontext);
+  };
+
   // Register SIGILL signal handler.
   RegisterHostSignalHandler(SIGILL, SigillHandler, true);
+  RegisterHostSignalHandler(SIGSEGV, SigsegvHandler, true);
 
 #ifdef _M_ARM_64
   // Register SIGBUS signal handler.

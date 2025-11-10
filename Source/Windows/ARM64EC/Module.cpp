@@ -28,6 +28,7 @@ $end_info$
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
 #include "Common/CallRetStack.h"
+#include "Common/JITGuardPage.h"
 #include "Common/Config.h"
 #include "Common/Exception.h"
 #include "Common/InvalidationTracker.h"
@@ -733,6 +734,11 @@ bool ResetToConsistentStateImpl(const ThreadCPUArea CPUArea, EXCEPTION_RECORD* E
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
     if (FEX::Windows::CallRetStack::HandleAccessViolation(Thread, FaultAddress, NativeContext->X17)) {
+      return true;
+    }
+
+    if (FEX::Windows::JITGuardPage::HandleJITGuardPage(Thread, reinterpret_cast<void*>(FaultAddress), NativeContext->X,
+                                                       reinterpret_cast<__uint128_t*>(NativeContext->V), &NativeContext->Pc)) {
       return true;
     }
 

@@ -116,3 +116,6 @@ Test_SSE4a/extrq_imm.asm
 Test_SSE4a/insertq_imm.asm
 Test_SSE4a/extrq_variable.asm
 Test_SSE4a/insertq_variable.asm
+
+# Simulator can't handle long jump through signal handler
+Test_FEX_bugs/CodeBufferOverflow.asm

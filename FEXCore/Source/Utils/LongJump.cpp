@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include <FEXCore/Utils/LongJump.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <cstring>
 
 namespace FEXCore::UncheckedLongJump {
 #if defined(_M_ARM_64)
@@ -32,7 +35,7 @@ FEX_DEFAULT_VISIBILITY FEX_NAKED uint64_t SetJump(JumpBuf& Buffer) {
 }
 
 [[noreturn]]
-FEX_DEFAULT_VISIBILITY FEX_NAKED void LongJump(JumpBuf& Buffer, uint64_t Value) {
+FEX_DEFAULT_VISIBILITY FEX_NAKED void LongJump(const JumpBuf& Buffer, uint64_t Value) {
   __asm volatile(R"(
       // x0 contains the jumpbuffer
       ldp x19, x20, [x0, #( 0 * 8)];
@@ -58,6 +61,27 @@ FEX_DEFAULT_VISIBILITY FEX_NAKED void LongJump(JumpBuf& Buffer, uint64_t Value) 
     )" ::
                    : "memory");
 }
+
+FEX_DEFAULT_VISIBILITY void ManuallyLoadJumpBuf(const JumpBuf& Buffer, uint64_t Value, uint64_t* GPRs, __uint128_t* FPRs, uint64_t* PC) {
+  // First 12 values are registers [x19,x30].
+  memcpy(&GPRs[19], &Buffer.Registers[0], sizeof(uint64_t) * 12);
+
+  // Next 8 values are [D8,D15]
+  // Retain upper 64-bits of the register, only modifying lower 64-bits.
+  for (size_t i = 0; i < 8; ++i) {
+    memcpy(&FPRs[8 + i], &Buffer.Registers[12 + i], sizeof(uint64_t));
+  }
+
+  // Last value is stack pointer
+  memcpy(&GPRs[31], &Buffer.Registers[20], sizeof(uint64_t));
+
+  // Load the expected value in to X0
+  GPRs[0] = Value;
+
+  // Load the PC with the current LR.
+  *PC = GPRs[30];
+}
+
 #else
 [[nodiscard]]
 FEX_DEFAULT_VISIBILITY FEX_NAKED uint64_t SetJump(JumpBuf& Buffer) {
@@ -86,7 +110,7 @@ FEX_DEFAULT_VISIBILITY FEX_NAKED uint64_t SetJump(JumpBuf& Buffer) {
 }
 
 [[noreturn]]
-FEX_DEFAULT_VISIBILITY FEX_NAKED void LongJump(JumpBuf& Buffer, uint64_t Value) {
+FEX_DEFAULT_VISIBILITY FEX_NAKED void LongJump(const JumpBuf& Buffer, uint64_t Value) {
   __asm volatile(R"(
     .intel_syntax noprefix;
     // rdi contains the jumpbuffer
@@ -113,6 +137,10 @@ FEX_DEFAULT_VISIBILITY FEX_NAKED void LongJump(JumpBuf& Buffer, uint64_t Value) 
     .att_syntax prefix;
     )" ::
                    : "memory");
+}
+
+FEX_DEFAULT_VISIBILITY void ManuallyLoadJumpBuf(JumpBuf& Buffer, uint64_t Value, uint64_t* GPRs, __uint128_t* FPRs, uint64_t* PC) {
+  LOGMAN_MSG_A_FMT("This is unimplemented on x86-64");
 }
 
 #endif
