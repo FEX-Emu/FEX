@@ -23,8 +23,8 @@ public:
       }
     }
 
-    uint64_t Flags =
-      (StrictInProcessSplitLocks() ? FEX_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) | FEX_UNALIGN_ATOMIC_BACKPATCH | FEX_UNALIGN_ATOMIC_EMULATE;
+    uint64_t Flags = (StrictInProcessSplitLocks() ? FEX_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
+                     (KernelUnalignedAtomicBackpatching() ? FEX_UNALIGN_ATOMIC_BACKPATCH : 0) | FEX_UNALIGN_ATOMIC_EMULATE;
 
     NtSetInformationProcess(NtCurrentProcess(), ProcessFexUnalignAtomic, &Flags, sizeof(Flags));
   }
@@ -37,6 +37,7 @@ private:
   FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
   FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
   FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
+  FEX_CONFIG_OPT(KernelUnalignedAtomicBackpatching, KERNELUNALIGNEDATOMICBACKPATCHING);
 
   FEXCore::ArchHelpers::Arm64::UnalignedHandlerType UnalignedHandlerType {FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier};
 };

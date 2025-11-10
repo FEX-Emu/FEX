@@ -436,6 +436,13 @@
           "This is required to ensure a split-lock doesn't tear inside the process"
         ]
       },
+      "KernelUnalignedAtomicBackpatching": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "When the kernel unaligned atomic handler is enabled, use backpatching to reduce kernel context switches."
+        ]
+      },
       "VolatileMetadata": {
         "Type": "bool",
         "Default": "true",

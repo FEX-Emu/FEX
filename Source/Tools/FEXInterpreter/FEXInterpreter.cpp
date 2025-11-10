@@ -233,9 +233,10 @@ void SetupKernelUnalignedAtomics() {
 
   // Interfaces with downstream FEX kernel patches to control unaligned atomic handling
   FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
+  FEX_CONFIG_OPT(KernelUnalignedAtomicBackpatching, KERNELUNALIGNEDATOMICBACKPATCHING);
 
-  uint64_t Flags = (StrictInProcessSplitLocks() ? PR_ARM64_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) | PR_ARM64_UNALIGN_ATOMIC_BACKPATCH |
-                   PR_ARM64_UNALIGN_ATOMIC_EMULATE;
+  uint64_t Flags = (StrictInProcessSplitLocks() ? PR_ARM64_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
+                   (KernelUnalignedAtomicBackpatching() ? PR_ARM64_UNALIGN_ATOMIC_BACKPATCH : 0) | PR_ARM64_UNALIGN_ATOMIC_EMULATE;
 
   prctl(PR_ARM64_SET_UNALIGN_ATOMIC, Flags, 0, 0, 0);
 }
