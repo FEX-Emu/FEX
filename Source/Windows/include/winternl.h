@@ -543,6 +543,9 @@ NTSTATUS WINAPI RtlWow64SuspendThread(HANDLE, ULONG*);
 void WINAPI RtlAcquireSRWLockShared(RTL_SRWLOCK*);
 void WINAPI RtlReleaseSRWLockShared(RTL_SRWLOCK*);
 BOOLEAN WINAPI RtlTryAcquireSRWLockShared(RTL_SRWLOCK*);
+void WINAPI RtlWakeAddressAll(void*);
+BOOL WINAPI RtlWaitOnAddress(volatile void*, void*, SIZE_T, DWORD);
+void WINAPI RtlWakeAddressSingle(void*);
 
 #ifdef __cplusplus
 }
