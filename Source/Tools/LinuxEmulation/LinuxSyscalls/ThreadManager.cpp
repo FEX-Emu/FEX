@@ -76,7 +76,7 @@ uint32_t ThreadManager::StatAlloc::FrontendAllocateSlots(uint32_t NewSize) {
     // New threads won't get stats.
     return CurrentSize;
   }
-  NewSize = std::max(MAX_STATS_SIZE, NewSize);
+  NewSize = std::min(MAX_STATS_SIZE, NewSize);
 
   // When allocating more slots, open the fd without O_TRUNC | O_CREAT.
   int fd = shm_open(fextl::fmt::format("fex-{}-stats", ::getpid()).c_str(), O_RDWR, USER_PERMS);
