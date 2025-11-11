@@ -39,12 +39,6 @@ namespace FEXCore::Utils {
  */
 class IntrusivePooledAllocator {
 public:
-  template<typename T>
-  struct AllocationInfo {
-    T Ptr;
-    size_t Size;
-  };
-
   struct MemoryBuffer;
   /**
    * @brief Container for tracking the buffers
@@ -498,6 +492,11 @@ public:
     UnclaimBuffer();
   }
 
+  struct AllocationInfo {
+    Type Ptr;
+    size_t Size;
+  };
+
   /**
    * @brief Return the owned buffer or allocate another one from the `Allocator`
    *
@@ -506,9 +505,9 @@ public:
    *
    * @param NewSize Optional new size for managed data
    *
-   * @return object of type `Type` allocated within the selected buffer
+   * @return A usable pointer of type `Type` and the size of the backing store.
    */
-  Type ReownOrClaimBuffer(std::optional<size_t> NewSize = std::nullopt) {
+  AllocationInfo ReownOrClaimBufferWithSize(std::optional<size_t> NewSize = std::nullopt) {
     // Check if we can cheaply re-own a previous buffer
     std::optional Buffer =
       IntrusivePooledAllocator::IsClientBufferOwned(ClientOwnedFlag) ? Info : ThreadAllocator.TryToReownBuffer(Info, Size, &ClientOwnedFlag);
@@ -531,7 +530,14 @@ public:
     // Leaving this here for future excavation that will definitely occur here
     // memset((*Info)->Ptr, 0, Size);
 
-    return reinterpret_cast<Type>((*Info)->Ptr);
+    return {
+      .Ptr = reinterpret_cast<Type>((*Info)->Ptr),
+      .Size = (*Info)->Size,
+    };
+  }
+
+  Type ReownOrClaimBuffer(std::optional<size_t> NewSize = std::nullopt) {
+    return ReownOrClaimBufferWithSize(NewSize).Ptr;
   }
 
   /**
