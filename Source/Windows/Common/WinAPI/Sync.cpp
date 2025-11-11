@@ -7,13 +7,22 @@
 #include <cstdio>
 #include <cstdint>
 #include <cerrno>
+#include <ntstatus.h>
 #include <winternl.h>
 #include <windows.h>
 #include <processenv.h>
 #include "../Priv.h"
 
 WINBOOL WaitOnAddress(volatile void* Address, void* CompareAddress, SIZE_T AddressSize, DWORD dwMilliseconds) {
-  UNIMPLEMENTED();
+  return RtlWaitOnAddress(Address, CompareAddress, AddressSize, dwMilliseconds) == STATUS_SUCCESS;
+}
+
+void WakeByAddressAll(PVOID Address) {
+  RtlWakeAddressAll(Address);
+}
+
+void WINAPI WakeByAddressSingle(PVOID Address) {
+  RtlWakeAddressSingle(Address);
 }
 
 DLLEXPORT_FUNC(void, InitializeSRWLock, (PSRWLOCK SRWLock)) {

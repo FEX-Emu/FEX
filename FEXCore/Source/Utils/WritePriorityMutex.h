@@ -17,7 +17,6 @@
 
 namespace FEXCore::Utils::WritePriorityMutex {
 
-#if !defined(_WIN32)
 // A custom mutex that prioritizes exclusive locks.
 // In highly contested scenarios, this can help minimize overall contention time.
 //
@@ -234,6 +233,7 @@ public:
 
 private:
 
+#if !defined(_WIN32)
   void FutexWaitForWriteAvailable(uint32_t Expected) {
     ::syscall(SYS_futex, &Futex, FUTEX_PRIVATE_FLAG | FUTEX_WAIT_BITSET, Expected, nullptr, nullptr, FUTEX_BITSET_WAIT_WRITERS);
   }
@@ -255,6 +255,28 @@ private:
     // Wake all readers.
     ::syscall(SYS_futex, &Futex, FUTEX_PRIVATE_FLAG | FUTEX_WAKE_BITSET, INT_MAX, nullptr, nullptr, FUTEX_BITSET_WAIT_READERS);
   }
+#else
+  // Writers wait for the full 32-bit futex.
+  void FutexWaitForWriteAvailable(uint32_t Expected) {
+    WaitOnAddress(&Futex, &Expected, sizeof(Futex), INFINITE);
+  }
+
+  // Readers wait for Futex bits [31:16] to be zero.
+  void FutexWaitForReadAvailable(uint32_t Expected) {
+    auto ReadWaiterAddress = reinterpret_cast<uint8_t*>(&Futex) + 2;
+    uint16_t smol_Expected = Expected >> 16;
+    WaitOnAddress(ReadWaiterAddress, &smol_Expected, sizeof(smol_Expected), INFINITE);
+  }
+
+  void FutexWakeWriter() {
+    WakeByAddressSingle(&Futex);
+  }
+
+  void FutexWakeReaders() {
+    auto ReadWaiterAddress = reinterpret_cast<uint8_t*>(&Futex) + 2;
+    WakeByAddressAll(ReadWaiterAddress);
+  }
+#endif
 
   // Reuse the SpinWaitLock WFE implementations for read/write lock acquiring with WFE.
   // Can't reuse the spin-lock directly as some bit-representations are different.
@@ -349,36 +371,4 @@ private:
   //  Bits[14:0]: Read-owner count.
   uint32_t Futex {};
 };
-#else
-// SRWLocks are already write-priority locks in WINE and Windows. Use them to avoid lock stampeding.
-class Mutex final {
-public:
-  void lock() {
-    AcquireSRWLockExclusive(&Futex);
-  }
-
-  void lock_shared() {
-    AcquireSRWLockShared(&Futex);
-  }
-
-  void unlock() {
-    ReleaseSRWLockExclusive(&Futex);
-  }
-
-  void unlock_shared() {
-    ReleaseSRWLockShared(&Futex);
-  }
-
-  bool try_lock() {
-    return TryAcquireSRWLockExclusive(&Futex);
-  }
-
-  bool try_lock_shared() {
-    return TryAcquireSRWLockShared(&Futex);
-  }
-
-private:
-  SRWLOCK Futex = SRWLOCK_INIT;
-};
-#endif
 } // namespace FEXCore::Utils::WritePriorityMutex
