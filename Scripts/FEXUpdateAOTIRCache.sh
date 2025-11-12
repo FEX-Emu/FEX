@@ -9,19 +9,19 @@ for fileid in ~/.fex-emu/aotir/*.path; do
 	else
 		args="$args --no-abilocalflags"
 	fi
-	
+
 	if [ "${fileid: -7 : 1}" == "T" ]; then
 		args="$args --tsoenabled"
 	else
 		args="$args --no-tsoenabled"
 	fi
-	
+
 	if [ "${fileid: -8 : 1}" == "S" ]; then
 		args="$args --smc=full"
 	else
 		args="$args --smc=mman"
 	fi
-		
+
 	if [ -f "${fileid%.path}.aotir" ]; then
 		echo "`basename $fileid` has already been generated"
 	else
