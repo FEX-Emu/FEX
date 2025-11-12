@@ -301,7 +301,6 @@ public:
   }
   [[nodiscard]] BranchEncodeSucceeded tbnz(ARMEmitter::Register rt, uint32_t Bit, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
-    LOGMAN_THROW_A_FMT(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0), "Unscaled offset too large");
 
     if (Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0)) {
       constexpr uint32_t Op = 0b0011'0111 << 24;
