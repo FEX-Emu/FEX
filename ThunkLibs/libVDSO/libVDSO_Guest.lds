@@ -49,6 +49,7 @@ VERSION {
     getcpu;
     __vdso_getrandom;
     getrandom;
+    __fex_callback_ret;
   local: *;
   };
 }

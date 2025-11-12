@@ -49,6 +49,7 @@ VERSION {
     getcpu;
     __vdso_clock_gettime64;
     clock_gettime64;
+    __fex_callback_ret;
   local: *;
   };
   LINUX_2.5 {
