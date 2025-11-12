@@ -108,9 +108,13 @@ public:
 
   FEXCore::Context::Context* CTX;
 
-  void SetVDSOSigReturn() {
+  void SetVDSOSymbols() {
     // Get symbols from VDSO.
     VDSOPointers = FEX::VDSO::GetVDSOSymbols();
+  }
+
+  uintptr_t GetThunkCallbackRET() const override {
+    return reinterpret_cast<uintptr_t>(VDSOPointers.VDSO_FEX_CallbackRET);
   }
 
   [[noreturn]]
@@ -208,7 +212,7 @@ private:
   bool InstallHostThunk(int Signal);
   bool UpdateHostThunk(int Signal);
 
-  FEX::VDSO::VDSOSigReturn VDSOPointers {};
+  FEX::VDSO::VDSOEntrypoints VDSOPointers {};
 
   bool IsAddressInDispatcher(uint64_t Address) const {
     return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;

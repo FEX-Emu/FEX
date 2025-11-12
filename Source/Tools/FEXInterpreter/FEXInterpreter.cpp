@@ -479,6 +479,10 @@ int main(int argc, char** argv, char** const envp) {
   // Load VDSO in to memory prior to mapping our ELFs.
   auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
 
+  // Pass in our VDSO thunks
+  ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions(Loader.Is64BitMode()));
+  SignalDelegation->SetVDSOSymbols();
+
   // Now that we have the syscall handler. Track some FDs that are FEX owned.
   if (OutputFD > 2) {
     SyscallHandler->FM.TrackFEXFD(OutputFD);
@@ -523,10 +527,6 @@ int main(int argc, char** argv, char** const envp) {
   SyscallHandler->TM.TrackThread(ParentThread);
   SignalDelegation->RegisterTLSState(ParentThread);
   ThunkHandler->RegisterTLSState(ParentThread);
-
-  // Pass in our VDSO thunks
-  ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions(Loader.Is64BitMode()));
-  SignalDelegation->SetVDSOSigReturn();
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 

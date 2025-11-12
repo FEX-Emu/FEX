@@ -67,6 +67,10 @@ public:
     return Config;
   }
 
+  virtual uintptr_t GetThunkCallbackRET() const {
+    return 0;
+  }
+
 protected:
   SignalDelegatorConfig Config;
 };

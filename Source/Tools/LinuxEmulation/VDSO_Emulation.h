@@ -15,13 +15,14 @@ namespace FEX::VDSO {
 struct VDSOMapping {
   void* VDSOBase {};
   size_t VDSOSize {};
-  void* OptionalSigReturnMapping {};
-  size_t OptionalMappingSize {};
+  void* X86GeneratedCodePtr {};
+  size_t X86GeneratedCodeSize {};
 };
 
-struct VDSOSigReturn {
+struct VDSOEntrypoints {
   void* VDSO_kernel_sigreturn;
   void* VDSO_kernel_rt_sigreturn;
+  void* VDSO_FEX_CallbackRET;
 };
 VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler);
 void UnloadVDSOMapping(const VDSOMapping& Mapping);
@@ -29,5 +30,5 @@ void UnloadVDSOMapping(const VDSOMapping& Mapping);
 uint64_t GetVSyscallEntry(const void* VDSOBase);
 
 const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions(bool Is64Bit);
-const VDSOSigReturn& GetVDSOSymbols();
+const VDSOEntrypoints& GetVDSOSymbols();
 } // namespace FEX::VDSO
