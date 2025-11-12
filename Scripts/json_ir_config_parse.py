@@ -1,6 +1,3 @@
-from enum import Flag
-import json
-import struct
 import sys
 from json_config_parse import parse_json
 

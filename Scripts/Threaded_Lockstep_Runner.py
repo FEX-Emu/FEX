@@ -1,13 +1,9 @@
 #!/usr/bin/python3
-from enum import Flag
-import json
 import os
-import struct
 import sys
 import glob
 from threading import Thread
 import subprocess
-import time
 import multiprocessing
 from shutil import which
 

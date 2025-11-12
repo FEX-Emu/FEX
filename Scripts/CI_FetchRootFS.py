@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import xxhash
-import hashlib
 import sys
 import os
 import shutil

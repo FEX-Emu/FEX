@@ -4,7 +4,7 @@ from clang.cindex import CursorKind
 from clang.cindex import TypeKind
 from clang.cindex import TranslationUnit
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import subprocess
 import logging
 logger = logging.getLogger()

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import math
 import sys
 import logging

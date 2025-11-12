@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import sys
 import subprocess
-import os.path
 from os import path
 from shutil import which
 
