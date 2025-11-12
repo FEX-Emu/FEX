@@ -138,26 +138,6 @@ DEF_OP(CAS) {
   }
 }
 
-DEF_OP(AtomicXor) {
-  auto Op = IROp->C<IR::IROp_AtomicXor>();
-  const auto EmitSize = ConvertSize(IROp);
-  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
-
-  auto MemSrc = GetReg(Op->Addr);
-  auto Src = GetReg(Op->Value);
-
-  if (CTX->HostFeatures.SupportsAtomics) {
-    steorl(SubEmitSize, Src, MemSrc);
-  } else {
-    ARMEmitter::BackwardLabel LoopTop;
-    (void)Bind(&LoopTop);
-    ldaxr(SubEmitSize, TMP2, MemSrc);
-    eor(EmitSize, TMP2, TMP2, Src);
-    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
-    (void)cbnz(EmitSize, TMP2, &LoopTop);
-  }
-}
-
 DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
   const auto OpSize = IROp->Size;
