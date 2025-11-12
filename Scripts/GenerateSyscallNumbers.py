@@ -282,5 +282,5 @@ def main():
     ExportCommonSyscallDefines()
 
 if __name__ == "__main__":
-# execute only if run as a script
+    # execute only if run as a script
     sys.exit(main())
