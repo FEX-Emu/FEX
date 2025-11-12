@@ -804,16 +804,6 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "AtomicXor OpSize:#Size, GPR:$Value, GPR:$Addr": {
-        "HasSideEffects": true,
-        "Desc": ["Atomic integer xor",
-                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
       "GPR = AtomicSwap OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer swap"

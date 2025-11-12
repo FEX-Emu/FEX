@@ -1491,7 +1491,7 @@
       "Comment": "GROUP2 0xf6 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
-        "steorlb w20, [x4]"
+        "ldeoralb w20, w20, [x4]"
       ]
     },
     "lock not word [rax]": {
@@ -1499,7 +1499,7 @@
       "Comment": "GROUP2 0xf7 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
-        "steorlh w20, [x4]"
+        "ldeoralh w20, w20, [x4]"
       ]
     },
     "lock not dword [rax]": {
@@ -1507,7 +1507,7 @@
       "Comment": "GROUP2 0xf7 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "steorl w20, [x4]"
+        "ldeoral w20, w20, [x4]"
       ]
     },
     "lock not qword [rax]": {
@@ -1515,7 +1515,7 @@
       "Comment": "GROUP2 0xf7 /2",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "steorl x20, [x4]"
+        "ldeoral x20, x20, [x4]"
       ]
     },
     "lock neg byte [rax]": {

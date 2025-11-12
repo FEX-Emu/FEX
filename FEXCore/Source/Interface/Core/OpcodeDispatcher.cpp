@@ -2750,7 +2750,8 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
-    _AtomicXor(Size, MaskConst, DestMem);
+    // Result unused
+    _AtomicFetchXor(Size, MaskConst, DestMem);
   } else if (!Op->Dest.IsGPR()) {
     // GPR version plays fast and loose with sizes, be safe for memory tho.
     Ref Src = LoadSourceGPR(Op, Op->Dest, Op->Flags);
