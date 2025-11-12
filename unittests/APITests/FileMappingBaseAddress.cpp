@@ -33,7 +33,7 @@ TEST_CASE("libm") {
   for (auto& Mapping : Mappings) {
     INFO("Mapping to 0x" << std::hex << Mapping.Addr << "-0x" << Mapping.Addr + Mapping.Size << " from file offset 0x" << Mapping.FileOffset);
     auto DeducedBase = FEXCore::InferMappingBaseAddress(Headers, Mapping.Addr, Mapping.Size, Mapping.FileOffset, Mapping.Flags);
-    CHECK(DeducedBase.value_or(0) == BaseAddr);
+    CHECK(DeducedBase == fextl::vector<uint64_t> {BaseAddr});
   }
 }
 
@@ -55,7 +55,7 @@ TEST_CASE("Access flags are checked") {
   for (auto& Mapping : Mappings) {
     INFO("Mapping to 0x" << std::hex << Mapping.Addr << "-0x" << Mapping.Addr + Mapping.Size << " from file offset 0x" << Mapping.FileOffset);
     auto DeducedBase = FEXCore::InferMappingBaseAddress(Headers, Mapping.Addr, Mapping.Size, Mapping.FileOffset, Mapping.Flags);
-    CHECK(DeducedBase.value_or(0) == BaseAddr);
+    CHECK(DeducedBase == fextl::vector<uint64_t> {BaseAddr});
   }
 }
 
@@ -76,6 +76,36 @@ TEST_CASE("Non-mapping program headers are ignored") {
   for (auto& Mapping : Mappings) {
     INFO("Mapping to 0x" << std::hex << Mapping.Addr << "-0x" << Mapping.Addr + Mapping.Size << " from file offset 0x" << Mapping.FileOffset);
     auto DeducedBase = FEXCore::InferMappingBaseAddress(Headers, Mapping.Addr, Mapping.Size, Mapping.FileOffset, Mapping.Flags);
-    CHECK(DeducedBase.value_or(0) == BaseAddr);
+    CHECK(DeducedBase == fextl::vector<uint64_t> {BaseAddr});
+  }
+}
+
+// Some binaries have (e.g. glxtest) end up with two RW mappings at the end that trigger two mmap parameters that only differ in their
+// virtual address. In such cases, multiple base addresses could be valid
+TEST_CASE("Duplicate data page") {
+  uint64_t BaseAddr = 0x123400000;
+
+  fextl::vector<Elf64_Phdr> Headers = {
+    {.p_type = PT_LOAD, .p_flags = PF_R, .p_offset = 0x00000, .p_vaddr = 0x0000, .p_paddr = 0x00000, .p_filesz = 0x1000, .p_memsz = 0x1000},
+    {.p_type = PT_LOAD, .p_flags = PF_R | PF_X, .p_offset = 0x3910, .p_vaddr = 0x4910, .p_paddr = 0x4910, .p_filesz = 0x29d0, .p_memsz = 0x29d0},
+    {.p_type = PT_LOAD, .p_flags = PF_R | PF_W, .p_offset = 0x62e0, .p_vaddr = 0x82e0, .p_paddr = 0x82e0, .p_filesz = 0x6e0, .p_memsz = 0xd20},
+    {.p_type = PT_LOAD, .p_flags = PF_R | PF_W, .p_offset = 0x69c0, .p_vaddr = 0x99c0, .p_paddr = 0x99c0, .p_filesz = 0x018, .p_memsz = 0x068},
+  };
+
+  fextl::vector<Mapping> Mappings = {
+    {.Addr = BaseAddr, .Size = 0x4000, .FileOffset = 0x0000, .Flags = PF_R},
+    {.Addr = BaseAddr + 0x4000, .Size = 0x4000, .FileOffset = 0x3000, .Flags = PF_R | PF_X},
+    {.Addr = BaseAddr + 0x8000, .Size = 0x1000, .FileOffset = 0x6000, .Flags = PF_R | PF_W},
+    {.Addr = BaseAddr + 0x9000, .Size = 0x1000, .FileOffset = 0x6000, .Flags = PF_R | PF_W},
+  };
+
+  for (auto& Mapping : Mappings) {
+    INFO("Mapping to 0x" << std::hex << Mapping.Addr << "-0x" << Mapping.Addr + Mapping.Size << " from file offset 0x" << Mapping.FileOffset);
+    auto DeducedBase = FEXCore::InferMappingBaseAddress(Headers, Mapping.Addr, Mapping.Size, Mapping.FileOffset, Mapping.Flags);
+    if (Mapping.Addr < BaseAddr + 0x8000) {
+      CHECK(DeducedBase == fextl::vector<uint64_t> {BaseAddr});
+    } else {
+      CHECK(DeducedBase == fextl::vector<uint64_t> {Mapping.Addr - 0x8000, Mapping.Addr - 0x9000});
+    }
   }
 }
