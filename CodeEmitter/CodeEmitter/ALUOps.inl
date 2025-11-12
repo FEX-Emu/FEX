@@ -38,8 +38,6 @@ public:
 
   [[nodiscard]] BranchEncodeSucceeded adr(ARMEmitter::Register rd, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
-    LOGMAN_THROW_A_FMT(IsADRRange(Imm), "Unscaled offset too large");
-
     if (IsADRRange(Imm)) {
       constexpr uint32_t Op = 0b0001'0000 << 24;
       DataProcessing_PCRel_Imm(Op, rd, Imm);
@@ -73,7 +71,6 @@ public:
 
   [[nodiscard]] BranchEncodeSucceeded adrp(ARMEmitter::Register rd, const BackwardLabel* Label) {
     int64_t Imm = reinterpret_cast<int64_t>(Label->Location) - (GetCursorAddress<int64_t>() & ~0xFFFLL);
-    LOGMAN_THROW_A_FMT(IsADRPRange(Imm) && IsADRPAligned(Imm), "Unscaled offset too large");
 
     if (IsADRPRange(Imm) && IsADRPAligned(Imm)) {
       constexpr uint32_t Op = 0b1001'0000 << 24;
