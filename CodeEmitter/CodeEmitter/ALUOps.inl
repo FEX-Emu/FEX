@@ -100,16 +100,22 @@ public:
   }
 
   [[nodiscard]] BranchEncodeSucceeded LongAddressGen(ARMEmitter::Register rd, const BackwardLabel* Label) {
-    int64_t Imm = reinterpret_cast<int64_t>(Label->Location) - (GetCursorAddress<int64_t>());
+    const auto SLocation = reinterpret_cast<int64_t>(Label->Location);
+    const auto ULocation = std::bit_cast<uint64_t>(SLocation);
+
+    const int64_t Imm = SLocation - (GetCursorAddress<int64_t>());
+    const auto UImm = std::bit_cast<uint64_t>(Imm);
+
     if (IsADRRange(Imm)) {
       // If the range is in ADR range then we can just use ADR.
       return adr(rd, Label);
-    } else if (IsADRPRange(Imm)) {
-      int64_t ADRPImm = (reinterpret_cast<int64_t>(Label->Location) & ~0xFFFLL) - (GetCursorAddress<int64_t>() & ~0xFFFLL);
+    }
+    if (IsADRPRange(Imm)) {
+      const int64_t ADRPImm = (SLocation & ~0xFFFLL) - (GetCursorAddress<int64_t>() & ~0xFFFLL);
 
       // If the range is in the ADRP range then we can use ADRP.
-      bool NeedsOffset = !IsADRPAligned(reinterpret_cast<uint64_t>(Label->Location));
-      uint64_t AlignedOffset = reinterpret_cast<uint64_t>(Label->Location) & 0xFFFULL;
+      const bool NeedsOffset = !IsADRPAligned(ULocation);
+      const uint64_t AlignedOffset = ULocation & 0xFFFULL;
 
       // First emit ADRP
       adrp(rd, ADRPImm >> 12);
@@ -122,13 +128,18 @@ public:
       return BranchEncodeSucceeded::Success;
     }
 
-    // Can't encode.
-    return BranchEncodeSucceeded::Failure;
+    // Stinky path, we need to load the address as a sequence of movz+movk+movk
+    movz(ARMEmitter::Size::i64Bit, rd, (UImm >> 32) & 0xFFFF, 32);
+    movk(ARMEmitter::Size::i64Bit, rd, (UImm >> 16) & 0xFFFF, 16);
+    movk(ARMEmitter::Size::i64Bit, rd, UImm & 0xFFFF);
+
+    return BranchEncodeSucceeded::Success;
   }
   [[nodiscard]] BranchEncodeSucceeded LongAddressGen(ARMEmitter::Register rd, ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::LONG_ADDRESS_GEN});
-    // Emit a register index and a nop. These will be backpatched.
+    // Emit a register index and two nops. These will be backpatched.
     dc32(rd.Idx());
+    nop();
     nop();
 
     // Forward label doesn't know if it can encode until Bind.
