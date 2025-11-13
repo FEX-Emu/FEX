@@ -525,8 +525,8 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     for (auto& import : thunked_api) {
       const auto& function_name = import.function_name;
       const char* variadic_ellipsis = import.is_variadic ? ", ..." : "";
-      file << "using fexldr_type_" << libname << "_" << function_name << " = auto "
-           << "(" << format_function_params(import) << variadic_ellipsis << ") -> " << import.return_type.getAsString() << ";\n";
+      file << "using fexldr_type_" << libname << "_" << function_name << " = auto " << "(" << format_function_params(import)
+           << variadic_ellipsis << ") -> " << import.return_type.getAsString() << ";\n";
       file << "static fexldr_type_" << libname << "_" << function_name << " *fexldr_ptr_" << libname << "_" << function_name << ";\n";
     }
 

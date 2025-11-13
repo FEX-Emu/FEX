@@ -353,8 +353,7 @@ void Dump(fextl::stringstream* out, const IRListView* IR) {
       auto BlockIROp = BlockHeader->C<FEXCore::IR::IROp_CodeBlock>();
 
       AddIndent();
-      *out << "(%" << IR->GetID(BlockNode) << ") "
-           << "CodeBlock ";
+      *out << "(%" << IR->GetID(BlockNode) << ") " << "CodeBlock ";
 
       *out << "%" << BlockIROp->Begin.ID() << ", ";
       *out << "%" << BlockIROp->Last.ID() << std::endl;
