@@ -1,7 +1,6 @@
 #!/bin/env python3
 import sys
 
-import fileinput
 import re
 
 # Handles the following formats:

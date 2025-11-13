@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import sys
 import subprocess
-import os.path
 from os import path
 from shutil import which
 
@@ -77,4 +76,4 @@ if (is_known_failure):
         sys.exit(1)
 else:
     # Just return the result code if we don't have this test as a known failure
-    sys.exit(ResultCode);
+    sys.exit(ResultCode)

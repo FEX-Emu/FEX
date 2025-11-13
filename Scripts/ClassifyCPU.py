@@ -1,8 +1,5 @@
 #!/usr/bin/python3
-import os
-import subprocess
 import sys
-import tempfile
 import platform
 
 def ListContainsRequired(Features, RequiredFeatures):

@@ -4,8 +4,8 @@ import os
 import sys
 import subprocess
 
-# Check if FEX indicates support for AVX
 def DoesFEXSupportAVX(mode):
+    # Check if FEX indicates support for AVX
     fex_interpreter_path = os.path.dirname(sys.argv[7]) + "/FEX"
 
     args = list()
@@ -22,8 +22,8 @@ def DoesFEXSupportAVX(mode):
             return 'avx' in flags and 'avx2' in flags
     return False
 
-# Check if the test itself requires AVX
 def TestRequiresAVXSupport():
+    # Check if the test itself requires AVX
     exe_path = sys.argv[len(sys.argv) - 1]
     json_path = os.path.dirname(os.path.dirname(exe_path)) + '/requirements/' + os.path.basename(exe_path) + '.json'
 

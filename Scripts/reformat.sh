@@ -3,9 +3,6 @@
 # Save current directory
 DIR=$(pwd)
 
-# Get the absolute path to the Scripts directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Parse arguments
 CHANGED_ONLY=false
 TARGET_DIR=""

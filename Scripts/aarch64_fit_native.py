@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import re
 import sys
-import subprocess
 try:
     from packaging.version import Version as version_check
 except:

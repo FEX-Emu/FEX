@@ -4,7 +4,7 @@ from clang.cindex import CursorKind
 from clang.cindex import TypeKind
 from clang.cindex import TranslationUnit
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import subprocess
 import logging
 logger = logging.getLogger()
@@ -548,5 +548,5 @@ def main():
     PrintFunctionDecls()
 
 if __name__ == "__main__":
-# execute only if run as a script
+    # execute only if run as a script
     sys.exit(main())

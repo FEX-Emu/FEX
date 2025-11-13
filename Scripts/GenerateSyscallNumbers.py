@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import math
 import sys
 import logging
@@ -282,5 +282,5 @@ def main():
     ExportCommonSyscallDefines()
 
 if __name__ == "__main__":
-# execute only if run as a script
+    # execute only if run as a script
     sys.exit(main())

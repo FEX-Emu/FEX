@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import base64
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Flag
 import json
 import struct
@@ -254,5 +254,5 @@ def main():
     return 0
 
 if __name__ == "__main__":
-# execute only if run as a script
+    # execute only if run as a script
     sys.exit(main())
