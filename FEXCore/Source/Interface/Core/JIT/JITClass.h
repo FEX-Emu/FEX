@@ -483,23 +483,31 @@ private:
 
   template<ARMEmitter::IsLabel T>
   void adr_OrRestart(ARMEmitter::Register rd, T* Label) {
+    if (RequiresFarARM64Jumps) {
+      if (LongAddressGen(rd, Label) == ARMEmitter::BranchEncodeSucceeded::Failure) {
+        ERROR_AND_DIE_FMT("Unable to encode long ADR.");
+      }
+      return;
+    }
     if (adr(rd, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
-    // We can support this but currently unnecessary.
-    ERROR_AND_DIE_FMT("Long ADR currently unsupported!");
     FEXCore::UncheckedLongJump::LongJump(ThreadState->RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<ARMEmitter::IsLabel T>
   void adrp_OrRestart(ARMEmitter::Register rd, T* Label) {
+    if (RequiresFarARM64Jumps) {
+      if (LongAddressGen(rd, Label) == ARMEmitter::BranchEncodeSucceeded::Failure) {
+        ERROR_AND_DIE_FMT("Unable to encode long ADRP.");
+      }
+      return;
+    }
     if (adrp(rd, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
-    // We can support this but currently unnecessary.
-    ERROR_AND_DIE_FMT("Long ADRP currently unsupported!");
     FEXCore::UncheckedLongJump::LongJump(ThreadState->RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 

@@ -741,38 +741,44 @@ public:
       break;
     }
     case ForwardLabel::InstType::LONG_ADDRESS_GEN: {
-      uint32_t* Instructions = reinterpret_cast<uint32_t*>(Label->Location);
-      int64_t ImmInstOne = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[0]);
-      int64_t ImmInstTwo = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[1]);
-      auto OriginalOffset = GetCursorOffset();
+      const auto* Instructions = reinterpret_cast<uint32_t*>(Label->Location);
+      const auto ImmInstOne = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[0]);
+      const auto ImmInstTwo = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[1]);
+      const auto ImmInstThree = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[2]);
+      const auto OriginalOffset = GetCursorOffset();
 
-      auto InstOffset = GetCursorOffsetFromAddress(Instructions);
+      const auto InstOffset = GetCursorOffsetFromAddress(Instructions);
       SetCursorOffset(InstOffset);
 
       // We encoded the destination register in to the first instruction space.
       // Read it back.
       ARMEmitter::Register DestReg(Instructions[0]);
 
-      if (IsADRRange(ImmInstTwo)) {
-        // If within ADR range from the second instruction, then we can emit NOP+ADR
+      if (IsADRRange(ImmInstThree)) {
+        // If within ADR range from the third instruction, then we can emit NOP+NOP+ADR
         nop();
-        adr(DestReg, static_cast<uint32_t>(ImmInstTwo) & 0x7FFF);
-      } else if (IsADRPRange(ImmInstOne)) {
+        nop();
+        adr(DestReg, static_cast<uint32_t>(ImmInstThree) & 0x7FFF);
+      } else if (IsADRPRange(ImmInstTwo)) {
 
         // If within ADRP range from the first instruction, then we are /definitely/ in range for the second instruction.
         // First check if we are in non-offset range for second instruction.
         if (IsADRPAligned(reinterpret_cast<uint64_t>(CurrentAddress))) {
-          // We can emit nop + adrp
+          // We can emit nop + nop + adrp
+          nop();
+          nop();
+          adrp(DestReg, static_cast<uint32_t>(ImmInstThree >> 12) & 0x7FFF);
+        } else {
+          // Not aligned, need nop + adrp + add
           nop();
           adrp(DestReg, static_cast<uint32_t>(ImmInstTwo >> 12) & 0x7FFF);
-        } else {
-          // Not aligned, need adrp + add
-          adrp(DestReg, static_cast<uint32_t>(ImmInstOne >> 12) & 0x7FFF);
-          add(ARMEmitter::Size::i64Bit, DestReg, DestReg, ImmInstOne & 0xFFF);
+          add(ARMEmitter::Size::i64Bit, DestReg, DestReg, ImmInstTwo & 0xFFF);
         }
       } else {
-        LOGMAN_MSG_A_FMT("Unscaled offset is too large");
-        FEX_UNREACHABLE;
+        // Stinky path, we need to emit a movz+movk+movk sequence.
+        movz(ARMEmitter::Size::i64Bit, DestReg, uint32_t(ImmInstOne >> 32) & 0x7FFF, 32);
+        movk(ARMEmitter::Size::i64Bit, DestReg, uint32_t(ImmInstOne >> 16) & 0xFFFF, 16);
+        movk(ARMEmitter::Size::i64Bit, DestReg, uint32_t(ImmInstOne) & 0xFFFF);
       }
 
       SetCursorOffset(OriginalOffset);
