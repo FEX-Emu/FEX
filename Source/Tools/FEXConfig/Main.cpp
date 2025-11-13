@@ -78,6 +78,10 @@ void ConfigModel::Reload() {
     if (!LoadedConfig->OptionExists(Option.first)) {
       continue;
     }
+    if (std::holds_alternative<fextl::list<fextl::string>>(Option.second)) {
+      // Omit string lists from the model since they require special handling
+      continue;
+    }
 
     auto& [Name, TypeId] = ConfigToNameLookup.find(Option.first)->second;
     auto Item = new QStandardItem(QString::fromStdString(Name));
@@ -122,7 +126,7 @@ void ConfigModel::setStringList(const QString& Name, const QStringList& Values) 
   const auto& Option = NameToConfigLookup.at(Name.toStdString());
   LoadedConfig->Erase(Option);
   for (auto& Value : Values) {
-    LoadedConfig->Set(Option, Value.toStdString().c_str());
+    LoadedConfig->AppendStrArrayValue(Option, Value.toStdString().c_str());
   }
   Reload();
 }
