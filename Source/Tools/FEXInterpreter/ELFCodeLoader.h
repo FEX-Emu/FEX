@@ -254,7 +254,7 @@ public:
 
   ELFCodeLoader(const fextl::string& Filename, int ProgramFDFromEnv, const fextl::string& RootFS, const fextl::vector<fextl::string>& args,
                 const fextl::vector<fextl::string>& ParsedArgs, char** const envp = nullptr,
-                FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::StringArrayType>* AdditionalEnvp = nullptr) {
+                FEXCore::Config::Value<FEXCore::Config::StringArrayType>* AdditionalEnvp = nullptr) {
     ApplicationArgs = args;
 
     bool LoadedWithFD = false;

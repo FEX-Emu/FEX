@@ -134,7 +134,7 @@ public:
   void Load();
 
   template<typename T>
-  requires (!std::is_same_v<fextl::string, T> && !std::is_same_v<DefaultValues::Type::StringArrayType, T>)
+  requires (!std::is_same_v<fextl::string, T> && !std::is_same_v<StringArrayType, T>)
   std::optional<T> GetConv(ConfigOption Option) {
     const auto it = OptionMap.find(Option);
     if (it == OptionMap.end()) {
@@ -142,7 +142,7 @@ public:
     }
 
     const auto& Value = it->second;
-    LOGMAN_THROW_A_FMT(!std::holds_alternative<DefaultValues::Type::StringArrayType>(Value), "Tried to get config of invalid type!");
+    LOGMAN_THROW_A_FMT(!std::holds_alternative<StringArrayType>(Value), "Tried to get config of invalid type!");
 
     if (std::holds_alternative<T>(Value)) [[likely]] {
       return std::get<T>(Value);
@@ -165,7 +165,7 @@ public:
 
 private:
   void MergeConfigMap(const LayerOptions& Options);
-  void MergeEnvironmentVariables(const ConfigOption& Option, const DefaultValues::Type::StringArrayType& Value);
+  void MergeEnvironmentVariables(const ConfigOption& Option, const StringArrayType& Value);
 };
 
 void MetaLayer::Load() {
@@ -181,7 +181,7 @@ void MetaLayer::Load() {
 }
 
 
-void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const DefaultValues::Type::StringArrayType& Value) {
+void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const StringArrayType& Value) {
   // Environment variables need a bit of additional work
   // We want to merge the arrays rather than overwrite entirely
   auto MetaEnvironment = OptionMap.find(Option);
@@ -193,7 +193,7 @@ void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const Defa
 
   // If an environment variable exists in both current meta and in the incoming layer then the meta layer value is overwritten
   fextl::unordered_map<fextl::string, fextl::string> LookupMap;
-  const auto AddToMap = [&LookupMap](const DefaultValues::Type::StringArrayType& Value) {
+  const auto AddToMap = [&LookupMap](const StringArrayType& Value) {
     for (const auto& EnvVar : Value) {
       const auto ItEq = EnvVar.find_first_of('=');
       if (ItEq == fextl::string::npos) {
@@ -209,7 +209,7 @@ void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const Defa
     }
   };
 
-  AddToMap(std::get<DefaultValues::Type::StringArrayType>(MetaEnvironment->second));
+  AddToMap(std::get<StringArrayType>(MetaEnvironment->second));
   AddToMap(Value);
 
   // Now with the two layers merged in the map
@@ -225,8 +225,8 @@ void MetaLayer::MergeConfigMap(const LayerOptions& Options) {
   // Insert this layer's options, overlaying previous options that exist here
   for (auto& it : Options) {
     if (it.first == FEXCore::Config::ConfigOption::CONFIG_ENV || it.first == FEXCore::Config::ConfigOption::CONFIG_HOSTENV) {
-      LOGMAN_THROW_A_FMT(std::holds_alternative<DefaultValues::Type::StringArrayType>(it.second), "Tried to get config of invalid type!");
-      MergeEnvironmentVariables(it.first, std::get<DefaultValues::Type::StringArrayType>(it.second));
+      LOGMAN_THROW_A_FMT(std::holds_alternative<StringArrayType>(it.second), "Tried to get config of invalid type!");
+      MergeEnvironmentVariables(it.first, std::get<StringArrayType>(it.second));
     } else {
       OptionMap.insert_or_assign(it.first, it.second);
     }
@@ -423,7 +423,7 @@ bool Exists(ConfigOption Option) {
   return Meta->OptionExists(Option);
 }
 
-std::optional<DefaultValues::Type::StringArrayType*> All(ConfigOption Option) {
+std::optional<StringArrayType*> All(ConfigOption Option) {
   return Meta->All(Option);
 }
 
@@ -491,13 +491,12 @@ template Value<uint8_t>::Value(FEXCore::Config::ConfigOption _Option, uint8_t De
 template Value<uint64_t>::Value(FEXCore::Config::ConfigOption _Option, uint64_t Default);
 
 template<typename T>
-void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, DefaultValues::Type::StringArrayType* List) {
+void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, StringArrayType* List) {
   auto Value = FEXCore::Config::All(Option);
   List->clear();
   if (Value) {
     *List = **Value;
   }
 }
-template void Value<DefaultValues::Type::StringArrayType>::GetListIfExists(FEXCore::Config::ConfigOption Option,
-                                                                           DefaultValues::Type::StringArrayType* List);
+template void Value<StringArrayType>::GetListIfExists(FEXCore::Config::ConfigOption Option, StringArrayType* List);
 } // namespace FEXCore::Config
