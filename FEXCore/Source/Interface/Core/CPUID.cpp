@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Utils/FileLoading.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -443,10 +444,10 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
 
   Res.eax = FAMILY_IDENTIFIER;
 
-  Res.ebx = 0 |             // Brand index
-            (8 << 8) |      // Cache line size in bytes
-            (Cores << 16) | // Number of addressable IDs for the logical cores in the physical CPU
-            (0 << 24);      // Local APIC ID
+  Res.ebx = 0 |                 // Brand index
+            (8 << 8) |          // Cache line size in bytes
+            (Cores << 16) |     // Number of addressable IDs for the logical cores in the physical CPU
+            (GetCPUID() << 24); // Local APIC ID
 
   Res.ecx = (1 << 0) |                                      // SSE3
             (CTX->HostFeatures.SupportsPMULL_128Bit << 1) | // PCLMULQDQ
@@ -509,7 +510,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
             (1 << 25) | // SSE
             (1 << 26) | // SSE2
             (0 << 27) | // Self Snoop
-            (1 << 28) | // Max APIC IDs reserved field is valid
+            (0 << 28) | // (HTT) Max APIC IDs reserved field is valid
             (1 << 29) | // Thermal monitor
             (0 << 30) | // Reserved
             (0 << 31);  // Pending break enable
@@ -1096,9 +1097,9 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) con
             (CTX->HostFeatures.SupportsCLZERO << 0); // CLZERO support
 
   uint32_t CoreCount = Cores - 1;
-  Res.ecx = (0 << 16) |                                  // PerfTscSize: Performance timestamp count size
-            ((uint32_t)std::log2(CoreCount + 1) << 12) | // ApicIdSize: Number of bits in ApicID
-            (CoreCount << 0);                            // Count count subtract one
+  Res.ecx = (0 << 16) |                    // PerfTscSize: Performance timestamp count size
+            (std::bit_ceil(Cores) << 12) | // ApicIdSize: Number of bits in ApicID
+            (CoreCount << 0);              // Count count subtract one
 
   return Res;
 }
