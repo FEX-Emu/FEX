@@ -1,7 +1,6 @@
 #!/bin/env python3
-import sys
-
 import re
+import sys
 
 # Handles the following formats:
 #
@@ -9,7 +8,7 @@ import re
 # <Category>: <commit message> -> Goes in <Category>
 # <Category>/<Tag>: <commit message> -> Goes in <Category>/<Tag>
 
-Meta = { }
+Meta = {}
 for line in sys.stdin.readlines():
     if detailed := re.findall("^([A-Za-z0-9]+)/([A-Za-z0-9]+):(.+)$", line):
         detailed = detailed[0]

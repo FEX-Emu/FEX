@@ -1,20 +1,24 @@
 #!/bin/python3
 import json
 import sys
-from dataclasses import dataclass, field
 import textwrap
+from dataclasses import dataclass, field
+
 
 def ExitError(msg):
     print(msg)
     sys.exit(-1)
 
+
 @dataclass
 class IRType:
     IRName: str
     CXXName: str
+
     def __init__(self, IRName, CXXName):
         self.IRName = IRName
         self.CXXName = CXXName
+
 
 @dataclass
 class OpArgument:
@@ -37,6 +41,7 @@ class OpArgument:
     def print(self):
         attrs = vars(self)
         print(", ".join("%s: %s" % item for item in attrs.items()))
+
 
 @dataclass
 class OpDefinition:
@@ -92,19 +97,23 @@ class OpDefinition:
         attrs = vars(self)
         print(", ".join("%s: %s" % item for item in attrs.items()))
 
+
 IRTypesToCXX: dict[str, IRType] = {}
 CXXTypeToIR: dict[str, IRType] = {}
 IROps: list[OpDefinition] = []
 
 IROpNameSet: set[str] = set()
 
+
 def is_ssa_type(op_type: str):
     return op_type in {"SSA", "GPR", "GPRPair", "FPR"}
+
 
 def parse_irtypes(irtypes):
     for op_key, op_val in irtypes.items():
         IRTypesToCXX[op_key] = IRType(op_key, op_val)
         CXXTypeToIR[op_val] = IRType(op_key, op_val)
+
 
 def parse_ops(ops):
     for op_class, opslist in ops.items():
@@ -130,7 +139,7 @@ def parse_ops(ops):
                     #
                     # Named destinations require side effects because they break
                     # SSA hard. Validate that.
-                    assert("HasSideEffects" in op_val and op_val["HasSideEffects"])
+                    assert "HasSideEffects" in op_val and op_val["HasSideEffects"]
 
                     for Dest in LHS.split(","):
                         Dest = Dest.strip()
@@ -147,7 +156,9 @@ def parse_ops(ops):
                 else:
                     # Single anonymous destination
                     if LHS not in ["SSA", "GPR", "GPRPair", "FPR"]:
-                        ExitError(f"Unknown destination class type {LHS}. Needs to be one of SSA, GPR, GPRPair, FPR")
+                        ExitError(
+                            f"Unknown destination class type {LHS}. Needs to be one of SSA, GPR, GPRPair, FPR"
+                        )
 
                     OpDef.HasDest = True
                     OpDef.DestType = LHS
@@ -170,14 +181,20 @@ def parse_ops(ops):
 
                     Split = Argument.split(":", 1)
                     if len(Split) != 2:
-                        ExitError("Error parsing argument. Missing Type and name colon split")
+                        ExitError(
+                            "Error parsing argument. Missing Type and name colon split"
+                        )
 
                     # Type is the first argument
                     OpArg.Type = Split[0]
 
                     # Validate typing is in our type map
                     if not OpArg.Type in IRTypesToCXX:
-                        ExitError("IR type {} isn't in IR type map. From IR op {}, argument {}".format(OpArg.Type, OpDef.Name, Argument))
+                        ExitError(
+                            "IR type {} isn't in IR type map. From IR op {}, argument {}".format(
+                                OpArg.Type, OpDef.Name, Argument
+                            )
+                        )
 
                     # Style is the first byte of the name
                     if Split[1][0] == "#":
@@ -191,7 +208,11 @@ def parse_ops(ops):
                         else:
                             OpDef.NonSSAArgNum = OpDef.NonSSAArgNum + 1
                     else:
-                        ExitError("IR Op {} missing value argument style specifier. Needs to be one of {{#, $}}".format(OpDef.Name))
+                        ExitError(
+                            "IR Op {} missing value argument style specifier. Needs to be one of {{#, $}}".format(
+                                OpDef.Name
+                            )
+                        )
 
                     Prefix = Split[1][0]
                     ArgName = Split[1][1:]
@@ -209,13 +230,19 @@ def parse_ops(ops):
                         # Second argument will be the default initializer
                         # Since we stripped the opening curly brace then it'll end with a closing brace
                         if DefaultInit[1][-1] != "}":
-                            ExitError("IR op {} Argument {} is missing closing curly brace in default initializer?".format(OpDef.Name, ArgName))
+                            ExitError(
+                                "IR op {} Argument {} is missing closing curly brace in default initializer?".format(
+                                    OpDef.Name, ArgName
+                                )
+                            )
 
                         OpArg.DefaultInitializer = DefaultInit[1][:-1]
 
                     # If SSA type then we can generate validation for this op
                     if OpArg.IsSSA and OpArg.Type in {"GPR", "GPRPair", "FPR"}:
-                        OpDef.EmitValidation.append(f"GetOpRegClass({ArgName}) == RegClass::Invalid || WalkFindRegClass({ArgName}) == RegClass::{OpArg.Type}")
+                        OpDef.EmitValidation.append(
+                            f"GetOpRegClass({ArgName}) == RegClass::Invalid || WalkFindRegClass({ArgName}) == RegClass::{OpArg.Type}"
+                        )
 
                     OpArg.Name = ArgName
                     OpArg.NameWithPrefix = NameWithPrefix
@@ -265,17 +292,17 @@ def parse_ops(ops):
                 OpDef.LoweredX87 = op_val["X87"]
 
                 # X87 implies !JITDispatch
-                assert("JITDispatch" not in op_val)
+                assert "JITDispatch" not in op_val
                 OpDef.JITDispatch = False
 
             if "TiedSource" in op_val:
                 OpDef.TiedSource = op_val["TiedSource"]
 
             # Pad Inline out to the argument count
-            OpDef.Inline = [''] * len(OpDef.Arguments)
+            OpDef.Inline = [""] * len(OpDef.Arguments)
             if "Inline" in op_val:
                 Value = op_val["Inline"]
-                OpDef.Inline[0:len(Value)] = Value
+                OpDef.Inline[0 : len(Value)] = Value
 
             # Do some fixups of the data here
             if len(OpDef.EmitValidation) != 0:
@@ -283,9 +310,11 @@ def parse_ops(ops):
                     # Patch up all the argument names
                     for Arg in OpDef.Arguments:
                         # Temporary ops just replace all instances no prefix variant
-                        OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(Arg.NameWithPrefix, Arg.Name)
+                        OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(
+                            Arg.NameWithPrefix, Arg.Name
+                        )
 
-            #OpDef.print()
+            # OpDef.print()
 
             # Error on duplicate op
             if OpDef.Name in IROpNameSet:
@@ -294,12 +323,13 @@ def parse_ops(ops):
             IROps.append(OpDef)
             IROpNameSet.add(OpDef.Name)
 
+
 # Print out enum values
 def print_enums(enums):
     output_file.write("#ifdef IROP_ENUM\n")
     output_file.write("enum IROps : uint16_t {\n")
     for op in IROps:
-        output_file.write("\tOP_{},\n" .format(op.Name.upper()))
+        output_file.write("\tOP_{},\n".format(op.Name.upper()))
     output_file.write("};\n")
 
     for name, members in enums.items():
@@ -313,6 +343,7 @@ def print_enums(enums):
 
     output_file.write("#undef IROP_ENUM\n")
     output_file.write("#endif\n\n")
+
 
 def print_ir_structs(defines):
     output_file.write("#ifdef IROP_STRUCTS\n")
@@ -333,14 +364,18 @@ def print_ir_structs(defines):
     output_file.write("\tIR::OpSize ElementSize;\n")
 
     output_file.write("\ttemplate<typename T>\n")
-    output_file.write("\tT const* C() const { return reinterpret_cast<T const*>(Data); }\n")
+    output_file.write(
+        "\tT const* C() const { return reinterpret_cast<T const*>(Data); }\n"
+    )
     output_file.write("\ttemplate<typename T>\n")
     output_file.write("\tT* CW() { return reinterpret_cast<T*>(Data); }\n")
 
     output_file.write("\tOrderedNodeWrapper Args[0];\n")
 
-    output_file.write("};\n\n");
-    output_file.write("static_assert(sizeof(IROp_Header) == sizeof(uint32_t), \"IROp_Header should be 32-bits in size\");\n\n");
+    output_file.write("};\n\n")
+    output_file.write(
+        'static_assert(sizeof(IROp_Header) == sizeof(uint32_t), "IROp_Header should be 32-bits in size");\n\n'
+    )
 
     # Now the user defined types
     output_file.write("// User defined IR Op structs\n")
@@ -355,7 +390,7 @@ def print_ir_structs(defines):
             # Walk the SSA arguments and place them in order of declaration
             for arg in op.Arguments:
                 if arg.IsSSA:
-                    output_file.write("\tOrderedNodeWrapper {};\n".format(arg.Name));
+                    output_file.write("\tOrderedNodeWrapper {};\n".format(arg.Name))
 
         # Non-SSA arguments are also placed in order of declaration, after SSA though
         if op.NonSSAArgNum > 0:
@@ -363,28 +398,37 @@ def print_ir_structs(defines):
             for arg in op.Arguments:
                 if not arg.Temporary and not arg.IsSSA:
                     CType = IRTypesToCXX[arg.Type].CXXName
-                    output_file.write("\t{} {};\n".format(CType, arg.Name));
+                    output_file.write("\t{} {};\n".format(CType, arg.Name))
 
-        output_file.write("\tstatic constexpr IROps OPCODE = OP_{};\n".format(op.Name.upper()))
-
+        output_file.write(
+            "\tstatic constexpr IROps OPCODE = OP_{};\n".format(op.Name.upper())
+        )
 
         if op.SSAArgNum > 0:
             output_file.write("\t// Get index of argument by name\n")
             SSAArg = 0
             for arg in op.Arguments:
                 if arg.IsSSA:
-                    output_file.write("\tstatic constexpr size_t {}_Index = {};\n".format(arg.Name, SSAArg))
+                    output_file.write(
+                        "\tstatic constexpr size_t {}_Index = {};\n".format(
+                            arg.Name, SSAArg
+                        )
+                    )
                     SSAArg = SSAArg + 1
-
 
         output_file.write("};\n")
 
         # Add a static assert that the IR ops must be pod
-        output_file.write("static_assert(std::is_trivially_copyable_v<IROp_{}>);\n".format(op.Name))
-        output_file.write("static_assert(std::is_standard_layout_v<IROp_{}>);\n\n".format(op.Name))
+        output_file.write(
+            "static_assert(std::is_trivially_copyable_v<IROp_{}>);\n".format(op.Name)
+        )
+        output_file.write(
+            "static_assert(std::is_standard_layout_v<IROp_{}>);\n\n".format(op.Name)
+        )
 
     output_file.write("#undef IROP_STRUCTS\n")
     output_file.write("#endif\n\n")
+
 
 # Print out const expression to calculate IR Op sizes
 def print_ir_sizes():
@@ -397,7 +441,9 @@ def print_ir_sizes():
         else:
             output_file.write(f"\tsizeof(IROp_{op.Name}),\n")
 
-    output_file.write(textwrap.dedent("""
+    output_file.write(
+        textwrap.dedent(
+            """
     };
 
     // Make sure our array maps directly to the IROps enum
@@ -416,20 +462,27 @@ def print_ir_sizes():
 
     #undef IROP_SIZES
     #endif
-    """))
+    """
+        )
+    )
+
 
 def print_ir_reg_classes():
     output_file.write("#ifdef IROP_REG_CLASSES_IMPL\n")
 
-    output_file.write("constexpr std::array<FEXCore::IR::RegClass, IROps::OP_LAST + 1> IRRegClasses = {\n")
+    output_file.write(
+        "constexpr std::array<FEXCore::IR::RegClass, IROps::OP_LAST + 1> IRRegClasses = {\n"
+    )
     for op in IROps:
         if op.Name == "Last":
             output_file.write("\tRegClass::Invalid,\n")
         else:
             if op.HasDest and op.DestType is None:
-                ExitError("IR op {} has destination with no destination class".format(op.Name))
+                ExitError(
+                    "IR op {} has destination with no destination class".format(op.Name)
+                )
 
-            if op.HasDest and op.DestType == "SSA": # Special case SSA type
+            if op.HasDest and op.DestType == "SSA":  # Special case SSA type
                 output_file.write("\tRegClass::Complex,\n")
             elif op.HasDest:
                 output_file.write("\tRegClass::{},\n".format(op.DestType))
@@ -437,27 +490,33 @@ def print_ir_reg_classes():
                 # No destination so it has an invalid destination class
                 output_file.write("\tRegClass::Invalid, // No destination\n")
 
-
     output_file.write("};\n\n")
 
     output_file.write("// Make sure our array maps directly to the IROps enum\n")
-    output_file.write("static_assert(IRRegClasses[IROps::OP_LAST] == RegClass::Invalid);\n\n")
+    output_file.write(
+        "static_assert(IRRegClasses[IROps::OP_LAST] == RegClass::Invalid);\n\n"
+    )
 
-    output_file.write("FEXCore::IR::RegClass GetRegClass(IROps Op) { return IRRegClasses[Op]; }\n\n")
+    output_file.write(
+        "FEXCore::IR::RegClass GetRegClass(IROps Op) { return IRRegClasses[Op]; }\n\n"
+    )
 
     output_file.write("#undef IROP_REG_CLASSES_IMPL\n")
     output_file.write("#endif\n\n")
 
+
 # Print out the name printer implementation
 def print_ir_getname():
     output_file.write("#ifdef IROP_GETNAME_IMPL\n")
-    output_file.write("constexpr std::array<std::string_view const, OP_LAST + 1> IRNames = {\n")
+    output_file.write(
+        "constexpr std::array<std::string_view const, OP_LAST + 1> IRNames = {\n"
+    )
     for op in IROps:
-        output_file.write("\t\"{}\",\n".format(op.Name))
+        output_file.write('\t"{}",\n'.format(op.Name))
 
     output_file.write("};\n\n")
 
-    output_file.write("static_assert(IRNames[OP_LAST] == \"Last\");\n\n")
+    output_file.write('static_assert(IRNames[OP_LAST] == "Last");\n\n')
 
     output_file.write("std::string_view const& GetName(IROps Op) {\n")
     output_file.write("  return IRNames[Op];\n")
@@ -465,6 +524,7 @@ def print_ir_getname():
 
     output_file.write("#undef IROP_GETNAME_IMPL\n")
     output_file.write("#endif\n\n")
+
 
 # Print out the number of SSA args that need to be RA'd
 def print_ir_getraargs():
@@ -476,13 +536,16 @@ def print_ir_getraargs():
 
         if op.RAOverride != -1:
             if op.RAOverride > op.SSAArgNum:
-                ExitError("Op {} has RA override of {} which is more than total SSA values {}. This doesn't work".format(op.Name, op.RAOverride, op.SSAArgNum))
+                ExitError(
+                    "Op {} has RA override of {} which is more than total SSA values {}. This doesn't work".format(
+                        op.Name, op.RAOverride, op.SSAArgNum
+                    )
+                )
             SSAArgs = op.RAOverride
 
         output_file.write("\t{},\n".format(SSAArgs))
 
     output_file.write("};\n\n")
-
 
     output_file.write("constexpr std::array<uint8_t, OP_LAST + 1> IRArgs = {\n")
     for op in IROps:
@@ -501,6 +564,7 @@ def print_ir_getraargs():
 
     output_file.write("#undef IROP_GETRAARGS_IMPL\n")
     output_file.write("#endif\n\n")
+
 
 def print_ir_hassideeffects():
     output_file.write("#ifdef IROP_HASSIDEEFFECTS_IMPL\n")
@@ -531,6 +595,7 @@ def print_ir_hassideeffects():
     output_file.write("#undef IROP_HASSIDEEFFECTS_IMPL\n")
     output_file.write("#endif\n\n")
 
+
 def print_ir_gethasdest():
     output_file.write("#ifdef IROP_GETHASDEST_IMPL\n")
 
@@ -550,6 +615,7 @@ def print_ir_gethasdest():
     output_file.write("#undef IROP_GETHASDEST_IMPL\n")
     output_file.write("#endif\n\n")
 
+
 # Print out IR argument printing
 def print_ir_arg_printer():
     output_file.write("#ifdef IROP_ARGPRINTER_HELPER\n")
@@ -561,8 +627,10 @@ def print_ir_arg_printer():
         output_file.write("case IROps::OP_{}: {{\n".format(op.Name.upper()))
 
         if len(op.Arguments) != 0:
-            output_file.write("\t[[maybe_unused]] auto Op = IROp->C<IR::IROp_{}>();\n".format(op.Name))
-            output_file.write("\t*out << \" \";\n")
+            output_file.write(
+                "\t[[maybe_unused]] auto Op = IROp->C<IR::IROp_{}>();\n".format(op.Name)
+            )
+            output_file.write('\t*out << " ";\n')
 
             SSAArgNum = 0
             FirstArg = True
@@ -578,7 +646,9 @@ def print_ir_arg_printer():
 
                 if arg.IsSSA:
                     # SSA value
-                    output_file.write("\tPrintArg(out, IR, Op->Header.Args[{}]);\n".format(SSAArgNum))
+                    output_file.write(
+                        "\tPrintArg(out, IR, Op->Header.Args[{}]);\n".format(SSAArgNum)
+                    )
                     SSAArgNum = SSAArgNum + 1
                 else:
                     # User defined op that is stored
@@ -590,14 +660,18 @@ def print_ir_arg_printer():
     output_file.write("#undef IROP_ARGPRINTER_HELPER\n")
     output_file.write("#endif\n")
 
+
 def print_validation(op):
     if len(op.EmitValidation) != 0:
         output_file.write("#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED\n")
 
         for Validation in op.EmitValidation:
-            Sanitized = Validation.replace("\"", "\\\"")
-            output_file.write("\t\tLOGMAN_THROW_A_FMT({}, \"{}\");\n".format(Validation, Sanitized))
+            Sanitized = Validation.replace('"', '\\"')
+            output_file.write(
+                '\t\tLOGMAN_THROW_A_FMT({}, "{}");\n'.format(Validation, Sanitized)
+            )
         output_file.write("#endif\n")
+
 
 # Print out IR allocator helpers
 def print_ir_allocator_helpers():
@@ -606,19 +680,27 @@ def print_ir_allocator_helpers():
     output_file.write("\ttemplate <class T>\n")
     output_file.write("\tstruct Wrapper final {\n")
     output_file.write("\t\tT *first;\n")
-    output_file.write("\t\tOrderedNode *Node; ///< Actual offset of this IR in ths list\n")
+    output_file.write(
+        "\t\tOrderedNode *Node; ///< Actual offset of this IR in ths list\n"
+    )
     output_file.write("\n")
-    output_file.write("\t\toperator Wrapper<IROp_Header>() const { return Wrapper<IROp_Header> {reinterpret_cast<IROp_Header*>(first), Node}; }\n")
+    output_file.write(
+        "\t\toperator Wrapper<IROp_Header>() const { return Wrapper<IROp_Header> {reinterpret_cast<IROp_Header*>(first), Node}; }\n"
+    )
     output_file.write("\t\toperator OrderedNode *() { return Node; }\n")
     output_file.write("\t\toperator const OrderedNode *() const { return Node; }\n")
-    output_file.write("\t\toperator OpNodeWrapper () const { return Node->Header.Value; }\n")
+    output_file.write(
+        "\t\toperator OpNodeWrapper () const { return Node->Header.Value; }\n"
+    )
     output_file.write("\t};\n")
 
     output_file.write("\ttemplate <class T>\n")
     output_file.write("\tusing IRPair = Wrapper<T>;\n\n")
 
     output_file.write("\tIRPair<IROp_Header> AllocateRawOp(size_t HeaderSize) {\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<IROp_Header*>(DualListData.DataAllocate(HeaderSize));\n")
+    output_file.write(
+        "\t\tauto Op = reinterpret_cast<IROp_Header*>(DualListData.DataAllocate(HeaderSize));\n"
+    )
     output_file.write("\t\tmemset(Op, 0, HeaderSize);\n")
     output_file.write("\t\tOp->Op = IROps::OP_DUMMY;\n")
     output_file.write("\t\treturn IRPair<IROp_Header>{Op, CreateNode(Op)};\n")
@@ -627,7 +709,9 @@ def print_ir_allocator_helpers():
     output_file.write("\ttemplate<class T, IROps T2>\n")
     output_file.write("\tT *AllocateOrphanOp() {\n")
     output_file.write("\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n")
+    output_file.write(
+        "\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n"
+    )
     output_file.write("\t\tmemset(Op, 0, Size);\n")
     output_file.write("\t\tOp->Header.Op = T2;\n")
     output_file.write("\t\treturn Op;\n")
@@ -636,49 +720,67 @@ def print_ir_allocator_helpers():
     output_file.write("\ttemplate<class T, IROps T2>\n")
     output_file.write("\tIRPair<T> AllocateOp() {\n")
     output_file.write("\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n")
+    output_file.write(
+        "\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n"
+    )
     output_file.write("\t\tmemset(Op, 0, Size);\n")
     output_file.write("\t\tOp->Header.Op = T2;\n")
     output_file.write("\t\treturn IRPair<T>{Op, CreateNode(&Op->Header)};\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tIR::OpSize GetOpSize(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
+    output_file.write(
+        "\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n"
+    )
     output_file.write("\t\treturn HeaderOp->Size;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tIR::OpSize GetOpElementSize(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
+    output_file.write(
+        "\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n"
+    )
     output_file.write("\t\treturn HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tLOGMAN_THROW_A_FMT(OpHasDest(Op), \"Op {} has no dest\\n\", GetOpName(Op));\n")
-    output_file.write("\t\treturn IR::OpSizeToSize(GetOpSize(Op)) / IR::OpSizeToSize(GetOpElementSize(Op));\n")
+    output_file.write(
+        '\t\tLOGMAN_THROW_A_FMT(OpHasDest(Op), "Op {} has no dest\\n", GetOpName(Op));\n'
+    )
+    output_file.write(
+        "\t\treturn IR::OpSizeToSize(GetOpSize(Op)) / IR::OpSizeToSize(GetOpElementSize(Op));\n"
+    )
     output_file.write("\t}\n\n")
 
     output_file.write("\tbool OpHasDest(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
+    output_file.write(
+        "\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n"
+    )
     output_file.write("\t\treturn GetHasDest(HeaderOp->Op);\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tIROps GetOpType(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
+    output_file.write(
+        "\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n"
+    )
     output_file.write("\t\treturn HeaderOp->Op;\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tFEXCore::IR::RegClass GetOpRegClass(const OrderedNode *Op) const {\n")
+    output_file.write(
+        "\tFEXCore::IR::RegClass GetOpRegClass(const OrderedNode *Op) const {\n"
+    )
     output_file.write("\t\treturn GetRegClass(GetOpType(Op));\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tstd::string_view const& GetOpName(const OrderedNode *Op) const {\n")
+    output_file.write(
+        "\tstd::string_view const& GetOpName(const OrderedNode *Op) const {\n"
+    )
     output_file.write("\t\treturn IR::GetName(GetOpType(Op));\n")
     output_file.write("\t}\n\n")
 
     # Generate helpers with operands
     for op in IROps:
         if op.Name != "Last":
-            output_file.write("\tIRPair<IROp_{}> _{}(" .format(op.Name, op.Name))
+            output_file.write("\tIRPair<IROp_{}> _{}(".format(op.Name, op.Name))
 
             # Output SSA args first
             for i, arg in enumerate(op.Arguments):
@@ -716,30 +818,43 @@ def print_ir_allocator_helpers():
                     "\t\tif(MMXState == MMXState_MMX) ChgStateMMX_X87();\n"
                 )
 
-            output_file.write("\t\tauto _Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
+            output_file.write(
+                "\t\tauto _Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(
+                    op.Name, op.Name.upper()
+                )
+            )
 
             if op.SSAArgNum != 0:
                 for arg in op.Arguments:
                     if arg.IsSSA:
-                        output_file.write("\t\t_Op.first->{} = {};\n".format(arg.Name, arg.Name))
+                        output_file.write(
+                            "\t\t_Op.first->{} = {};\n".format(arg.Name, arg.Name)
+                        )
 
             if len(op.Arguments) != 0:
                 for arg in op.Arguments:
                     if not arg.Temporary and not arg.IsSSA:
-                        output_file.write("\t\t_Op.first->{} = {};\n".format(arg.Name, arg.Name))
+                        output_file.write(
+                            "\t\t_Op.first->{} = {};\n".format(arg.Name, arg.Name)
+                        )
 
             assert not (op.HasDest and op.DestSize is None)
 
             # Some ops without a destination still need an operating size
             # Effectively reusing the destination size value for operation size
             if op.DestSize != None:
-                output_file.write("\t\t_Op.first->Header.Size = {};\n".format(op.DestSize))
+                output_file.write(
+                    "\t\t_Op.first->Header.Size = {};\n".format(op.DestSize)
+                )
 
             if op.ElementSize == None:
-                output_file.write("\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size;\n")
+                output_file.write(
+                    "\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size;\n"
+                )
             else:
-                output_file.write("\t\t_Op.first->Header.ElementSize = {};\n".format(op.ElementSize))
-
+                output_file.write(
+                    "\t\t_Op.first->Header.ElementSize = {};\n".format(op.ElementSize)
+                )
 
             # Only validate here if there's no OrderedNode * version. Else
             # validation is in that version, see the comment below.
@@ -751,7 +866,7 @@ def print_ir_allocator_helpers():
 
             # Now do the OrderedNode * version if necessary
             if op.SSAArgNum:
-                output_file.write("\tIRPair<IROp_{}> _{}(" .format(op.Name, op.Name))
+                output_file.write("\tIRPair<IROp_{}> _{}(".format(op.Name, op.Name))
 
                 for i, arg in enumerate(op.Arguments):
                     LastArg = i == len(op.Arguments) - 1
@@ -772,7 +887,9 @@ def print_ir_allocator_helpers():
                         output_file.write(", ")
 
                 output_file.write(") {\n")
-                output_file.write("\t\tauto ListDataBegin = DualListData.ListBegin();\n")
+                output_file.write(
+                    "\t\tauto ListDataBegin = DualListData.ListBegin();\n"
+                )
 
                 idx = 0
                 for arg in op.Arguments:
@@ -781,7 +898,7 @@ def print_ir_allocator_helpers():
                         inline = op.Inline[idx]
                         idx += 1
 
-                        if inline != '':
+                        if inline != "":
                             Sized = "Size" in [x.Name for x in op.Arguments]
                             P = ["Size" if Sized else "OpSize::i64Bit", arg.Name]
 
@@ -794,7 +911,9 @@ def print_ir_allocator_helpers():
                                 P += ["OffsetType", "OffsetScale", "true /* TSO */"]
                                 inline = "Mem"
 
-                            output_file.write(f"\t\t{arg.Name} = Inline{inline}({', '.join(P)});\n")
+                            output_file.write(
+                                f"\t\t{arg.Name} = Inline{inline}({', '.join(P)});\n"
+                            )
 
                         output_file.write(f"\t\t{arg.Name}->AddUse();\n")
 
@@ -819,14 +938,21 @@ def print_ir_allocator_helpers():
     output_file.write("#undef IROP_ALLOCATE_HELPERS\n")
     output_file.write("#endif\n")
 
+
 def print_ir_dispatcher_defs():
     output_dispatch_file.write("#ifdef IROP_DISPATCH_DEFS\n")
     for op in IROps:
-        if op.Name != "Last" and op.SwitchGen and op.JITDispatch and op.JITDispatchOverride == None:
+        if (
+            op.Name != "Last"
+            and op.SwitchGen
+            and op.JITDispatch
+            and op.JITDispatchOverride == None
+        ):
             output_dispatch_file.write("DEF_OP({});\n".format(op.Name))
 
     output_dispatch_file.write("#undef IROP_DISPATCH_DEFS\n")
     output_dispatch_file.write("#endif\n")
+
 
 def print_ir_dispatcher_dispatch():
     output_dispatch_file.write("#ifdef IROP_DISPATCH_DISPATCH\n")
@@ -836,10 +962,14 @@ def print_ir_dispatcher_dispatch():
             if op.JITDispatchOverride != None:
                 DispatchName = op.JITDispatchOverride
 
-            if (op.DynamicDispatch):
-                output_dispatch_file.write("REGISTER_OP_RT({}, {});\n".format(op.Name.upper(), DispatchName))
+            if op.DynamicDispatch:
+                output_dispatch_file.write(
+                    "REGISTER_OP_RT({}, {});\n".format(op.Name.upper(), DispatchName)
+                )
             else:
-                output_dispatch_file.write("REGISTER_OP({}, {});\n".format(op.Name.upper(), DispatchName))
+                output_dispatch_file.write(
+                    "REGISTER_OP({}, {});\n".format(op.Name.upper(), DispatchName)
+                )
 
     output_dispatch_file.write("#undef IROP_DISPATCH_DISPATCH\n")
     output_dispatch_file.write("#endif\n")

@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 import json
 import os
-import sys
 import subprocess
+import sys
+
 
 def DoesFEXSupportAVX(mode):
     # Check if FEX indicates support for AVX
@@ -10,34 +11,40 @@ def DoesFEXSupportAVX(mode):
 
     args = list()
     args.append(fex_interpreter_path)
-    args.append('/bin/cat')
-    args.append('/proc/cpuinfo')
+    args.append("/bin/cat")
+    args.append("/proc/cpuinfo")
 
     process = subprocess.run(args, capture_output=True, text=True)
     output = process.stdout
 
     for line in output:
-        if 'flags' in line:
-            flags = line.split(':')[1].strip().split(' ')
-            return 'avx' in flags and 'avx2' in flags
+        if "flags" in line:
+            flags = line.split(":")[1].strip().split(" ")
+            return "avx" in flags and "avx2" in flags
     return False
+
 
 def TestRequiresAVXSupport():
     # Check if the test itself requires AVX
     exe_path = sys.argv[len(sys.argv) - 1]
-    json_path = os.path.dirname(os.path.dirname(exe_path)) + '/requirements/' + os.path.basename(exe_path) + '.json'
+    json_path = (
+        os.path.dirname(os.path.dirname(exe_path))
+        + "/requirements/"
+        + os.path.basename(exe_path)
+        + ".json"
+    )
 
     try:
         with open(json_path) as json_file:
             try:
                 json_data = json.load(json_file)
                 if not isinstance(json_data, dict):
-                    raise TypeError('JSON data must be a dict')
+                    raise TypeError("JSON data must be a dict")
 
                 if "AVX" in json_data["HostFeatures"]:
                     return True
             except ValueError as ve:
-                print(f'JSON error: {ve}')
+                print(f"JSON error: {ve}")
                 pass
     except IOError:
         # If we get here, then we don't have a corresponding JSON
@@ -46,6 +53,7 @@ def TestRequiresAVXSupport():
         pass
     return False
 
+
 def LoadTestsFile(File):
     Dict = {}
     if not os.path.exists(File):
@@ -53,11 +61,12 @@ def LoadTestsFile(File):
 
     with open(File) as dtf:
         for line in dtf:
-            test = line.split("#")[0].strip() # remove comments and empty spaces
+            test = line.split("#")[0].strip()  # remove comments and empty spaces
             if len(test) > 0:
                 Dict[test] = 1
 
     return Dict
+
 
 def LoadTestsFileResults(File):
     Dict = {}
@@ -66,7 +75,7 @@ def LoadTestsFileResults(File):
 
     with open(File) as dtf:
         for line in dtf:
-            test = line.split("#")[0].strip() # remove comments and empty spaces
+            test = line.split("#")[0].strip()  # remove comments and empty spaces
             if len(test) > 0:
                 parts = line.split(" ")
                 Dict[parts[0]] = int(parts[1])
@@ -78,7 +87,7 @@ def LoadTestsFileResults(File):
 
 # fexargs should also include the test executable
 
-if (len(sys.argv) < 7):
+if len(sys.argv) < 7:
     sys.exit()
 
 known_failures_file = sys.argv[1]
@@ -115,15 +124,15 @@ ResultCode = 0
 
 # Handle flakes
 TryCount = 1
-if (flake_tests.get(test_name)):
+if flake_tests.get(test_name):
     TryCount = 5
 
-if (disabled_tests.get(test_name)):
+if disabled_tests.get(test_name):
     # This error code tells ctest that the test was skipped
     sys.exit(125)
 
 # expect zero by default
-if (not test_name in expected_output):
+if not test_name in expected_output:
     expected_output[test_name] = 0
 
 if ResultCode == 0:
@@ -135,16 +144,21 @@ if ResultCode == 0:
         ResultCode = Process.returncode
 
         # Break if the expected output is the result code
-        if (expected_output[test_name] == ResultCode):
+        if expected_output[test_name] == ResultCode:
             break
 
-if (expected_output[test_name] != ResultCode):
-    if (test_name in expected_output):
-        print("test failed, expected is", expected_output[test_name], "but got", ResultCode)
+if expected_output[test_name] != ResultCode:
+    if test_name in expected_output:
+        print(
+            "test failed, expected is",
+            expected_output[test_name],
+            "but got",
+            ResultCode,
+        )
     else:
         print("Test doesn't have expected output,", test_name)
 
-    if (known_failures.get(test_name)):
+    if known_failures.get(test_name):
         print("Passing because it was expected to fail")
         # failed and expected to fail -- pass the test
         sys.exit(0)
@@ -153,7 +167,7 @@ if (expected_output[test_name] != ResultCode):
         sys.exit(1)
 else:
     print("test passed with", ResultCode)
-    if (known_failures.get(test_name)):
+    if known_failures.get(test_name):
         print("Failing because it was expected to fail")
         # passed and expected to fail -- fail the test
         sys.exit(1)

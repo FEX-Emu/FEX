@@ -1,18 +1,23 @@
 #!/usr/bin/python3
 import os
+import re
 import subprocess
 import sys
-import re
 
 _Arch = None
+
+
 def GetArch():
     global _Arch
 
     if _Arch == None:
-        _Arch = subprocess.check_output(['uname', '-m']).decode("utf-8").strip()
+        _Arch = subprocess.check_output(["uname", "-m"]).decode("utf-8").strip()
     return _Arch
 
+
 _Distro = None
+
+
 def GetDistro():
     global _Distro
 
@@ -34,10 +39,10 @@ def GetDistro():
 
                 if Key == "DISTRIB_ID":
                     Distro = Val.strip().lower()
-                    Found+=1
+                    Found += 1
                 if Key == "DISTRIB_RELEASE":
                     Version = Val.strip()
-                    Found+=1
+                    Found += 1
 
             if Found == 2:
                 _Distro = [Distro, Version]
@@ -56,11 +61,11 @@ def GetDistro():
 
                 if Key == "ID":
                     Distro = Val.strip()
-                    Found+=1
+                    Found += 1
                 if Key == "VERSION_ID":
                     # Strip the double quotes from the version id
                     Version = Val.strip()[1:-1]
-                    Found+=1
+                    Found += 1
 
             if Found == 2:
                 _Distro = [Distro, Version]
@@ -71,9 +76,11 @@ def GetDistro():
 
     return _Distro
 
+
 def IsSupportedArch():
     Arch = GetArch()
     return Arch == "aarch64"
+
 
 def IsSupportedDistro():
     Distro = GetDistro()
@@ -84,12 +91,16 @@ def IsSupportedDistro():
 
     return False
 
+
 _ArchVersion = None
+
+
 def ListContainsRequired(Features, RequiredFeatures):
     for Req in RequiredFeatures:
         if not Req in Features:
             return False
     return True
+
 
 def GetCPUFeaturesVersion():
     global _ArchVersion
@@ -122,12 +133,14 @@ def GetCPUFeaturesVersion():
                     _ArchVersion = "8.2"
                 elif ListContainsRequired(Features, v8_1Mandatory):
                     _ArchVersion = "8.1"
-                break;
+                break
 
     return _ArchVersion
 
+
 _PPAInstalled = None
 FEXPPA_REGEX = r".*\/fex-emu\/fex\/ubuntu$"
+
 
 def GetPPAStatus():
     global _PPAInstalled
@@ -135,7 +148,7 @@ def GetPPAStatus():
     if _PPAInstalled == None:
         _PPAInstalled = False
 
-        CacheResults = subprocess.check_output(['apt-cache', 'policy']).decode("utf-8")
+        CacheResults = subprocess.check_output(["apt-cache", "policy"]).decode("utf-8")
 
         for Line in CacheResults.split("\n"):
             if "http" in Line:
@@ -149,13 +162,16 @@ def GetPPAStatus():
 
     return _PPAInstalled
 
+
 def InstallPPA():
-    print ("Installing PPA: ppa:fex-emu/fex")
-    print ("This bit will ask for your password")
+    print("Installing PPA: ppa:fex-emu/fex")
+    print("This bit will ask for your password")
 
     DidInstall = False
     try:
-        CmdResult = subprocess.call(["sudo", "add-apt-repository", "-y", "ppa:fex-emu/fex"])
+        CmdResult = subprocess.call(
+            ["sudo", "add-apt-repository", "-y", "ppa:fex-emu/fex"]
+        )
         DidInstall = CmdResult == 0
     except KeyboardInterrupt:
         DidInstall = False
@@ -168,6 +184,7 @@ def InstallPPA():
 
     return DidInstall
 
+
 ARMVersionToPackage = {
     "8.0": "fex-emu-armv8.0",
     "8.1": "fex-emu-armv8.0",
@@ -176,6 +193,7 @@ ARMVersionToPackage = {
     "8.4": "fex-emu-armv8.4",
 }
 
+
 def GetPackagesToInstall():
     return [
         ARMVersionToPackage[GetCPUFeaturesVersion()],
@@ -183,9 +201,10 @@ def GetPackagesToInstall():
         "fex-emu-binfmt64",
     ]
 
+
 def UpdatePPA():
-    print ("Updating apt sources")
-    print ("This bit will ask for your password")
+    print("Updating apt sources")
+    print("This bit will ask for your password")
 
     DidUpdate = False
     try:
@@ -202,10 +221,13 @@ def UpdatePPA():
 
     return DidUpdate
 
+
 def CheckAndInstallPackageUpdates():
     PackagesToInstall = GetPackagesToInstall()
     for Package in PackagesToInstall[:]:
-        UpgradableStatus = subprocess.check_output(["apt", "list", "--upgradable", Package]).decode("utf-8")
+        UpgradableStatus = subprocess.check_output(
+            ["apt", "list", "--upgradable", Package]
+        ).decode("utf-8")
         Found = False
         for Line in UpgradableStatus.split("\n"):
             # If the package exists to be upgraded then it will appear in this list
@@ -224,15 +246,17 @@ def CheckAndInstallPackageUpdates():
             PackagesToInstall.remove(Package)
 
     if len(PackagesToInstall) > 0:
-        print ("Found updates for packages: {}".format(PackagesToInstall))
-        print ("This bit may ask for your password")
+        print("Found updates for packages: {}".format(PackagesToInstall))
+        print("This bit may ask for your password")
 
         DidInstall = False
         try:
-            CmdResult = subprocess.call(["sudo", "apt-get", "-y", "install"] + PackagesToInstall)
+            CmdResult = subprocess.call(
+                ["sudo", "apt-get", "-y", "install"] + PackagesToInstall
+            )
             DidInstall = CmdResult == 0
         except KeyboardInterrupt:
-            print ("Keyboard interrupt")
+            print("Keyboard interrupt")
             DidInstall = False
             pass
 
@@ -245,14 +269,20 @@ def CheckAndInstallPackageUpdates():
 
     return True
 
+
 def CheckPackageInstallStatus():
     PackagesToInstall = GetPackagesToInstall()
     for Package in PackagesToInstall[:]:
-        CmdResult = subprocess.call(["dpkg", "-s", Package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        CmdResult = subprocess.call(
+            ["dpkg", "-s", Package],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         if CmdResult == 0:
             PackagesToInstall.remove(Package)
 
     return PackagesToInstall
+
 
 def InstallPackages(Packages):
     print("Installing packages: {}".format(Packages))
@@ -262,7 +292,7 @@ def InstallPackages(Packages):
         CmdResult = subprocess.call(["sudo", "apt-get", "-y", "install"] + Packages)
         DidInstall = CmdResult == 0
     except KeyboardInterrupt:
-        print ("Keyboard interrupt")
+        print("Keyboard interrupt")
         DidInstall = False
         pass
 
@@ -273,7 +303,10 @@ def InstallPackages(Packages):
 
     return DidInstall
 
+
 _RootFSPath = None
+
+
 def GetRootFSPath():
     global _RootFSPath
 
@@ -301,20 +334,22 @@ def GetRootFSPath():
 
     return _RootFSPath
 
+
 def CheckRootFSInstallStatus():
-    Distro = GetDistro()[1] # Extract Ubuntu version number, e.g. "23.10"
+    Distro = GetDistro()[1]  # Extract Ubuntu version number, e.g. "23.10"
 
     DistroUnderscore = Distro.replace(".", "_")
     Filename = "Ubuntu_{}.ero".format(DistroUnderscore)
     if os.path.exists(GetRootFSPath() + Filename):
-            return True
+        return True
 
     Filename = "Ubuntu_{}.sqsh".format(DistroUnderscore)
     if os.path.exists(GetRootFSPath() + Filename):
-            return True
+        return True
 
     # Couldn't find. Either no rootfs installed or unsupported distro.
     return False
+
 
 def TryInstallRootFS():
     DidInstall = False
@@ -322,78 +357,92 @@ def TryInstallRootFS():
         CmdResult = subprocess.call(["FEXRootFSFetcher"])
         DidInstall = CmdResult == 0
     except KeyboardInterrupt:
-        print ("Keyboard interrupt")
+        print("Keyboard interrupt")
         DidInstall = False
         pass
     return DidInstall
 
+
 def TryBasicProgramExecution():
     return subprocess.call(["FEX", "/usr/bin/uname", "-a"]) == 0
+
 
 def ExitWithStatus(Status):
     # Remove the cached credentials
     subprocess.call(["sudo", "-K"])
     sys.exit(Status)
 
+
 def main():
     # Only run on supported arch
     if not IsSupportedArch():
-        print ( "{} is not a supported architecture".format(GetArch()))
+        print("{} is not a supported architecture".format(GetArch()))
         ExitWithStatus(-1)
 
     if not IsSupportedDistro():
         Distro = GetDistro()
-        print ( "'{} {}' is not a supported distro".format(Distro[0], Distro[1]))
+        print("'{} {}' is not a supported distro".format(Distro[0], Distro[1]))
         ExitWithStatus(-1)
 
     if GetDistro()[0] == "ubuntu":
-        print ("Getting PPA status: {}".format(("NotInstalled", "Installed")[GetPPAStatus()]))
+        print(
+            "Getting PPA status: {}".format(
+                ("NotInstalled", "Installed")[GetPPAStatus()]
+            )
+        )
 
         if GetPPAStatus():
             if not UpdatePPA():
-                print ("apt sources failed to update. Not continuing")
+                print("apt sources failed to update. Not continuing")
                 ExitWithStatus(-1)
             if not CheckAndInstallPackageUpdates():
-                print ("apt packages failed to update. Not continuing")
+                print("apt packages failed to update. Not continuing")
                 ExitWithStatus(-1)
         else:
             if not InstallPPA():
-                print ("PPA failed to install. Not continuing")
+                print("PPA failed to install. Not continuing")
                 ExitWithStatus(-1)
 
         Packages = CheckPackageInstallStatus()
         if len(Packages) > 0:
             if not InstallPackages(Packages):
-                print ("Failed to install packages. Not continuing")
+                print("Failed to install packages. Not continuing")
                 ExitWithStatus(-1)
 
         if not CheckRootFSInstallStatus():
-            print ("RootFS not found. Running FEXRootFSFetcher to get rootfs")
+            print("RootFS not found. Running FEXRootFSFetcher to get rootfs")
             if not TryInstallRootFS():
-                print ("Failed to install RootFS. Not continuing")
+                print("Failed to install RootFS. Not continuing")
                 ExitWithStatus(-1)
 
-    print ("FEX is now installed. Trying basic program run")
+    print("FEX is now installed. Trying basic program run")
     if not TryBasicProgramExecution():
-        print ("FEX failed to run. Not continuing")
+        print("FEX failed to run. Not continuing")
         ExitWithStatus(-1)
 
-    print ("")
-    print ("===================================================")
-    print ("FEX test run executed. You should be set to run FEX")
-    print ("===================================================")
-    print ("Usage examples:")
-    print ("# steam is a bash script. Wrap with FEXBash")
-    print ("\tFEXBash steam")
-    print ("# Full path execution execution will wrap the application if it exists in the rootfs")
-    print ("\tFEX /usr/bin/uname")
-    print ("# Freestanding x86/x86-64 programs can be executed directly. binfmt_misc will redirect to FEX")
-    print ("\t$HOME/PetalCrashOnline.AppImage")
-    print ("# If you need a terminal that emulates everything.")
-    print ("# Run FEXBash without arguments. Double check uname to see if running under FEX")
-    print ("\tFEXBash")
+    print("")
+    print("===================================================")
+    print("FEX test run executed. You should be set to run FEX")
+    print("===================================================")
+    print("Usage examples:")
+    print("# steam is a bash script. Wrap with FEXBash")
+    print("\tFEXBash steam")
+    print(
+        "# Full path execution execution will wrap the application if it exists in the rootfs"
+    )
+    print("\tFEX /usr/bin/uname")
+    print(
+        "# Freestanding x86/x86-64 programs can be executed directly. binfmt_misc will redirect to FEX"
+    )
+    print("\t$HOME/PetalCrashOnline.AppImage")
+    print("# If you need a terminal that emulates everything.")
+    print(
+        "# Run FEXBash without arguments. Double check uname to see if running under FEX"
+    )
+    print("\tFEXBash")
 
     ExitWithStatus(0)
 
+
 if __name__ == "__main__":
-	sys.exit(main())
+    sys.exit(main())

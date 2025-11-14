@@ -4,6 +4,7 @@ import sys
 
 OpClasses = collections.OrderedDict()
 
+
 def get_ir_classes(ops, defines):
     global OpClasses
 
@@ -17,6 +18,7 @@ def get_ir_classes(ops, defines):
     # Sort the dictionary after we are done parsing it
     OpClasses = collections.OrderedDict(sorted(OpClasses.items()))
 
+
 def print_ir_op_index():
     output_file.write("# Index\n")
     output_file.write("## Op Classes\n")
@@ -25,6 +27,7 @@ def print_ir_op_index():
 
     output_file.write("## Definitions\n")
     output_file.write("- [Defines](#Defines)\n\n")
+
 
 def print_ir_ops():
     for class_key, class_value in OpClasses.items():
@@ -39,15 +42,16 @@ def print_ir_ops():
 
             output_file.write("\n\n")
 
-            if ("Desc" in op_vals):
+            if "Desc" in op_vals:
                 desc = op_vals["Desc"]
-                if (isinstance(desc, list)):
+                if isinstance(desc, list):
                     for line in desc:
                         output_file.write("%s\n\n" % line)
                 else:
                     output_file.write("%s\n" % op_vals["Desc"])
             else:
                 output_file.write("XXX: Missing op desc!\n")
+
 
 def print_ir_defines(defines):
     output_file.write("## Defines\n")
@@ -56,7 +60,8 @@ def print_ir_defines(defines):
         output_file.write("%s\n" % (define))
     output_file.write("```\n")
 
-if (len(sys.argv) < 3):
+
+if len(sys.argv) < 3:
     sys.exit()
 
 output_filename = sys.argv[2]

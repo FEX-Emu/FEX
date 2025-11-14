@@ -1,15 +1,17 @@
 #!/usr/bin/python3
-import xxhash
-import sys
 import os
 import shutil
 import subprocess
+import sys
+
+import xxhash
+
 
 def GetDistroInfo():
     DistroName = "Unknown"
     DistroVersion = "Unknown"
 
-    with open("/etc/lsb-release", 'r') as f:
+    with open("/etc/lsb-release", "r") as f:
         while True:
             Line = f.readline()
             if not Line:
@@ -22,6 +24,7 @@ def GetDistroInfo():
 
     return [DistroName, DistroVersion]
 
+
 def FindBestImageFit(Distro, links_file):
     CurrentFitSize = 0
     BestFitDistro = None
@@ -30,7 +33,7 @@ def FindBestImageFit(Distro, links_file):
     BestFitImagePath = None
     BestFitHash = None
 
-    with open(links_file, 'r') as f:
+    with open(links_file, "r") as f:
         while True:
             # Order:
             # Distro Name
@@ -49,12 +52,10 @@ def FindBestImageFit(Distro, links_file):
             DistroHash = f.readline().strip()
 
             FitRate = 0
-            if (DistroName == Distro[0] or
-                DistroName == None):
+            if DistroName == Distro[0] or DistroName == None:
                 FitRate += 1
 
-            if (DistroVersion == Distro[1] or
-                DistroVersion == None):
+            if DistroVersion == Distro[1] or DistroVersion == None:
                 FitRate += 1
 
             if FitRate > CurrentFitSize:
@@ -65,7 +66,13 @@ def FindBestImageFit(Distro, links_file):
                 BestFitImagePath = DistroImagePath
                 BestFitHash = DistroHash
 
-    return [BestFitDistro, BestFitDistroVersion, BestFitReadableName, BestFitImagePath, int(BestFitHash, 16)]
+    return [
+        BestFitDistro,
+        BestFitDistroVersion,
+        BestFitReadableName,
+        BestFitImagePath,
+        int(BestFitHash, 16),
+    ]
 
 
 def HashFile(file):
@@ -76,28 +83,28 @@ def HashFile(file):
     b = bytearray(BUFFER_SIZE)
     mv = memoryview(b)
 
-    with open(file, 'rb') as f:
+    with open(file, "rb") as f:
         while n := f.readinto(mv):
             x.update(mv[:n])
 
     return int.from_bytes(x.digest(), "big")
 
+
 def RemoveRootFSFolder(RootFSPath):
     print("Removing previous rootfs extraction before copying")
-    shutil.rmtree(RootFSPath, ignore_errors = True)
+    shutil.rmtree(RootFSPath, ignore_errors=True)
     # Recreate the folder
     os.makedirs(RootFSPath)
 
+
 def CheckFilesystemForFS(RootFSMountPath, RootFSPath, DistroFit):
     # Check if rootfs mount path exists
-    if (not os.path.exists(RootFSMountPath) or
-        not os.path.isdir(RootFSMountPath)):
+    if not os.path.exists(RootFSMountPath) or not os.path.isdir(RootFSMountPath):
         print("RootFS mount path is wrong")
         return False
 
     # Check if rootfs path exists
-    if (not os.path.exists(RootFSPath) or
-        not os.path.isdir(RootFSPath)):
+    if not os.path.exists(RootFSPath) or not os.path.isdir(RootFSPath):
         # Create this directory
         os.makedirs(RootFSPath)
 
@@ -132,7 +139,11 @@ def CheckFilesystemForFS(RootFSMountPath, RootFSPath, DistroFit):
     # Now hash the image
     RootFSHash = HashFile(RootFSImagePath)
     if RootFSHash != DistroFit[4]:
-        print("Hash {} did not match {}, copying new image".format(hex(RootFSHash), hex(DistroFit[4])))
+        print(
+            "Hash {} did not match {}, copying new image".format(
+                hex(RootFSHash), hex(DistroFit[4])
+            )
+        )
 
         if PreviouslyExistingRootFS:
             RemoveRootFSFolder(RootFSPath)
@@ -143,7 +154,9 @@ def CheckFilesystemForFS(RootFSMountPath, RootFSPath, DistroFit):
     if NeedsExtraction:
         print("Extracting rootfs")
 
-        CmdResult = subprocess.call(["unsquashfs", "-f", "-d", RootFSPath, RootFSImagePath])
+        CmdResult = subprocess.call(
+            ["unsquashfs", "-f", "-d", RootFSPath, RootFSImagePath]
+        )
         if CmdResult != 0:
             print("Couldn't extract squashfs. Removing image file to be safe")
             os.remove(RootFSImagePath)
@@ -158,9 +171,10 @@ def CheckFilesystemForFS(RootFSMountPath, RootFSPath, DistroFit):
 
     return True
 
+
 def main():
     if sys.version_info[0] < 3:
-        logging.critical ("Python 3 or a more recent version is required.")
+        logging.critical("Python 3 or a more recent version is required.")
 
     FEX_ROOTFS_MOUNT = os.getenv("FEX_ROOTFS_MOUNT")
     FEX_ROOTFS_PATH = os.getenv("FEX_ROOTFS_PATH")
@@ -185,6 +199,7 @@ def main():
         sys.exit(1)
 
     return 0
+
 
 if __name__ == "__main__":
     # execute only if run as a script

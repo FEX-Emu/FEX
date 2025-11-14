@@ -1,12 +1,12 @@
 #!/usr/bin/python3
-import sys
 import subprocess
+import sys
 from os import path
 from shutil import which
 
 # Args: <Known Failures file> <Known Failures Type File> <DisabledTestsFile> <DisabledTestsTypeFile> <DisabledTestsRunnerFile> <TestName> <FullTestName> <Test Harness Executable> <Args>...
 
-if (len(sys.argv) < 8):
+if len(sys.argv) < 8:
     sys.exit()
 
 known_failures = {}
@@ -54,7 +54,7 @@ if which("catchsegv") is None:
 for i in range(len(sys.argv) - args_start_index):
     RunnerArgs.append(sys.argv[args_start_index + i])
 
-if (disabled_tests.get(current_test)):
+if disabled_tests.get(current_test):
     # This error code tells ctest that the test was skipped
     sys.exit(125)
 
@@ -64,11 +64,13 @@ Process.wait()
 ResultCode = Process.returncode
 
 # Check for known failures - try full test name first, then partial test name
-is_known_failure = known_failures.get(full_test_name) or known_failures.get(current_test)
+is_known_failure = known_failures.get(full_test_name) or known_failures.get(
+    current_test
+)
 
-if (is_known_failure):
+if is_known_failure:
     # If the test is on the known failures list
-    if (ResultCode):
+    if ResultCode:
         # If we errored but are on the known failures list then "pass" the test
         sys.exit(0)
     else:

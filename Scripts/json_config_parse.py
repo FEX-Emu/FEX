@@ -1,140 +1,145 @@
-from enum import Flag
 import json
 import struct
 import sys
+from enum import Flag
+
 
 class Regs(Flag):
-    REG_NONE  = 0
-    REG_RIP   = (1 << 0)
-    REG_RAX   = (1 << 1)
-    REG_RBX   = (1 << 2)
-    REG_RCX   = (1 << 3)
-    REG_RDX   = (1 << 4)
-    REG_RSI   = (1 << 5)
-    REG_RDI   = (1 << 6)
-    REG_RBP   = (1 << 7)
-    REG_RSP   = (1 << 8)
-    REG_R8    = (1 << 9)
-    REG_R9    = (1 << 10)
-    REG_R10   = (1 << 11)
-    REG_R11   = (1 << 12)
-    REG_R12   = (1 << 13)
-    REG_R13   = (1 << 14)
-    REG_R14   = (1 << 15)
-    REG_R15   = (1 << 16)
-    REG_XMM0  = (1 << 17)
-    REG_XMM1  = (1 << 18)
-    REG_XMM2  = (1 << 19)
-    REG_XMM3  = (1 << 20)
-    REG_XMM4  = (1 << 21)
-    REG_XMM5  = (1 << 22)
-    REG_XMM6  = (1 << 23)
-    REG_XMM7  = (1 << 24)
-    REG_XMM8  = (1 << 25)
-    REG_XMM9  = (1 << 26)
-    REG_XMM10 = (1 << 27)
-    REG_XMM11 = (1 << 28)
-    REG_XMM12 = (1 << 29)
-    REG_XMM13 = (1 << 30)
-    REG_XMM14 = (1 << 31)
-    REG_XMM15 = (1 << 32)
-    REG_GS    = (1 << 33)
-    REG_FS    = (1 << 34)
-    REG_MM0   = (1 << 35)
-    REG_MM1   = (1 << 36)
-    REG_MM2   = (1 << 37)
-    REG_MM3   = (1 << 38)
-    REG_MM4   = (1 << 39)
-    REG_MM5   = (1 << 40)
-    REG_MM6   = (1 << 41)
-    REG_MM7   = (1 << 42)
-    REG_MM8   = (1 << 43)
-    REG_ALL   = (1 << 44) - 1
-    REG_INVALID = (1 << 44)
+    REG_NONE = 0
+    REG_RIP = 1 << 0
+    REG_RAX = 1 << 1
+    REG_RBX = 1 << 2
+    REG_RCX = 1 << 3
+    REG_RDX = 1 << 4
+    REG_RSI = 1 << 5
+    REG_RDI = 1 << 6
+    REG_RBP = 1 << 7
+    REG_RSP = 1 << 8
+    REG_R8 = 1 << 9
+    REG_R9 = 1 << 10
+    REG_R10 = 1 << 11
+    REG_R11 = 1 << 12
+    REG_R12 = 1 << 13
+    REG_R13 = 1 << 14
+    REG_R14 = 1 << 15
+    REG_R15 = 1 << 16
+    REG_XMM0 = 1 << 17
+    REG_XMM1 = 1 << 18
+    REG_XMM2 = 1 << 19
+    REG_XMM3 = 1 << 20
+    REG_XMM4 = 1 << 21
+    REG_XMM5 = 1 << 22
+    REG_XMM6 = 1 << 23
+    REG_XMM7 = 1 << 24
+    REG_XMM8 = 1 << 25
+    REG_XMM9 = 1 << 26
+    REG_XMM10 = 1 << 27
+    REG_XMM11 = 1 << 28
+    REG_XMM12 = 1 << 29
+    REG_XMM13 = 1 << 30
+    REG_XMM14 = 1 << 31
+    REG_XMM15 = 1 << 32
+    REG_GS = 1 << 33
+    REG_FS = 1 << 34
+    REG_MM0 = 1 << 35
+    REG_MM1 = 1 << 36
+    REG_MM2 = 1 << 37
+    REG_MM3 = 1 << 38
+    REG_MM4 = 1 << 39
+    REG_MM5 = 1 << 40
+    REG_MM6 = 1 << 41
+    REG_MM7 = 1 << 42
+    REG_MM8 = 1 << 43
+    REG_ALL = (1 << 44) - 1
+    REG_INVALID = 1 << 44
 
-class ABI(Flag) :
+
+class ABI(Flag):
     ABI_SYSTEMV = 0
-    ABI_WIN64   = 1
-    ABI_NONE    = 2
+    ABI_WIN64 = 1
+    ABI_NONE = 2
 
-class Mode(Flag) :
-    MODE_32   = 0
-    MODE_64   = 1
 
-class HostFeatures(Flag) :
-    FEATURE_ANY      = 0
-    FEATURE_3DNOW    = (1 << 0)
-    FEATURE_SSE4A    = (1 << 1)
-    FEATURE_AVX      = (1 << 2)
-    FEATURE_RAND     = (1 << 3)
-    FEATURE_SHA      = (1 << 4)
-    FEATURE_CLZERO   = (1 << 5)
-    FEATURE_BMI1     = (1 << 6)
-    FEATURE_BMI2     = (1 << 7)
-    FEATURE_CLWB     = (1 << 8)
-    FEATURE_LINUX    = (1 << 9)
-    FEATURE_AES256   = (1 << 10)
-    FEATURE_AFP      = (1 << 11)
-    FEATURE_SSSE3    = (1 << 12)
-    FEATURE_SSE4_1   = (1 << 13)
-    FEATURE_SSE4_2   = (1 << 14)
-    FEATURE_AES      = (1 << 15)
-    FEATURE_PCLMUL   = (1 << 16)
-    FEATURE_MOVBE    = (1 << 17)
-    FEATURE_ADX      = (1 << 18)
-    FEATURE_XSAVE    = (1 << 19)
-    FEATURE_RDPID    = (1 << 20)
-    FEATURE_CLFLOPT  = (1 << 21)
-    FEATURE_FSGSBASE = (1 << 22)
-    FEATURE_EMMI     = (1 << 23)
+class Mode(Flag):
+    MODE_32 = 0
+    MODE_64 = 1
+
+
+class HostFeatures(Flag):
+    FEATURE_ANY = 0
+    FEATURE_3DNOW = 1 << 0
+    FEATURE_SSE4A = 1 << 1
+    FEATURE_AVX = 1 << 2
+    FEATURE_RAND = 1 << 3
+    FEATURE_SHA = 1 << 4
+    FEATURE_CLZERO = 1 << 5
+    FEATURE_BMI1 = 1 << 6
+    FEATURE_BMI2 = 1 << 7
+    FEATURE_CLWB = 1 << 8
+    FEATURE_LINUX = 1 << 9
+    FEATURE_AES256 = 1 << 10
+    FEATURE_AFP = 1 << 11
+    FEATURE_SSSE3 = 1 << 12
+    FEATURE_SSE4_1 = 1 << 13
+    FEATURE_SSE4_2 = 1 << 14
+    FEATURE_AES = 1 << 15
+    FEATURE_PCLMUL = 1 << 16
+    FEATURE_MOVBE = 1 << 17
+    FEATURE_ADX = 1 << 18
+    FEATURE_XSAVE = 1 << 19
+    FEATURE_RDPID = 1 << 20
+    FEATURE_CLFLOPT = 1 << 21
+    FEATURE_FSGSBASE = 1 << 22
+    FEATURE_EMMI = 1 << 23
+
 
 RegStringLookup = {
-    "NONE":  Regs.REG_NONE,
-    "RAX":   Regs.REG_RAX,
-    "RIP":   Regs.REG_RIP,
-    "RBX":   Regs.REG_RBX,
-    "RCX":   Regs.REG_RCX,
-    "RDX":   Regs.REG_RDX,
-    "RSI":   Regs.REG_RSI,
-    "RDI":   Regs.REG_RDI,
-    "RBP":   Regs.REG_RBP,
-    "RSP":   Regs.REG_RSP,
-    "R8":    Regs.REG_R8,
-    "R9":    Regs.REG_R9,
-    "R10":   Regs.REG_R10,
-    "R11":   Regs.REG_R11,
-    "R12":   Regs.REG_R12,
-    "R13":   Regs.REG_R13,
-    "R14":   Regs.REG_R14,
-    "R15":   Regs.REG_R15,
-    "XMM0":  Regs.REG_XMM0,
-    "XMM1":  Regs.REG_XMM1,
-    "XMM2":  Regs.REG_XMM2,
-    "XMM3":  Regs.REG_XMM3,
-    "XMM4":  Regs.REG_XMM4,
-    "XMM5":  Regs.REG_XMM5,
-    "XMM6":  Regs.REG_XMM6,
-    "XMM7":  Regs.REG_XMM7,
-    "XMM8":  Regs.REG_XMM8,
-    "XMM9":  Regs.REG_XMM9,
+    "NONE": Regs.REG_NONE,
+    "RAX": Regs.REG_RAX,
+    "RIP": Regs.REG_RIP,
+    "RBX": Regs.REG_RBX,
+    "RCX": Regs.REG_RCX,
+    "RDX": Regs.REG_RDX,
+    "RSI": Regs.REG_RSI,
+    "RDI": Regs.REG_RDI,
+    "RBP": Regs.REG_RBP,
+    "RSP": Regs.REG_RSP,
+    "R8": Regs.REG_R8,
+    "R9": Regs.REG_R9,
+    "R10": Regs.REG_R10,
+    "R11": Regs.REG_R11,
+    "R12": Regs.REG_R12,
+    "R13": Regs.REG_R13,
+    "R14": Regs.REG_R14,
+    "R15": Regs.REG_R15,
+    "XMM0": Regs.REG_XMM0,
+    "XMM1": Regs.REG_XMM1,
+    "XMM2": Regs.REG_XMM2,
+    "XMM3": Regs.REG_XMM3,
+    "XMM4": Regs.REG_XMM4,
+    "XMM5": Regs.REG_XMM5,
+    "XMM6": Regs.REG_XMM6,
+    "XMM7": Regs.REG_XMM7,
+    "XMM8": Regs.REG_XMM8,
+    "XMM9": Regs.REG_XMM9,
     "XMM10": Regs.REG_XMM10,
     "XMM11": Regs.REG_XMM11,
     "XMM12": Regs.REG_XMM12,
     "XMM13": Regs.REG_XMM13,
     "XMM14": Regs.REG_XMM14,
     "XMM15": Regs.REG_XMM15,
-    "GS":    Regs.REG_GS,
-    "FS":    Regs.REG_FS,
-    "ALL":   Regs.REG_ALL,
-    "MM0":   Regs.REG_MM0,
-    "MM1":   Regs.REG_MM1,
-    "MM2":   Regs.REG_MM2,
-    "MM3":   Regs.REG_MM3,
-    "MM4":   Regs.REG_MM4,
-    "MM5":   Regs.REG_MM5,
-    "MM6":   Regs.REG_MM6,
-    "MM7":   Regs.REG_MM7,
-    "MM8":   Regs.REG_MM8,
+    "GS": Regs.REG_GS,
+    "FS": Regs.REG_FS,
+    "ALL": Regs.REG_ALL,
+    "MM0": Regs.REG_MM0,
+    "MM1": Regs.REG_MM1,
+    "MM2": Regs.REG_MM2,
+    "MM3": Regs.REG_MM3,
+    "MM4": Regs.REG_MM4,
+    "MM5": Regs.REG_MM5,
+    "MM6": Regs.REG_MM6,
+    "MM7": Regs.REG_MM7,
+    "MM8": Regs.REG_MM8,
 }
 
 ABIStringLookup = {
@@ -149,36 +154,37 @@ ModeStringLookup = {
 }
 
 HostFeaturesLookup = {
-    "3DNOW"    : HostFeatures.FEATURE_3DNOW,
-    "SSE4A"    : HostFeatures.FEATURE_SSE4A,
-    "AVX"      : HostFeatures.FEATURE_AVX,
-    "RAND"     : HostFeatures.FEATURE_RAND,
-    "SHA"      : HostFeatures.FEATURE_SHA,
-    "CLZERO"   : HostFeatures.FEATURE_CLZERO,
-    "BMI1"     : HostFeatures.FEATURE_BMI1,
-    "BMI2"     : HostFeatures.FEATURE_BMI2,
-    "CLWB"     : HostFeatures.FEATURE_CLWB,
-    "LINUX"    : HostFeatures.FEATURE_LINUX,
-    "AES256"   : HostFeatures.FEATURE_AES256,
-    "AFP"      : HostFeatures.FEATURE_AFP,
-    "SSSE3"    : HostFeatures.FEATURE_SSSE3,
-    "SSE4.1"   : HostFeatures.FEATURE_SSE4_1,
-    "SSE4.2"   : HostFeatures.FEATURE_SSE4_2,
-    "AES"      : HostFeatures.FEATURE_AES,
-    "PCLMUL"   : HostFeatures.FEATURE_PCLMUL,
-    "MOVBE"    : HostFeatures.FEATURE_MOVBE,
-    "ADX"      : HostFeatures.FEATURE_ADX,
-    "XSAVE"    : HostFeatures.FEATURE_XSAVE,
-    "RDPID"    : HostFeatures.FEATURE_RDPID,
-    "CLFLOPT"  : HostFeatures.FEATURE_CLFLOPT,
-    "FSGSBASE" : HostFeatures.FEATURE_FSGSBASE,
-    "EMMI"     : HostFeatures.FEATURE_EMMI,
+    "3DNOW": HostFeatures.FEATURE_3DNOW,
+    "SSE4A": HostFeatures.FEATURE_SSE4A,
+    "AVX": HostFeatures.FEATURE_AVX,
+    "RAND": HostFeatures.FEATURE_RAND,
+    "SHA": HostFeatures.FEATURE_SHA,
+    "CLZERO": HostFeatures.FEATURE_CLZERO,
+    "BMI1": HostFeatures.FEATURE_BMI1,
+    "BMI2": HostFeatures.FEATURE_BMI2,
+    "CLWB": HostFeatures.FEATURE_CLWB,
+    "LINUX": HostFeatures.FEATURE_LINUX,
+    "AES256": HostFeatures.FEATURE_AES256,
+    "AFP": HostFeatures.FEATURE_AFP,
+    "SSSE3": HostFeatures.FEATURE_SSSE3,
+    "SSE4.1": HostFeatures.FEATURE_SSE4_1,
+    "SSE4.2": HostFeatures.FEATURE_SSE4_2,
+    "AES": HostFeatures.FEATURE_AES,
+    "PCLMUL": HostFeatures.FEATURE_PCLMUL,
+    "MOVBE": HostFeatures.FEATURE_MOVBE,
+    "ADX": HostFeatures.FEATURE_ADX,
+    "XSAVE": HostFeatures.FEATURE_XSAVE,
+    "RDPID": HostFeatures.FEATURE_RDPID,
+    "CLFLOPT": HostFeatures.FEATURE_CLFLOPT,
+    "FSGSBASE": HostFeatures.FEATURE_FSGSBASE,
+    "EMMI": HostFeatures.FEATURE_EMMI,
 }
+
 
 def parse_hexstring(s):
     length = 0
     byte_data = []
-    for num in s.split(' '):
+    for num in s.split(" "):
         if s.startswith("0x"):
             num = num[2:]
         while len(num) > 0:
@@ -207,49 +213,49 @@ def parse_json(json_text, output_file):
     json_object = {k.upper(): v for k, v in json_object.items()}
 
     # Begin parsing the JSON
-    if ("MATCH" in json_object):
+    if "MATCH" in json_object:
         data = json_object["MATCH"]
-        if (type(data) is str):
+        if type(data) is str:
             data = [data]
 
         for data_val in data:
             data_val = data_val.upper()
             if not (data_val in RegStringLookup):
                 sys.exit("Invalid Match register option")
-            if (OptionMatch == Regs.REG_INVALID):
+            if OptionMatch == Regs.REG_INVALID:
                 OptionMatch = Regs.REG_NONE
             RegOption = RegStringLookup[data_val]
             OptionMatch = OptionMatch | RegOption
 
-    if ("IGNORE" in json_object):
+    if "IGNORE" in json_object:
         data = json_object["IGNORE"]
-        if (type(data) is str):
+        if type(data) is str:
             data = [data]
 
         for data_val in data:
             data_val = data_val.upper()
             if not (data_val in RegStringLookup):
                 sys.exit("Invalid Ignore register option")
-            if (OptionMatch == Regs.REG_INVALID):
+            if OptionMatch == Regs.REG_INVALID:
                 OptionMatch = Regs.REG_NONE
             RegOption = RegStringLookup[data_val]
             OptionIgnore = OptionIgnore | RegOption
 
-    if ("ABI" in json_object):
+    if "ABI" in json_object:
         data = json_object["ABI"]
         data = data.upper()
         if not (data in ABIStringLookup):
             sys.exit("Invalid ABI")
         OptionABI = ABIStringLookup[data]
 
-    if ("MODE" in json_object):
+    if "MODE" in json_object:
         data = json_object["MODE"]
         data = data.upper()
         if not (data in ModeStringLookup):
             sys.exit("Invalid Mode")
         OptionMode = ModeStringLookup[data]
 
-    if ("HOSTFEATURES" in json_object):
+    if "HOSTFEATURES" in json_object:
         data = json_object["HOSTFEATURES"]
         if not (type(data) is list):
             sys.exit("HostFeatures value must be list of features")
@@ -261,25 +267,25 @@ def parse_json(json_text, output_file):
 
             OptionHostFeatures |= HostFeaturesLookup[data_key]
 
-    if ("STACKSIZE" in json_object):
+    if "STACKSIZE" in json_object:
         data = json_object["STACKSIZE"]
         OptionStackSize = int(data, 0)
 
-    if ("ENTRYPOINT" in json_object):
+    if "ENTRYPOINT" in json_object:
         data = json_object["ENTRYPOINT"]
         data = int(data, 0)
-        if (data == 0):
+        if data == 0:
             sys.exit("Invalid entrypoint of 0")
         OptionEntryPoint = data
 
-    if ("MEMORYREGIONS" in json_object):
+    if "MEMORYREGIONS" in json_object:
         data = json_object["MEMORYREGIONS"]
         if not (type(data) is dict):
             sys.exit("MemoryRegions value must be list of key:value pairs")
         for data_key, data_val in data.items():
             OptionMemoryRegions[int(data_key, 0)] = int(data_val, 0)
 
-    if ("REGDATA" in json_object):
+    if "REGDATA" in json_object:
         data = json_object["REGDATA"]
         if not (type(data) is dict):
             sys.exit("RegData value must be list of key:value pairs")
@@ -292,14 +298,14 @@ def parse_json(json_text, output_file):
             data_key_values = []
 
             # Create a list of values for this register as an integer
-            if (type(data_val) is list):
+            if type(data_val) is list:
                 for data_key_value in data_val:
                     data_key_values.append(int(data_key_value, 0))
             else:
                 data_key_values.append(int(data_val, 0))
             OptionRegData[data_key_index] = data_key_values
 
-    if ("MEMORYDATA" in json_object):
+    if "MEMORYDATA" in json_object:
         data = json_object["MEMORYDATA"]
         if not (type(data) is dict):
             sys.exit("MemoryData value must be list of key:value pairs")
@@ -307,7 +313,7 @@ def parse_json(json_text, output_file):
             length, byte_data = parse_hexstring(data_val)
             OptionMemoryData[int(data_key, 0)] = (length, byte_data)
 
-    if ("ENV" in json_object):
+    if "ENV" in json_object:
         data = json_object["ENV"]
         if not (type(data) is dict):
             sys.exit("Environment variables value must be list of key:value pairs")
@@ -316,9 +322,8 @@ def parse_json(json_text, output_file):
             OptionEnvironmentVariables[data_key] = data_val
 
     # If Match option wasn't touched then set it to the default
-    if (OptionMatch == Regs.REG_INVALID):
+    if OptionMatch == Regs.REG_INVALID:
         OptionMatch = Regs.REG_NONE
-
 
     memRegions = bytes()
     regData = bytes()
@@ -327,62 +332,62 @@ def parse_json(json_text, output_file):
 
     # Write memory regions
     for key, val in OptionMemoryRegions.items():
-        memRegions += struct.pack('Q', key)
-        memRegions += struct.pack('Q', val)
+        memRegions += struct.pack("Q", key)
+        memRegions += struct.pack("Q", val)
 
     # Write Register values
     for reg_key, reg_val in OptionRegData.items():
-        regData += struct.pack('I', len(reg_val))
-        regData += struct.pack('Q', reg_key.value)
+        regData += struct.pack("I", len(reg_val))
+        regData += struct.pack("Q", reg_key.value)
         for val in reg_val:
-            regData += struct.pack('Q', val)
+            regData += struct.pack("Q", val)
 
     # Write Memory data
     for reg_key, reg_val in OptionMemoryData.items():
         length, data = reg_val
-        memData += struct.pack('Q', reg_key) # address
-        memData += struct.pack('I', length)
+        memData += struct.pack("Q", reg_key)  # address
+        memData += struct.pack("I", length)
         for byte in data:
-            memData += struct.pack('B', byte)
+            memData += struct.pack("B", byte)
 
     # Write environment variables
     for key, val in OptionEnvironmentVariables.items():
         envData += key.encode()
-        envData += struct.pack('B', 0)
+        envData += struct.pack("B", 0)
         envData += val.encode()
-        envData += struct.pack('B', 0)
+        envData += struct.pack("B", 0)
 
     config_file = open(output_file, "wb")
-    config_file.write(struct.pack('Q', OptionMatch.value))
-    config_file.write(struct.pack('Q', OptionIgnore.value))
-    config_file.write(struct.pack('Q', OptionStackSize))
-    config_file.write(struct.pack('Q', OptionEntryPoint))
-    config_file.write(struct.pack('I', OptionABI.value))
-    config_file.write(struct.pack('I', OptionMode.value))
-    config_file.write(struct.pack('I', OptionHostFeatures.value))
+    config_file.write(struct.pack("Q", OptionMatch.value))
+    config_file.write(struct.pack("Q", OptionIgnore.value))
+    config_file.write(struct.pack("Q", OptionStackSize))
+    config_file.write(struct.pack("Q", OptionEntryPoint))
+    config_file.write(struct.pack("I", OptionABI.value))
+    config_file.write(struct.pack("I", OptionMode.value))
+    config_file.write(struct.pack("I", OptionHostFeatures.value))
 
     # Total length of header, including offsets/counts below
     headerLength = (8 * 4) + (4 * 3) + (4 * 8)
     offset = headerLength
 
     #  memory regions offset/count
-    config_file.write(struct.pack('I', offset))
-    config_file.write(struct.pack('I', len(OptionMemoryRegions)))
+    config_file.write(struct.pack("I", offset))
+    config_file.write(struct.pack("I", len(OptionMemoryRegions)))
     offset += len(memRegions)
 
     # register values offset/count
-    config_file.write(struct.pack('I', offset))
-    config_file.write(struct.pack('I', len(OptionRegData)))
+    config_file.write(struct.pack("I", offset))
+    config_file.write(struct.pack("I", len(OptionRegData)))
     offset += len(regData)
 
     # memory data offset/count
-    config_file.write(struct.pack('I', offset))
-    config_file.write(struct.pack('I', len(OptionMemoryData)))
+    config_file.write(struct.pack("I", offset))
+    config_file.write(struct.pack("I", len(OptionMemoryData)))
     offset += len(memData)
 
     # environment data offset/count
-    config_file.write(struct.pack('I', offset))
-    config_file.write(struct.pack('I', len(OptionEnvironmentVariables)))
+    config_file.write(struct.pack("I", offset))
+    config_file.write(struct.pack("I", len(OptionEnvironmentVariables)))
     offset += len(envData)
 
     # write out the actual data for memory regions, reg data and memory data
@@ -392,4 +397,3 @@ def parse_json(json_text, output_file):
     config_file.write(envData)
 
     config_file.close()
-

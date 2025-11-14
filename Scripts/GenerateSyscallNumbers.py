@@ -1,8 +1,9 @@
 #!/usr/bin/python3
-from dataclasses import dataclass
+import logging
 import math
 import sys
-import logging
+from dataclasses import dataclass
+
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
 
@@ -16,6 +17,7 @@ logger.setLevel(logging.WARNING)
 # `FEX_Syscalls_Common` is provided in the output as just an indicator for which syscalls are using the common
 # syscall interface.
 
+
 @dataclass
 class SyscallDefinition:
     arch: str
@@ -23,6 +25,7 @@ class SyscallDefinition:
     abi: str
     name: str
     entry: str
+
     def __init__(self, Arch, SyscallNumber, ABI, Name, Entry):
         self.arch = Arch
         self.syscall_number = SyscallNumber
@@ -50,6 +53,7 @@ class SyscallDefinition:
     def EntryName(self):
         return self.entry
 
+
 Syscallx64File = "/arch/x86/entry/syscalls/syscall_64.tbl"
 Syscallx86File = "/arch/x86/entry/syscalls/syscall_32.tbl"
 SyscallArm64File = "/include/uapi/asm-generic/unistd.h"
@@ -74,6 +78,7 @@ Definitions_Arm64_dict = {}
 
 NumArches = 0
 SyscallDefinitions = {}
+
 
 def ParseArchSyscalls(Defs, DefsDict, Arch, FilePath, IgnoreArch):
     global NumArches
@@ -101,7 +106,7 @@ def ParseArchSyscalls(Defs, DefsDict, Arch, FilePath, IgnoreArch):
             continue
 
         Name = split_text[2]
-        if (len(split_text) < 4):
+        if len(split_text) < 4:
             # This sometimes happens if the host doesn't have the entry
             EntryName = "<None>"
         else:
@@ -117,6 +122,7 @@ def ParseArchSyscalls(Defs, DefsDict, Arch, FilePath, IgnoreArch):
             SyscallDefinitions[Name] = []
 
         SyscallDefinitions[Name].append(Def)
+
 
 def ParseCommonArchSyscalls(Defs, DefsDict, Arch, FilePath):
     global NumArches
@@ -134,8 +140,7 @@ def ParseCommonArchSyscalls(Defs, DefsDict, Arch, FilePath):
             continue
 
         # Check for NR defines
-        if (line.startswith("#define __NR_") or
-           line.startswith("#define __NR3264_")):
+        if line.startswith("#define __NR_") or line.startswith("#define __NR3264_"):
             # This line is defining a syscall for us
             # eg: #define __NR_io_setup 0
             line = line.removeprefix("#define __NR_")
@@ -189,6 +194,7 @@ def ParseCommonArchSyscalls(Defs, DefsDict, Arch, FilePath):
 
         SyscallDefinitions[Name].append(Def)
 
+
 def ExportSyscallDefines(Defs, DefsDict, Arch, UnsupportedDefs):
     AlreadyExported = []
 
@@ -222,6 +228,7 @@ def ExportSyscallDefines(Defs, DefsDict, Arch, UnsupportedDefs):
 
     print("};")
 
+
 def ExportCommonSyscallDefines():
     global Definitions_Arm64
     global SyscallDefinitions
@@ -251,7 +258,6 @@ def ExportCommonSyscallDefines():
 
         print("  SYS_{} = {},".format(Def.Name, Def.Number))
 
-
     # Find a max between all architectures
     Maximums = []
     for Defs in [Definitions_x64, Definitions_x86, Definitions_Arm64]:
@@ -263,23 +269,40 @@ def ExportCommonSyscallDefines():
 
 def main():
     if sys.version_info[0] < 3:
-        logging.critical ("Python 3 or a more recent version is required.")
+        logging.critical("Python 3 or a more recent version is required.")
 
-    if (len(sys.argv) < 2):
-        print ("usage: %s <Linux git tree>" % (sys.argv[0]))
+    if len(sys.argv) < 2:
+        print("usage: %s <Linux git tree>" % (sys.argv[0]))
 
     LinuxPath = sys.argv[1]
 
+    ParseArchSyscalls(
+        Definitions_x86, Definitions_x86_dict, "x86", LinuxPath + Syscallx86File, []
+    )
+    ParseArchSyscalls(
+        Definitions_x64,
+        Definitions_x64_dict,
+        "x64",
+        LinuxPath + Syscallx64File,
+        ["x32"],
+    )
+    ParseCommonArchSyscalls(
+        Definitions_Arm64, Definitions_Arm64_dict, "Arm64", LinuxPath + SyscallArm64File
+    )
 
-    ParseArchSyscalls(Definitions_x86, Definitions_x86_dict, "x86", LinuxPath + Syscallx86File, [])
-    ParseArchSyscalls(Definitions_x64, Definitions_x64_dict, "x64", LinuxPath + Syscallx64File, ["x32"])
-    ParseCommonArchSyscalls(Definitions_Arm64, Definitions_Arm64_dict, "Arm64", LinuxPath + SyscallArm64File)
-
-    ExportSyscallDefines(Definitions_x86, Definitions_x86_dict, "x86",[])
-    ExportSyscallDefines(Definitions_x64, Definitions_x64_dict, "x64", [Definitions_x86])
-    ExportSyscallDefines(Definitions_Arm64, Definitions_Arm64_dict, "Arm64", [Definitions_x86, Definitions_x64])
+    ExportSyscallDefines(Definitions_x86, Definitions_x86_dict, "x86", [])
+    ExportSyscallDefines(
+        Definitions_x64, Definitions_x64_dict, "x64", [Definitions_x86]
+    )
+    ExportSyscallDefines(
+        Definitions_Arm64,
+        Definitions_Arm64_dict,
+        "Arm64",
+        [Definitions_x86, Definitions_x64],
+    )
 
     ExportCommonSyscallDefines()
+
 
 if __name__ == "__main__":
     # execute only if run as a script

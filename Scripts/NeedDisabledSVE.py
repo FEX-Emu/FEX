@@ -8,6 +8,7 @@
 import re
 import sys
 
+
 def GetCPUFeatures():
     File = open("/proc/cpuinfo", "r")
     Lines = File.readlines()
@@ -18,23 +19,23 @@ def GetCPUFeatures():
             Features = Line.split(":")[1].strip().split(" ")
             return Features
 
+
 SnapdragonIDsWithDisabledSVE = {
     # Snapdragon 8 Gen 3
-    tuple([0x41, 0xd82]): True, # Cortex-X4
-    tuple([0x41, 0xd81]): True, # Cortex-A720
-    tuple([0x41, 0xd80]): True, # Cortex-A520
-
+    tuple([0x41, 0xD82]): True,  # Cortex-X4
+    tuple([0x41, 0xD81]): True,  # Cortex-A720
+    tuple([0x41, 0xD80]): True,  # Cortex-A520
     # Snapdragon 8 Gen 2
-    tuple([0x41, 0xd4e]): True, # Cortex-X3
-    tuple([0x41, 0xd4d]): True, # Cortex-A715
-    tuple([0x41, 0xd47]): True, # Cortex-A710
-    tuple([0x41, 0xd46]): True, # Cortex-A510
-
+    tuple([0x41, 0xD4E]): True,  # Cortex-X3
+    tuple([0x41, 0xD4D]): True,  # Cortex-A715
+    tuple([0x41, 0xD47]): True,  # Cortex-A710
+    tuple([0x41, 0xD46]): True,  # Cortex-A510
     # Snapdragon 8 Gen 1
-    tuple([0x41, 0xd48]): True, # Cortex-X2
+    tuple([0x41, 0xD48]): True,  # Cortex-X2
     # A710
     # A510
 }
+
 
 def IsAffectedSnapdragon():
     cpuinfo = []
@@ -45,9 +46,9 @@ def IsAffectedSnapdragon():
         for line in cpuinfo_file:
             line = line.strip()
             if "CPU implementer" in line:
-                current_implementer = int(re.findall(r'0x[0-9A-F]+', line, re.I)[0], 16)
+                current_implementer = int(re.findall(r"0x[0-9A-F]+", line, re.I)[0], 16)
             if "CPU part" in line:
-                current_part = int(re.findall(r'0x[0-9A-F]+', line, re.I)[0], 16)
+                current_part = int(re.findall(r"0x[0-9A-F]+", line, re.I)[0], 16)
                 cpuinfo += {tuple([current_implementer, current_part])}
 
     for core in cpuinfo:
@@ -68,6 +69,7 @@ def main():
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,15 +1,17 @@
 #!/usr/bin/python3
 import base64
+import json
+import logging
+import os
+import struct
+import subprocess
+import sys
 from dataclasses import dataclass
 from enum import Flag
-import json
-import struct
-import sys
-import subprocess
-import os
-import logging
+
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
+
 
 @dataclass
 class TestData:
@@ -17,6 +19,7 @@ class TestData:
     expectedinstructioncount: int
     code: bytes
     instructions: list
+
     def __init__(self, Name, ExpectedInstructionCount, Code, Instructions):
         self.name = Name
         self.expectedinstructioncount = ExpectedInstructionCount
@@ -39,46 +42,51 @@ class TestData:
     def Instructions(self):
         return self.instructions
 
+
 TestDataMap = {}
-class HostFeatures(Flag) :
-    FEATURE_ANY    = 0
-    FEATURE_SVE128 = (1 << 0)
-    FEATURE_SVE256 = (1 << 1)
-    FEATURE_CLZERO = (1 << 2)
-    FEATURE_RNG    = (1 << 3)
-    FEATURE_FCMA   = (1 << 4)
-    FEATURE_CSSC   = (1 << 5)
-    FEATURE_AFP    = (1 << 6)
-    FEATURE_RPRES  = (1 << 7)
-    FEATURE_FLAGM  = (1 << 8)
-    FEATURE_FLAGM2 = (1 << 9)
-    FEATURE_CRYPTO = (1 << 10)
-    FEATURE_AES256 = (1 << 11)
-    FEATURE_SVEBITPERM = (1 << 12)
-    FEATURE_TSO    = (1 << 13)
-    FEATURE_LRCPC  = (1 << 14)
-    FEATURE_LRCPC2 = (1 << 15)
-    FEATURE_FRINTTS = (1 << 16)
+
+
+class HostFeatures(Flag):
+    FEATURE_ANY = 0
+    FEATURE_SVE128 = 1 << 0
+    FEATURE_SVE256 = 1 << 1
+    FEATURE_CLZERO = 1 << 2
+    FEATURE_RNG = 1 << 3
+    FEATURE_FCMA = 1 << 4
+    FEATURE_CSSC = 1 << 5
+    FEATURE_AFP = 1 << 6
+    FEATURE_RPRES = 1 << 7
+    FEATURE_FLAGM = 1 << 8
+    FEATURE_FLAGM2 = 1 << 9
+    FEATURE_CRYPTO = 1 << 10
+    FEATURE_AES256 = 1 << 11
+    FEATURE_SVEBITPERM = 1 << 12
+    FEATURE_TSO = 1 << 13
+    FEATURE_LRCPC = 1 << 14
+    FEATURE_LRCPC2 = 1 << 15
+    FEATURE_FRINTTS = 1 << 16
+
 
 HostFeaturesLookup = {
-    "SVE128"  : HostFeatures.FEATURE_SVE128,
-    "SVE256"  : HostFeatures.FEATURE_SVE256,
-    "CLZERO"  : HostFeatures.FEATURE_CLZERO,
-    "RNG"     : HostFeatures.FEATURE_RNG,
-    "FCMA"    : HostFeatures.FEATURE_FCMA,
-    "CSSC"    : HostFeatures.FEATURE_CSSC,
-    "AFP"     : HostFeatures.FEATURE_AFP,
-    "RPRES"   : HostFeatures.FEATURE_RPRES,
-    "FLAGM"   : HostFeatures.FEATURE_FLAGM,
-    "FLAGM2"  : HostFeatures.FEATURE_FLAGM2,
-    "CRYPTO"  : HostFeatures.FEATURE_CRYPTO,
-    "AES256"  : HostFeatures.FEATURE_AES256,
-    "SVEBITPERM" : HostFeatures.FEATURE_SVEBITPERM,
-    "TSO" : HostFeatures.FEATURE_TSO,
-    "LRCPC" : HostFeatures.FEATURE_LRCPC,
-    "LRCPC2" : HostFeatures.FEATURE_LRCPC2,
-    "FRINTTS" : HostFeatures.FEATURE_FRINTTS,
+    "SVE128": HostFeatures.FEATURE_SVE128,
+    "SVE256": HostFeatures.FEATURE_SVE256,
+    "CLZERO": HostFeatures.FEATURE_CLZERO,
+    "RNG": HostFeatures.FEATURE_RNG,
+    "FCMA": HostFeatures.FEATURE_FCMA,
+    "CSSC": HostFeatures.FEATURE_CSSC,
+    "AFP": HostFeatures.FEATURE_AFP,
+    "RPRES": HostFeatures.FEATURE_RPRES,
+    "FLAGM": HostFeatures.FEATURE_FLAGM,
+    "FLAGM2": HostFeatures.FEATURE_FLAGM2,
+    "CRYPTO": HostFeatures.FEATURE_CRYPTO,
+    "AES256": HostFeatures.FEATURE_AES256,
+    "SVEBITPERM": HostFeatures.FEATURE_SVEBITPERM,
+    "TSO": HostFeatures.FEATURE_TSO,
+    "LRCPC": HostFeatures.FEATURE_LRCPC,
+    "LRCPC2": HostFeatures.FEATURE_LRCPC2,
+    "FRINTTS": HostFeatures.FEATURE_FRINTTS,
 }
+
 
 def GetHostFeatures(data):
     HostFeaturesData = HostFeatures.FEATURE_ANY
@@ -93,6 +101,7 @@ def GetHostFeatures(data):
         HostFeaturesData |= HostFeaturesLookup[data_key]
     return HostFeaturesData
 
+
 def parse_json_data(json_filepath, json_filename, json_data, output_binary_path):
     Bitness = 64
     EnabledHostFeatures = HostFeatures.FEATURE_ANY
@@ -101,16 +110,16 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
 
     if "Features" in json_data:
         items = json_data["Features"]
-        if ("Bitness" in items):
+        if "Bitness" in items:
             Bitness = int(items["Bitness"])
 
-        if ("EnabledHostFeatures" in items):
+        if "EnabledHostFeatures" in items:
             EnabledHostFeatures = GetHostFeatures(items["EnabledHostFeatures"])
 
-        if ("DisabledHostFeatures" in items):
+        if "DisabledHostFeatures" in items:
             DisabledHostFeatures = GetHostFeatures(items["DisabledHostFeatures"])
 
-        if ("Env" in items):
+        if "Env" in items:
             data = items["Env"]
             if not (type(data) is dict):
                 sys.exit("Environment variables value must be list of key:value pairs")
@@ -121,19 +130,23 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
     for key, items in json_data["Instructions"].items():
         ExpectedInstructionCount = 0
         Instructions = []
-        if ("ExpectedInstructionCount" in items):
+        if "ExpectedInstructionCount" in items:
             ExpectedInstructionCount = int(items["ExpectedInstructionCount"])
 
-        if ("Skip" in items):
-                if items["Skip"].upper() == "YES":
-                    continue
+        if "Skip" in items:
+            if items["Skip"].upper() == "YES":
+                continue
 
         if "x86Insts" in items:
             Instructions = items["x86Insts"]
         else:
             # No list of instructions, only one which is the key.
             Instructions.append(key)
-        TestName = base64.b64encode("{}.{}.{}".format(str(hash(json_filepath)), json_filename, key).encode("ascii")).decode("ascii")
+        TestName = base64.b64encode(
+            "{}.{}.{}".format(str(hash(json_filepath)), json_filename, key).encode(
+                "ascii"
+            )
+        ).decode("ascii")
         tmp_asm = "/tmp/{}.asm".format(TestName)
         tmp_asm_out = "/tmp/{}.asm.o".format(TestName)
         logging.info("'{}' -> '{}' -> '{}'".format(key, tmp_asm, tmp_asm_out))
@@ -166,7 +179,9 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
         with open(tmp_asm_out, "rb") as tmp_asm_out_file:
             binary_hex = tmp_asm_out_file.read()
 
-        TestDataMap[TestName] = TestData(key, ExpectedInstructionCount, binary_hex, Instructions)
+        TestDataMap[TestName] = TestData(
+            key, ExpectedInstructionCount, binary_hex, Instructions
+        )
 
         os.remove(tmp_asm)
         os.remove(tmp_asm_out)
@@ -194,26 +209,26 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
     MemData = bytes()
 
     # Add the header
-    MemData += struct.pack('Q', Bitness)
-    MemData += struct.pack('Q', len(TestDataMap))
-    MemData += struct.pack('Q', EnabledHostFeatures.value)
-    MemData += struct.pack('Q', DisabledHostFeatures.value)
-    MemData += struct.pack('Q', len(OptionEnvironmentVariables.items()))
+    MemData += struct.pack("Q", Bitness)
+    MemData += struct.pack("Q", len(TestDataMap))
+    MemData += struct.pack("Q", EnabledHostFeatures.value)
+    MemData += struct.pack("Q", DisabledHostFeatures.value)
+    MemData += struct.pack("Q", len(OptionEnvironmentVariables.items()))
 
     # Write environment variables
     for key, val in OptionEnvironmentVariables.items():
         MemData += key.encode()
-        MemData += struct.pack('B', 0)
+        MemData += struct.pack("B", 0)
         MemData += val.encode()
-        MemData += struct.pack('B', 0)
+        MemData += struct.pack("B", 0)
 
     # Add each test
     for key, item in TestDataMap.items():
-        MemData += struct.pack('128s', item.Name.encode("ascii"))
-        MemData += struct.pack('q', item.ExpectedInstructionCount)
-        MemData += struct.pack('Q', len(item.Code))
-        MemData += struct.pack('Q', len(item.Instructions))
-        MemData += struct.pack('I', 0x41424344)
+        MemData += struct.pack("128s", item.Name.encode("ascii"))
+        MemData += struct.pack("q", item.ExpectedInstructionCount)
+        MemData += struct.pack("Q", len(item.Code))
+        MemData += struct.pack("Q", len(item.Instructions))
+        MemData += struct.pack("I", 0x41424344)
         MemData += item.Code
 
     logging.info("Code goign to {}".format(output_binary_path))
@@ -222,12 +237,15 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
 
     return 0
 
+
 def main():
     if sys.version_info[0] < 3:
-        logging.critical ("Python 3 or a more recent version is required.")
+        logging.critical("Python 3 or a more recent version is required.")
 
-    if (len(sys.argv) < 3):
-        logging.critical ("usage: %s <PerformanceTests.json> <output_folder>" % (sys.argv[0]))
+    if len(sys.argv) < 3:
+        logging.critical(
+            "usage: %s <PerformanceTests.json> <output_folder>" % (sys.argv[0])
+        )
 
     json_path = sys.argv[1]
     output_binary_path = sys.argv[2]
@@ -242,16 +260,19 @@ def main():
     try:
         json_data = json.loads(json_text)
         if not isinstance(json_data, dict):
-            raise TypeError('JSON data must be a dict')
+            raise TypeError("JSON data must be a dict")
 
-        return parse_json_data(json_path, os.path.basename(json_path), json_data, output_binary_path)
+        return parse_json_data(
+            json_path, os.path.basename(json_path), json_data, output_binary_path
+        )
 
     except ValueError as ve:
-        logging.error(f'JSON error: {ve}')
+        logging.error(f"JSON error: {ve}")
 
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     # execute only if run as a script

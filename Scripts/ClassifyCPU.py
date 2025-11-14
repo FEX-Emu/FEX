@@ -1,12 +1,14 @@
 #!/usr/bin/python3
-import sys
 import platform
+import sys
+
 
 def ListContainsRequired(Features, RequiredFeatures):
     for Req in RequiredFeatures:
         if not Req in Features:
             return False
     return True
+
 
 def GetCPUFeaturesVersion():
 
@@ -37,17 +39,19 @@ def GetCPUFeaturesVersion():
                 _ArchVersion = "8.2"
             elif ListContainsRequired(Features, v8_1Mandatory):
                 _ArchVersion = "8.1"
-            break;
+            break
 
     return _ArchVersion
 
+
 def main():
-    if (platform.machine() == "aarch64"):
+    if platform.machine() == "aarch64":
         print("ARMv{}".format(GetCPUFeaturesVersion()))
-    elif (platform.machine() == "x86_64"):
+    elif platform.machine() == "x86_64":
         print("x64")
 
     sys.exit(0)
+
 
 if __name__ == "__main__":
     sys.exit(main())
