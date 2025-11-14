@@ -772,8 +772,7 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::Signal
 
   SignalDelegation->RegisterHostSignalHandler(SIGSEGV, HandleSegfault, true);
 
-  ExtendedMetaData =
-    FEX::VolatileMetadata::ParseExtendedVolatileMetadata(FEXCore::Config::Getter<FEXCore::Config::CONFIG_EXTENDEDVOLATILEMETADATA> {}());
+  ExtendedMetaData = FEX::VolatileMetadata::ParseExtendedVolatileMetadata(FEXCore::Config::Get_EXTENDEDVOLATILEMETADATA()());
 }
 
 SyscallHandler::~SyscallHandler() {

@@ -315,4 +315,17 @@ struct FEX_DEFAULT_VISIBILITY Getter : public Value<typename detail::ConfigOptio
  */
 #define FEX_CONFIG_OPT(name, enum) FEXCore::Config::Getter<FEXCore::Config::ConfigOption::CONFIG_##enum> name {}
 
+#define OPT_BASE(type, group, enum, json, default)                              \
+  /**                                                                           \
+   *  Helper for reading a config value.                                        \
+   *                                                                            \
+   *  In contrast to FEX_CONFIG_OPT, this can be used in arbitrary expressions, \
+   *  at the expense of not caching the value. Use Getter instead if the value  \
+   *  is read frequently.                                                       \
+   */                                                                           \
+  inline auto Get_##enum() {                                                    \
+    return Getter<FEXCore::Config::ConfigOption::CONFIG_##enum> {};             \
+  }
+#include <FEXCore/Config/ConfigValues.inl>
+
 } // namespace FEXCore::Config
