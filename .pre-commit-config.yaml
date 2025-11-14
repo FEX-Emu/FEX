@@ -3,6 +3,9 @@ repos:
     rev: v19.1.7
     hooks:
       - id: clang-format
+        # Explicitly specify C++ files else,
+        # `Configuration file(s) do(es) not support Json` error occurs
+        files: \.(cpp|h|inl)$
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
