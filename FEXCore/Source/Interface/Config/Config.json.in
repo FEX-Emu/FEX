@@ -199,6 +199,13 @@
           "Can potentially introduce more stutters, more likely the higher the number.",
           "Don't have this number larger than the increase count!"
         ]
+      },
+      "FileCodeCache": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Control if file code caches are generated and used."
+        ]
       }
     },
     "Debug": {
