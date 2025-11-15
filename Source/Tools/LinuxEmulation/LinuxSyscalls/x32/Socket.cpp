@@ -246,7 +246,8 @@ static uint64_t RecvMsg(int sockfd, struct msghdr32* msg, int flags) {
   SYSCALL_ERRNO();
 }
 
-void ConvertHeaderToHost(fextl::vector<iovec>& iovec, struct msghdr* Host, const struct msghdr32* Guest) {
+void ConvertHeaderToHost(fextl::vector<iovec>& iovec, struct msghdr* Host, const struct msghdr32* Guest, fextl::vector<uint8_t>& ControlLen,
+                         size_t& ControlLenOffset) {
   size_t CurrentIOVecSize = iovec.size();
   iovec.resize(CurrentIOVecSize + Guest->msg_iovlen);
   for (size_t i = 0; i < Guest->msg_iovlen; ++i) {
@@ -259,9 +260,9 @@ void ConvertHeaderToHost(fextl::vector<iovec>& iovec, struct msghdr* Host, const
   Host->msg_iov = &iovec[CurrentIOVecSize];
   Host->msg_iovlen = Guest->msg_iovlen;
 
-  // XXX: This could result in a stack overflow
-  Host->msg_control = alloca(Guest->msg_controllen * 2);
+  Host->msg_control = &ControlLen[ControlLenOffset];
   Host->msg_controllen = Guest->msg_controllen * 2;
+  ControlLenOffset += Host->msg_controllen;
 
   Host->msg_flags = Guest->msg_flags;
 }
@@ -307,8 +308,18 @@ void ConvertHeaderToGuest(struct msghdr32* Guest, struct msghdr* Host) {
 static uint64_t RecvMMsg(int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags, struct timespec* timeout_ts) {
   fextl::vector<iovec> Host_iovec;
   fextl::vector<struct mmsghdr> HostMHeader(vlen);
+  fextl::vector<uint8_t> control_len;
+
+  size_t total_control_len {};
   for (size_t i = 0; i < vlen; ++i) {
-    ConvertHeaderToHost(Host_iovec, &HostMHeader[i].msg_hdr, &msgvec[i].msg_hdr);
+    auto Guest = &msgvec[i].msg_hdr;
+    total_control_len += Guest->msg_controllen * 2;
+  }
+  control_len.resize(total_control_len);
+
+  size_t CurrentControlLen {};
+  for (size_t i = 0; i < vlen; ++i) {
+    ConvertHeaderToHost(Host_iovec, &HostMHeader[i].msg_hdr, &msgvec[i].msg_hdr, control_len, CurrentControlLen);
     HostMHeader[i].msg_len = msgvec[i].msg_len;
   }
   uint64_t Result = ::recvmmsg(sockfd, HostMHeader.data(), vlen, flags, timeout_ts);
