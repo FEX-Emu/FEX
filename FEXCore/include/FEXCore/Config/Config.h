@@ -233,6 +233,8 @@ FEX_DEFAULT_VISIBILITY void AddLayer(fextl::unique_ptr<FEXCore::Config::Layer> _
 
 FEX_DEFAULT_VISIBILITY bool Exists(ConfigOption Option);
 FEX_DEFAULT_VISIBILITY std::optional<StringArrayType*> All(ConfigOption Option);
+template<typename T>
+FEX_DEFAULT_VISIBILITY std::optional<T> GetConv(ConfigOption Option);
 FEX_DEFAULT_VISIBILITY std::optional<fextl::string*> Get(ConfigOption Option);
 FEX_DEFAULT_VISIBILITY void Set(ConfigOption Option, std::string_view Data);
 FEX_DEFAULT_VISIBILITY void Erase(ConfigOption Option);
