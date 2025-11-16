@@ -14,6 +14,7 @@ FEX requires ARMv8.0+ hardware. It has been tested with the following Linux dist
 - Arch Linux
 - Fedora Linux
 - openSUSE
+- SteamOS
 - Ubuntu 22.04/24.04/24.10/25.04
 
 An x86-64 RootFS is required and can be downloaded using our `FEXRootFSFetcher` tool for many distributions.
