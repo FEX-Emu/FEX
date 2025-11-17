@@ -65,7 +65,7 @@ public:
   int8_t TopOffset = 0;
 
   FixedSizeStack()
-    : buffer(FixedSizeStack::size, {StackSlot::UNUSED, T()}) {}
+    : buffer(FixedSizeStack::size, {StackSlot::UNUSED, T::Invalid}) {}
 
   void push(const T& Value) {
     rotate();
@@ -84,7 +84,7 @@ public:
   }
 
   void pop() {
-    buffer.front() = {StackSlot::INVALID, T()};
+    buffer.front() = {StackSlot::INVALID, T::Invalid};
     rotate(false);
   }
 
@@ -102,7 +102,7 @@ public:
 
   void clear() {
     for (auto& Elem : buffer) {
-      Elem = {StackSlot::UNUSED, T()};
+      Elem = {StackSlot::UNUSED, T::Invalid};
     }
     TopOffset = 0;
   }
@@ -170,13 +170,8 @@ private:
   // Helpers
   Ref RotateRight8(uint32_t V, Ref Amount);
 
-  void F80SplitStore_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
-    Ref AddrNode = IR->GetNode(Op->Addr);
-    Ref Offset = IR->GetNode(Op->Offset);
-    OpSize Align = Op->Align;
-    MemOffsetType OffsetType = Op->OffsetType;
-    uint8_t OffsetScale = Op->OffsetScale;
-
+  void F80SplitStore_Helper(const IROp_StoreStackMem* Op, Ref StackNode, Ref AddrNode, Ref Offset, OpSize Align, MemOffsetType OffsetType,
+                            uint8_t OffsetScale) {
     IREmit->_StoreMemFPR(OpSize::i64Bit, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
     auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
 
@@ -191,7 +186,24 @@ private:
     IREmit->_StoreMemGPR(OpSize::i16Bit, Upper, A.Base, A.Index, OpSize::i64Bit, MemOffsetType::SXTX, A.IndexScale);
   }
 
+  void Store80BitToMem(const IROp_StoreStackMem* Op, Ref StackNode, Ref AddrNode, Ref Offset, OpSize Align, MemOffsetType OffsetType,
+                       uint8_t OffsetScale) {
+    if (Features.SupportsSVE128 || Features.SupportsSVE256) {
+      AddressMode A {.Base = AddrNode,
+                     .Index = Op->Offset.IsInvalid() ? nullptr : Offset,
+                     .IndexType = MemOffsetType::SXTX,
+                     .IndexScale = OffsetScale,
+                     .AddrSize = OpSize::i64Bit};
+      AddrNode = LoadEffectiveAddress(IREmit, A, GPROpSize, false);
+      IREmit->_StoreMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, AddrNode);
+    } else {
+      F80SplitStore_Helper(Op, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
+    }
+  }
+
   void StoreStackMem_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+    LOGMAN_THROW_A_FMT(!ReducedPrecisionMode, "Full precision mode expected.");
+
     Ref AddrNode = IR->GetNode(Op->Addr);
     Ref Offset = IR->GetNode(Op->Offset);
     OpSize Align = Op->Align;
@@ -208,17 +220,7 @@ private:
     }
 
     case OpSize::f80Bit: {
-      if (Features.SupportsSVE128 || Features.SupportsSVE256) {
-        AddressMode A {.Base = AddrNode,
-                       .Index = Op->Offset.IsInvalid() ? nullptr : Offset,
-                       .IndexType = MemOffsetType::SXTX,
-                       .IndexScale = OffsetScale,
-                       .AddrSize = OpSize::i64Bit};
-        AddrNode = LoadEffectiveAddress(IREmit, A, GPROpSize, false);
-        IREmit->_StoreMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, AddrNode);
-      } else { // 80bit requires split-store
-        F80SplitStore_Helper(Op, StackNode);
-      }
+      Store80BitToMem(Op, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
     default: ERROR_AND_DIE_FMT("Unsupported x87 size");
@@ -228,6 +230,8 @@ private:
   // Performs a store to memory from a value the stack passed in as StackNode.
   // This is the version dealing with the reduced precision case.
   void StoreStackMem_Reduced_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+    LOGMAN_THROW_A_FMT(ReducedPrecisionMode, "Reduced precision mode expected.");
+
     Ref AddrNode = IR->GetNode(Op->Addr);
     Ref Offset = IR->GetNode(Op->Offset);
     OpSize Align = Op->Align;
@@ -244,10 +248,9 @@ private:
       break;
     }
 
-    // 80bit requires split-store
     case OpSize::f80Bit: {
       StackNode = IREmit->_F80CVTTo(StackNode, OpSize::i64Bit);
-      F80SplitStore_Helper(Op, StackNode);
+      Store80BitToMem(Op, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
     default: ERROR_AND_DIE_FMT("Unsupported x87 size");
@@ -289,7 +292,7 @@ private:
   void Reset();
 
   struct StackMemberInfo {
-    StackMemberInfo() {}
+    StackMemberInfo() = delete;
     StackMemberInfo(Ref Data)
       : StackDataNode(Data) {}
     StackMemberInfo(Ref Data, Ref Source, OpSize Size)
@@ -301,6 +304,9 @@ private:
       OpSize Size;
       Ref Node;
     };
+
+    static const StackMemberInfo Invalid;
+
     // Tuple is only valid if we have information about the Source of the Stack Data Node.
     // In it's valid then OpSize is the original source size and Ref is the original source node.
     std::optional<StackMemberData> Source {};
@@ -355,6 +361,8 @@ private:
   IREmitter* IREmit = nullptr;
   IRListView* IR = nullptr;
 };
+
+inline const X87StackOptimization::StackMemberInfo X87StackOptimization::StackMemberInfo::Invalid {nullptr};
 
 inline void X87StackOptimization::InvalidateCaches() {
   InvalidateCachedRegs();
@@ -995,8 +1003,16 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // str w2, [x1]
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
-        if (!SlowPath && Value->Source && Value->Source->Size == Op->StoreSize) {
-          IREmit->_StoreMemFPR(Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align, OffsetType, OffsetScale);
+        OpSize StoreSize = Op->StoreSize;
+        LOGMAN_THROW_A_FMT(Op->StoreSize == OpSize::i32Bit || Op->StoreSize == OpSize::i64Bit || Op->StoreSize == OpSize::f80Bit,
+                           "Invalid store size in x87 store stack mem");
+        if (!SlowPath && Value->Source && Value->Source->Size == StoreSize) {
+          Ref SourceValue = Value->Source->Node;
+          if (Op->StoreSize == OpSize::f80Bit) {
+            Store80BitToMem(Op, SourceValue, AddrNode, Offset, Align, OffsetType, OffsetScale);
+          } else {
+            IREmit->_StoreMemFPR(StoreSize, SourceValue, AddrNode, Offset, Align, OffsetType, OffsetScale);
+          }
           break;
         }
 
