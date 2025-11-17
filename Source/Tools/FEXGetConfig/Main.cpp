@@ -2,6 +2,7 @@
 #include "Common/cpp-optparse/OptionParser.h"
 #include "Common/Config.h"
 #include "Common/FEXServerClient.h"
+#include "Common/HostFeatures.h"
 #include "git_version.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/PrctlUtils.h>
@@ -111,6 +112,10 @@ int main(int argc, char** argv, char** envp) {
   Parser.add_option("--current-rootfs").action("store_true").help("Print the directory that contains the FEX rootfs. Mounted in the case of squashfs");
 
   Parser.add_option("--tso-emulation-info").action("store_true").help("Print how FEX is emulating the x86-TSO memory model.");
+
+#ifdef _M_ARM_64
+  Parser.add_option("--identification-reg-info").action("store_true").help("Print identification registers");
+#endif
 
   Parser.add_option("--version").action("store_true").help("Print the installed FEX-Emu version");
 
@@ -229,6 +234,26 @@ int main(int argc, char** argv, char** envp) {
     fprintf(stdout, "\t16-Byte strict split-lock emulation:  %s\n", StrictInProcessSplitLocks() ? "In-process mutex" : "Tearing");
     fprintf(stdout, "\t64-Byte strict split-lock emulation:  %s\n", StrictInProcessSplitLocks() ? "In-process mutex" : "Tearing");
   }
+
+#ifdef _M_ARM_64
+  if (Options.is_set_by_user("identification_reg_info")) {
+    auto Features = FEX::GetCPUFeaturesFromIDRegisters();
+    fextl::string features {};
+    features += fmt::format("isar0=0x{:x},", Features.ISAR0.Get());
+    features += fmt::format("isar1=0x{:x},", Features.ISAR1.Get());
+    features += fmt::format("isar2=0x{:x},", Features.ISAR2.Get());
+    features += fmt::format("pfr0=0x{:x},", Features.PFR0.Get());
+    features += fmt::format("pfr1=0x{:x},", Features.PFR1.Get());
+    features += fmt::format("midr=0x{:x},", Features.MIDR.Get());
+    features += fmt::format("mmfr0=0x{:x},", Features.MMFR0.Get());
+    features += fmt::format("mmfr1=0x{:x},", Features.MMFR1.Get());
+    features += fmt::format("mmfr2=0x{:x},", Features.MMFR2.Get());
+    features += fmt::format("zfr0=0x{:x},", Features.ZFR0.Get());
+    features += fmt::format("dczid=0x{:x},", Features.DCZID.Get());
+    features += fmt::format("svevl=0x{:x}", Features.SVEVL.Get());
+    fprintf(stderr, "Features: '%s'\n", features.c_str());
+  }
+#endif
 
   return 0;
 }

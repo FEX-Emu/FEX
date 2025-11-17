@@ -94,6 +94,13 @@
         "Desc": [
           "Scales the cycle counter on systems that have low frequencies."
         ]
+      },
+      "CPUFeatureRegisters": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "Allows overriding cpu feature flags for manual testing"
+        ]
       }
     },
     "Emulation": {
