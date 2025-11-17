@@ -7,6 +7,9 @@
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/StringUtils.h>
 
+#include <range/v3/view/split.hpp>
+#include <range/v3/view/transform.hpp>
+
 #ifdef _M_X86_64
 #include "Common/X86Features.h"
 #endif
@@ -35,6 +38,22 @@ void FillMIDRInformationViaLinux(FEXCore::HostFeatures* Features) {
 #endif
 }
 
+#if defined(_M_ARM_64) && !defined(VIXL_SIMULATOR)
+__attribute__((naked)) static uint64_t ReadSVEVectorLengthInBits() {
+  ///< Can't use rdvl instruction directly because compilers will complain that sve/sme is required.
+  __asm(R"(
+  .word 0x04bf5100 // rdvl x0, #8
+  ret;
+  )");
+}
+#else
+[[maybe_unused]]
+static int ReadSVEVectorLengthInBits() {
+  // Return unsupported
+  return 0;
+}
+#endif
+
 #ifdef _M_ARM_64
 #define GetSysReg(name, reg)                         \
   static uint64_t Get_##name() {                     \
@@ -53,6 +72,7 @@ GetSysReg(MMFR2_EL1, ID_AA64MMFR2_EL1);
 GetSysReg(ZFR0_EL1, s3_0_c0_c4_4); // Can't request by name
 GetSysReg(MMFR1_EL1, ID_AA64MMFR1_EL1);
 GetSysReg(ISAR2_EL1, ID_AA64ISAR2_EL1);
+GetSysReg(DCZID_EL0, DCZID_EL0);
 
 class CPUFeaturesFromID final : public FEX::CPUFeatures {
 public:
@@ -66,12 +86,17 @@ public:
     MMFR2.SetReg(Get_MMFR2_EL1());
     MMFR1.SetReg(Get_MMFR1_EL1());
     ISAR2.SetReg(Get_ISAR2_EL1());
+    DCZID.SetReg(Get_DCZID_EL0());
 
     if (PFR0.SupportsSVE()) {
       // Can only query if SVE is supported.
       ZFR0.SetReg(Get_ZFR0_EL1());
     }
     FillFeatureFlags();
+
+    if (Supports(CPUFeatures::Feature::SVE2)) {
+      SVEVL.SetReg(ReadSVEVectorLengthInBits());
+    }
   }
 };
 
@@ -80,6 +105,78 @@ FEX::CPUFeatures GetCPUFeaturesFromIDRegisters() {
 }
 #endif
 
+class CPUFeaturesFromConfig final : public FEX::CPUFeatures {
+public:
+  CPUFeaturesFromConfig(std::string_view Config) {
+    auto to_string_view = [](auto rng) {
+      return std::string_view(&*rng.begin(), ranges::distance(rng));
+    };
+
+    for (auto Option : ranges::views::split(Config, ',') | ranges::views::transform(to_string_view)) {
+      auto OptionData = ranges::views::split(Option, '=') | ranges::views::transform(to_string_view);
+      auto OptionDataBegin = ranges::begin(OptionData);
+      auto OptionDataEnd = ranges::end(OptionData);
+
+      if (OptionDataBegin == OptionDataEnd) {
+        continue;
+      }
+
+      auto Key = *OptionDataBegin;
+      if (Key.empty()) {
+        continue;
+      }
+
+      ++OptionDataBegin;
+      if (OptionDataBegin == OptionDataEnd) {
+        continue;
+      }
+      auto Value = *OptionDataBegin;
+      uint64_t ValueHex {};
+      char* str_end {};
+      ValueHex = std::strtoull(Value.data(), &str_end, 16);
+
+      if (str_end == Value.data()) {
+        LogMan::Msg::EFmt("Couldn't parse '{}={}'\n", Key, Value);
+        continue;
+      }
+
+      if (Key == "isar0") {
+        ISAR0.SetReg(ValueHex);
+      } else if (Key == "isar1") {
+        ISAR1.SetReg(ValueHex);
+      } else if (Key == "isar2") {
+        ISAR2.SetReg(ValueHex);
+      } else if (Key == "pfr0") {
+        PFR0.SetReg(ValueHex);
+      } else if (Key == "pfr1") {
+        PFR1.SetReg(ValueHex);
+      } else if (Key == "midr") {
+        MIDR.SetReg(ValueHex);
+      } else if (Key == "mmfr0") {
+        MMFR0.SetReg(ValueHex);
+      } else if (Key == "mmfr1") {
+        MMFR1.SetReg(ValueHex);
+      } else if (Key == "mmfr2") {
+        MMFR2.SetReg(ValueHex);
+      } else if (Key == "zfr0") {
+        ZFR0.SetReg(ValueHex);
+      } else if (Key == "dczid") {
+        DCZID.SetReg(ValueHex);
+      } else if (Key == "svevl") {
+        SVEVL.SetReg(ValueHex);
+      } else {
+        LogMan::Msg::EFmt("Unknown Key: {}", Key);
+      }
+    }
+
+    FillFeatureFlags();
+  }
+};
+
+FEX::CPUFeatures GetCPUFeaturesFromConfig(std::string_view Config) {
+  return CPUFeaturesFromConfig {Config};
+}
+
 class CPUFeaturesAll final : public FEX::CPUFeatures {
 public:
   CPUFeaturesAll() {
@@ -87,6 +184,9 @@ public:
     for (uint32_t i = 0; i < FEXCore::ToUnderlying(FEX::CPUFeatures::Feature::MAX); ++i) {
       SetFeature(FEX::CPUFeatures::Feature {i});
     }
+
+    // Report unsupported for DCZVA
+    DCZID.SetReg(0b1'0000);
   }
 };
 
@@ -346,21 +446,7 @@ void FEX::CPUFeatures::FillFeatureFlags() {
   }
 }
 
-// Data Zero Prohibited flag
-// 0b0 = ZVA/GVA/GZVA permitted
-// 0b1 = ZVA/GVA/GZVA prohibited
-[[maybe_unused]] constexpr uint32_t DCZID_DZP_MASK = 0b1'0000;
-// Log2 of the blocksize in 32-bit words
-[[maybe_unused]] constexpr uint32_t DCZID_BS_MASK = 0b0'1111;
-
 #ifdef _M_ARM_64
-[[maybe_unused]]
-static uint32_t GetDCZID() {
-  uint64_t Result {};
-  __asm("mrs %[Res], DCZID_EL0" : [Res] "=r"(Result));
-  return Result;
-}
-
 static uint32_t GetFPCR() {
   uint64_t Result {};
   __asm("mrs %[Res], FPCR" : [Res] "=r"(Result));
@@ -371,27 +457,6 @@ static void SetFPCR(uint64_t Value) {
   __asm("msr FPCR, %[Value]" ::[Value] "r"(Value));
 }
 
-#ifndef VIXL_SIMULATOR
-__attribute__((naked)) static uint64_t ReadSVEVectorLengthInBits() {
-  ///< Can't use rdvl instruction directly because compilers will complain that sve/sme is required.
-  __asm(R"(
-  .word 0x04bf5100 // rdvl x0, #8
-  ret;
-  )");
-}
-#endif
-#else
-[[maybe_unused]]
-static uint32_t GetDCZID() {
-  // Return unsupported
-  return DCZID_DZP_MASK;
-}
-
-[[maybe_unused]]
-static int ReadSVEVectorLengthInBits() {
-  // Return unsupported
-  return 0;
-}
 #endif
 
 static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEWidth) {
@@ -495,7 +560,7 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
   HostFeatures.SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
 #else
   HostFeatures.SupportsSVE128 = Features.Supports(CPUFeatures::Feature::SVE2);
-  HostFeatures.SupportsSVE256 = Features.Supports(CPUFeatures::Feature::SVE2) && ReadSVEVectorLengthInBits() >= 256;
+  HostFeatures.SupportsSVE256 = Features.Supports(CPUFeatures::Feature::SVE2) && Features.GetSVEVectorLengthInBits() >= 256;
 #endif
   HostFeatures.SupportsAVX = true;
 
@@ -562,14 +627,11 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
   HostFeatures.SupportsAES256 = true;
 #else
   // Check if we can support cacheline clears
-  uint32_t DCZID = GetDCZID();
-  if ((DCZID & DCZID_DZP_MASK) == 0) {
-    uint32_t DCZID_Log2 = DCZID & DCZID_BS_MASK;
-    uint32_t DCZID_Bytes = (1 << DCZID_Log2) * sizeof(uint32_t);
+  if (Features.GetDCZID().SupportsDCZVA()) {
     // If the DC ZVA size matches the emulated cache line size
     // This means we can use the instruction
     constexpr static uint64_t CACHELINE_SIZE = 64;
-    HostFeatures.SupportsCLZERO = DCZID_Bytes == CACHELINE_SIZE;
+    HostFeatures.SupportsCLZERO = Features.GetDCZID().BlockSizeInBytes() == CACHELINE_SIZE;
   }
 #endif
 
@@ -603,16 +665,23 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
 }
 
 FEXCore::HostFeatures FetchHostFeatures() {
-#ifdef _M_X86_64
-  CPUFeatures Features = CPUFeaturesAll {};
+  FEX_CONFIG_OPT(CPUFeatureRegisters, CPUFEATUREREGISTERS);
 
-  // Vixl simulator doesn't support AFP.
-  Features.RemoveFeature(CPUFeatures::Feature::AFP);
-  // Vixl simulator doesn't support RPRES.
-  Features.RemoveFeature(CPUFeatures::Feature::RPRES);
+  CPUFeatures Features {};
+  if (!CPUFeatureRegisters().empty()) {
+    Features = GetCPUFeaturesFromConfig(CPUFeatureRegisters());
+  } else {
+#ifdef _M_X86_64
+    Features = CPUFeaturesAll {};
+
+    // Vixl simulator doesn't support AFP.
+    Features.RemoveFeature(CPUFeatures::Feature::AFP);
+    // Vixl simulator doesn't support RPRES.
+    Features.RemoveFeature(CPUFeatures::Feature::RPRES);
 #else
-  CPUFeatures Features = GetCPUFeaturesFromIDRegisters();
+    Features = GetCPUFeaturesFromIDRegisters();
 #endif
+  }
 
   uint64_t CTR = 0;
   uint64_t MIDR = 0;

@@ -8,6 +8,23 @@
 namespace FEX {
 class CPUFeatures {
 public:
+  class FeatureReg {
+  public:
+    void SetReg(uint64_t _Reg) {
+      Reg = _Reg;
+    }
+
+    uint64_t Get() const {
+      return Reg;
+    }
+  protected:
+    // All feature flag fields are 4-bits.
+    uint64_t GetField(uint64_t Offset) const {
+      return (Reg >> Offset) & 0b1111;
+    }
+    uint64_t Reg {};
+  };
+
   enum class Feature : uint32_t {
     // ISAR0
     AES,
@@ -100,23 +117,25 @@ public:
     MAX,
   };
 
-  static_assert(FEXCore::ToUnderlying(Feature::MAX) < 128);
-  static_assert((FEXCore::ToUnderlying(Feature::MAX) / (sizeof(uint64_t) * 8)) == 1);
+  class DCZIDReg final : public FeatureReg {
+  public:
+    bool SupportsDCZVA() const {
+      return (Reg & DCZID_DZP_MASK) == 0;
+    }
 
-  bool Supports(Feature feat) const {
-    const size_t DWordSelect = FEXCore::ToUnderlying(feat) / (sizeof(uint64_t) * 8);
-    const size_t BitSelect = FEXCore::ToUnderlying(feat) - (DWordSelect * (sizeof(uint64_t) * 8));
-    return (FeatureBits[DWordSelect] >> BitSelect) & 1;
-  }
+    uint32_t BlockSizeInBytes() const {
+      uint32_t DCZID_Log2 = Reg & DCZID_BS_MASK;
+      return (1 << DCZID_Log2) * sizeof(uint32_t);
+    }
 
-  void RemoveFeature(Feature feat) {
-    const size_t DWordSelect = FEXCore::ToUnderlying(feat) / (sizeof(uint64_t) * 8);
-    const size_t BitSelect = FEXCore::ToUnderlying(feat) - (DWordSelect * (sizeof(uint64_t) * 8));
-    FeatureBits[DWordSelect] &= ~(1ULL << BitSelect);
-  }
-
-protected:
-  void FillFeatureFlags();
+  private:
+    // Data Zero Prohibited flag
+    // 0b0 = ZVA/GVA/GZVA permitted
+    // 0b1 = ZVA/GVA/GZVA prohibited
+    [[maybe_unused]] constexpr static uint32_t DCZID_DZP_MASK = 0b1'0000;
+    // Log2 of the blocksize in 32-bit words
+    [[maybe_unused]] constexpr static uint32_t DCZID_BS_MASK = 0b0'1111;
+  };
 
   // This list is informed by Linux kernel's `Documentation/arch/arm64/cpu-feature-registers.rst`
   enum class FeatureRegType {
@@ -132,24 +151,11 @@ protected:
     ISAR2_EL1,
   };
 
-  class FeatureReg {
-  public:
-    void SetReg(uint64_t _Reg) {
-      Reg = _Reg;
-    }
-
-  protected:
-    // All feature flag fields are 4-bits.
-    uint64_t GetField(uint64_t Offset) const {
-      return (Reg >> Offset) & 0b1111;
-    }
-    uint64_t Reg {};
-  };
-
 #define FIELD_FETCHER(feature, field, minimum_field) \
   bool Supports##feature() const {                   \
     return GetField(field) >= minimum_field;         \
   }
+
   class ISAR0Reg final : public FeatureReg {
   public:
     FIELD_FETCHER(AES, AES, 0b0001);
@@ -601,7 +607,10 @@ protected:
       ATS1A = 15 * 4,
     };
   };
+
+  class SVEVLReg final : public FeatureReg {};
 #undef FIELD_FETCHER
+
 
   ISAR0Reg ISAR0;
   PFR0Reg PFR0;
@@ -613,6 +622,34 @@ protected:
   MMFR2Reg MMFR2;
   MMFR1Reg MMFR1;
   ISAR2Reg ISAR2;
+  DCZIDReg DCZID;
+  SVEVLReg SVEVL;
+
+  static_assert(FEXCore::ToUnderlying(Feature::MAX) < 128);
+  static_assert((FEXCore::ToUnderlying(Feature::MAX) / (sizeof(uint64_t) * 8)) == 1);
+
+  bool Supports(Feature feat) const {
+    const size_t DWordSelect = FEXCore::ToUnderlying(feat) / (sizeof(uint64_t) * 8);
+    const size_t BitSelect = FEXCore::ToUnderlying(feat) - (DWordSelect * (sizeof(uint64_t) * 8));
+    return (FeatureBits[DWordSelect] >> BitSelect) & 1;
+  }
+
+  void RemoveFeature(Feature feat) {
+    const size_t DWordSelect = FEXCore::ToUnderlying(feat) / (sizeof(uint64_t) * 8);
+    const size_t BitSelect = FEXCore::ToUnderlying(feat) - (DWordSelect * (sizeof(uint64_t) * 8));
+    FeatureBits[DWordSelect] &= ~(1ULL << BitSelect);
+  }
+
+  const DCZIDReg& GetDCZID() const {
+    return DCZID;
+  }
+
+  uint64_t GetSVEVectorLengthInBits() const {
+    return SVEVL.Get();
+  }
+
+protected:
+  void FillFeatureFlags();
 
   uint64_t FeatureBits[(FEXCore::ToUnderlying(Feature::MAX) / (sizeof(uint64_t) * 8)) + 1] {};
 
@@ -627,4 +664,5 @@ void FillMIDRInformationViaLinux(FEXCore::HostFeatures* Features);
 
 FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool SupportsCacheMaintenanceOps, uint64_t CTR, uint64_t MIDR);
 FEXCore::HostFeatures FetchHostFeatures();
+FEX::CPUFeatures GetCPUFeaturesFromIDRegisters();
 } // namespace FEX
