@@ -436,6 +436,12 @@ std::optional<T> GetConv(ConfigOption Option) {
   return Meta->GetConv<T>(Option);
 }
 
+template std::optional<bool> GetConv(ConfigOption Option);
+template std::optional<uint8_t> GetConv(ConfigOption Option);
+template std::optional<int32_t> GetConv(ConfigOption Option);
+template std::optional<uint32_t> GetConv(ConfigOption Option);
+template std::optional<uint64_t> GetConv(ConfigOption Option);
+
 void Set(ConfigOption Option, std::string_view Data) {
   Meta->Set(Option, Data);
 }
