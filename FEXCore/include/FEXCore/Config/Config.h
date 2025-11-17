@@ -103,28 +103,25 @@ static inline std::optional<fextl::string> EnumParser(const ArrayPairType& EnumP
   return fextl::fmt::format("{}", EnumMask);
 }
 
-namespace DefaultValues {
-#define P(x) x
-#define OPT_BASE(type, group, enum, json, default) extern const P(type) P(enum);
-#define OPT_STR(group, enum, json, default) extern const std::string_view P(enum);
-#define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
-#include <FEXCore/Config/ConfigValues.inl>
+using StringArrayType = fextl::list<fextl::string>;
 
-  namespace Type {
-    using StringArrayType = fextl::list<fextl::string>;
-#define OPT_BASE(type, group, enum, json, default) using P(enum) = P(type);
-#define OPT_STR(group, enum, json, default) using P(enum) = fextl::string;
-#define OPT_STRARRAY(group, enum, json, default) using P(enum) = StringArrayType;
+namespace detail {
+  template<ConfigOption Option>
+  struct ConfigOptionInfo;
+#define DEFINE_METAINFO(type, enum, default)             \
+  template<>                                             \
+  struct ConfigOptionInfo<ConfigOption::CONFIG_##enum> { \
+    using Type = type;                                   \
+    static auto Default() {                              \
+      extern default;                                    \
+      return enum;                                       \
+    }                                                    \
+  };
+#define OPT_BASE(type, group, enum, json, default) DEFINE_METAINFO(type, enum, const type enum)
+#define OPT_STR(group, enum, json, default) DEFINE_METAINFO(fextl::string, enum, const std::string_view enum)
+#define OPT_STRARRAY(group, enum, json, default) DEFINE_METAINFO(StringArrayType, enum, const std::string_view enum)
 #include <FEXCore/Config/ConfigValues.inl>
-  } // namespace Type
-#define FEX_CONFIG_OPT(name, enum)                                          \
-  FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::enum> name { \
-    FEXCore::Config::CONFIG_##enum,                                         \
-    FEXCore::Config::DefaultValues::enum                                    \
-  }
-
-#undef P
-} // namespace DefaultValues
+} // namespace detail
 
 FEX_DEFAULT_VISIBILITY void SetDataDirectory(std::string_view Path, bool Global);
 FEX_DEFAULT_VISIBILITY void SetConfigDirectory(const std::string_view Path, bool Global);
@@ -135,8 +132,7 @@ FEX_DEFAULT_VISIBILITY const fextl::string& GetConfigDirectory(bool Global);
 FEX_DEFAULT_VISIBILITY const fextl::string& GetConfigFileLocation(bool Global = false);
 FEX_DEFAULT_VISIBILITY fextl::string GetApplicationConfig(const std::string_view Program, bool Global);
 
-using LayerValue =
-  std::variant< fextl::string, DefaultValues::Type::StringArrayType, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t, bool >;
+using LayerValue = std::variant< fextl::string, StringArrayType, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t, bool >;
 
 using LayerOptions = fextl::unordered_map<ConfigOption, LayerValue>;
 
@@ -151,16 +147,16 @@ public:
     return OptionMap.find(Option) != OptionMap.end();
   }
 
-  std::optional<DefaultValues::Type::StringArrayType*> All(ConfigOption Option) {
+  std::optional<StringArrayType*> All(ConfigOption Option) {
     const auto it = OptionMap.find(Option);
     if (it == OptionMap.end()) {
       return std::nullopt;
     }
 
     auto& Value = it->second;
-    LOGMAN_THROW_A_FMT(std::holds_alternative<DefaultValues::Type::StringArrayType>(Value), "Tried to get config of invalid type!");
+    LOGMAN_THROW_A_FMT(std::holds_alternative<StringArrayType>(Value), "Tried to get config of invalid type!");
 
-    return &std::get<DefaultValues::Type::StringArrayType>(Value);
+    return &std::get<StringArrayType>(Value);
   }
 
   std::optional<fextl::string*> Get(ConfigOption Option) {
@@ -201,12 +197,12 @@ public:
     auto it = OptionMap.find(Option);
     if (it == OptionMap.end()) {
       // If the option didn't exist as a StringArrayType yet, emplace it.
-      it = OptionMap.emplace(Option, DefaultValues::Type::StringArrayType {}).first;
+      it = OptionMap.emplace(Option, StringArrayType {}).first;
     }
 
     auto& Value = it->second;
-    LOGMAN_THROW_A_FMT(std::holds_alternative<DefaultValues::Type::StringArrayType>(Value), "Tried to get config of invalid type!");
-    std::get<DefaultValues::Type::StringArrayType>(Value).emplace_back(Data);
+    LOGMAN_THROW_A_FMT(std::holds_alternative<StringArrayType>(Value), "Tried to get config of invalid type!");
+    std::get<StringArrayType>(Value).emplace_back(Data);
   }
 
   void Erase(ConfigOption Option) {
@@ -236,7 +232,7 @@ FEX_DEFAULT_VISIBILITY fextl::string FindContainerPrefix();
 FEX_DEFAULT_VISIBILITY void AddLayer(fextl::unique_ptr<FEXCore::Config::Layer> _Layer);
 
 FEX_DEFAULT_VISIBILITY bool Exists(ConfigOption Option);
-FEX_DEFAULT_VISIBILITY std::optional<DefaultValues::Type::StringArrayType*> All(ConfigOption Option);
+FEX_DEFAULT_VISIBILITY std::optional<StringArrayType*> All(ConfigOption Option);
 FEX_DEFAULT_VISIBILITY std::optional<fextl::string*> Get(ConfigOption Option);
 FEX_DEFAULT_VISIBILITY void Set(ConfigOption Option, std::string_view Data);
 FEX_DEFAULT_VISIBILITY void Erase(ConfigOption Option);
@@ -271,18 +267,18 @@ public:
     return ValueData;
   }
 
-  Value(T Value) requires (!std::is_same_v<T, DefaultValues::Type::StringArrayType>)
+  Value(T Value) requires (!std::is_same_v<T, StringArrayType>)
   {
     ValueData = std::move(Value);
   }
 
   // Array value types.
-  Value(FEXCore::Config::ConfigOption Option, std::string_view) requires (std::is_same_v<T, DefaultValues::Type::StringArrayType>)
+  Value(FEXCore::Config::ConfigOption Option, std::string_view) requires (std::is_same_v<T, StringArrayType>)
   {
     GetListIfExists(Option, &ValueData);
   }
 
-  DefaultValues::Type::StringArrayType& All() requires (std::is_same_v<T, DefaultValues::Type::StringArrayType>)
+  StringArrayType& All() requires (std::is_same_v<T, StringArrayType>)
   {
     return ValueData;
   }
@@ -293,6 +289,38 @@ private:
   static T GetIfExists(FEXCore::Config::ConfigOption Option, T Default);
   static T GetIfExists(FEXCore::Config::ConfigOption Option, std::string_view Default);
 
-  static void GetListIfExists(FEXCore::Config::ConfigOption Option, DefaultValues::Type::StringArrayType* List);
+  static void GetListIfExists(FEXCore::Config::ConfigOption Option, StringArrayType* List);
 };
+
+/**
+ * Wrapper around Value that automatically picks the default for the given ConfigOption
+ */
+template<ConfigOption Option>
+struct FEX_DEFAULT_VISIBILITY Getter : public Value<typename detail::ConfigOptionInfo<Option>::Type> {
+  using OptionInfo = detail::ConfigOptionInfo<Option>;
+  Getter()
+    : Value<typename OptionInfo::Type> {Option, OptionInfo::Default()} {}
+};
+
+/**
+ * Helper for reading a config value with caching.
+ *
+ * Typically this is used to declare class members so that the value is read
+ * on construction of the parent.
+ */
+#define FEX_CONFIG_OPT(name, enum) FEXCore::Config::Getter<FEXCore::Config::ConfigOption::CONFIG_##enum> name {}
+
+#define OPT_BASE(type, group, enum, json, default)                              \
+  /**                                                                           \
+   *  Helper for reading a config value.                                        \
+   *                                                                            \
+   *  In contrast to FEX_CONFIG_OPT, this can be used in arbitrary expressions, \
+   *  at the expense of not caching the value. Use Getter instead if the value  \
+   *  is read frequently.                                                       \
+   */                                                                           \
+  inline auto Get_##enum() {                                                    \
+    return Getter<FEXCore::Config::ConfigOption::CONFIG_##enum> {};             \
+  }
+#include <FEXCore/Config/ConfigValues.inl>
+
 } // namespace FEXCore::Config

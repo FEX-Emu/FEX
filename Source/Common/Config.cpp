@@ -79,8 +79,8 @@ static char* SaveLayerToJSON(char* JsonBuffer, const FEXCore::Config::Layer* Lay
     }
     if (std::holds_alternative<fextl::string>(it.second)) {
       JsonBuffer = json_str(JsonBuffer, Name.data(), std::get<fextl::string>(it.second).c_str());
-    } else if (std::holds_alternative<FEXCore::Config::DefaultValues::Type::StringArrayType>(it.second)) {
-      for (auto& var : std::get<FEXCore::Config::DefaultValues::Type::StringArrayType>(it.second)) {
+    } else if (std::holds_alternative<FEXCore::Config::StringArrayType>(it.second)) {
+      for (auto& var : std::get<FEXCore::Config::StringArrayType>(it.second)) {
         JsonBuffer = json_str(JsonBuffer, Name.data(), var.c_str());
       }
     } else {

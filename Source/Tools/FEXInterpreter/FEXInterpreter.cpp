@@ -331,7 +331,7 @@ int main(int argc, char** argv, char** const envp) {
 
     if (LogFD == -1) {
       LogMan::Msg::EFmt("Couldn't open log file. Going Silent.");
-      SilentLog = true;
+      ::SilentLog = true;
     } else {
       OutputFD = LogFD;
     }
