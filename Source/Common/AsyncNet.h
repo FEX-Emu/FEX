@@ -160,8 +160,10 @@ private:
     struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
     if (Buffers.FD &&
         (cmsg == nullptr || cmsg->cmsg_len != CMSG_LEN(sizeof(int)) || cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS)) {
-      ec = error::invalid;
-      return 0;
+      // Not a failure since some data was read for the main message
+      **Buffers.FD = -1;
+      ec = error::success;
+      return BytesRead;
     }
 
     if (Buffers.FD) {
