@@ -14,7 +14,7 @@
   "Instructions": {
     "Multiple fld/fst": {
       "x86InstructionCount": 4,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 22,
       "x86Insts": [
         "fld     dword [ebp+16380]",
         "fstp    dword [eax-0x4]",
@@ -23,10 +23,19 @@
       ],
       "ExpectedArm64ASM": [
         "ldr s2, [x9, #16380]",
-        "stur s2, [x4, #-4]",
+        "mov w20, #0x400000",
+        "fmov s3, w20",
+        "fcmeq v4.4s, v2.4s, v2.4s",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "stur s4, [x4, #-4]",
         "ldur s2, [x9, #-8]",
-        "mov w20, #0x3ff2",
-        "str s2, [x4, x20, sxtx]",
+        "mov w21, #0x3ff2",
+        "fmov s3, w20",
+        "fcmeq v4.4s, v2.4s, v2.4s",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str s4, [x4, x21, sxtx]",
         "ldrb w20, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
         "mov w22, #0x1",
