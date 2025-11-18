@@ -607,7 +607,12 @@ static std::array<FEXCore::IR::ThunkDefinition, 7> VDSODefinitions = {{
   },
 }};
 
-void LoadGuestVDSOSymbols(bool Is64Bit, char* VDSOBase) {
+template<bool Is64Bit>
+void LoadGuestVDSOSymbols(char* VDSOBase) {
+  using ELFHeaderType = std::conditional_t<Is64Bit, Elf64_Ehdr, Elf32_Ehdr>;
+  using ELFSHeaderType = std::conditional_t<Is64Bit, Elf64_Shdr, Elf32_Shdr>;
+  using ELFSymbolType = std::conditional_t<Is64Bit, Elf64_Sym, Elf32_Sym>;
+
   // We need to load symbols we care about.
   if (Is64Bit) {
     // We don't care about any 64-bit symbols right now.
@@ -615,44 +620,53 @@ void LoadGuestVDSOSymbols(bool Is64Bit, char* VDSOBase) {
   }
 
   // 32-bit symbol loading.
-  const Elf32_Ehdr* Header = reinterpret_cast<const Elf32_Ehdr*>(VDSOBase);
+  auto Header = reinterpret_cast<const ELFHeaderType*>(VDSOBase);
 
   // First walk the section headers to find the symbol table.
-  const Elf32_Shdr* RawShdrs = reinterpret_cast<const Elf32_Shdr*>(VDSOBase + Header->e_shoff);
+  auto RawShdrs = reinterpret_cast<const ELFSHeaderType*>(VDSOBase + Header->e_shoff);
 
-  const Elf32_Shdr* StrHeader = &RawShdrs[Header->e_shstrndx];
+  const auto StrHeader = &RawShdrs[Header->e_shstrndx];
   const char* SHStrings = VDSOBase + StrHeader->sh_offset;
 
-  const Elf32_Shdr* SymTableHeader {};
-  const Elf32_Shdr* StringTableHeader {};
+  struct SymbolTypes {
+    const char* name;
+    int sh_type;
+  };
 
-  for (size_t i = 0; i < Header->e_shnum; ++i) {
-    const auto& Header = RawShdrs[i];
-    if (Header.sh_type == SHT_SYMTAB && strcmp(&SHStrings[Header.sh_name], ".symtab") == 0) {
-      SymTableHeader = &Header;
-      StringTableHeader = &RawShdrs[SymTableHeader->sh_link];
-      break;
+  constexpr std::array<SymbolTypes, 2> symbol_table_names = {{{".dynsym", SHT_DYNSYM}, {".symtab", SHT_SYMTAB}}};
+
+  for (auto sym_table : symbol_table_names) {
+    const ELFSHeaderType* SymTableHeader {};
+    const ELFSHeaderType* StringTableHeader {};
+
+    for (size_t i = 0; i < Header->e_shnum; ++i) {
+      const auto& Header = RawShdrs[i];
+      if (Header.sh_type == sym_table.sh_type && strcmp(&SHStrings[Header.sh_name], sym_table.name) == 0) {
+        SymTableHeader = &Header;
+        StringTableHeader = &RawShdrs[SymTableHeader->sh_link];
+        break;
+      }
     }
-  }
 
-  if (!SymTableHeader) {
-    // Couldn't find symbol table
-    return;
-  }
+    if (!SymTableHeader) {
+      // Couldn't find symbol table
+      continue;
+    }
 
-  const char* StrTab = VDSOBase + StringTableHeader->sh_offset;
-  size_t NumSymbols = SymTableHeader->sh_size / SymTableHeader->sh_entsize;
+    const char* StrTab = VDSOBase + StringTableHeader->sh_offset;
+    size_t NumSymbols = SymTableHeader->sh_size / SymTableHeader->sh_entsize;
 
-  for (size_t i = 0; i < NumSymbols; ++i) {
-    uint64_t offset = SymTableHeader->sh_offset + i * SymTableHeader->sh_entsize;
-    const Elf32_Sym* Symbol = reinterpret_cast<const Elf32_Sym*>(VDSOBase + offset);
-    if (ELF32_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN && Symbol->st_value != 0) {
-      const char* Name = &StrTab[Symbol->st_name];
-      if (Name[0] != '\0') {
-        if (strcmp(Name, "__kernel_sigreturn") == 0) {
-          VDSOPointers.VDSO_kernel_sigreturn = VDSOBase + Symbol->st_value;
-        } else if (strcmp(Name, "__kernel_rt_sigreturn") == 0) {
-          VDSOPointers.VDSO_kernel_rt_sigreturn = VDSOBase + Symbol->st_value;
+    for (size_t i = 0; i < NumSymbols; ++i) {
+      uint64_t offset = SymTableHeader->sh_offset + i * SymTableHeader->sh_entsize;
+      auto Symbol = reinterpret_cast<const ELFSymbolType*>(VDSOBase + offset);
+      if (ELF32_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN && Symbol->st_value != 0) {
+        const char* Name = &StrTab[Symbol->st_name];
+        if (Name[0] != '\0') {
+          if (strcmp(Name, "__kernel_sigreturn") == 0) {
+            VDSOPointers.VDSO_kernel_sigreturn = VDSOBase + Symbol->st_value;
+          } else if (strcmp(Name, "__kernel_rt_sigreturn") == 0) {
+            VDSOPointers.VDSO_kernel_rt_sigreturn = VDSOBase + Symbol->st_value;
+          }
         }
       }
     }
@@ -768,7 +782,9 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
       LoadHostVDSO();
     }
     close(VDSOFD);
-    LoadGuestVDSOSymbols(Is64Bit, reinterpret_cast<char*>(Mapping.VDSOBase));
+    if (!Is64Bit) {
+      LoadGuestVDSOSymbols<false>(reinterpret_cast<char*>(Mapping.VDSOBase));
+    }
   }
 
   if (!Is64Bit && (!VDSOPointers.VDSO_kernel_sigreturn || !VDSOPointers.VDSO_kernel_rt_sigreturn)) {
