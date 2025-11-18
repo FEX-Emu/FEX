@@ -9,7 +9,6 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
-#include "Interface/Core/X86HelperGen.h"
 #include "Interface/Core/LookupCache.h"
 
 #include <array>
@@ -90,11 +89,6 @@ Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
 }
 
 bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
-  // Treat FEX-internal X86 callbacks as always executable
-  if (EntryPoint == CTX->X86CodeGen.CallbackReturn) {
-    return true;
-  }
-
   while (Address < ExecutableRangeBase || Address + Size > ExecutableRangeEnd) {
     auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, Address);
     ExecutableRangeBase = RangeInfo.Base;

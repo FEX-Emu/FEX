@@ -31,7 +31,6 @@ set (SRCS
   Interface/Core/OpcodeDispatcher/X87.cpp
   Interface/Core/OpcodeDispatcher/X87F64.cpp
   Interface/Core/OpcodeDispatcher.cpp
-  Interface/Core/X86HelperGen.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
   Interface/Core/Interpreter/Fallbacks/InterpreterFallbacks.cpp

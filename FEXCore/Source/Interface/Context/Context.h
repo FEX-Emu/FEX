@@ -4,7 +4,6 @@
 #include "Common/JitSymbols.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/CPUID.h"
-#include "Interface/Core/X86HelperGen.h"
 #include <Interface/IR/IntrusiveIRList.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -227,7 +226,6 @@ public:
   CodeCache CodeCache;
 
   SignalDelegator* SignalDelegation {};
-  X86GeneratedCode X86CodeGen;
 
   ContextImpl(const FEXCore::HostFeatures& Features);
 

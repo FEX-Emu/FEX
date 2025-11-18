@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 namespace FEX::VDSO {
-VDSOSigReturn VDSOPointers {};
+VDSOEntrypoints VDSOPointers {};
 namespace VDSOHandlers {
   using TimeType = decltype(::time)*;
   using GetTimeOfDayType = decltype(::gettimeofday)*;
@@ -666,6 +666,8 @@ void LoadGuestVDSOSymbols(char* VDSOBase) {
             VDSOPointers.VDSO_kernel_sigreturn = VDSOBase + Symbol->st_value;
           } else if (strcmp(Name, "__kernel_rt_sigreturn") == 0) {
             VDSOPointers.VDSO_kernel_rt_sigreturn = VDSOBase + Symbol->st_value;
+          } else if (strcmp(Name, "__fex_callback_ret") == 0) {
+            VDSOPointers.VDSO_FEX_CallbackRET = VDSOBase + Symbol->st_value;
           }
         }
       }
@@ -673,76 +675,111 @@ void LoadGuestVDSOSymbols(char* VDSOBase) {
   }
 }
 
-void LoadUnique32BitSigreturn(VDSOMapping* Mapping, FEX::HLE::SyscallHandler* const Handler) {
+void LoadFEXGeneratedCode(bool Is64Bit, VDSOMapping* Mapping, FEX::HLE::SyscallHandler* const Handler) {
+  if (VDSOPointers.VDSO_FEX_CallbackRET && (!Is64Bit || (VDSOPointers.VDSO_kernel_sigreturn && VDSOPointers.VDSO_kernel_rt_sigreturn))) {
+    // Unnecessary if all VDSO paths have already been loaded.
+    return;
+  }
+
   // Hardcoded to one page for now
   auto PageSize = sysconf(_SC_PAGESIZE);
   PageSize = PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE;
-  Mapping->OptionalMappingSize = PageSize;
+  Mapping->X86GeneratedCodeSize = PageSize;
 
-  // First 64bit page
-  constexpr uintptr_t LOCATION_MAX = 0x1'0000'0000;
-
-  // We need to have the sigret handler in the lower 32bits of memory space
-  // Scan top down and try to allocate a location
-  for (size_t Location = 0xFFFF'E000; Location != 0x0; Location -= PageSize) {
-    void* Ptr =
-      ::mmap(reinterpret_cast<void*>(Location), PageSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-    if (Ptr != MAP_FAILED && reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
-      // Failed to map in the lower 32bits
-      // Try again
-      // Can happen in the case that host kernel ignores MAP_FIXED_NOREPLACE
-      ::munmap(Ptr, PageSize);
-      continue;
+  if (Is64Bit) {
+    // 64bit mode can have its code anywhere
+    auto Result = FEXCore::Allocator::VirtualAlloc(Mapping->X86GeneratedCodeSize);
+    if (Result != MAP_FAILED) {
+      Mapping->X86GeneratedCodePtr = Result;
     }
+  } else {
+    // First 64bit page
+    constexpr uintptr_t LOCATION_MAX = 0x1'0000'0000;
 
-    if (Ptr != MAP_FAILED) {
-      Mapping->OptionalSigReturnMapping = Ptr;
-      break;
+    // We need to have the sigret handler in the lower 32bits of memory space
+    // Scan top down and try to allocate a location
+    for (size_t Location = 0xFFFF'E000; Location != 0x0; Location -= PageSize) {
+      void* Ptr =
+        ::mmap(reinterpret_cast<void*>(Location), PageSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+      if (Ptr != MAP_FAILED && reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
+        // Failed to map in the lower 32bits
+        // Try again
+        // Can happen in the case that host kernel ignores MAP_FIXED_NOREPLACE
+        ::munmap(Ptr, PageSize);
+        continue;
+      }
+
+      if (Ptr != MAP_FAILED) {
+        Mapping->X86GeneratedCodePtr = Ptr;
+        break;
+      }
     }
   }
 
   // Can't do anything about this
   // Here's hoping the application doesn't use signals
-  if (!Mapping->OptionalSigReturnMapping) {
+  if (!Mapping->X86GeneratedCodePtr) {
     return;
   }
 
-  // Signal return handlers need to be bit-exact to what the Linux kernel provides in VDSO.
-  // GDB and unwinding libraries key off of these instructions to understand if the stack frame is a signal frame or not.
-  // This two code sections match exactly what libSegFault expects.
-  //
-  // Typically this handlers are provided by the 32-bit VDSO thunk library, but that isn't available in all cases.
-  // Falling back to this generated code segment still allows a backtrace to work, just might not show
-  // the symbol as VDSO since there is no ELF to parse.
-  constexpr std::array<uint8_t, 9> sigreturn_32_code = {
-    0x58,                         // pop eax
-    0xb8, 0x77, 0x00, 0x00, 0x00, // mov eax, 0x77
-    0xcd, 0x80,                   // int 0x80
-    0x90,                         // nop
-  };
+  FEXCore::Allocator::VirtualName("FEXMem_Misc", Mapping->X86GeneratedCodePtr, Mapping->X86GeneratedCodeSize);
 
-  constexpr std::array<uint8_t, 7> rt_sigreturn_32_code = {
-    0xb8, 0xad, 0x00, 0x00, 0x00, // mov eax, 0xad
-    0xcd, 0x80,                   // int 0x80
-  };
+  size_t CurrentCodeOffset {};
 
-  VDSOPointers.VDSO_kernel_sigreturn = Mapping->OptionalSigReturnMapping;
-  VDSOPointers.VDSO_kernel_rt_sigreturn =
-    reinterpret_cast<void*>(reinterpret_cast<uint64_t>(Mapping->OptionalSigReturnMapping) + sigreturn_32_code.size());
+  if (!Is64Bit) {
+    // Signal return handlers need to be bit-exact to what the Linux kernel provides in VDSO.
+    // GDB and unwinding libraries key off of these instructions to understand if the stack frame is a signal frame or not.
+    // This two code sections match exactly what libSegFault expects.
+    //
+    // Typically this handlers are provided by the 32-bit VDSO thunk library, but that isn't available in all cases.
+    // Falling back to this generated code segment still allows a backtrace to work, just might not show
+    // the symbol as VDSO since there is no ELF to parse.
+    constexpr std::array<uint8_t, 9> sigreturn_32_code = {
+      0x58,                         // pop eax
+      0xb8, 0x77, 0x00, 0x00, 0x00, // mov eax, 0x77
+      0xcd, 0x80,                   // int 0x80
+      0x90,                         // nop
+    };
 
-  memcpy(VDSOPointers.VDSO_kernel_sigreturn, sigreturn_32_code.data(), sigreturn_32_code.size());
-  memcpy(VDSOPointers.VDSO_kernel_rt_sigreturn, rt_sigreturn_32_code.data(), rt_sigreturn_32_code.size());
+    constexpr std::array<uint8_t, 7> rt_sigreturn_32_code = {
+      0xb8, 0xad, 0x00, 0x00, 0x00, // mov eax, 0xad
+      0xcd, 0x80,                   // int 0x80
+    };
 
-  mprotect(Mapping->OptionalSigReturnMapping, Mapping->OptionalMappingSize, PROT_READ | PROT_EXEC);
-  {
-    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(Handler->VMATracking.Mutex, nullptr);
-    FEX::HLE::_SyscallHandler->TrackMmap(nullptr, reinterpret_cast<uint64_t>(Mapping->OptionalSigReturnMapping),
-                                         Mapping->OptionalMappingSize, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+    if (!VDSOPointers.VDSO_kernel_sigreturn) {
+      VDSOPointers.VDSO_kernel_sigreturn = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Mapping->X86GeneratedCodePtr) + CurrentCodeOffset);
+      memcpy(VDSOPointers.VDSO_kernel_sigreturn, sigreturn_32_code.data(), sigreturn_32_code.size());
+      CurrentCodeOffset += sigreturn_32_code.size();
+    }
+
+    if (!VDSOPointers.VDSO_kernel_rt_sigreturn) {
+      VDSOPointers.VDSO_kernel_rt_sigreturn =
+        reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Mapping->X86GeneratedCodePtr) + CurrentCodeOffset);
+      memcpy(VDSOPointers.VDSO_kernel_rt_sigreturn, rt_sigreturn_32_code.data(), rt_sigreturn_32_code.size());
+      CurrentCodeOffset += rt_sigreturn_32_code.size();
+    }
   }
 
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(nullptr, reinterpret_cast<uint64_t>(Mapping->OptionalSigReturnMapping),
-                                                            Mapping->OptionalMappingSize);
+  if (!VDSOPointers.VDSO_FEX_CallbackRET) {
+    constexpr std::array<uint8_t, 2> CallbackRetCode = {
+      0x0F, 0x3E, // CALLBACKRET FEX Instruction
+    };
+
+    VDSOPointers.VDSO_FEX_CallbackRET = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Mapping->X86GeneratedCodePtr) + CurrentCodeOffset);
+    memcpy(VDSOPointers.VDSO_FEX_CallbackRET, CallbackRetCode.data(), CallbackRetCode.size());
+    CurrentCodeOffset += CallbackRetCode.size();
+  }
+
+  mprotect(Mapping->X86GeneratedCodePtr, Mapping->X86GeneratedCodeSize, PROT_READ | PROT_EXEC);
+  {
+    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(Handler->VMATracking.Mutex, nullptr);
+    FEX::HLE::_SyscallHandler->TrackMmap(nullptr, reinterpret_cast<uint64_t>(Mapping->X86GeneratedCodePtr), Mapping->X86GeneratedCodeSize,
+                                         PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+  }
+
+  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(nullptr, reinterpret_cast<uint64_t>(Mapping->X86GeneratedCodePtr),
+                                                            Mapping->X86GeneratedCodeSize);
 }
 
 void UnloadVDSOMapping(const VDSOMapping& Mapping) {
@@ -750,8 +787,8 @@ void UnloadVDSOMapping(const VDSOMapping& Mapping) {
     munmap(Mapping.VDSOBase, Mapping.VDSOSize);
   }
 
-  if (Mapping.OptionalSigReturnMapping) {
-    munmap(Mapping.OptionalSigReturnMapping, Mapping.OptionalMappingSize);
+  if (Mapping.X86GeneratedCodePtr) {
+    munmap(Mapping.X86GeneratedCodePtr, Mapping.X86GeneratedCodeSize);
   }
 }
 
@@ -782,15 +819,15 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
       LoadHostVDSO();
     }
     close(VDSOFD);
-    if (!Is64Bit) {
+    if (Is64Bit) {
+      LoadGuestVDSOSymbols<true>(reinterpret_cast<char*>(Mapping.VDSOBase));
+    } else {
       LoadGuestVDSOSymbols<false>(reinterpret_cast<char*>(Mapping.VDSOBase));
     }
   }
 
-  if (!Is64Bit && (!VDSOPointers.VDSO_kernel_sigreturn || !VDSOPointers.VDSO_kernel_rt_sigreturn)) {
-    // If VDSO couldn't find sigreturn then FEX needs to provide unique implementations.
-    LoadUnique32BitSigreturn(&Mapping, Handler);
-  }
+  // If VDSO couldn't find sigreturn then FEX needs to provide unique implementations.
+  LoadFEXGeneratedCode(Is64Bit, &Mapping, Handler);
 
   if (Is64Bit) {
     // Set the Thunk definition pointers for x86-64
@@ -834,7 +871,7 @@ const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions(bool Is64B
   return std::span(VDSODefinitions.begin(), VDSODefinitions.end() - (Is64Bit ? 0 : 1));
 }
 
-const VDSOSigReturn& GetVDSOSymbols() {
+const VDSOEntrypoints& GetVDSOSymbols() {
   return VDSOPointers;
 }
 } // namespace FEX::VDSO

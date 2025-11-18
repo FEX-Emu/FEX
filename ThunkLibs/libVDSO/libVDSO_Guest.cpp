@@ -61,4 +61,12 @@ __attribute__((naked)) void __kernel_rt_sigreturn() {
 #else
 ssize_t __vdso_getrandom(void*, size_t, uint32_t, void*, size_t) __attribute__((alias("fexfn_pack_getrandom")));
 #endif
+
+__attribute__((naked)) void __fex_callback_ret() {
+  // CALLBACKRET FEX Instruction
+  asm volatile(R"(
+  .byte 0x0f, 0x3e;
+  )" ::
+                 : "memory");
+}
 }
