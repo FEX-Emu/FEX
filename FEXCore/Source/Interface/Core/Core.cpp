@@ -437,6 +437,10 @@ void ContextImpl::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread
 
   Profiler::PostForkAction(Child);
   if (Child) {
+    if (CodeMapWriter) {
+      CodeMapWriter->ResetAfterFork();
+    }
+
     CodeInvalidationMutex.StealAndDropActiveLocks();
     if (Config.StrictInProcessSplitLocks) {
       StrictSplitLockMutex = 0;
@@ -720,7 +724,8 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   if (SourcecodeResolver && Config.GDBSymbols()) {
     auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
     if (MappedSection) {
-      MappedSection->FileInfo.SourcecodeMap = SourcecodeResolver->GenerateMap(MappedSection->FileInfo.Filename, MappedSection->FileInfo.FileId);
+      MappedSection->FileInfo.SourcecodeMap =
+        SourcecodeResolver->GenerateMap(MappedSection->FileInfo.Filename, CodeMap::GetBaseFilename(MappedSection->FileInfo, false));
     }
   }
 
@@ -857,6 +862,13 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 
   for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
     Thread->LookupCache->AddBlockMapping(Thread, GuestAddr, CodePages, HostAddr);
+  }
+
+  if (CodeMapWriter) {
+    auto Region = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    if (Region && Region->FileStartVA != 0) {
+      CodeMapWriter->AppendBlock(*Region, GuestRIP);
+    }
   }
 
   return (uintptr_t)CodePtr;

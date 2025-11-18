@@ -197,6 +197,8 @@ static fextl::string GetShebangInterpFilename(const fextl::string& Filename) {
 
 uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
   auto SyscallHandler = FEX::HLE::_SyscallHandler;
+  Frame->Thread->CTX->FlushAndCloseCodeMap();
+
   fextl::string Filename {};
 
   fextl::string RootFS = SyscallHandler->RootFSPath();

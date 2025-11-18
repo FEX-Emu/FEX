@@ -101,7 +101,10 @@ struct ExecveAtArgs {
 
 uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
 
-class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver, public FEXCore::Allocator::FEXAllocOperators {
+class SyscallHandler : public FEXCore::HLE::SyscallHandler,
+                       FEXCore::HLE::SourcecodeResolver,
+                       public FEXCore::CodeMapOpener,
+                       public FEXCore::Allocator::FEXAllocOperators {
 public:
   ThreadManager TM;
   FEX::HLE::SeccompEmulator SeccompEmulator;
@@ -276,6 +279,8 @@ public:
   void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
   std::optional<FEXCore::ExecutableFileSectionInfo>
   LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) final override;
+
+  int OpenCodeMapFile() override;
 
   FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override;
 

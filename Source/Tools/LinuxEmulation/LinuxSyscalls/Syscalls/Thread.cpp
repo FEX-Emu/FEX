@@ -566,6 +566,8 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL(exit_group, [](FEXCore::Core::CpuStateFrame* Frame, int status) -> uint64_t {
+    Frame->Thread->CTX->FlushAndCloseCodeMap();
+
     // Save telemetry if we're exiting.
     FEX::HLE::_SyscallHandler->GetSignalDelegator()->SaveTelemetry();
     FEX::HLE::_SyscallHandler->TM.CleanupForExit();

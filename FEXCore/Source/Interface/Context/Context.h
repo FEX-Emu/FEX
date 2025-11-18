@@ -156,6 +156,16 @@ public:
     return CodeCache;
   }
 
+  void SetCodeMapWriter(fextl::unique_ptr<CodeMapWriter> Writer) override {
+    CodeMapWriter = std::move(Writer);
+  }
+
+  void FlushAndCloseCodeMap() override {
+    if (CodeMapWriter) {
+      CodeMapWriter.reset();
+    }
+  }
+
   void OnCodeBufferAllocated(const std::shared_ptr<CPU::CodeBuffer>&) override;
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
   void InvalidateCodeBuffersCodeRange(uint64_t Start, uint64_t Length) override;
@@ -226,6 +236,7 @@ public:
   FEXCore::ThunkHandler* ThunkHandler {};
   fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
   CodeCache CodeCache;
+  fextl::unique_ptr<CodeMapWriter> CodeMapWriter;
 
   SignalDelegator* SignalDelegation {};
 

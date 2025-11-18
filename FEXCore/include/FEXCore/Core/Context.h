@@ -136,6 +136,8 @@ public:
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) = 0;
 
   virtual AbstractCodeCache& GetCodeCache() = 0;
+  virtual void SetCodeMapWriter(fextl::unique_ptr<CodeMapWriter>) = 0;
+  virtual void FlushAndCloseCodeMap() = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) = 0;
   FEX_DEFAULT_VISIBILITY virtual void InvalidateCodeBuffersCodeRange(uint64_t Start, uint64_t Length) = 0;

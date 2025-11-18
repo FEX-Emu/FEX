@@ -475,6 +475,9 @@ int main(int argc, char** argv, char** const envp) {
   auto SyscallHandler = Loader.Is64BitMode() ?
                           FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
                           FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(), std::move(Allocator));
+  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
+    CTX->SetCodeMapWriter(fextl::make_unique<FEXCore::CodeMapWriter>(*SyscallHandler));
+  }
 
   // Load VDSO in to memory prior to mapping our ELFs.
   auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
