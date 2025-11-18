@@ -215,8 +215,8 @@
         "mov w20, #0x1",
         "ldrb w21, [x10]",
         "strb w21, [x11]",
-        "add x10, x10, #0x1 (1)",
-        "add x11, x11, #0x1 (1)",
+        "add x10, x10, x20",
+        "add x11, x11, x20",
         "strb w20, [x28, #1018]"
       ]
     },
@@ -235,8 +235,8 @@
         "mov w20, #0x1",
         "ldrh w21, [x10]",
         "strh w21, [x11]",
-        "add x10, x10, #0x2 (2)",
-        "add x11, x11, #0x2 (2)",
+        "add x10, x10, x20, lsl #1",
+        "add x11, x11, x20, lsl #1",
         "strb w20, [x28, #1018]"
       ]
     },
@@ -255,8 +255,8 @@
         "mov w20, #0x1",
         "ldr w21, [x10]",
         "str w21, [x11]",
-        "add x10, x10, #0x4 (4)",
-        "add x11, x11, #0x4 (4)",
+        "add x10, x10, x20, lsl #2",
+        "add x11, x11, x20, lsl #2",
         "strb w20, [x28, #1018]"
       ]
     },
@@ -275,8 +275,8 @@
         "mov w20, #0x1",
         "ldr x21, [x10]",
         "str x21, [x11]",
-        "add x10, x10, #0x8 (8)",
-        "add x11, x11, #0x8 (8)",
+        "add x10, x10, x20, lsl #3",
+        "add x11, x11, x20, lsl #3",
         "strb w20, [x28, #1018]"
       ]
     },
@@ -295,8 +295,8 @@
         "mov x20, #0xffffffffffffffff",
         "ldrb w21, [x10]",
         "strb w21, [x11]",
-        "sub x10, x10, #0x1 (1)",
-        "sub x11, x11, #0x1 (1)",
+        "add x10, x10, x20",
+        "add x11, x11, x20",
         "strb w20, [x28, #1018]"
       ]
     },
@@ -315,8 +315,8 @@
         "mov x20, #0xffffffffffffffff",
         "ldrh w21, [x10]",
         "strh w21, [x11]",
-        "sub x10, x10, #0x2 (2)",
-        "sub x11, x11, #0x2 (2)",
+        "add x10, x10, x20, lsl #1",
+        "add x11, x11, x20, lsl #1",
         "strb w20, [x28, #1018]"
       ]
     },
@@ -335,8 +335,8 @@
         "mov x20, #0xffffffffffffffff",
         "ldr w21, [x10]",
         "str w21, [x11]",
-        "sub x10, x10, #0x4 (4)",
-        "sub x11, x11, #0x4 (4)",
+        "add x10, x10, x20, lsl #2",
+        "add x11, x11, x20, lsl #2",
         "strb w20, [x28, #1018]"
       ]
     },
@@ -355,8 +355,8 @@
         "mov x20, #0xffffffffffffffff",
         "ldr x21, [x10]",
         "str x21, [x11]",
-        "sub x10, x10, #0x8 (8)",
-        "sub x11, x11, #0x8 (8)",
+        "add x10, x10, x20, lsl #3",
+        "add x11, x11, x20, lsl #3",
         "strb w20, [x28, #1018]"
       ]
     },
