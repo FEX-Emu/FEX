@@ -7,7 +7,7 @@
 %macro set_cw_precision_rounding 2
   sub rsp, 2
   fnstcw [rsp]
-  movzx ax, [rsp]
+  movzx eax, word [rsp]
 
   ; Precision
   and eax, ~(3 << 8)
