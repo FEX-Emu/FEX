@@ -59,8 +59,8 @@ int RequestPIDFDPacket(int ServerSocket, PacketType Type) {
   fasio::mutable_buffer ResBuffer {std::as_writable_bytes(std::span {&Res, 1})};
   int NewFD = -1;
   ResBuffer.FD = &NewFD;
-  read(Socket, ResBuffer, ec);
-  if (ec != fasio::error::success || Res.Header.Type != PacketType::TYPE_SUCCESS) {
+  auto BytesRead = Socket.read_some(ResBuffer, ec);
+  if (ec != fasio::error::success || BytesRead != sizeof(Res) || Res.Header.Type != PacketType::TYPE_SUCCESS) {
     return -1;
   }
 

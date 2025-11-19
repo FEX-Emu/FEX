@@ -369,7 +369,7 @@ std::size_t read(AsyncReadStream& Stream, mutable_buffer Buffers, error& ec) {
     auto BytesRead = Stream.read_some(Buffers, ec);
     TotalBytesRead += BytesRead;
     if (Buffers.FD) {
-      LOGMAN_THROW_A_FMT(**Buffers.FD != -1, "Expected to receive a file descriptor in the first message");
+      LOGMAN_THROW_A_FMT(**Buffers.FD != -1, "Receiver requested a file descriptor but none was sent");
       (void)Buffers.consume_fd();
     }
     Buffers += BytesRead;
