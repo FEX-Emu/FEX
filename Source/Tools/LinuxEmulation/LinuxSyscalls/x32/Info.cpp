@@ -46,136 +46,142 @@ struct sysinfo32 {
 
 static_assert(sizeof(sysinfo32) == 64, "Needs to be 64bytes");
 
-void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL_X32(oldolduname, [](FEXCore::Core::CpuStateFrame* Frame, struct oldold_utsname* buf) -> uint64_t {
-    struct utsname Local {};
+auto oldolduname(FEXCore::Core::CpuStateFrame* Frame, struct oldold_utsname* buf) -> uint64_t {
+  struct utsname Local {};
 
-    FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
+  FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
-    memset(buf, 0, sizeof(*buf));
-    if (::uname(&Local) == 0) {
-      memcpy(buf->nodename, Local.nodename, __OLD_UTS_LEN);
-    } else {
-      strncpy(buf->nodename, "FEXCore", __OLD_UTS_LEN);
-      LogMan::Msg::EFmt("Couldn't determine host nodename. Defaulting to '{}'", buf->nodename);
-    }
-    strncpy(buf->sysname, "Linux", __OLD_UTS_LEN);
-    uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
-    snprintf(buf->release, __OLD_UTS_LEN, "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
-             FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+  memset(buf, 0, sizeof(*buf));
+  if (::uname(&Local) == 0) {
+    memcpy(buf->nodename, Local.nodename, __OLD_UTS_LEN);
+  } else {
+    strncpy(buf->nodename, "FEXCore", __OLD_UTS_LEN);
+    LogMan::Msg::EFmt("Couldn't determine host nodename. Defaulting to '{}'", buf->nodename);
+  }
+  strncpy(buf->sysname, "Linux", __OLD_UTS_LEN);
+  uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
+  snprintf(buf->release, __OLD_UTS_LEN, "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
+           FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
 
-    const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
-    strncpy(buf->version, version, __OLD_UTS_LEN);
-    // Tell the guest that we are a 64bit kernel
-    strncpy(buf->machine, "x86_64", __OLD_UTS_LEN);
-    return 0;
-  });
+  const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
+  strncpy(buf->version, version, __OLD_UTS_LEN);
+  // Tell the guest that we are a 64bit kernel
+  strncpy(buf->machine, "x86_64", __OLD_UTS_LEN);
+  return 0;
+}
 
-  REGISTER_SYSCALL_IMPL_X32(olduname, [](FEXCore::Core::CpuStateFrame* Frame, struct old_utsname* buf) -> uint64_t {
-    struct utsname Local {};
+auto olduname(FEXCore::Core::CpuStateFrame* Frame, struct old_utsname* buf) -> uint64_t {
+  struct utsname Local {};
 
-    FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
+  FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
-    memset(buf, 0, sizeof(*buf));
-    if (::uname(&Local) == 0) {
-      memcpy(buf->nodename, Local.nodename, __NEW_UTS_LEN);
-    } else {
-      strncpy(buf->nodename, "FEXCore", __NEW_UTS_LEN);
-      LogMan::Msg::EFmt("Couldn't determine host nodename. Defaulting to '{}'", buf->nodename);
-    }
-    strncpy(buf->sysname, "Linux", __NEW_UTS_LEN);
-    uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
-    snprintf(buf->release, __NEW_UTS_LEN, "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
-             FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+  memset(buf, 0, sizeof(*buf));
+  if (::uname(&Local) == 0) {
+    memcpy(buf->nodename, Local.nodename, __NEW_UTS_LEN);
+  } else {
+    strncpy(buf->nodename, "FEXCore", __NEW_UTS_LEN);
+    LogMan::Msg::EFmt("Couldn't determine host nodename. Defaulting to '{}'", buf->nodename);
+  }
+  strncpy(buf->sysname, "Linux", __NEW_UTS_LEN);
+  uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
+  snprintf(buf->release, __NEW_UTS_LEN, "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
+           FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
 
-    const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
-    strncpy(buf->version, version, __NEW_UTS_LEN);
-    // Tell the guest that we are a 64bit kernel
-    strncpy(buf->machine, "x86_64", __NEW_UTS_LEN);
-    return 0;
-  });
+  const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
+  strncpy(buf->version, version, __NEW_UTS_LEN);
+  // Tell the guest that we are a 64bit kernel
+  strncpy(buf->machine, "x86_64", __NEW_UTS_LEN);
+  return 0;
+}
 
-  REGISTER_SYSCALL_IMPL_X32(
-    getrlimit, [](FEXCore::Core::CpuStateFrame* Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<true>> rlim) -> uint64_t {
-      struct rlimit rlim64 {};
-      uint64_t Result = ::getrlimit(resource, &rlim64);
-      FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
-      *rlim = rlim64;
-      SYSCALL_ERRNO();
-    });
+auto getrlimit(FEXCore::Core::CpuStateFrame* Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<true>> rlim) -> uint64_t {
+  struct rlimit rlim64 {};
+  uint64_t Result = ::getrlimit(resource, &rlim64);
+  FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
+  *rlim = rlim64;
+  SYSCALL_ERRNO();
+}
 
-  REGISTER_SYSCALL_IMPL_X32(
-    ugetrlimit, [](FEXCore::Core::CpuStateFrame* Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
-      struct rlimit rlim64 {};
-      uint64_t Result = ::getrlimit(resource, &rlim64);
-      FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
-      *rlim = rlim64;
-      SYSCALL_ERRNO();
-    });
+auto ugetrlimit(FEXCore::Core::CpuStateFrame* Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
+  struct rlimit rlim64 {};
+  uint64_t Result = ::getrlimit(resource, &rlim64);
+  FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
+  *rlim = rlim64;
+  SYSCALL_ERRNO();
+}
 
-  REGISTER_SYSCALL_IMPL_X32(
-    setrlimit, [](FEXCore::Core::CpuStateFrame* Frame, int resource, const compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
-      struct rlimit rlim64 {};
-      FaultSafeUserMemAccess::VerifyIsReadable(rlim, sizeof(*rlim));
-      rlim64 = *rlim;
-      uint64_t Result = ::setrlimit(resource, &rlim64);
-      SYSCALL_ERRNO();
-    });
+auto setrlimit(FEXCore::Core::CpuStateFrame* Frame, int resource, const compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
+  struct rlimit rlim64 {};
+  FaultSafeUserMemAccess::VerifyIsReadable(rlim, sizeof(*rlim));
+  rlim64 = *rlim;
+  uint64_t Result = ::setrlimit(resource, &rlim64);
+  SYSCALL_ERRNO();
+}
 
-  REGISTER_SYSCALL_IMPL_X32(sysinfo, [](FEXCore::Core::CpuStateFrame* Frame, struct sysinfo32* info) -> uint64_t {
-    struct sysinfo Host {};
-    uint64_t Result = ::sysinfo(&Host);
-    if (Result != -1) {
-      FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
+auto sysinfo(FEXCore::Core::CpuStateFrame* Frame, struct sysinfo32* info) -> uint64_t {
+  struct sysinfo Host {};
+  uint64_t Result = ::sysinfo(&Host);
+  if (Result != -1) {
+    FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
 #define Copy(x) \
   info->x = static_cast<decltype(info->x)>(std::min(Host.x, static_cast<decltype(Host.x)>(std::numeric_limits<decltype(info->x)>::max())));
-      Copy(uptime);
-      Copy(procs);
+    Copy(uptime);
+    Copy(procs);
 #define CopyShift(x) info->x = static_cast<decltype(info->x)>(Host.x >> ShiftAmount);
 
-      info->loads[0] = std::min(Host.loads[0], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
-      info->loads[1] = std::min(Host.loads[1], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
-      info->loads[2] = std::min(Host.loads[2], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
+    info->loads[0] = std::min(Host.loads[0], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
+    info->loads[1] = std::min(Host.loads[1], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
+    info->loads[2] = std::min(Host.loads[2], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
 
-      // If any result can't fit in to a uint32_t then we need to shift the mem_unit and all the members
-      // Set the mem_unit to the pagesize
-      uint32_t ShiftAmount {};
-      if ((Host.totalram >> 32) != 0 || (Host.totalswap >> 32) != 0) {
+    // If any result can't fit in to a uint32_t then we need to shift the mem_unit and all the members
+    // Set the mem_unit to the pagesize
+    uint32_t ShiftAmount {};
+    if ((Host.totalram >> 32) != 0 || (Host.totalswap >> 32) != 0) {
 
-        while (Host.mem_unit < FEXCore::Utils::FEX_PAGE_SIZE) {
-          Host.mem_unit <<= 1;
-          ++ShiftAmount;
-        }
+      while (Host.mem_unit < FEXCore::Utils::FEX_PAGE_SIZE) {
+        Host.mem_unit <<= 1;
+        ++ShiftAmount;
       }
-
-      CopyShift(totalram);
-      CopyShift(freeram);
-      CopyShift(sharedram);
-      CopyShift(bufferram);
-      CopyShift(totalswap);
-      CopyShift(freeswap);
-      CopyShift(totalhigh);
-      CopyShift(freehigh);
-      Copy(mem_unit);
     }
-    SYSCALL_ERRNO();
-  });
 
-  REGISTER_SYSCALL_IMPL_X32(getrusage, [](FEXCore::Core::CpuStateFrame* Frame, int who, rusage_32* usage) -> uint64_t {
-    struct rusage usage64 = *usage;
-    uint64_t Result = ::getrusage(who, &usage64);
-    FaultSafeUserMemAccess::VerifyIsWritable(usage, sizeof(*usage));
-    *usage = usage64;
-    SYSCALL_ERRNO();
-  });
-
-  if (Handler->IsHostKernelVersionAtLeast(6, 8, 0)) {
-    REGISTER_SYSCALL_IMPL_X32(map_shadow_stack, [](FEXCore::Core::CpuStateFrame* Frame, uint64_t addr, uint64_t size, uint32_t flags) -> uint64_t {
-      // Claim that shadow stack isn't supported.
-      return -EOPNOTSUPP;
-    });
-  } else {
-    REGISTER_SYSCALL_IMPL_X32(map_shadow_stack, UnimplementedSyscallSafe);
+    CopyShift(totalram);
+    CopyShift(freeram);
+    CopyShift(sharedram);
+    CopyShift(bufferram);
+    CopyShift(totalswap);
+    CopyShift(freeswap);
+    CopyShift(totalhigh);
+    CopyShift(freehigh);
+    Copy(mem_unit);
   }
+  SYSCALL_ERRNO();
+}
+
+auto getrusage(FEXCore::Core::CpuStateFrame* Frame, int who, rusage_32* usage) -> uint64_t {
+  struct rusage usage64 = *usage;
+  uint64_t Result = ::getrusage(who, &usage64);
+  FaultSafeUserMemAccess::VerifyIsWritable(usage, sizeof(*usage));
+  *usage = usage64;
+  SYSCALL_ERRNO();
+}
+
+auto map_shadow_stack(FEXCore::Core::CpuStateFrame* Frame, uint64_t addr, uint64_t size, uint32_t flags) -> uint64_t {
+  if (FEX::HLE::_SyscallHandler->IsHostKernelVersionAtLeast(6, 8, 0)) {
+    // Claim that shadow stack isn't supported.
+    return -EOPNOTSUPP;
+  } else {
+    return -ENOSYS;
+  }
+}
+
+void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
+  REGISTER_SYSCALL_IMPL_X32(oldolduname, oldolduname);
+  REGISTER_SYSCALL_IMPL_X32(olduname, olduname);
+  REGISTER_SYSCALL_IMPL_X32(getrlimit, getrlimit);
+  REGISTER_SYSCALL_IMPL_X32(ugetrlimit, ugetrlimit);
+  REGISTER_SYSCALL_IMPL_X32(setrlimit, setrlimit);
+  REGISTER_SYSCALL_IMPL_X32(sysinfo, sysinfo);
+  REGISTER_SYSCALL_IMPL_X32(getrusage, getrusage);
+  REGISTER_SYSCALL_IMPL_X32(map_shadow_stack, map_shadow_stack);
 }
 } // namespace FEX::HLE::x32
