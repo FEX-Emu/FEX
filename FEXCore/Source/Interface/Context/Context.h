@@ -61,7 +61,7 @@ struct CustomIRResult {
     , Data(Data) {}
 };
 
-using BlockDelinkerFunc = void (*)(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
+using BlockDelinkerFunc = void (*)(FEXCore::Context::ExitFunctionLinkData* Record);
 constexpr uint32_t TSC_SCALE_MAXIMUM = 1'000'000'000; ///< 1Ghz
 
 class CodeCache : public AbstractCodeCache {
@@ -154,10 +154,10 @@ public:
     return CodeCache;
   }
 
-  void OnCodeBufferAllocated(CPU::CodeBuffer&) override;
+  void OnCodeBufferAllocated(const std::shared_ptr<CPU::CodeBuffer>&) override;
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
-  void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, InvalidatedEntryAccumulator& Accumulator, uint64_t Start,
-                                uint64_t Length) override;
+  void InvalidateCodeBuffersCodeRange(uint64_t Start, uint64_t Length) override;
+  void InvalidateThreadCachedCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
   FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() override {
     return CodeInvalidationMutex;
   }
@@ -228,8 +228,6 @@ public:
   SignalDelegator* SignalDelegation {};
 
   ContextImpl(const FEXCore::HostFeatures& Features);
-
-  static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, const FEXCore::LookupCacheWriteLockToken& lk);
 
   static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP);
 
@@ -346,5 +344,8 @@ private:
 
   bool MonoDetected = false;
   std::atomic<uint64_t> MonoBackpatcherBlock;
+
+  std::mutex CodeBufferListLock;
+  fextl::vector<std::weak_ptr<CPU::CodeBuffer>> CodeBufferList;
 };
 } // namespace FEXCore::Context

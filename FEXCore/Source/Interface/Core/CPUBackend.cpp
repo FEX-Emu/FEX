@@ -400,7 +400,7 @@ namespace CPU {
     Latest = Buffer;
     LatestOffset = 0;
 
-    OnCodeBufferAllocated(*Buffer);
+    OnCodeBufferAllocated(Buffer);
 
     return Buffer;
   }

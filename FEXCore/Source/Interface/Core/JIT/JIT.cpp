@@ -493,7 +493,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
   }
 }
 
-static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record, bool Call) {
+static void DirectBlockDelinker(FEXCore::Context::ExitFunctionLinkData* Record, bool Call) {
   uintptr_t JumpThunkStartAddress = reinterpret_cast<uintptr_t>(Record) - 0x10;
   uintptr_t CallerAddress = JumpThunkStartAddress + Record->CallerOffset;
   auto BranchOffset = JumpThunkStartAddress / 4 - CallerAddress / 4;
@@ -511,7 +511,7 @@ static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Co
   ARMEmitter::Emitter::ClearICache(reinterpret_cast<void*>(CallerAddress), 4);
 }
 
-static void IndirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
+static void IndirectBlockDelinker(FEXCore::Context::ExitFunctionLinkData* Record) {
   uintptr_t JumpThunkStartAddress = reinterpret_cast<uintptr_t>(Record) - 0x10;
   uint32_t BranchInst = 0;
   ARMEmitter::Emitter BranchEmit(reinterpret_cast<uint8_t*>(&BranchInst), 4);
@@ -577,16 +577,11 @@ uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEX
     if (KnownCallMarkerInst == ExpectedKnownCallMarkerInst) {
       BranchEmit.bl(BranchOffset);
       Thread->LookupCache->AddBlockLink(
-        GuestRip, Record,
-        [](FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) { DirectBlockDelinker(Frame, Record, true); }, lk);
+        GuestRip, Record, [](FEXCore::Context::ExitFunctionLinkData* Record) { DirectBlockDelinker(Record, true); }, lk);
     } else {
       BranchEmit.b(BranchOffset);
       Thread->LookupCache->AddBlockLink(
-        GuestRip, Record,
-        [](FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
-          DirectBlockDelinker(Frame, Record, false);
-        },
-        lk);
+        GuestRip, Record, [](FEXCore::Context::ExitFunctionLinkData* Record) { DirectBlockDelinker(Record, false); }, lk);
     }
 
     std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(CallerAddress)).store(BranchInst, std::memory_order::relaxed);

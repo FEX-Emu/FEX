@@ -56,11 +56,7 @@ void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, u
 
   if (NeedsInvalidate) {
     // IntervalsLock cannot be held during invalidation
-    std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
-    FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
-    for (auto Thread : Threads) {
-      CTX.InvalidateGuestCodeRange(Thread.second, Accumulator, AlignedBase, AlignedSize);
-    }
+    InvalidateIntervalInternal(AlignedBase, AlignedSize);
   }
 }
 
@@ -115,13 +111,8 @@ InvalidationTracker::InvalidateContainingSectionResult InvalidationTracker::Inva
          reinterpret_cast<uint64_t>(Info.AllocationBase) == SectionBase) {
     SectionSize += Info.RegionSize;
   }
-  {
-    std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
-    FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
-    for (auto Thread : Threads) {
-      CTX.InvalidateGuestCodeRange(Thread.second, Accumulator, SectionBase, SectionSize);
-    }
-  }
+
+  InvalidateIntervalInternal(SectionBase, SectionSize);
 
   if (Free) {
     std::unique_lock Lock(IntervalsLock);
@@ -141,13 +132,7 @@ void InvalidationTracker::InvalidateAlignedInterval(uint64_t Address, uint64_t S
   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
   const auto AlignedSize = std::max(Size, (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK);
 
-  {
-    std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
-    FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
-    for (auto Thread : Threads) {
-      CTX.InvalidateGuestCodeRange(Thread.second, Accumulator, AlignedBase, AlignedSize);
-    }
-  }
+  InvalidateIntervalInternal(AlignedBase, AlignedSize);
 
   if (Free) {
     std::unique_lock Lock(IntervalsLock);
@@ -197,14 +182,8 @@ bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThread
   }(FaultAddress);
 
   if (NeedsInvalidate) {
-    {
-      // IntervalsLock cannot be held during invalidation
-      std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
-      FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
-      for (auto Thread : Threads) {
-        CTX.InvalidateGuestCodeRange(Thread.second, Accumulator, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE);
-      }
-    }
+    // IntervalsLock cannot be held during invalidation
+    InvalidateIntervalInternal(FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE);
     DetectMonoBackpatcherBlock(Thread, HostPc);
     return true;
   }
@@ -272,6 +251,14 @@ void InvalidationTracker::DisableSMCDetection() {
     }
     Address += Query.Size;
   } while (Query.Size);
+}
+
+void InvalidationTracker::InvalidateIntervalInternal(uint64_t Address, uint64_t Size) {
+  std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
+  CTX.InvalidateCodeBuffersCodeRange(Address, Size);
+  for (auto Thread : Threads) {
+    CTX.InvalidateThreadCachedCodeRange(Thread.second, Address, Size);
+  }
 }
 
 } // namespace FEX::Windows
