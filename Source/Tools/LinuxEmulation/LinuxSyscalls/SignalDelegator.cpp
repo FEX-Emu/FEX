@@ -712,6 +712,7 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
   } else if (Handler.OldAction.handler == SIG_IGN || (Handler.OldAction.handler == SIG_DFL && Handler.DefaultBehaviour == DEFAULT_IGNORE)) {
     // Do nothing
   } else if (Handler.OldAction.handler == SIG_DFL && (Handler.DefaultBehaviour == DEFAULT_COREDUMP || Handler.DefaultBehaviour == DEFAULT_TERM)) {
+    CTX->FlushAndCloseCodeMap();
 
 #ifndef FEX_DISABLE_TELEMETRY
     // In the case of signals that cause coredump or terminate, save telemetry early.

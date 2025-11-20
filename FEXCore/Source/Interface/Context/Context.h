@@ -72,6 +72,8 @@ public:
   ContextImpl& CTX;
   bool IsGeneratingCache = false;
 
+  uint64_t ComputeCodeMapId(std::string_view Filename, int FD) override;
+
   void LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
   bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) override;
 
@@ -154,6 +156,16 @@ public:
     return CodeCache;
   }
 
+  void SetCodeMapWriter(fextl::unique_ptr<CodeMapWriter> Writer) override {
+    CodeMapWriter = std::move(Writer);
+  }
+
+  void FlushAndCloseCodeMap() override {
+    if (CodeMapWriter) {
+      CodeMapWriter.reset();
+    }
+  }
+
   void OnCodeBufferAllocated(const std::shared_ptr<CPU::CodeBuffer>&) override;
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
   void InvalidateCodeBuffersCodeRange(uint64_t Start, uint64_t Length) override;
@@ -224,6 +236,7 @@ public:
   FEXCore::ThunkHandler* ThunkHandler {};
   fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
   CodeCache CodeCache;
+  fextl::unique_ptr<CodeMapWriter> CodeMapWriter;
 
   SignalDelegator* SignalDelegation {};
 

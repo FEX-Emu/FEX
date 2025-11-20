@@ -245,6 +245,9 @@ void ThreadManager::DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool Need
     auto It = std::find(Threads.begin(), Threads.end(), Thread);
     LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
     Threads.erase(It);
+    if (Threads.empty()) {
+      Thread->Thread->CTX->FlushAndCloseCodeMap();
+    }
   }
 
   Stat.DeallocateSlot(Thread->Thread->ThreadStats);

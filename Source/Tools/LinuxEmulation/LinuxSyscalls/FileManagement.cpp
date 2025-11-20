@@ -1289,18 +1289,42 @@ void FileManager::UpdatePID(uint32_t PID) {
   }
 }
 
-bool FileManager::IsRootFSFD(int dirfd, uint64_t inode) const {
+bool FileManager::IsProtectedFile(int ParentDirFD, uint64_t inode) const {
   // Check if we have to hide this entry
-  if (inode == RootFSFDInode || inode == ProcFDInode) {
+  const char* Match = nullptr;
+  if (inode == RootFSFDInode) {
+    Match = "RootFS";
+  } else if (inode == ProcFDInode) {
+    Match = "/proc";
+  } else if (inode == CodeMapInode) {
+    Match = "code map";
+  }
+  if (Match) {
     struct stat Buffer;
-    if (fstat(dirfd, &Buffer) >= 0) {
+    if (fstat(ParentDirFD, &Buffer) >= 0) {
       if (Buffer.st_dev == ProcFSDev) {
-        LogMan::Msg::DFmt("Hiding directory entry for RootFSFD");
+        LogMan::Msg::DFmt("Hiding directory entry for {} FD", Match);
         return true;
       }
     }
   }
   return false;
+}
+
+void FileManager::SetProtectedCodeMapFD(int FD) {
+  if (FD == -1) {
+    CodeMapInode = 0;
+    return;
+  }
+
+  auto FDPath = fextl::fmt::format("self/fd/{}", FD);
+  struct stat Buffer {};
+  auto Result = fstatat(ProcFD, FDPath.c_str(), &Buffer, AT_SYMLINK_NOFOLLOW);
+  if (Result >= 0) {
+    CodeMapInode = Buffer.st_ino;
+  } else {
+    CodeMapInode = 0;
+  }
 }
 
 } // namespace FEX::HLE

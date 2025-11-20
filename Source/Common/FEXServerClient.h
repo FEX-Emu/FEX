@@ -19,6 +19,8 @@ enum class PacketType {
   TYPE_GET_LOG_FD,
   TYPE_GET_ROOTFS_PATH,
   TYPE_GET_PID_FD,
+  TYPE_QUERY_CODE_MAP,
+  TYPE_QUERY_CODE_MAP_NO_MULTIBLOCK,
 
   // Result only
   TYPE_SUCCESS,
@@ -112,6 +114,16 @@ fextl::string RequestRootFSPath(int ServerSocket);
  * @return FD for pidfd
  */
 int RequestPIDFD(int ServerSocket);
+
+/**
+ * @brief Request FEXServer to create a new code map for disk cache population
+ *
+ * @param ServerSocket - Socket to the server
+ * @param ProgramFD - FD for program binary
+ *
+ * @return FD to write code map to
+ */
+int RequestCodeMapFD(int ServerSocket, int ProgramFD, bool HasMultiblock);
 
 /**  @} */
 

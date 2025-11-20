@@ -4,7 +4,12 @@
 #include "SquashFS.h"
 
 #include <Common/AsyncNet.h>
+#include <Common/Config.h>
+#include <Common/FDUtils.h>
 #include <Common/FEXServerClient.h>
+
+#include <FEXCore/Core/CodeCache.h>
+#include <FEXCore/HLE/SourcecodeResolver.h>
 
 #include <fmt/ranges.h>
 
@@ -18,6 +23,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <vector>
+
+#include <xxhash.h>
 
 namespace ProcessPipe {
 constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
@@ -33,6 +40,8 @@ std::vector<struct pollfd> PollFDs {};
 constexpr size_t static MAX_FD_DISTANCE = 32;
 rlimit MaxFDs {};
 std::atomic<size_t> NumFilesOpened {};
+
+static std::string CodeMapDirectory;
 
 size_t GetNumFilesOpen() {
   // Walk /proc/self/fd/ to see how many open files we currently have
@@ -267,7 +276,8 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
   // Get the current number of FDs of the process before we start handling sockets.
   GetMaxFDs();
 
-  fasio::mutable_buffer buffer = {std::as_writable_bytes(std::span(Data))};
+  int inFD = -1;
+  fasio::mutable_buffer buffer = {std::as_writable_bytes(std::span(Data)), nullptr, &inFD};
 
   {
     fasio::error ec;
@@ -369,6 +379,47 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
       buffer += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
       break;
     }
+
+    case FEXServerClient::PacketType::TYPE_QUERY_CODE_MAP:
+    case FEXServerClient::PacketType::TYPE_QUERY_CODE_MAP_NO_MULTIBLOCK: {
+      char Tmp[PATH_MAX];
+      int TmpLen = FEX::get_fdpath(inFD, Tmp);
+      assert(TmpLen != -1);
+      std::filesystem::path BinaryPath = std::string_view(Tmp, TmpLen);
+      // TODO: Move to common code
+      const auto filename_hash = XXH3_64bits(Tmp, TmpLen);
+      const bool HasMultiblock = (Req->Header.Type == FEXServerClient::PacketType::TYPE_QUERY_CODE_MAP);
+
+      FEXServerClient::FEXServerResultPacket Res {
+        .Header {
+          .Type = FEXServerClient::PacketType::TYPE_SUCCESS,
+        },
+      };
+
+      // Find first code map that doesn't exist yet
+      int Index = 0;
+      std::string Filename;
+      do {
+        Filename = fmt::format("{}/{}.{}.bin", CodeMapDirectory,
+                               FEXCore::CodeMap::GetBaseFilename(
+                                 FEXCore::ExecutableFileInfo {nullptr, filename_hash, (fextl::string)BinaryPath.string()}, !HasMultiblock),
+                               Index++);
+      } while (std::filesystem::exists(Filename));
+
+      std::filesystem::create_directories(CodeMapDirectory);
+      auto CodeMapFD = open(Filename.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, 0644);
+
+      fasio::mutable_buffer Data = {.Data = std::as_writable_bytes(std::span(&Res, 1)),
+                                    .FD = (CodeMapFD != -1 ? std::optional {&CodeMapFD} : std::nullopt)};
+      fasio::error ec;
+      write(Socket, Data, ec);
+      buffer += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
+      close(inFD);
+      inFD = -1;
+      close(CodeMapFD);
+      break;
+    }
+
     // Invalid
     case FEXServerClient::PacketType::TYPE_ERROR:
     default:
@@ -377,6 +428,11 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
       close(Socket.FD);
       return;
     }
+  }
+
+  if (inFD != -1) {
+    LogMan::Msg::EFmt("Received unused FD argument");
+    close(inFD);
   }
 }
 
@@ -413,6 +469,8 @@ void WaitForRequests() {
 void SetConfiguration(bool Foreground, uint32_t PersistentTimeout) {
   ProcessPipe::Foreground = Foreground;
   ProcessPipe::RequestTimeout = PersistentTimeout;
+
+  CodeMapDirectory = FEX::Config::GetCacheDirectory() + "codemap";
 }
 
 void Shutdown() {

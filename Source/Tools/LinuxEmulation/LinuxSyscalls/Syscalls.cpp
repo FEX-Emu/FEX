@@ -122,7 +122,7 @@ uint64_t GetDentsEmulation(int fd, T* dirp, uint32_t count) {
 
       TmpOffset += Tmp->d_reclen;
 
-      if (FEX::HLE::_SyscallHandler->FM.IsRootFSFD(fd, Outgoing->d_ino)) {
+      if (FEX::HLE::_SyscallHandler->FM.IsProtectedFile(fd, Outgoing->d_ino)) {
         continue;
       }
 
@@ -197,6 +197,8 @@ static fextl::string GetShebangInterpFilename(const fextl::string& Filename) {
 
 uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
   auto SyscallHandler = FEX::HLE::_SyscallHandler;
+  Frame->Thread->CTX->FlushAndCloseCodeMap();
+
   fextl::string Filename {};
 
   fextl::string RootFS = SyscallHandler->RootFSPath();
@@ -883,6 +885,9 @@ void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) 
 
 void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
   if (Child) {
+    // Code maps are closed upon fork in the child
+    FM.SetProtectedCodeMapFD(-1);
+
     VMATracking.Mutex.StealAndDropActiveLocks();
   } else {
     VMATracking.Mutex.unlock();

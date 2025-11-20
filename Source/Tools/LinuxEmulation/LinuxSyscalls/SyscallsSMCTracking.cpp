@@ -8,6 +8,7 @@ $end_info$
 */
 
 #include "Common/FDUtils.h"
+#include "Common/FEXServerClient.h"
 #include "Common/FileMappingBaseAddress.h"
 
 #include <filesystem>
@@ -312,6 +313,36 @@ uint64_t SyscallHandler::GuestMremap(bool Is64Bit, FEXCore::Core::InternalThread
   return Result;
 }
 
+int SyscallHandler::OpenCodeMapFile() {
+  // Query from FEXServer whether this is the first instance of this executable; if it is, also enable code dumping!
+  FEX_CONFIG_OPT(RootFSPath, ROOTFS);
+  FEX_CONFIG_OPT(Multiblock, MULTIBLOCK);
+  auto ProgramName = FEXCore::Config::Get(FEXCore::Config::CONFIG_APP_FILENAME);
+  LOGMAN_THROW_A_FMT(ProgramName && ProgramName.value()->c_str()[0] == '/', "");
+
+  // Check RootFS first, then the plain path
+  auto ProgramFD = open((RootFSPath() + ProgramName.value()->c_str()).c_str(), O_RDONLY);
+  if (ProgramFD == -1) {
+    ProgramFD = open(ProgramName.value()->c_str(), O_RDONLY);
+  }
+  if (ProgramFD == -1) {
+    return -1;
+  }
+
+  int CodeMapFD = FEXServerClient::RequestCodeMapFD(FEXServerClient::GetServerFD(), ProgramFD, Multiblock);
+  close(ProgramFD);
+  if (CodeMapFD == -1) {
+    return -1;
+  }
+
+  FM.SetProtectedCodeMapFD(CodeMapFD);
+
+  // Ensure the file descriptor is closed on exec
+  auto flags = fcntl(CodeMapFD, F_GETFD);
+  fcntl(CodeMapFD, F_SETFD, flags | FD_CLOEXEC);
+  return CodeMapFD;
+}
+
 uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot) {
   uint64_t Result {};
 
@@ -422,6 +453,7 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
       if (Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
+        Resource->MappedFile->FileId = CTX->GetCodeCache().ComputeCodeMapId(Resource->MappedFile->Filename, fd);
 
         // Read ELF headers if applicable.
         // For performance, skip ELF checks if we're not mapping the file header

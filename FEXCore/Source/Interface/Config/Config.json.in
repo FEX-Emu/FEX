@@ -16,6 +16,13 @@
           "Maximum number of instruction to store in a block"
         ]
       },
+      "EnableCodeCachingWIP": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enable the code caching subsystem"
+        ]
+      },
       "HostFeatures": {
         "Type": "strenum",
         "Default": "FEXCore::Config::HostFeatures::OFF",
