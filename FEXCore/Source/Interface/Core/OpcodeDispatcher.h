@@ -1655,6 +1655,9 @@ private:
     return IR::SizeToOpSize(GetSrcSize(Op));
   }
 
+  [[nodiscard]]
+  IR::OpSize GetStringOpSize(X86Tables::DecodedOp Op) const;
+
   // Set flag tracking to prepare for an operation that directly writes NZCV.
   void HandleNZCVWrite() {
     CachedNZCV = nullptr;

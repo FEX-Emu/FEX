@@ -1,11 +1,14 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "0x10011"
+    "RAX": "0x10013"
   },
   "Mode": "32BIT"
 }
 %endif
+
+; Preamble (32Bit_ASM/CMakeLists.txt) sets ES and changes expectation.
+; Originally 0x10011, now 0x10013.
 
 mov esp, 0xe0000010
 

@@ -3200,7 +3200,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::EFmt("Can't handle adddress size");
+    LogMan::Msg::EFmt("STOSOp: Can't handle address size override (OP: 0x{:04X}, Flags: 0x{:08X})", Op->OP, Op->Flags);
     DecodeFailure = true;
     return;
   }
@@ -3245,7 +3245,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::EFmt("Can't handle adddress size");
+    LogMan::Msg::EFmt("MOVSOp: Can't handle address size override (OP: 0x{:04X}, Flags: 0x{:08X})", Op->OP, Op->Flags);
     DecodeFailure = true;
     return;
   }
@@ -3298,45 +3298,57 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
       _StoreMem(RegClass::GPR, Size, Src, RDI, Invalid(), OpSize::i8Bit, MemOffsetType::SXTX, 1);
     }
 
-    auto PtrDir = LoadDir(IR::OpSizeToSize(Size));
-    RSI = Add(OpSize::i64Bit, RSI, PtrDir);
-    RDI = Add(OpSize::i64Bit, RDI, PtrDir);
+    RSI = OffsetByDir(RSI, IR::OpSizeToSize(Size));
+    RDI = OffsetByDir(RDI, IR::OpSizeToSize(Size));
 
     StoreGPRRegister(X86State::REG_RSI, RSI);
     StoreGPRRegister(X86State::REG_RDI, RDI);
   }
 }
 
+IR::OpSize OpDispatchBuilder::GetStringOpSize(X86Tables::DecodedOp Op) const {
+  LOGMAN_THROW_A_FMT(Is64BitMode || !(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Invalid modifier on 32bit address");
+  return !Is64BitMode || (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? OpSize::i32Bit : OpSize::i64Bit;
+}
+
 void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::EFmt("Can't handle adddress size");
+  if (!Is64BitMode && (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE)) {
+    LogMan::Msg::EFmt("CMPSOp: Address size override (0x67) not supported in 32-bit mode (OP: 0x{:04X}).", Op->OP);
     DecodeFailure = true;
     return;
   }
 
   const auto Size = OpSizeFromSrc(Op);
+  OpSize AddrSize = GetStringOpSize(Op);
 
   bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
   if (!Repeat) {
-    // Default DS prefix
-    Ref Dest_RSI = MakeSegmentAddress(X86State::REG_RSI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
-    // Only ES prefix
-    Ref Dest_RDI = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    Ref Src_RSI = LoadGPRRegister(X86State::REG_RSI, AddrSize);
+    Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
+
+    Ref Dest_RSI = AppendSegmentOffset(Src_RSI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+    Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     auto Src1 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
     auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RSI, Size);
 
     CalculateFlags_SUB(OpSizeFromSrc(Op), Src2, Src1);
 
-    auto PtrDir = LoadDir(IR::OpSizeToSize(Size));
+    Dest_RDI = OffsetByDir(Src_RDI, IR::OpSizeToSize(Size));
+    if (Is64BitMode && AddrSize == OpSize::i32Bit) {
+      Dest_RDI = _Bfe(OpSize::i64Bit, 32, 0, Dest_RDI);
+      StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
+    } else {
+      StoreGPRRegister(X86State::REG_RDI, Dest_RDI, AddrSize);
+    }
 
-    // Offset the pointer
-    Dest_RDI = Add(OpSize::i64Bit, Dest_RDI, PtrDir);
-    StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
-
-    // Offset second pointer
-    Dest_RSI = Add(OpSize::i64Bit, Dest_RSI, PtrDir);
-    StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
+    Dest_RSI = OffsetByDir(Src_RSI, IR::OpSizeToSize(Size));
+    if (Is64BitMode && AddrSize == OpSize::i32Bit) {
+      Dest_RSI = _Bfe(OpSize::i64Bit, 32, 0, Dest_RSI);
+      StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
+    } else {
+      StoreGPRRegister(X86State::REG_RSI, Dest_RSI, AddrSize);
+    }
   } else {
     // Calculate flags early.
     CalculateDeferredFlags();
@@ -3352,7 +3364,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     SetCurrentCodeBlock(BeforeLoop);
     StartNewBlock();
 
-    ForeachDirection([this, Op, Size, REPE](int32_t PtrDir) {
+    ForeachDirection([this, Op, Size, AddrSize, REPE](int32_t PtrDir) {
       IRPair<IROp_CondJump> InnerJump;
       auto JumpIntoLoop = Jump();
 
@@ -3364,10 +3376,11 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
       // Working loop
       {
-        // Default DS prefix
-        Ref Dest_RSI = MakeSegmentAddress(X86State::REG_RSI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
-        // Only ES prefix
-        Ref Dest_RDI = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+        Ref Src_RSI = LoadGPRRegister(X86State::REG_RSI, AddrSize);
+        Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
+
+        Ref Dest_RSI = AppendSegmentOffset(Src_RSI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+        Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
         auto Src1 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
         auto Src2 = _LoadMemGPR(Size, Dest_RSI, Size);
@@ -3384,13 +3397,21 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         // Store the counter since we don't have phis
         StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
-        // Offset the pointer
-        Dest_RDI = Add(OpSize::i64Bit, Dest_RDI, PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
-        StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
+        Dest_RDI = Add(AddrSize, Src_RDI, PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
+        if (Is64BitMode && AddrSize == OpSize::i32Bit) {
+          Dest_RDI = _Bfe(OpSize::i64Bit, 32, 0, Dest_RDI);
+          StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
+        } else {
+          StoreGPRRegister(X86State::REG_RDI, Dest_RDI, AddrSize);
+        }
 
-        // Offset second pointer
-        Dest_RSI = Add(OpSize::i64Bit, Dest_RSI, PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
-        StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
+        Dest_RSI = Add(AddrSize, Src_RSI, PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
+        if (Is64BitMode && AddrSize == OpSize::i32Bit) {
+          Dest_RSI = _Bfe(OpSize::i64Bit, 32, 0, Dest_RSI);
+          StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
+        } else {
+          StoreGPRRegister(X86State::REG_RSI, Dest_RSI, AddrSize);
+        }
 
         // If TailCounter != 0, compare sources.
         // If TailCounter == 0, set ZF iff that would break.
@@ -3429,7 +3450,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::LODSOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::EFmt("Can't handle adddress size");
+    LogMan::Msg::EFmt("LODSOp: Can't handle address size override (OP: 0x{:04X}, Flags: 0x{:08X})", Op->OP, Op->Flags);
     DecodeFailure = true;
     return;
   }
@@ -3511,31 +3532,37 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SCASOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::EFmt("Can't handle adddress size");
+  if (!Is64BitMode && (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE)) {
+    LogMan::Msg::EFmt("SCASOp: Address size override (0x67) not supported in 32-bit mode (OP: 0x{:04X}).", Op->OP);
     DecodeFailure = true;
     return;
   }
 
   const auto Size = OpSizeFromSrc(Op);
+  OpSize AddrSize = GetStringOpSize(Op);
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX)) != 0;
 
   if (!Repeat) {
-    Ref Dest_RDI = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
+    Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
 
     CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
 
-    // Offset the pointer
-    Ref TailDest_RDI = LoadGPRRegister(X86State::REG_RDI);
-    StoreGPRRegister(X86State::REG_RDI, OffsetByDir(TailDest_RDI, IR::OpSizeToSize(Size)));
+    Ref TailDest_RDI = OffsetByDir(Src_RDI, IR::OpSizeToSize(Size));
+    if (Is64BitMode && AddrSize == OpSize::i32Bit) {
+      TailDest_RDI = _Bfe(OpSize::i64Bit, 32, 0, TailDest_RDI);
+      StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
+    } else {
+      StoreGPRRegister(X86State::REG_RDI, TailDest_RDI, AddrSize);
+    }
   } else {
     // Calculate flags early. because end of block
     CalculateDeferredFlags();
 
-    ForeachDirection([this, Op, Size](int32_t Dir) {
+    ForeachDirection([this, Op, Size, AddrSize](int32_t Dir) {
       bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
       auto JumpStart = Jump();
@@ -3559,7 +3586,8 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
       // Working loop
       {
-        Ref Dest_RDI = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+        Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
+        Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
         auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
         auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
@@ -3570,7 +3598,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         CalculateDeferredFlags();
 
         Ref TailCounter = LoadGPRRegister(X86State::REG_RCX);
-        Ref TailDest_RDI = LoadGPRRegister(X86State::REG_RDI);
+        Ref Src_RDI_Tail = LoadGPRRegister(X86State::REG_RDI, AddrSize);
 
         // Decrement counter
         TailCounter = Sub(OpSize::i64Bit, TailCounter, 1);
@@ -3578,9 +3606,13 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         // Store the counter since we don't have phis
         StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
-        // Offset the pointer
-        TailDest_RDI = Add(OpSize::i64Bit, TailDest_RDI, Dir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
-        StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
+        Ref TailDest_RDI = Add(AddrSize, Src_RDI_Tail, Dir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
+        if (Is64BitMode && AddrSize == OpSize::i32Bit) {
+          TailDest_RDI = _Bfe(OpSize::i64Bit, 32, 0, TailDest_RDI);
+          StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
+        } else {
+          StoreGPRRegister(X86State::REG_RDI, TailDest_RDI, AddrSize);
+        }
 
         CalculateDeferredFlags();
         InternalCondJump = CondJumpNZCV(REPE ? CondClass::EQ : CondClass::NEQ);

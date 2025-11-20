@@ -30,7 +30,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
   add_custom_command(OUTPUT ${TMP_FILE}
     DEPENDS "${ASM_SRC}"
     COMMAND "cp" ARGS "${ASM_SRC}" "${TMP_FILE}"
-    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\norg 10000h\\nmov eax, 0x17\\nmov ds, ax\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
+    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\norg 10000h\\nmov eax, 0x17\\nmov ds, ax\\nmov es, ax\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
     )
 
   set(OUTPUT_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.bin")
