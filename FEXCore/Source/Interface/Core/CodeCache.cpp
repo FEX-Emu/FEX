@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#include "Utils/SpinWaitLock.h"
+
 #include <Interface/Context/Context.h>
 
 #include <FEXCore/HLE/SourcecodeResolver.h>
@@ -186,9 +188,7 @@ void CodeMapWriter::AppendData(std::span<const std::byte> Data) {
     }
     if (!IsResponsibleForFlush) {
       // Wait for the buffer to be flushed on the responsible thread
-      while (BufferOffset > Buffer.size()) {
-        std::this_thread::yield();
-      }
+      Utils::SpinWaitLock::WaitPred<std::less_equal<>, size_t>(reinterpret_cast<size_t*>(&BufferOffset), Buffer.size());
     }
     AppendData(Data);
     return;

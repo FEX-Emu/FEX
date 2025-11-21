@@ -6,6 +6,9 @@
 #include <mutex>
 #include <type_traits>
 
+#include <FEXCore/fextl/functional.h>
+#include <FEXCore/Utils/EnumUtils.h>
+
 namespace FEXCore::Utils::SpinWaitLock {
 /**
  * @brief This provides routines to implement implement an "efficient spin-loop" using ARM's WFE and exclusive monitor interfaces.
@@ -125,29 +128,20 @@ static inline uint64_t WFELoadAtomic(uint64_t* Futex) {
   return Result;
 }
 
-template<typename T, typename TT = T>
-static inline void Wait(T* Futex, TT ExpectedValue) {
+template<typename Pred, typename T>
+static inline void WaitPred(T* Futex, T ComparisonValue) {
   auto AtomicFutex = std::atomic_ref<T>(*Futex);
   T Result = AtomicFutex.load();
 
-  // Early exit if possible.
-  if (Result == ExpectedValue) {
-    return;
-  }
-
-  do {
+  while (!Pred {}(Result, ComparisonValue)) {
     Result = LoadExclusive(Futex);
-    if (Result == ExpectedValue) {
+    if (Pred {}(Result, ComparisonValue)) {
       return;
     }
-    Result = WFELoadAtomic(Futex);
-  } while (Result != ExpectedValue);
-}
 
-template void Wait<uint8_t>(uint8_t*, uint8_t);
-template void Wait<uint16_t>(uint16_t*, uint16_t);
-template void Wait<uint32_t>(uint32_t*, uint32_t);
-template void Wait<uint64_t>(uint64_t*, uint64_t);
+    Result = WFELoadAtomic(Futex);
+  }
+}
 
 template<typename T, typename TT>
 static inline bool Wait(T* Futex, TT ExpectedValue, const std::chrono::nanoseconds& Timeout) {
@@ -207,19 +201,15 @@ static inline T OneShotWFEBitComparison(T* Futex, T Mask, T Comp) {
 }
 
 #else
-template<typename T, typename TT>
-static inline void Wait(T* Futex, TT ExpectedValue) {
+
+template<typename Pred, typename T>
+static inline void WaitPred(T* Futex, T ComparisonValue) {
   auto AtomicFutex = std::atomic_ref<T>(*Futex);
   T Result = AtomicFutex.load();
 
-  // Early exit if possible.
-  if (Result == ExpectedValue) {
-    return;
-  }
-
-  do {
+  while (!Pred {}(Result, ComparisonValue)) {
     Result = AtomicFutex.load();
-  } while (Result != ExpectedValue);
+  }
 }
 
 template<typename T, typename TT>
@@ -249,6 +239,16 @@ static inline bool Wait(T* Futex, TT ExpectedValue, const std::chrono::nanosecon
   return true;
 }
 #endif
+
+template<typename T, typename TT = T>
+static inline void Wait(T* Futex, TT ExpectedValue) {
+  WaitPred<std::equal_to<>, T>(Futex, ExpectedValue);
+}
+
+template void Wait<uint8_t>(uint8_t*, uint8_t);
+template void Wait<uint16_t>(uint16_t*, uint16_t);
+template void Wait<uint32_t>(uint32_t*, uint32_t);
+template void Wait<uint64_t>(uint64_t*, uint64_t);
 
 template<typename T>
 static inline void lock(T* Futex) {
