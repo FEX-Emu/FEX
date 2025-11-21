@@ -589,15 +589,7 @@ EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
   auto cmdline_handler = [&](FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) -> int32_t {
     const int FD = GenTmpFD(pathname, flags);
     const auto* CodeLoader = FEX::HLE::_SyscallHandler->GetCodeLoader();
-    const auto& Args = CodeLoader->GetApplicationArguments();
-    const char NullChar {};
-
-    // cmdline is an array of null terminated arguments
-    for (const auto& Arg : Args) {
-      write(FD, Arg.c_str(), Arg.size());
-      // Finish off with a null terminator
-      write(FD, &NullChar, sizeof(uint8_t));
-    }
+    CodeLoader->WriteCmdlineFD(FD);
 
     // One additional null terminator to finish the list
     lseek(FD, 0, SEEK_SET);
