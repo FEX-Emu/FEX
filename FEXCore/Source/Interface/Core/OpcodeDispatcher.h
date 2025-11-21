@@ -1330,6 +1330,7 @@ protected:
 
 private:
   FEX_CONFIG_OPT(ReducedPrecisionMode, X87REDUCEDPRECISION);
+  FEX_CONFIG_OPT(StrictReducedPrecisionMode, X87STRICTREDUCEDPRECISION);
 
   struct JumpTargetInfo {
     Ref BlockEntry;

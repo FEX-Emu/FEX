@@ -157,7 +157,9 @@ public:
     : Features(Features)
     , GPROpSize(GPROpSize) {
     FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
+    FEX_CONFIG_OPT(StrictReducedPrecision, X87STRICTREDUCEDPRECISION);
     ReducedPrecisionMode = ReducedPrecision;
+    StrictReducedPrecisionMode = StrictReducedPrecision;
   }
   void Run(IREmitter* Emit) override;
 
@@ -165,10 +167,12 @@ private:
   const FEXCore::HostFeatures& Features;
   const OpSize GPROpSize;
   bool ReducedPrecisionMode;
+  bool StrictReducedPrecisionMode;
   FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
 
   // Helpers
   Ref RotateRight8(uint32_t V, Ref Amount);
+  Ref SilenceNaN(Ref Value, OpSize StoreSize);
 
   void F80SplitStore_Helper(const IROp_StoreStackMem* Op, Ref StackNode, Ref AddrNode, Ref Offset, OpSize Align, MemOffsetType OffsetType,
                             uint8_t OffsetScale) {
@@ -215,6 +219,7 @@ private:
     case OpSize::i32Bit:
     case OpSize::i64Bit: {
       StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
+      StackNode = SilenceNaN(StackNode, Op->StoreSize);
       IREmit->_StoreMemFPR(Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
@@ -244,6 +249,9 @@ private:
       [[fallthrough]];
     }
     case OpSize::i64Bit: {
+      if (StrictReducedPrecisionMode) {
+        StackNode = SilenceNaN(StackNode, Op->StoreSize);
+      }
       IREmit->_StoreMemFPR(Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
@@ -491,6 +499,71 @@ inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_
 
 inline Ref X87StackOptimization::RotateRight8(uint32_t V, Ref Amount) {
   return IREmit->_Lshr(OpSize::i32Bit, GetConstant(V | (V << 8)), Amount);
+}
+
+inline Ref X87StackOptimization::SilenceNaN(Ref Value, OpSize StoreSize) {
+  // We expect Value here to reach after conversion - so it's already in the target size (32 or 64 bit float)
+  // Never 80bit since we do not silence 80bit values, since it's likely a copy in that case.
+  LOGMAN_THROW_A_FMT(StoreSize == OpSize::i32Bit || StoreSize == OpSize::i64Bit, "Unexpected store size");
+
+  // State-free bit-based NaN detection using only bitwise/arithmetic operations
+  // NaN detection: exponent = all 1s AND mantissa != 0
+  // No _Select or _FCmp to avoid any state corruption
+
+  Ref QuietBitConst {};
+  Ref ExpMask {};
+  Ref MantissaMask {};
+  uint8_t ShiftAmount {};
+
+  if (StoreSize == OpSize::i32Bit) {
+    QuietBitConst = IREmit->_Constant(0x00400000U); // Bit 22 (quiet bit for 32-bit)
+    ExpMask = IREmit->_Constant(0x7F800000U);       // Exponent bits (30-23)
+    MantissaMask = IREmit->_Constant(0x007FFFFFU);  // Mantissa bits (22-0)
+    ShiftAmount = 31;
+  } else {                                                    // OpSize::i64Bit
+    QuietBitConst = IREmit->_Constant(0x0008000000000000ULL); // Bit 51 (quiet bit for 64-bit)
+    ExpMask = IREmit->_Constant(0x7FF0000000000000ULL);       // Exponent bits (62-52)
+    MantissaMask = IREmit->_Constant(0x000FFFFFFFFFFFFFULL);  // Mantissa bits (51-0)
+    ShiftAmount = 63;
+  }
+
+  // 1. Extract FPR value to GPR for bit manipulation
+  Ref GPRValue = IREmit->_VExtractToGPR(StoreSize, StoreSize, Value, 0);
+
+  // 2. Check if exponent == all 1s
+  Ref ExpBits = IREmit->_And(StoreSize, GPRValue, ExpMask);
+  Ref ExpXor = IREmit->_Xor(StoreSize, ExpBits, ExpMask); // 0 if equal
+  // Convert to boolean: check if zero
+  Ref ExpNeg = IREmit->_Neg(StoreSize, ExpXor);
+  Ref ExpOr = IREmit->_Or(StoreSize, ExpXor, ExpNeg);                               // Sign bit set if non-zero
+  Ref ExpBoolInv = IREmit->_Lshr(StoreSize, ExpOr, IREmit->_Constant(ShiftAmount)); // 1 if non-zero, 0 if zero
+  Ref ExpBool = IREmit->_Xor(StoreSize, ExpBoolInv, IREmit->_Constant(1));          // 1 if exp == all1s
+  // Convert boolean to mask
+  Ref IsExpAllOnesMask = IREmit->_Neg(StoreSize, ExpBool); // 0xFFFFFFFF if 1, 0x0 if 0
+
+  // 3. Check if mantissa != 0
+  Ref MantissaBits = IREmit->_And(StoreSize, GPRValue, MantissaMask);
+  // Convert to boolean: check if non-zero
+  Ref MantissaNeg = IREmit->_Neg(StoreSize, MantissaBits);
+  Ref MantissaOr = IREmit->_Or(StoreSize, MantissaBits, MantissaNeg);                      // Sign bit set if non-zero
+  Ref MantissaBool = IREmit->_Lshr(StoreSize, MantissaOr, IREmit->_Constant(ShiftAmount)); // 1 if non-zero
+  // Convert boolean to mask
+  Ref HasMantissaMask = IREmit->_Neg(StoreSize, MantissaBool); // 0xFFFFFFFF if non-zero
+
+  // 4. AND the two conditions: IsNaN = (exp == all1s) AND (mantissa != 0)
+  Ref IsNaNMask = IREmit->_And(StoreSize, IsExpAllOnesMask, HasMantissaMask);
+
+  // 5. Create silenced version by setting quiet bit
+  Ref SilencedGPR = IREmit->_Or(StoreSize, GPRValue, QuietBitConst);
+
+  // 6. Mask-based selection: Result = (IsNaNMask & SilencedGPR) | (~IsNaNMask & GPRValue)
+  Ref NotIsNaNMask = IREmit->_Not(StoreSize, IsNaNMask);
+  Ref SelectedSilenced = IREmit->_And(StoreSize, IsNaNMask, SilencedGPR);
+  Ref SelectedOriginal = IREmit->_And(StoreSize, NotIsNaNMask, GPRValue);
+  Ref ResultGPR = IREmit->_Or(StoreSize, SelectedSilenced, SelectedOriginal);
+
+  // 7. Cast result back to FPR
+  return IREmit->_VCastFromGPR(StoreSize, StoreSize, ResultGPR);
 }
 
 inline std::optional<X87StackOptimization::StackMemberInfo> X87StackOptimization::MigrateToSlowPath_IfInvalid(uint8_t Offset) {
@@ -1011,6 +1084,9 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           if (Op->StoreSize == OpSize::f80Bit) {
             Store80BitToMem(Op, SourceValue, AddrNode, Offset, Align, OffsetType, OffsetScale);
           } else {
+            if (!ReducedPrecisionMode || StrictReducedPrecisionMode) {
+              SourceValue = SilenceNaN(SourceValue, Op->StoreSize);
+            }
             IREmit->_StoreMemFPR(StoreSize, SourceValue, AddrNode, Offset, Align, OffsetType, OffsetScale);
           }
           break;
