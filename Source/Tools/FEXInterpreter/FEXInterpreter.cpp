@@ -222,6 +222,26 @@ void CheckForGCS() {
 }
 } // namespace FEX::GCS
 
+namespace FEX::UnalignedAtomic {
+void SetupKernelUnalignedAtomics() {
+#ifndef PR_ARM64_SET_UNALIGN_ATOMIC
+#define PR_ARM64_SET_UNALIGN_ATOMIC 0x46455849
+#define PR_ARM64_UNALIGN_ATOMIC_EMULATE (1UL << 0)
+#define PR_ARM64_UNALIGN_ATOMIC_BACKPATCH (1UL << 1)
+#define PR_ARM64_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS (1UL << 2)
+#endif
+
+  // Interfaces with downstream FEX kernel patches to control unaligned atomic handling
+  FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
+  FEX_CONFIG_OPT(KernelUnalignedAtomicBackpatching, KERNELUNALIGNEDATOMICBACKPATCHING);
+
+  uint64_t Flags = (StrictInProcessSplitLocks() ? PR_ARM64_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
+                   (KernelUnalignedAtomicBackpatching() ? PR_ARM64_UNALIGN_ATOMIC_BACKPATCH : 0) | PR_ARM64_UNALIGN_ATOMIC_EMULATE;
+
+  prctl(PR_ARM64_SET_UNALIGN_ATOMIC, Flags, 0, 0, 0);
+}
+} // namespace FEX::UnalignedAtomic
+
 /**
  * @brief Get an FD from an environment variable and then unset the environment variable.
  *
@@ -458,6 +478,7 @@ int main(int argc, char** argv, char** const envp) {
 
   // Setup TSO hardware emulation immediately after initializing the context.
   FEX::TSO::SetupTSOEmulation(CTX.get());
+  FEX::UnalignedAtomic::SetupKernelUnalignedAtomics();
 
   if (!Loader.Is64BitMode()) {
     // Tell the kernel we want to use the compat input syscalls even though we're
