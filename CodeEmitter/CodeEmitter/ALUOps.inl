@@ -101,10 +101,10 @@ public:
 
   [[nodiscard]] BranchEncodeSucceeded LongAddressGen(ARMEmitter::Register rd, const BackwardLabel* Label) {
     const auto SLocation = reinterpret_cast<int64_t>(Label->Location);
-    const auto ULocation = std::bit_cast<uint64_t>(SLocation);
+    const auto ULocation = fmt::detail::bit_cast<uint64_t>(SLocation);
 
     const int64_t Imm = SLocation - (GetCursorAddress<int64_t>());
-    const auto UImm = std::bit_cast<uint64_t>(Imm);
+    const auto UImm = fmt::detail::bit_cast<uint64_t>(Imm);
 
     if (IsADRRange(Imm)) {
       // If the range is in ADR range then we can just use ADR.
