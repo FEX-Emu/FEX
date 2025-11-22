@@ -14,6 +14,7 @@
 #include <span>
 #include <utility>
 #include <vector>
+#include <unistd.h>
 
 #include <FEXCore/fextl/functional.h>
 #include <FEXCore/fextl/map.h>
