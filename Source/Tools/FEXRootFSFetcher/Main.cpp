@@ -247,7 +247,9 @@ void CheckSquashfuse() {
 void CheckUnsquashfs() {
   const std::array<const char*, 3> ExecveArgs = {
     "unsquashfs",
-    "--help",
+    // since unsquashfs 4.7.1, -help-all is needed to list decompressors.
+    // also works with older versions.
+    "-help-all",
     nullptr,
   };
 
