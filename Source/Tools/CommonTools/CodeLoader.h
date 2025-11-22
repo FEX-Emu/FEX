@@ -5,6 +5,7 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
+#include <unistd.h>
 
 namespace FEX {
 
@@ -51,6 +52,19 @@ public:
 
   const fextl::vector<fextl::string>& GetApplicationArguments() const {
     return ApplicationArgs;
+  }
+
+  /**
+   * Writes out the arguments in the format of /proc/self/cmdline
+   */
+  virtual void WriteCmdlineFD(int32_t fd) const {
+    const auto& Args = GetApplicationArguments();
+    const char NullChar {};
+    // cmdline is an array of null terminated arguments
+    for (const auto& Arg : Args) {
+      write(fd, Arg.c_str(), Arg.size());
+      write(fd, &NullChar, sizeof(uint8_t));
+    }
   }
 
 protected:

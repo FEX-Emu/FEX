@@ -728,7 +728,7 @@ public:
       TotalArgumentMemSize += sizeof(auxv32_t) * AuxVariables.size();
     }
 
-    uint64_t ArgumentOffset = TotalArgumentMemSize;
+    ArgumentOffset = TotalArgumentMemSize;
     TotalArgumentMemSize += ArgumentBackingSize;
 
     uint64_t EnvpOffset = TotalArgumentMemSize;
@@ -814,6 +814,10 @@ public:
       .address = AuxTabBase,
       .size = AuxTabSize,
     };
+  }
+
+  void WriteCmdlineFD(int32_t fd) const override {
+    write(fd, reinterpret_cast<const void*>(StackPointer + ArgumentOffset), ArgumentBackingSize);
   }
 
   uint64_t GetBaseOffset() const override {
@@ -910,6 +914,7 @@ public:
   fextl::list<auxv_t> AuxVariables;
   uint64_t AuxTabBase {}, AuxTabSize {};
   uint64_t ArgumentBackingSize {};
+  uint64_t ArgumentOffset {};
   uint64_t EnvironmentBackingSize {};
   uint64_t BaseOffset {};
   void* VDSOBase {};
