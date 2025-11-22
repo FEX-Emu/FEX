@@ -496,7 +496,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
   uint64_t AlignedPC = PC & ~0xFFFULL;
 
   // Offset from aligned PC
-  auto AlignedOffset = std::bit_cast<int64_t>(Constant - AlignedPC);
+  auto AlignedOffset = fmt::detail::bit_cast<int64_t>(Constant - AlignedPC);
 
   int NumMoves = 0;
 
@@ -512,7 +512,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     } else {
       // If the constant is within 1MB of PC then we can still use ADR to load in a single instruction
       // 21-bit signed integer here
-      auto SmallOffset = std::bit_cast<int64_t>(Constant - PC);
+      auto SmallOffset = fmt::detail::bit_cast<int64_t>(Constant - PC);
       if (ARMEmitter::Emitter::IsInt21(SmallOffset)) {
         adr(Reg, SmallOffset);
       } else {

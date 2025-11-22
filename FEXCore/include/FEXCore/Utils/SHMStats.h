@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 
 #ifdef _M_X86_64
