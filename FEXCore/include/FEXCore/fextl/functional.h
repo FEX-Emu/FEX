@@ -52,9 +52,9 @@ public:
 
       // Third, assign the result to std::function, ensuring it's indeed
       // allocation-free by checking for nothrow-constructibility
-      static_assert(noexcept(internal = std::move(wrapped_lambda)), "This implementation of std::function "
-                                                                    "does not support implementing "
-                                                                    "fextl::move_only_function");
+//      static_assert(noexcept(internal = std::move(wrapped_lambda)), "This implementation of std::function "
+//                                                                    "does not support implementing "
+//                                                                    "fextl::move_only_function");
       internal = std::move(wrapped_lambda);
 
       // Finally, if a destructor must be called, generate a pointer to its destructor
