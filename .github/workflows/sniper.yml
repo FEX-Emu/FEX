@@ -1,0 +1,63 @@
+name: Sniper build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  CC: clang
+  CXX: clang++
+  FEX_PORTABLE: 1
+
+jobs:
+  sniper_sniper:
+    runs-on: ${{ matrix.arch }}
+    strategy:
+      matrix:
+        arch: [[self-hosted, ARM64, distrobox]]
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set runner label
+      run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+
+    # Setup everything required.
+    - name : distrobox setup
+      run: |
+        distrobox create -Y -i registry.gitlab.steamos.cloud/steamrt/sniper/sdk/arm64 sniper || true
+        distrobox upgrade sniper
+        distrobox enter --name sniper -- sudo apt-get install -y \
+          git cmake ninja-build ccache \
+          lld-19 clang-19 \
+          libclang-dev libclang-19-dev \
+          libstdc++-10-dev-i386-cross libgcc-10-dev-i386-cross \
+          libstdc++-10-dev-amd64-cross libgcc-10-dev-amd64-cross
+          distrobox enter --name sniper -- sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 10
+          distrobox enter --name sniper -- sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 10
+          distrobox enter --name sniper -- sudo update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-19 10
+
+    - name: Clean Build Environment
+      run: rm -Rf ${{runner.workspace}}/build
+
+    - name: Create Build Environment
+      run: distrobox enter --name sniper -- cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: distrobox enter --name sniper -- cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DBUILD_FEX_LINUX_TESTS=True -DBUILD_THUNKS=False -DBUILD_FEXCONFIG=False -DBUILD_TESTING=False -DENABLE_CLANG_THUNKS=True -DUSE_LINKER=lld-19 -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: distrobox enter --name sniper -- cmake --build . --config $BUILD_TYPE
+
+
