@@ -205,7 +205,7 @@ def UpdatePPA():
 def CheckAndInstallPackageUpdates():
     PackagesToInstall = GetPackagesToInstall()
     for Package in PackagesToInstall[:]:
-        UpgradableStatus = subprocess.check_output(["apt", "list", "--upgradable", Package]).decode("utf-8")
+        UpgradableStatus = subprocess.check_output(["apt", "list", "--upgradable", Package], stderr=None).decode("utf-8")
         Found = False
         for Line in UpgradableStatus.split("\n"):
             # If the package exists to be upgraded then it will appear in this list
