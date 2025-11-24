@@ -3,6 +3,7 @@
 
 #include <FEXCore/Utils/EnumOperators.h>
 
+#include <compare>
 #include <cstdint>
 #include <cstring>
 
@@ -76,15 +77,7 @@ enum IndexNamedVectorConstant : uint8_t {
 
 struct SHA256Sum final {
   uint8_t data[32];
-  [[nodiscard]]
-  bool operator<(const SHA256Sum& rhs) const {
-    return memcmp(data, rhs.data, sizeof(data)) < 0;
-  }
-
-  [[nodiscard]]
-  bool operator==(const SHA256Sum& rhs) const {
-    return memcmp(data, rhs.data, sizeof(data)) == 0;
-  }
+  [[nodiscard]] auto operator<=>(const SHA256Sum&) const noexcept = default;
 };
 
 typedef void ThunkedFunction(void* ArgsRv);

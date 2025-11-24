@@ -60,24 +60,7 @@ struct NodeID final {
     Value = 0;
   }
 
-  [[nodiscard]] friend constexpr bool operator==(NodeID, NodeID) noexcept = default;
-
-  [[nodiscard]]
-  friend constexpr bool operator<(NodeID lhs, NodeID rhs) noexcept {
-    return lhs.Value < rhs.Value;
-  }
-  [[nodiscard]]
-  friend constexpr bool operator>(NodeID lhs, NodeID rhs) noexcept {
-    return operator<(rhs, lhs);
-  }
-  [[nodiscard]]
-  friend constexpr bool operator<=(NodeID lhs, NodeID rhs) noexcept {
-    return !operator>(lhs, rhs);
-  }
-  [[nodiscard]]
-  friend constexpr bool operator>=(NodeID lhs, NodeID rhs) noexcept {
-    return !operator<(lhs, rhs);
-  }
+  [[nodiscard]] constexpr auto operator<=>(const NodeID&) const noexcept = default;
 
   friend std::ostream& operator<<(std::ostream& out, NodeID ID) {
     out << ID.Value;
