@@ -124,7 +124,6 @@ public:
     uint32_t Desired {};
 
     while (true) {
-
       bool Sleep = false;
       do {
         if ((Expected & WRITE_OWNED_BIT) == 0 && (Expected & WRITE_WAITER_COUNT_MASK) == 0) {
@@ -230,6 +229,14 @@ public:
     // Uncontended mutex check
     return AtomicFutex.compare_exchange_strong(Expected, Desired, std::memory_order_acq_rel, std::memory_order_acquire);
   }
+
+#if !defined(_WIN32)
+  // Initialize the internal mutex object to its default initializer state.
+  // Should only ever be used in the child process when a Linux fork() has occured.
+  void StealAndDropActiveLocks() {
+    Futex = 0;
+  }
+#endif
 
 private:
 
