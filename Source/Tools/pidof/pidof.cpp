@@ -11,6 +11,9 @@
 #include <string>
 #include <unordered_set>
 
+#include <range/v3/view/split.hpp>
+#include <range/v3/view/transform.hpp>
+
 namespace Config {
 
 bool SingleShot {};
@@ -43,12 +46,14 @@ void LoadOptions(int argc, char** argv) {
   SkipZombie = Options.get("z");
   Separator = Options["d"];
 
+  auto to_string_view = [](auto rng) {
+    return std::string_view(&*rng.begin(), ranges::distance(rng));
+  };
+
   for (const auto& Omit : Options.all("o")) {
-    std::istringstream ss {Omit};
-    std::string sub;
-    while (std::getline(ss, sub, ',')) {
+    for (auto pid_str : ranges::views::split(Omit, ',') | ranges::views::transform(to_string_view)) {
       int64_t pid;
-      auto ConvResult = std::from_chars(sub.data(), sub.data() + sub.size(), pid, 10);
+      auto ConvResult = std::from_chars(pid_str.data(), pid_str.data() + pid_str.size(), pid, 10);
 
       // Invalid pid, skip.
       if (ConvResult.ec == std::errc::invalid_argument) {

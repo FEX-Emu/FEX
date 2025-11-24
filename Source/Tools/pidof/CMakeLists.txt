@@ -5,6 +5,7 @@ target_link_libraries(FEXpidof
   cpp-optparse
   JemallocDummy
   fmt::fmt
+  range-v3::range-v3
 )
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
