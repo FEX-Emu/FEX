@@ -200,6 +200,15 @@ def print_man_environment_tail():
     ],
     "''", True)
 
+    print_man_env_option(
+    "APP_CACHE_LOCATION",
+    [
+    "Allows the user to override where FEX stores and loads cache files",
+    "By default FEX will look in $XDG_CACHE_HOME/fex-emu/ or $HOME/.cache/fex-emu/",
+    "This will override the full path, trailing forward-slash is expected to exist",
+    ],
+    "''", True)
+
 def print_man_header():
     header ='''.Dd {0}
 .Dt FEX
