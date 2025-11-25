@@ -59,11 +59,9 @@ public:
    */
   virtual void WriteCmdlineFD(int32_t fd) const {
     const auto& Args = GetApplicationArguments();
-    const char NullChar {};
     // cmdline is an array of null terminated arguments
     for (const auto& Arg : Args) {
-      write(fd, Arg.c_str(), Arg.size());
-      write(fd, &NullChar, sizeof(uint8_t));
+      write(fd, Arg.c_str(), Arg.size() + 1); // Add 1 to include the null terminator
     }
   }
 

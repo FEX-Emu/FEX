@@ -817,6 +817,11 @@ public:
   }
 
   void WriteCmdlineFD(int32_t fd) const override {
+    // '/proc/self/cmdline' typically maps to the stack's argv data.
+    // Applications can write to this to change the cmdline value,
+    // but in FEX they'll write to the emulated stack rather than the OS'.
+    //
+    // Expose the contents of the emulated stack's argument data.
     write(fd, reinterpret_cast<const void*>(StackPointer + ArgumentOffset), ArgumentBackingSize);
   }
 
