@@ -341,8 +341,9 @@ public:
         InvalidateCache(Entry, lk);
       }
     }
+    bool ret = upper != lower;
     CachedCodePages.erase(lower, upper);
-    return upper != lower;
+    return ret;
   }
 
   void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData* HostLink,
