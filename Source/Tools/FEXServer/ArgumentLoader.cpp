@@ -2,6 +2,7 @@
 #include "ArgumentLoader.h"
 #include "Common/cpp-optparse/OptionParser.h"
 #include "PipeScanner.h"
+#include "ProcessPipe.h"
 
 #include "git_version.h"
 
@@ -22,6 +23,7 @@ FEXServerOptions Load(int argc, char** argv) {
 
   Parser.add_option("-w", "--wait").action("store_true").set_default(false).help("Wait for the FEXServer to shutdown");
   Parser.add_option("--wait_pipe").action("store").type("int").set_default(-1).set_optional_value(true);
+  Parser.add_option("--watch_fd").action("store").type("int").set_default(-1).set_optional_value(true).help("Adds FD to watch list of active processes");
 
   Parser.add_option("-v").action("version").help("Version string");
 
@@ -39,6 +41,7 @@ FEXServerOptions Load(int argc, char** argv) {
   if (WaitPipe != -1) {
     PipeScanner::SetWaitPipe(WaitPipe);
   }
+  ProcessPipe::SetWatchFD(Options.get("watch_fd"));
   return FEXOptions;
 }
 } // namespace FEXServer::Config
