@@ -586,21 +586,6 @@ EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
   FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
   FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
 
-  auto cmdline_handler = [&](FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) -> int32_t {
-    const int FD = GenTmpFD(pathname, flags);
-    const auto* CodeLoader = FEX::HLE::_SyscallHandler->GetCodeLoader();
-    CodeLoader->WriteCmdlineFD(FD);
-
-    // One additional null terminator to finish the list
-    lseek(FD, 0, SEEK_SET);
-    SealTmpFD(FD);
-    return FD;
-  };
-
-  FDReadCreators["/proc/self/cmdline"] = cmdline_handler;
-  fextl::string procCmdLine = fextl::fmt::format("/proc/{}/cmdline", getpid());
-  FDReadCreators[procCmdLine] = cmdline_handler;
-
   if (ThreadsConfig > 1) {
     cpus_online = fextl::fmt::format("0-{}", ThreadsConfig - 1);
   } else {

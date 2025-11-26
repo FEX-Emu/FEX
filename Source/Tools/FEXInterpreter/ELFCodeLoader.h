@@ -29,7 +29,10 @@
 #include <sys/auxv.h>
 #include <sys/mman.h>
 #include <sys/personality.h>
+#include <sys/prctl.h>
 #include <sys/random.h>
+#include <linux/prctl.h>
+#include <unistd.h>
 
 #define PAGE_START(x) ((x) & ~(uintptr_t)(4095))
 #define PAGE_OFFSET(x) ((x) & 4095)
@@ -707,6 +710,60 @@ public:
     *AuxTabSize = sizeof(AuxType) * AuxVariables.size();
   }
 
+  // Get the current memory map from /proc/self/stat
+  static bool GetCurrentMap(struct prctl_mm_map& map) {
+    FILE* f = fopen("/proc/self/stat", "r");
+    if (!f) {
+      return false;
+    }
+
+    // See man proc_pid_stat
+    int items_read = fscanf(f,
+                            "%*d %*s %*c %*d %*d "      // 1 to 5
+                            "%*d %*d %*d %*u %*u "      // 6 to 10
+                            "%*u %*u %*u %*u %*u "      // 11 to 15
+                            "%*d %*d %*d %*d %*d "      // 16 to 20
+                            "%*d %*u %*u %*d %*u "      // 21 to 25
+                            "%llu %llu %llu %*u %*u "   // 26 to 30
+                            "%*u %*u %*u %*u %*u "      // 31 to 35
+                            "%*u %*u %*d %*d %*u "      // 36 to 40
+                            "%*u %*u %*u %*d %llu "     // 40 to 45
+                            "%llu %llu %llu %llu %llu " // 46 to 50
+                            "%llu",                     // 51
+                            &map.start_code, &map.end_code, &map.start_stack, &map.start_data, &map.end_data, &map.start_brk,
+                            &map.arg_start, &map.arg_end, &map.env_start, &map.env_end);
+    fclose(f);
+
+    if (items_read != 10) {
+      return false;
+    }
+
+    map.brk = reinterpret_cast<uint64_t>(sbrk(0));
+
+    // The kernel will leave these values unchanged, see implementation in sys.c
+    map.auxv = NULL;
+    map.auxv_size = 0;
+    map.exe_fd = -1;
+
+    return true;
+  }
+
+  // Point the OS to our new stack's argument data
+  void RemapArgumentData(uintptr_t NewArgStart, uint64_t ArgSize) {
+    struct prctl_mm_map map {};
+    if (GetCurrentMap(map)) {
+      map.arg_start = NewArgStart;
+      map.arg_end = NewArgStart + ArgSize;
+
+      int r = prctl(PR_SET_MM, PR_SET_MM_MAP, &map, sizeof(map), 0L);
+      if (r != 0) {
+        LogMan::Msg::EFmt("Failed to remap /proc/pid/cmdline data. prctl failed: result {}, errno {}", r, errno);
+      }
+    } else {
+      LogMan::Msg::EFmt("Failed to remap /proc/pid/cmdline data. GetCurrentMap failed. ");
+    }
+  }
+
   // Setups the stack initial data (argv, envp, auxv)
   void SetupStack() {
     StackPointer += StackSize();
@@ -803,6 +860,8 @@ public:
       SetupPointers<uint32_t, auxv32_t, 4>(StackPointer, AuxVOffset, ArgumentOffset, EnvpOffset, ApplicationArgs, EnvironmentVariables,
                                            AuxVariables, &AuxTabBase, &AuxTabSize);
     }
+
+    RemapArgumentData(StackPointer + ArgumentOffset, ArgumentBackingSize);
   }
 
   fextl::vector<const char*> GetExecveArguments() const override {
@@ -814,15 +873,6 @@ public:
       .address = AuxTabBase,
       .size = AuxTabSize,
     };
-  }
-
-  void WriteCmdlineFD(int32_t fd) const override {
-    // '/proc/self/cmdline' typically maps to the stack's argv data.
-    // Applications can write to this to change the cmdline value,
-    // but in FEX they'll write to the emulated stack rather than the OS'.
-    //
-    // Expose the contents of the emulated stack's argument data.
-    write(fd, reinterpret_cast<const void*>(StackPointer + ArgumentOffset), ArgumentBackingSize);
   }
 
   uint64_t GetBaseOffset() const override {

@@ -54,17 +54,6 @@ public:
     return ApplicationArgs;
   }
 
-  /**
-   * Writes out the arguments in the format of /proc/self/cmdline
-   */
-  virtual void WriteCmdlineFD(int32_t fd) const {
-    const auto& Args = GetApplicationArguments();
-    // cmdline is an array of null terminated arguments
-    for (const auto& Arg : Args) {
-      write(fd, Arg.c_str(), Arg.size() + 1); // Add 1 to include the null terminator
-    }
-  }
-
 protected:
   fextl::vector<fextl::string> ApplicationArgs;
 };
