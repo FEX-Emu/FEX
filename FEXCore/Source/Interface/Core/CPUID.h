@@ -277,7 +277,7 @@ private:
     // 0: Highest function parameter and ID
     {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
     // 1: Processor info
-    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    {SupportsConstant::NONCONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
     // 2: Cache and TLB info
     {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
     // 3: Serial Number(previously), now reserved
