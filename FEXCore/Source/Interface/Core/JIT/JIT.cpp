@@ -515,7 +515,8 @@ static void IndirectBlockDelinker(FEXCore::Context::ExitFunctionLinkData* Record
   uintptr_t JumpThunkStartAddress = reinterpret_cast<uintptr_t>(Record) - 0x10;
   uint32_t BranchInst = 0;
   ARMEmitter::Emitter BranchEmit(reinterpret_cast<uint8_t*>(&BranchInst), 4);
-  BranchEmit.b(0x8);
+  // Restore branch +2 instructions to jump to the linker block
+  BranchEmit.b(0x2);
 
   std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(JumpThunkStartAddress)).store(BranchInst, std::memory_order::relaxed);
   ARMEmitter::Emitter::ClearICache(reinterpret_cast<void*>(JumpThunkStartAddress), 4);
