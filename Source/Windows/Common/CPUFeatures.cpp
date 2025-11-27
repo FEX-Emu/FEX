@@ -58,18 +58,19 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
   uint64_t CTR = ReadRegU64(Key, "CP 5801");
   uint64_t MIDR = ReadRegU64(Key, "CP 4000");
 
-
-  auto HostFeatures = FEX::FetchHostFeatures(Features, !IsWine, CTR, MIDR);
-
-  // Force-disable SVE until wine/windows gain support for SVE context save/restore
-  HostFeatures.SupportsSVE128 = false;
-  HostFeatures.SupportsSVE256 = false;
+  FEXCore::HostFeatures HostFeatures = {};
 
   for (uint32_t Idx = 0; Key; Key = OpenProcessorKey(++Idx)) {
     // Truncate to 32-bits, top 32-bits are all reserved in MIDR
     HostFeatures.CPUMIDRs.push_back(static_cast<uint32_t>(ReadRegU64(Key, "CP 4000")));
     RegCloseKey(Key);
   }
+
+  FEX::FetchHostFeatures(Features, HostFeatures, !IsWine, CTR, MIDR);
+
+  // Force-disable SVE until wine/windows gain support for SVE context save/restore
+  HostFeatures.SupportsSVE128 = false;
+  HostFeatures.SupportsSVE256 = false;
 
   HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine;
   return HostFeatures;
