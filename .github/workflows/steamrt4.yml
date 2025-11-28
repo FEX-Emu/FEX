@@ -1,0 +1,64 @@
+name: steamrt4 build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  BUILD_TYPE: Release
+  CC: clang
+  CXX: clang++
+  FEX_PORTABLE: 1
+
+jobs:
+  steamrt4_build:
+    runs-on: ${{ matrix.arch }}
+    strategy:
+      matrix:
+        arch: [[self-hosted, ARM64, distrobox]]
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set runner label
+      run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+
+    - name : submodule checkout
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --depth 1
+
+    - name: Clean Build Environment
+      run: |
+        rm -Rf ${{runner.workspace}}/build
+        cmake -E make_directory ${{runner.workspace}}/build
+
+    # Setup everything required.
+    - name : distrobox setup
+      run: |
+        distrobox create -Y -i registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20251117.183306 steamrt4 || true
+        distrobox upgrade steamrt4
+        distrobox enter --name steamrt4 -- sudo apt-get install -y \
+          git cmake ninja-build ccache \
+          lld clang \
+          libclang-dev llvm-dev \
+          libstdc++-14-dev-i386-cross libgcc-14-dev-i386-cross \
+          libstdc++-14-dev-amd64-cross libgcc-14-dev-amd64-cross
+
+    - name: Create Build Environment
+      run: distrobox enter --name steamrt4 -- cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: distrobox enter --name steamrt4 -- cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=False -DBUILD_THUNKS=True -DBUILD_FEXCONFIG=False -DBUILD_TESTING=False -DENABLE_CLANG_THUNKS=True -DUSE_LINKER=lld -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: distrobox enter --name steamrt4 -- cmake --build . --config $BUILD_TYPE

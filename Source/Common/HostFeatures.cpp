@@ -675,6 +675,10 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsSHA = true;
   HostFeatures.SupportsPMULL_128Bit = true;
   HostFeatures.SupportsAES256 = true;
+
+  // Simulator doesn't support these
+  HostFeatures.SupportsRPRES = false;
+  HostFeatures.SupportsAFP = false;
 #else
   // Check if we can support cacheline clears
   if (Features.GetDCZID().SupportsDCZVA()) {
