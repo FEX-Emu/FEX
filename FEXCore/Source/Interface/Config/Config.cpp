@@ -413,6 +413,12 @@ void ReloadMetaLayer() {
     // Single stepping also enforces single instruction size blocks
     Set(FEXCore::Config::ConfigOption::CONFIG_MAXINST, "1");
   }
+
+  if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_X87STRICTREDUCEDPRECISION) &&
+      Meta->GetConv<bool>(FEXCore::Config::CONFIG_X87STRICTREDUCEDPRECISION).value_or(false)) {
+    // Strict reduced precision requires reduced precision to be enabled
+    Set(FEXCore::Config::ConfigOption::CONFIG_X87REDUCEDPRECISION, "1");
+  }
 }
 
 void AddLayer(fextl::unique_ptr<FEXCore::Config::Layer> _Layer) {
