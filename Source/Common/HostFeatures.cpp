@@ -529,9 +529,12 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
   constexpr uint32_t Implementer_ARM = 0x41;
   constexpr uint32_t PartNum_V2 = 0xd4f;
   constexpr uint32_t PartNum_V3 = 0xd84;
+  constexpr uint32_t PartNum_V3AE = 0xd83;
   constexpr uint32_t PartNum_X3 = 0xd4e;
   constexpr uint32_t PartNum_X4 = 0xd82;
   constexpr uint32_t PartNum_X925 = 0xd85;
+  constexpr uint32_t PartNum_C1Ultra = 0xd8c;
+  constexpr uint32_t PartNum_C1Premium = 0xd90;
 
   constexpr uint32_t Implementer_QCOM = 0x51;
   constexpr uint32_t PartNum_Oryon1 = 0x001;
@@ -580,7 +583,8 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
 
     bool IgnoreLRCPC2 = (Core_MIDR_Implementer == Implementer_ARM) &&
                         ((Core_MIDR_PartNum == PartNum_V2) || (Core_MIDR_PartNum == PartNum_V3) || (Core_MIDR_PartNum == PartNum_X3) ||
-                         (Core_MIDR_PartNum == PartNum_X4) || (Core_MIDR_PartNum == PartNum_X925));
+                         (Core_MIDR_PartNum == PartNum_X4) || (Core_MIDR_PartNum == PartNum_X925) || (Core_MIDR_PartNum == PartNum_V3AE) ||
+                         (Core_MIDR_PartNum == PartNum_C1Ultra) || (Core_MIDR_PartNum == PartNum_C1Premium));
 
     if (IgnoreLRCPC2) {
       HostFeatures->SupportsTSOImm9 = false;
