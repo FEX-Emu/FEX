@@ -29,6 +29,7 @@
 namespace ProcessPipe {
 constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
 int ServerLockFD {-1};
+int WatchFD {-1};
 std::optional<fasio::tcp_acceptor> ServerAcceptor;
 std::optional<fasio::tcp_acceptor> ServerFSAcceptor;
 int NumClients = 0;
@@ -42,6 +43,10 @@ rlimit MaxFDs {};
 std::atomic<size_t> NumFilesOpened {};
 
 static std::string CodeMapDirectory;
+
+void SetWatchFD(int FD) {
+  WatchFD = FD;
+}
 
 size_t GetNumFilesOpen() {
   // Walk /proc/self/fd/ to see how many open files we currently have
@@ -447,6 +452,26 @@ void CloseConnections() {
 }
 
 void WaitForRequests() {
+  if (WatchFD != -1) {
+    // Add a fake client.
+    ++NumClients;
+    Reactor.bind_handler(
+      pollfd {
+        .fd = WatchFD,
+        .events = POLLPRI | POLLRDHUP,
+        .revents = 0,
+      },
+      [InternalWatchFD = WatchFD](fasio::error ec) mutable {
+        if (ec != fasio::error::success) {
+          close(InternalWatchFD);
+          --NumClients;
+          return fasio::post_callback::drop;
+        }
+        // Wait for next data
+        return fasio::post_callback::repeat;
+      });
+  }
+
   Reactor.enable_async_stop();
 
   while (true) {
