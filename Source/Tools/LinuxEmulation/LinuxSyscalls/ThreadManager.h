@@ -108,6 +108,14 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
 
   int StatusCode {};
 
+  // SMC handling: when single-step mode is triggered for SMC, this holds the page address
+  // that should NOT be re-protected during compilation (to allow the write to complete).
+  uint64_t SMCUnprotectedPage {};
+
+  // Also for SMC handling: page that needs to be re-protected after single-step completes.
+  // It's set when SMCUnprotectedPage is consumed, cleared after re-protection.
+  uint64_t SMCReprotectPage {};
+
   struct CallRetStackInfo {
     uint64_t AllocationBase;
     uint64_t AllocationEnd;
