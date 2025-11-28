@@ -525,9 +525,72 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   Features->SupportsSVE256 = ForceSVEWidth && ForceSVEWidth >= 256;
 }
 
-FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool SupportsCacheMaintenanceOps, uint64_t CTR, uint64_t MIDR) {
-  FEXCore::HostFeatures HostFeatures;
+static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
+  constexpr uint32_t Implementer_ARM = 0x41;
+  constexpr uint32_t PartNum_V2 = 0xd4f;
+  constexpr uint32_t PartNum_V3 = 0xd84;
+  constexpr uint32_t PartNum_X3 = 0xd4e;
+  constexpr uint32_t PartNum_X4 = 0xd82;
+  constexpr uint32_t PartNum_X925 = 0xd85;
 
+  constexpr uint32_t Implementer_QCOM = 0x51;
+  constexpr uint32_t PartNum_Oryon1 = 0x001;
+
+  auto GetMIDRImplementer = [](uint32_t MIDR) -> uint32_t {
+    return (MIDR >> 24) & 0xFF;
+  };
+
+  auto GetMIDRPartNum = [](uint32_t MIDR) -> uint32_t {
+    return (MIDR >> 4) & 0xFFF;
+  };
+
+  const uint32_t MIDR_Implementer = GetMIDRImplementer(MIDR);
+  const uint32_t MIDR_PartNum = GetMIDRPartNum(MIDR);
+
+#ifdef _M_ARM_64
+  if (MIDR_Implementer == Implementer_QCOM && MIDR_PartNum == PartNum_Oryon1) {
+    // Work around an errata in Qualcomm's Oryon.
+    // While this CPU implements the RAND extension:
+    // - The RNDR register works.
+    // - The RNDRRS register will never read a random number. (Always return failure)
+    // This is contrary to x86 RNG behaviour where it allows spurious failure with RDSEED, but guarantees eventual success.
+    // This manifested itself on Linux when an x86 processor failed to guarantee forward progress and boot of services would infinite
+    // loop. Just disable this extension if this CPU is detected.
+    HostFeatures->SupportsRAND = false;
+  }
+#endif
+
+  // The LDAPUR instruction suffers from significant performance issues on many ARM implementations. This is
+  // listed in the official Cortex errata list as follows:
+  //
+  // 3877900
+  // LDAPUR, LDAPURB, LDAPURH instructions have stricter memory ordering than required
+  //
+  // LDAPUR instructions execute with full Load-Acquire ordering instead of the relaxed ordering described
+  // in the LDAPUR pseudocode. This might cause significant performance degradation in workloads that do
+  // not require this stricter memory ordering. Note that this erratum only affects the unscaled versions of
+  // LDAPUR (LDAPUR, LDAPURB, LDAPURH), and not LDAPR (LDAPR, LDAPRB, LDAPRH).
+  //
+  // The list of cores to disable its use on was taken from the following LLVM PR that accomplishes the same
+  // thing: https://github.com/llvm/llvm-project/pull/124274
+  for (uint32_t CoreIndex = 0; CoreIndex < HostFeatures->CPUMIDRs.size(); CoreIndex++) {
+    const uint32_t CoreMIDR = HostFeatures->CPUMIDRs[CoreIndex];
+    const uint32_t Core_MIDR_Implementer = GetMIDRImplementer(CoreMIDR);
+    const uint32_t Core_MIDR_PartNum = GetMIDRPartNum(CoreMIDR);
+
+    bool IgnoreLRCPC2 = (Core_MIDR_Implementer == Implementer_ARM) &&
+                        ((Core_MIDR_PartNum == PartNum_V2) || (Core_MIDR_PartNum == PartNum_V3) || (Core_MIDR_PartNum == PartNum_X3) ||
+                         (Core_MIDR_PartNum == PartNum_X4) || (Core_MIDR_PartNum == PartNum_X925));
+
+    if (IgnoreLRCPC2) {
+      HostFeatures->SupportsTSOImm9 = false;
+      break;
+    }
+  }
+}
+
+void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFeatures, bool SupportsCacheMaintenanceOps, uint64_t CTR,
+                       uint64_t MIDR) {
   FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
@@ -597,23 +660,6 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
 
   // Set FPCR back to original just in case anything changed
   SetFPCR(OriginalFPCR);
-
-  if (HostFeatures.SupportsRAND) {
-    constexpr uint32_t Implementer_QCOM = 0x51;
-    constexpr uint32_t PartNum_Oryon1 = 0x001;
-    const uint32_t MIDR_Implementer = (MIDR >> 24) & 0xFF;
-    const uint32_t MIDR_PartNum = (MIDR >> 4) & 0xFFF;
-    if (MIDR_Implementer == Implementer_QCOM && MIDR_PartNum == PartNum_Oryon1) {
-      // Work around an errata in Qualcomm's Oryon.
-      // While this CPU implements the RAND extension:
-      // - The RNDR register works.
-      // - The RNDRRS register will never read a random number. (Always return failure)
-      // This is contrary to x86 RNG behaviour where it allows spurious failure with RDSEED, but guarantees eventual success.
-      // This manifested itself on Linux when an x86 processor failed to guarantee forward progress and boot of services would infinite
-      // loop. Just disable this extension if this CPU is detected.
-      HostFeatures.SupportsRAND = false;
-    }
-  }
 #endif
 
 #ifdef VIXL_SIMULATOR
@@ -660,8 +706,8 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
 #endif
   HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
 
+  HandleErrata(&HostFeatures, MIDR);
   OverrideFeatures(&HostFeatures, ForceSVEWidth());
-  return HostFeatures;
 }
 
 FEXCore::HostFeatures FetchHostFeatures() {
@@ -692,8 +738,9 @@ FEXCore::HostFeatures FetchHostFeatures() {
   __asm volatile("mrs %[midr], midr_el1" : [midr] "=r"(MIDR));
 #endif
 
-  auto HostFeatures = FetchHostFeatures(Features, true, CTR, MIDR);
+  FEXCore::HostFeatures HostFeatures = {};
   FillMIDRInformationViaLinux(&HostFeatures);
+  FetchHostFeatures(Features, HostFeatures, true, CTR, MIDR);
 
   HostFeatures.SupportsCPUIndexInTPIDRRO = false;
   return HostFeatures;
