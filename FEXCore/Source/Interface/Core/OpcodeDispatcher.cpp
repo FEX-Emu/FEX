@@ -514,18 +514,17 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   BlockSetRIP = true;
 
   // Call instruction only uses up to 32-bit signed displacement
-  int64_t TargetOffset = Op->Src[0].Literal();
+  const int64_t TargetOffset = Op->Src[0].Literal();
 
-  auto ConstantPC = GetRelocatedPC(Op);
+  const auto ConstantPC = GetRelocatedPC(Op);
 
   // Push the return address.
   Push(GPRSize, ConstantPC);
 
-  const uint64_t NextRIP = Op->PC + Op->InstSize;
-  uint64_t TargetRIP = NextRIP + TargetOffset;
-
-  if (NextRIP != TargetRIP) {
+  if (TargetOffset != 0) {
     // Store the RIP
+    const uint64_t NextRIP = Op->PC + Op->InstSize;
+
     ExitRelocatedPC(Op, TargetOffset, BranchHint::Call, ConstantPC, [&]() {
       auto CallReturnJumpTarget = JumpTargets.find(NextRIP);
       if (CallReturnJumpTarget != JumpTargets.end() && CallReturnJumpTarget->second.IsEntryPoint) {
