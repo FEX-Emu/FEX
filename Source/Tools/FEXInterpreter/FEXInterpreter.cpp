@@ -428,6 +428,10 @@ int main(int argc, char** argv, char** const envp) {
       char* RealPath = realpath(Program.ProgramPath.c_str(), ExistsTempPath);
       if (RealPath) {
         FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, fextl::string(RealPath));
+      } else {
+        // Can happen when jumping in to pressure-vessel.
+        // `/usr/lib/pressure-vessel/from-host/libexec/steam-runtime-tools-0/pv-adverb` can't get resolved.
+        FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
       }
     }
     FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
