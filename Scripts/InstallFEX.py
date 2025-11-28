@@ -202,10 +202,26 @@ def UpdatePPA():
 
     return DidUpdate
 
-def CheckAndInstallPackageUpdates():
-    PackagesToInstall = GetPackagesToInstall()
+def InstallPackages(PackagesToInstall):
+    DidInstall = False
+    try:
+        CmdResult = subprocess.call(["sudo", "apt-get", "-y", "install"] + PackagesToInstall)
+        DidInstall = CmdResult == 0
+    except KeyboardInterrupt:
+        print ("Keyboard interrupt")
+        DidInstall = False
+        pass
+
+    if DidInstall:
+        print("Packages updated")
+    else:
+        print("Packages failed to update")
+
+    return DidInstall
+
+def CheckAndInstallPackageUpdates(PackagesToInstall, InstallIfNotFound=False):
     for Package in PackagesToInstall[:]:
-        UpgradableStatus = subprocess.check_output(["apt", "list", "--upgradable", Package]).decode("utf-8")
+        UpgradableStatus = subprocess.check_output(["apt", "list", "--upgradable", Package], stderr=None).decode("utf-8")
         Found = False
         for Line in UpgradableStatus.split("\n"):
             # If the package exists to be upgraded then it will appear in this list
@@ -220,28 +236,14 @@ def CheckAndInstallPackageUpdates():
             if Package in Line and "upgradable" in Line:
                 Found = True
 
-        if Found == False:
+        if InstallIfNotFound == False and Found == False:
             PackagesToInstall.remove(Package)
 
     if len(PackagesToInstall) > 0:
         print ("Found updates for packages: {}".format(PackagesToInstall))
         print ("This bit may ask for your password")
 
-        DidInstall = False
-        try:
-            CmdResult = subprocess.call(["sudo", "apt-get", "-y", "install"] + PackagesToInstall)
-            DidInstall = CmdResult == 0
-        except KeyboardInterrupt:
-            print ("Keyboard interrupt")
-            DidInstall = False
-            pass
-
-        if DidInstall:
-            print("Packages updated")
-        else:
-            print("Packages failed to update")
-
-        return DidInstall
+        return InstallPackages(PackagesToInstall)
 
     return True
 
@@ -353,10 +355,14 @@ def main():
             if not UpdatePPA():
                 print ("apt sources failed to update. Not continuing")
                 ExitWithStatus(-1)
-            if not CheckAndInstallPackageUpdates():
+            if not CheckAndInstallPackageUpdates(GetPackagesToInstall()):
                 print ("apt packages failed to update. Not continuing")
                 ExitWithStatus(-1)
         else:
+            if not CheckAndInstallPackageUpdates(["software-properties-common"], True):
+                print ("software-properties-common package failed to update. Not continuing")
+                ExitWithStatus(-1)
+
             if not InstallPPA():
                 print ("PPA failed to install. Not continuing")
                 ExitWithStatus(-1)
