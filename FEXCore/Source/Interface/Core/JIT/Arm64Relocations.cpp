@@ -24,10 +24,9 @@ uint64_t Arm64JITCore::GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiter
 
 void Arm64JITCore::InsertNamedThunkRelocation(ARMEmitter::Register Reg, const IR::SHA256Sum& Sum) {
   Relocation MoveABI {};
-  MoveABI.NamedThunkMove.Header.Type = FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE;
-  // Offset is the offset from the entrypoint of the block
   auto CurrentCursor = GetCursorAddress<uint8_t*>();
-  MoveABI.NamedThunkMove.Offset = CurrentCursor - CodeData.BlockBegin;
+  MoveABI.NamedThunkMove.Header = {.Offset = static_cast<uint64_t>(CurrentCursor - CodeData.BlockBegin),
+                                   .Type = FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE};
   MoveABI.NamedThunkMove.Symbol = Sum;
   MoveABI.NamedThunkMove.RegisterIndex = Reg.Idx();
 
@@ -48,10 +47,10 @@ Arm64JITCore::NamedSymbolLiteralPair Arm64JITCore::InsertNamedSymbolLiteral(FEXC
           {
             .Header =
               {
+                .Offset = 0, // Set by PlaceNamedSymbolLiteral
                 .Type = FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL,
               },
             .Symbol = Op,
-            .Offset = 0,
           },
       },
   };
@@ -61,7 +60,7 @@ Arm64JITCore::NamedSymbolLiteralPair Arm64JITCore::InsertNamedSymbolLiteral(FEXC
 void Arm64JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair& Lit) {
   // Offset is the offset from the entrypoint of the block
   auto CurrentCursor = GetCursorAddress<uint8_t*>();
-  Lit.MoveABI.NamedSymbolLiteral.Offset = CurrentCursor - CodeData.BlockBegin;
+  Lit.MoveABI.Header.Offset = CurrentCursor - CodeData.BlockBegin;
 
   BindOrRestart(&Lit.Loc);
   dc64(Lit.Lit);
@@ -70,10 +69,9 @@ void Arm64JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair& Lit) {
 
 void Arm64JITCore::InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constant) {
   Relocation MoveABI {};
-  MoveABI.GuestRIPMove.Header.Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE;
-  // Offset is the offset from the entrypoint of the block
   auto CurrentCursor = GetCursorAddress<uint8_t*>();
-  MoveABI.GuestRIPMove.Offset = CurrentCursor - CodeData.BlockBegin;
+  MoveABI.GuestRIPMove.Header = {.Offset = static_cast<uint64_t>(CurrentCursor - CodeData.BlockBegin),
+                                 .Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE};
   MoveABI.GuestRIPMove.GuestRIP = Constant;
   MoveABI.GuestRIPMove.RegisterIndex = Reg.Idx();
 
@@ -88,11 +86,11 @@ bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Co
 
   SetBuffer(reinterpret_cast<std::uint8_t*>(Code.data()), Code.size_bytes());
   for (auto& Reloc : Relocations) {
+    SetCursorOffset(Reloc.Header.Offset);
+
     switch (Reloc.Header.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
       uint64_t Pointer = GetNamedSymbolLiteral(Reloc.NamedSymbolLiteral.Symbol);
-      // Relocation occurs at the cursorEntry + offset relative to that cursor
-      SetCursorOffset(Reloc.NamedSymbolLiteral.Offset);
 
       // Generate a literal so we can place it
       dc64(Pointer);
@@ -104,8 +102,6 @@ bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Co
         return false;
       }
 
-      // Relocation occurs at the cursorEntry + offset relative to that cursor.
-      SetCursorOffset(Reloc.NamedThunkMove.Offset);
       LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.NamedThunkMove.RegisterIndex), Pointer, true);
       break;
     }
@@ -119,8 +115,6 @@ bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Co
         return false;
       }
 
-      // Relocation occurs at the cursorEntry + offset relative to that cursor.
-      SetCursorOffset(Reloc.GuestRIPMove.Offset);
       LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.GuestRIPMove.RegisterIndex), Pointer, true);
       break;
     }

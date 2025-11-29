@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 
 namespace FEXCore::CPU {
-enum class RelocationTypes : uint8_t {
+enum class RelocationTypes : uint32_t {
   // 8 byte literal in memory for symbol
   // Aligned to struct RelocNamedSymbolLiteral
   RELOC_NAMED_SYMBOL_LITERAL,
@@ -21,53 +22,53 @@ enum class RelocationTypes : uint8_t {
   RELOC_GUEST_RIP_MOVE,
 };
 
-struct RelocationTypeHeader final {
+struct FEX_PACKED RelocationHeader final {
+  // Offset to the relocated host code data
+  uint64_t Offset {};
+
   RelocationTypes Type;
 };
 
 struct RelocNamedSymbolLiteral final {
-  enum class NamedSymbol : uint8_t {
+  enum class NamedSymbol : uint32_t {
     ///< Thread specific relocations
     // JIT Literal pointers
     SYMBOL_LITERAL_EXITFUNCTION_LINKER,
   };
 
-  RelocationTypeHeader Header {};
+  RelocationHeader Header {};
 
   NamedSymbol Symbol;
 
-  // Offset in to the code section to begin the relocation
-  uint64_t Offset {};
+  uint32_t Pad[8];
 };
 
 struct RelocNamedThunkMove final {
-  RelocationTypeHeader Header {};
+  RelocationHeader Header {};
 
   // GPR index the constant is being moved to
-  uint8_t RegisterIndex;
+  uint32_t RegisterIndex;
 
   // The thunk SHA256 hash
   IR::SHA256Sum Symbol;
-
-  // Offset in to the code section to begin the relocation
-  uint64_t Offset {};
 };
 
 struct RelocGuestRIPMove final {
-  RelocationTypeHeader Header {};
+  RelocationHeader Header {};
 
   // GPR index the constant is being moved to
   uint8_t RegisterIndex;
 
-  // Offset in to the code section to begin the relocation
-  uint64_t Offset {};
+  char Pad[3];
 
   // The unrelocated RIP that is being moved
   uint64_t GuestRIP;
+
+  uint32_t pad2[6] {};
 };
 
 union Relocation {
-  RelocationTypeHeader Header {};
+  RelocationHeader Header {};
 
   RelocNamedSymbolLiteral NamedSymbolLiteral;
   // This makes our union of relocations at least 48 bytes
