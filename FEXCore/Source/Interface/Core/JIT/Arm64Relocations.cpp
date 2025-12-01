@@ -150,7 +150,19 @@ bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Co
   return true;
 }
 
-fextl::vector<FEXCore::CPU::Relocation> Arm64JITCore::TakeRelocations() {
+fextl::vector<FEXCore::CPU::Relocation> Arm64JITCore::TakeRelocations(uint64_t GuestBaseAddress) {
+  // Rebase relocations to library base address
+  for (auto& Relocation : Relocations) {
+    switch (Relocation.Header.Type) {
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE:
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
+      Relocation.GuestRIP.GuestRIP -= GuestBaseAddress;
+      break;
+    }
+    default:;
+    }
+  }
+
   return std::move(Relocations);
 }
 

@@ -594,7 +594,13 @@ private:
   ///< Relocation code loading
   bool ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Code, std::span<const FEXCore::CPU::Relocation>);
 
-  fextl::vector<FEXCore::CPU::Relocation> TakeRelocations() override;
+  /**
+   * Returns any relocations generated since the last call to TakeRelocations.
+   *
+   * GuestBaseAddress must match the base virtual address to which the
+   * input x86 binary is mapped.
+   */
+  fextl::vector<FEXCore::CPU::Relocation> TakeRelocations(uint64_t GuestBaseAddress) override;
 
   /**  @} */
 

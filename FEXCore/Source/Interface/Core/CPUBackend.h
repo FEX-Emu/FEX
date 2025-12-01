@@ -161,7 +161,7 @@ namespace CPU {
     virtual CompiledCode CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                      FEXCore::Core::DebugData* DebugData, bool CheckTF) = 0;
 
-    virtual fextl::vector<FEXCore::CPU::Relocation> TakeRelocations() = 0;
+    virtual fextl::vector<FEXCore::CPU::Relocation> TakeRelocations(uint64_t GuestBaseAddress) = 0;
 
     virtual void ClearCache() {}
 
