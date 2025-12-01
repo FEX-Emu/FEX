@@ -536,8 +536,6 @@ private:
    * @name Relocations
    * @{ */
 
-  uint64_t GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
-
   /**
    * @brief A literal pair relocation object for named symbol literals
    */
@@ -590,9 +588,6 @@ private:
   void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair Lit);
 
   fextl::vector<FEXCore::CPU::Relocation> Relocations;
-
-  ///< Relocation code loading
-  bool ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Code, std::span<const FEXCore::CPU::Relocation>);
 
   /**
    * Returns any relocations generated since the last call to TakeRelocations.

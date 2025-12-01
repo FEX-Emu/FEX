@@ -80,6 +80,22 @@ public:
   void InitiateCacheGeneration() override {
     IsGeneratingCache = true;
   }
+
+  /**
+   * Applies a set of FEX relocations to the given code section.
+   *
+   * FEX relocations describe runtime-dependencies of FEX-generated code.
+   * When loading a code cache, they are used to move cached code to the
+   * dynamically chosen base address of the guest binary.
+   *
+   * Note that FEX relocations are unrelated to ELF/PE relocations.
+   *
+   * @param GuestDelta Guest address offset to apply to RIP-relative data
+   *
+   * @return Returns true on success
+   */
+  [[nodiscard]]
+  bool ApplyCodeRelocations(uint64_t GuestDelta, std::span<std::byte> Code, std::span<const CPU::Relocation> Relocations);
 };
 
 class ContextImpl final : public FEXCore::Context::Context, public CPU::CodeBufferManager {
