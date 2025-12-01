@@ -816,6 +816,9 @@ void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool C
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                                    FEXCore::Core::DebugData* DebugData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
+
+  const auto PrevNumAllocations = Relocations.size();
+
   this->Entry = Entry;
   this->DebugData = DebugData;
   this->IR = IR;
@@ -988,22 +991,28 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
     // This is a ExitFunctionLinkData struct
     BindOrRestart(&l_ExitLink);
-    dc64(0);                                             // HostCode
-    dc64(PendingJumpThunk.GuestRIP);                     // GuestRIP
-    dc64(PendingJumpThunk.CallerAddress - ThunkAddress); // CallerOffset
+    dc64(0);                                                                   // HostCode
+    PlaceNamedSymbolLiteral(InsertGuestRIPLiteral(PendingJumpThunk.GuestRIP)); // GuestRIP
+    dc64(PendingJumpThunk.CallerAddress - ThunkAddress);                       // CallerOffset
   }
 
   BindOrRestart(&l_ExitLink);
-  dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
+  PlaceNamedSymbolLiteral(InsertNamedSymbolLiteral(RelocNamedSymbolLiteral::NamedSymbol::SYMBOL_LITERAL_EXITFUNCTION_LINKER));
 
   // CodeSize not including the header or tail data.
   const uint64_t CodeOnlySize = GetCursorAddress<uint8_t*>() - CodeBegin;
 
-  // Add the JitCodeTail
+  // Add the JitCodeTail (written later)
   Align(alignof(JITCodeTail));
-  auto JITBlockTailLocation = GetCursorAddress<uint8_t*>();
-  auto JITBlockTail = GetCursorAddress<JITCodeTail*>();
-  CursorIncrement(sizeof(JITCodeTail));
+  const auto JITBlockTailLocation = GetCursorAddress<uint8_t*>();
+  CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
+
+  JITCodeTail JITBlockTail {
+    .RIP = Entry,
+    .GuestSize = Size,
+    .SpinLockFutex = 0,
+    .SingleInst = SingleInst,
+  };
 
   // Entries that live after the JITCodeTail.
   // These entries correlate JIT code regions with guest RIP regions.
@@ -1021,23 +1030,13 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   //   FEXCore::Utils::vl64 GuestRIPOffset;
   // };
 
-  auto JITRIPEntriesBegin = GetCursorAddress<uint8_t*>();
-
-  // Put the block's RIP entry in the tail.
-  // This will be used for RIP reconstruction in the future.
-  // TODO: This needs to be a data RIP relocation once code caching works.
-  //   Current relocation code doesn't support this feature yet.
-  JITBlockTail->RIP = Entry;
-  JITBlockTail->GuestSize = Size;
-  JITBlockTail->SingleInst = SingleInst;
-  JITBlockTail->SpinLockFutex = 0;
-
+  const auto JITRIPEntriesBegin = JITBlockTailLocation + sizeof(JITBlockTail);
   auto JITRIPEntriesLocation = JITRIPEntriesBegin;
 
   {
     // Store the RIP entries.
-    JITBlockTail->NumberOfRIPEntries = DebugData->GuestOpcodes.size();
-    JITBlockTail->OffsetToRIPEntries = JITRIPEntriesBegin - JITBlockTailLocation;
+    JITBlockTail.NumberOfRIPEntries = DebugData->GuestOpcodes.size();
+    JITBlockTail.OffsetToRIPEntries = JITRIPEntriesBegin - JITBlockTailLocation;
     uintptr_t CurrentRIPOffset = 0;
     uint64_t CurrentPCOffset = 0;
 
@@ -1053,14 +1052,20 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     }
   }
 
-  CursorIncrement(JITRIPEntriesLocation - JITRIPEntriesBegin);
+  SetCursorOffset(JITRIPEntriesLocation - CodeData.BlockBegin);
   Align();
-
-  CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 
   CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
-  JITBlockTail->Size = CodeData.Size;
+  // Finalize and write block tail data
+  JITBlockTail.Size = CodeData.Size;
+  {
+    auto PrevCur = GetCursorOffset();
+    memcpy(JITBlockTailLocation, &JITBlockTail, sizeof(JITBlockTail));
+    SetCursorOffset(JITBlockTailLocation - CodeData.BlockBegin + offsetof(JITCodeTail, RIP));
+    PlaceNamedSymbolLiteral(InsertGuestRIPLiteral(JITBlockTail.RIP));
+    SetCursorOffset(PrevCur);
+  }
 
   // Migrate the compile output from temporary storage to the actual CodeBuffer.
   // This can block progress in other compiling threads, so the duration of the lock should be as small as possible.
@@ -1099,6 +1104,10 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       EntryPoint.second += Delta;
     }
     CodeBegin += Delta;
+
+    for (std::size_t Idx = PrevNumAllocations; Idx != Relocations.size(); ++Idx) {
+      Relocations[Idx].Header.Offset += CodeBuffers.LatestOffset;
+    }
 
     // Copy over CodeBuffer contents
     memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer, TempSize);
