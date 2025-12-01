@@ -24,9 +24,7 @@ uint64_t Arm64JITCore::GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiter
 
 void Arm64JITCore::InsertNamedThunkRelocation(ARMEmitter::Register Reg, const IR::SHA256Sum& Sum) {
   Relocation MoveABI {};
-  auto CurrentCursor = GetCursorAddress<uint8_t*>();
-  MoveABI.NamedThunkMove.Header = {.Offset = static_cast<uint64_t>(CurrentCursor - CodeData.BlockBegin),
-                                   .Type = FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE};
+  MoveABI.NamedThunkMove.Header = {.Offset = GetCursorOffset(), .Type = FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE};
   MoveABI.NamedThunkMove.Symbol = Sum;
   MoveABI.NamedThunkMove.RegisterIndex = Reg.Idx();
 
@@ -58,12 +56,10 @@ Arm64JITCore::NamedSymbolLiteralPair Arm64JITCore::InsertNamedSymbolLiteral(FEXC
 }
 
 void Arm64JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair Lit) {
-  // Offset is the offset from the entrypoint of the block
-  auto CurrentCursor = GetCursorAddress<uint8_t*>();
   switch (Lit.MoveABI.Header.Type) {
   case RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL:
   case RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
-    Lit.MoveABI.Header.Offset = CurrentCursor - CodeData.BlockBegin;
+    Lit.MoveABI.Header.Offset = GetCursorOffset();
     break;
   }
 
@@ -85,17 +81,17 @@ auto Arm64JITCore::InsertGuestRIPLiteral(uint64_t GuestRIP) -> NamedSymbolLitera
                          .Offset = 0, // Set by PlaceNamedSymbolLiteral
                          .Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL,
                        },
-                     .GuestRIP = GuestRIP - Entry},
+                     // NOTE: Cache serialization will subtract the guest binary base address later to produce consistency results
+                     .GuestRIP = GuestRIP},
       },
   };
 }
 
 void Arm64JITCore::InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constant) {
   Relocation MoveABI {};
-  auto CurrentCursor = GetCursorAddress<uint8_t*>();
-  MoveABI.GuestRIP.Header = {.Offset = static_cast<uint64_t>(CurrentCursor - CodeData.BlockBegin),
-                             .Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE};
-  MoveABI.GuestRIP.GuestRIP = Constant - Entry;
+  MoveABI.GuestRIP.Header = {.Offset = GetCursorOffset(), .Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE};
+  // NOTE: Cache serialization will subtract the guest binary base address later to produce consistency results
+  MoveABI.GuestRIP.GuestRIP = Constant;
   MoveABI.GuestRIP.RegisterIndex = Reg.Idx();
 
   LoadConstant(ARMEmitter::Size::i64Bit, Reg, Constant, false);

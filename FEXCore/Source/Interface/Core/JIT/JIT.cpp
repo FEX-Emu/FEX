@@ -816,6 +816,9 @@ void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool C
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                                    FEXCore::Core::DebugData* DebugData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
+
+  const auto PrevNumAllocations = Relocations.size();
+
   this->Entry = Entry;
   this->DebugData = DebugData;
   this->IR = IR;
@@ -1109,6 +1112,10 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       EntryPoint.second += Delta;
     }
     CodeBegin += Delta;
+
+    for (std::size_t Idx = PrevNumAllocations; Idx != Relocations.size(); ++Idx) {
+      Relocations[Idx].Header.Offset += CodeBuffers.LatestOffset;
+    }
 
     // Copy over CodeBuffer contents
     memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer, TempSize);
