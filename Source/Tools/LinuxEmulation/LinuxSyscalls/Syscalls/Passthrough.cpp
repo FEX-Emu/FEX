@@ -356,9 +356,14 @@ void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL(pkey_mprotect, SyscallPassthrough4<SYSCALL_DEF(pkey_mprotect)>);
   REGISTER_SYSCALL_IMPL(pkey_alloc, SyscallPassthrough2<SYSCALL_DEF(pkey_alloc)>);
   REGISTER_SYSCALL_IMPL(pkey_free, SyscallPassthrough1<SYSCALL_DEF(pkey_free)>);
-  REGISTER_SYSCALL_IMPL(io_uring_setup, SyscallPassthrough2<SYSCALL_DEF(io_uring_setup)>);
-  REGISTER_SYSCALL_IMPL(io_uring_enter, SyscallPassthrough6<SYSCALL_DEF(io_uring_enter)>);
-  REGISTER_SYSCALL_IMPL(io_uring_register, SyscallPassthrough4<SYSCALL_DEF(io_uring_register)>);
+  // io_uring can't be emulated as it can pass `epoll_event` objects around.
+  // These are 12-byte packed structs on x86/x86-64, but on other architectures are 16-byte.
+  // This means the `data` member is at offset 4 on x86, but offset 8 on other architectures, corrupting the data.
+  // The queue data is entirely user-controlled, so we can't rewrite data in any sane fashion.
+  // This is visible with `node.js` as a hang.
+  REGISTER_SYSCALL_IMPL(io_uring_setup, UnimplementedSyscallSafe);
+  REGISTER_SYSCALL_IMPL(io_uring_enter, UnimplementedSyscallSafe);
+  REGISTER_SYSCALL_IMPL(io_uring_register, UnimplementedSyscallSafe);
   REGISTER_SYSCALL_IMPL(open_tree, SyscallPassthrough3<SYSCALL_DEF(open_tree)>);
   REGISTER_SYSCALL_IMPL(move_mount, SyscallPassthrough5<SYSCALL_DEF(move_mount)>);
   REGISTER_SYSCALL_IMPL(fsopen, SyscallPassthrough3<SYSCALL_DEF(fsopen)>);
