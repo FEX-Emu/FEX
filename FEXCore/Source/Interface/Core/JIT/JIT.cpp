@@ -1002,9 +1002,17 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   // CodeSize not including the header or tail data.
   const uint64_t CodeOnlySize = GetCursorAddress<uint8_t*>() - CodeBegin;
 
-  // Add the JitCodeTail
+  // Add the JitCodeTail (written later)
   Align(alignof(JITCodeTail));
   const auto JITBlockTailLocation = GetCursorAddress<uint8_t*>();
+  CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
+
+  JITCodeTail JITBlockTail {
+    .RIP = Entry,
+    .GuestSize = Size,
+    .SpinLockFutex = 0,
+    .SingleInst = SingleInst,
+  };
 
   // Entries that live after the JITCodeTail.
   // These entries correlate JIT code regions with guest RIP regions.
@@ -1022,22 +1030,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   //   FEXCore::Utils::vl64 GuestRIPOffset;
   // };
 
-  // Put the block's RIP entry in the tail.
-  // This will be used for RIP reconstruction in the future.
-  JITCodeTail JITBlockTail {
-    .RIP = Entry,
-    .GuestSize = Size,
-    .SpinLockFutex = 0,
-    .SingleInst = SingleInst,
-  };
-
-  // Delay tail write until all fields are initialized
-  CursorIncrement(sizeof(JITBlockTail));
-
-  const auto JITRIPEntriesBegin = GetCursorAddress<uint8_t*>();
+  const auto JITRIPEntriesBegin = JITBlockTailLocation + sizeof(JITBlockTail);
   auto JITRIPEntriesLocation = JITRIPEntriesBegin;
-
-  SetCursorOffset(JITRIPEntriesLocation - CodeData.BlockBegin);
 
   {
     // Store the RIP entries.
@@ -1058,14 +1052,12 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     }
   }
 
-  CursorIncrement(JITRIPEntriesLocation - JITRIPEntriesBegin);
+  SetCursorOffset(JITRIPEntriesLocation - CodeData.BlockBegin);
   Align();
-
-  CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 
   CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
-  // Finalize block tail data
+  // Finalize and write block tail data
   JITBlockTail.Size = CodeData.Size;
   {
     auto PrevCur = GetCursorOffset();
