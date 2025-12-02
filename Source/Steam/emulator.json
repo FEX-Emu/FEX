@@ -5,6 +5,7 @@
     "container_argv": "./usr/bin/FEX",
     "container_environment": { "FEX_ROOTFS": "" },
     "main_argv": "./FEXCompatTool",
+    "server_argv": "./usr/bin/FEXServerManager",
     "emulated_architectures": ["x86_64-linux-gnu", "i386-linux-gnu"],
     "required_architectures": ["aarch64-linux-gnu"],
     "required_libraries": ["libc.so.6", "libstdc++.so.6"]
