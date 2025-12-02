@@ -28,4 +28,19 @@ inline fextl::string Trim(fextl::string String, std::string_view TrimTokens = " 
   return RightTrim(LeftTrim(std::move(String), TrimTokens), TrimTokens);
 }
 
+inline fextl::string& ReplaceAllInPlace(fextl::string& Str, std::string_view Token, std::string_view New) {
+  const auto OriginalTokenSize = Token.size();
+  const auto NewTokenSize = New.size();
+
+  size_t TokenPos {};
+  auto TokenIter = Str.find(Token, TokenPos);
+  while (TokenIter != Str.npos) {
+    Str.replace(TokenIter, OriginalTokenSize, New);
+    TokenPos += NewTokenSize;
+    TokenIter = Str.find(Token, TokenPos);
+  }
+
+  return Str;
+}
+
 } // namespace FEXCore::StringUtils
