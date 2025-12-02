@@ -733,6 +733,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
     // The optimization should run per-block
     Reset();
 
+    IREmit->SetCurrentCodeBlock(BlockNode);
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (!LoweredX87(IROp->Op)) {
         continue;
