@@ -33,6 +33,7 @@ option(ENABLE_FEXCORE_PROFILER "Enables use of the FEXCore timeline profiling ca
 set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend to use for the FEXCore profiler (gpuvis, tracy)")
 option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hooking with fault for CI testing")
 option(USE_PDB_DEBUGINFO "Builds debug info in PDB format" FALSE)
+option(BUILD_STEAM_SUPPORT "Builds support for steampipe depot creation" FALSE)
 
 set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
 set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
@@ -62,6 +63,10 @@ if (NOT MINGW_BUILD)
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CLANG_MINIMUM_VERSION})
     message (FATAL_ERROR "Clang version too old for FEX. Need at least ${CLANG_MINIMUM_VERSION} but has ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
+endif()
+
+if (BUILD_STEAM_SUPPORT)
+  add_definitions(-DFEX_STEAM_SUPPORT=1)
 endif()
 
 if (ENABLE_FEXCORE_PROFILER)
@@ -476,13 +481,16 @@ add_subdirectory(FEXHeaderUtils/)
 add_subdirectory(CodeEmitter/)
 add_subdirectory(FEXCore/)
 
-if (_M_ARM_64 AND NOT MINGW_BUILD)
+if (_M_ARM_64 AND NOT MINGW_BUILD AND NOT BUILD_STEAM_SUPPORT)
   # Binfmt_misc files must be installed prior to Source/ installs
   add_subdirectory(Data/binfmts/)
 endif()
 
 add_subdirectory(Source/)
-add_subdirectory(Data/AppConfig/)
+
+if (NOT BUILD_STEAM_SUPPORT)
+  add_subdirectory(Data/AppConfig/)
+endif()
 
 # Install the ThunksDB file
 file(GLOB CONFIG_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Data/*.json)
