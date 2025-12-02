@@ -374,6 +374,10 @@ public:
     uint64_t val;
   };
 
+  std::optional<uintptr_t> LoadMainElfFile(uintptr_t* BrkBase, FEX::HLE::SyscallMmapInterface* const Handler, uint64_t LoadHint = 0) {
+    return LoadElfFile(MainElf, BrkBase, Handler, LoadHint);
+  }
+
   bool MapMemory(FEX::HLE::SyscallMmapInterface* const Handler) {
     for (const auto& Header : MainElf.phdrs) {
       if (Header.p_type == PT_GNU_STACK) {
@@ -827,6 +831,10 @@ public:
 
   uint64_t GetBaseOffset() const override {
     return BaseOffset;
+  }
+
+  uint64_t GetMainElfBase() const {
+    return MainElfBase;
   }
 
   bool Is64BitMode() const {
