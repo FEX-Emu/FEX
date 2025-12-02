@@ -33,7 +33,7 @@ option(ENABLE_FEXCORE_PROFILER "Enables use of the FEXCore timeline profiling ca
 set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend to use for the FEXCore profiler (gpuvis, tracy)")
 option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hooking with fault for CI testing")
 option(USE_PDB_DEBUGINFO "Builds debug info in PDB format" FALSE)
-option(BUILD_STEAM_SUPPORT "Builds support for steampipe depot creation" FALSE)
+option(BUILD_STEAM_SUPPORT "Builds FEX for integration into Steam" FALSE)
 
 set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
 set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
@@ -588,6 +588,10 @@ if (BUILD_THUNKS)
 
   add_dependencies(uninstall uninstall_guest-libs)
   add_dependencies(uninstall uninstall_guest-libs-32)
+endif()
+
+if (BUILD_STEAM_SUPPORT)
+  add_subdirectory(Source/Steam/)
 endif()
 
 set(FEX_VERSION_MAJOR "0")
