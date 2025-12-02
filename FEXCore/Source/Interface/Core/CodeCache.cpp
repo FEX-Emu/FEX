@@ -2,6 +2,7 @@
 #include "Utils/SpinWaitLock.h"
 
 #include <Interface/Context/Context.h>
+#include <Interface/Core/JIT/Relocations.h>
 
 #include <FEXCore/HLE/SourcecodeResolver.h>
 
@@ -11,6 +12,10 @@
 #include <thread>
 
 #include <xxhash.h>
+
+#include <Interface/Core/ArchHelpers/Arm64Emitter.h>
+
+#include <FEXCore/Core/Thunks.h>
 
 namespace FEXCore {
 
@@ -221,6 +226,46 @@ void CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCac
 
 bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const ExecutableFileSectionInfo& SourceBinary, uint64_t SerializedBaseAddress) {
   // TODO
+  return true;
+}
+
+bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
+                                     std::span<const FEXCore::CPU::Relocation> EntryRelocations, bool ForStorage) {
+  CPU::Arm64Emitter Emitter(&CTX, Code.data(), Code.size_bytes());
+  for (size_t j = 0; j < EntryRelocations.size(); ++j) {
+    const FEXCore::CPU::Relocation& Reloc = EntryRelocations[j];
+    Emitter.SetCursorOffset(Reloc.Header.Offset);
+
+    switch (Reloc.Header.Type) {
+    case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
+      // Generate a literal so we can place it
+      uint64_t Pointer = ForStorage ? 0 : GetNamedSymbolLiteral(CTX, Reloc.NamedSymbolLiteral.Symbol);
+      Emitter.dc64(Pointer);
+      break;
+    }
+    case FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE: {
+      uint64_t Pointer = ForStorage ? 0 : reinterpret_cast<uint64_t>(CTX.ThunkHandler->LookupThunk(Reloc.NamedThunkMove.Symbol));
+      if (Pointer == ~0ULL) {
+        return false;
+      }
+
+      Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.NamedThunkMove.RegisterIndex), Pointer, true);
+      break;
+    }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
+      Emitter.dc64(GuestEntry + Reloc.GuestRIP.GuestRIP);
+      break;
+    }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE: {
+      uint64_t Pointer = Reloc.GuestRIP.GuestRIP + GuestEntry;
+      Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.GuestRIP.RegisterIndex), Pointer, true);
+      break;
+    }
+
+    default: ERROR_AND_DIE_FMT("Unknown relocation type {}", ToUnderlying(Reloc.Header.Type));
+    }
+  }
+
   return true;
 }
 

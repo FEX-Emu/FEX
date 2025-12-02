@@ -51,6 +51,10 @@ public:
   }
 #endif
 
+  uint64_t GetExitFunctionLinkerAddress() const {
+    return ExitFunctionLinkerAddress;
+  }
+
   SignalDelegatorConfig MakeSignalDelegatorConfig() const;
 
 protected:

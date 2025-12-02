@@ -3,6 +3,10 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
+namespace FEXCore::Context {
+class ContextImpl;
+}
+
 namespace FEXCore::CPU {
 enum class RelocationTypes : uint32_t {
   // 8 byte literal in memory for symbol
@@ -79,4 +83,7 @@ union Relocation {
 
   RelocGuestRIP GuestRIP;
 };
+
+uint64_t GetNamedSymbolLiteral(FEXCore::Context::ContextImpl&, RelocNamedSymbolLiteral::NamedSymbol);
+
 } // namespace FEXCore::CPU
