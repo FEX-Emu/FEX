@@ -239,110 +239,125 @@ bool SetupClient(std::string_view InterpreterPath) {
   return true;
 }
 
-int ConnectToAndStartServer(std::string_view InterpreterPath) {
-  int ServerFD = ConnectToServer(ConnectionOption::NoPrintConnectionError);
-  if (ServerFD == -1) {
-    // Couldn't connect to the server. Start one
+int StartServer(std::string_view InterpreterPath, int watch_fd) {
+  int LocalServerFD {-1};
+  // Couldn't connect to the server. Start one
 
-    // Open some pipes for letting us know when the server is ready
-    int fds[2] {};
-    if (pipe2(fds, 0) != 0) {
-      LogMan::Msg::EFmt("Couldn't open pipe");
+  // Open some pipes for letting us know when the server is ready
+  int fds[2] {};
+  if (pipe2(fds, 0) != 0) {
+    LogMan::Msg::EFmt("Couldn't open pipe");
+    return -1;
+  }
+
+  // Extract directory from InterpreterPath
+  fextl::string InterpreterDir {InterpreterPath};
+  size_t LastSlash = InterpreterDir.rfind('/');
+  if (LastSlash != fextl::string::npos) {
+    InterpreterDir = InterpreterDir.substr(0, LastSlash);
+  }
+
+  fextl::string FEXServerPath = fextl::fmt::format("{}/FEXServer", InterpreterDir);
+  // Check if a local FEXServer next to FEX exists
+  // If it does then it takes priority over the installed one
+  if (!FHU::Filesystem::Exists(FEXServerPath)) {
+    FEXServerPath = "FEXServer";
+  }
+
+  // Set-up our SIGCHLD handler to ignore the signal.
+  // This is early in the initialization stage so no handlers have been installed.
+  //
+  // We want to ignore the signal so that if FEXServer starts in daemon mode, it
+  // doesn't leave a zombie process around waiting for something to get the result.
+  struct sigaction action {};
+  action.sa_handler = SIG_IGN;
+  sigaction(SIGCHLD, &action, &action);
+
+  pid_t pid = fork();
+  if (pid == 0) {
+    // Child
+    close(fds[0]); // Close read end of pipe
+
+    const char* argv[6];
+
+    auto pipe_string = fextl::fmt::format("{}", fds[1]);
+    auto watch_fd_string = fextl::fmt::format("{}", watch_fd);
+    size_t arg_count {};
+    argv[arg_count++] = FEXServerPath.c_str();
+    argv[arg_count++] = "--wait_pipe";
+    argv[arg_count++] = pipe_string.c_str();
+
+    if (watch_fd != -1) {
+      argv[arg_count++] = "--watch_fd";
+      argv[arg_count++] = watch_fd_string.c_str();
+    }
+
+    argv[arg_count++] = nullptr;
+
+    if (execvp(argv[0], (char* const*)argv) == -1) {
+      // Let the parent know that we couldn't execute for some reason
+      uint64_t error {1};
+      write(fds[1], &error, sizeof(error));
+
+      // Give a hopefully helpful error message for users
+      LogMan::Msg::EFmt("Couldn't execute: {}", argv[0]);
+      LogMan::Msg::EFmt("This means the squashFS rootfs won't be mounted.");
+      LogMan::Msg::EFmt("Expect errors!");
+      // Destroy this fork
+      exit(1);
+    }
+
+    FEX_UNREACHABLE;
+  } else {
+    // Parent
+    // Wait for the child to exit so we can check if it is mounted or not
+    close(fds[1]); // Close write end of the pipe
+
+    // Wait for a message from FEXServer
+    pollfd PollFD;
+    PollFD.fd = fds[0];
+    PollFD.events = POLLIN | POLLOUT | POLLRDHUP | POLLERR | POLLHUP | POLLNVAL;
+
+    // Wait for a result on the pipe that isn't EINTR
+    while (poll(&PollFD, 1, -1) == -1 && errno == EINTR)
+      ;
+
+    // Check if child signaled an error
+    uint64_t error = 0;
+    ssize_t bytes_read = read(fds[0], &error, sizeof(error));
+    close(fds[0]);
+    if (bytes_read > 0 && error != 0) {
       return -1;
     }
 
-    // Extract directory from InterpreterPath
-    fextl::string InterpreterDir {InterpreterPath};
-    size_t LastSlash = InterpreterDir.rfind('/');
-    if (LastSlash != fextl::string::npos) {
-      InterpreterDir = InterpreterDir.substr(0, LastSlash);
+    for (size_t i = 0; i < 5; ++i) {
+      LocalServerFD = ConnectToServer(ConnectionOption::Default);
+
+      if (LocalServerFD != -1) {
+        break;
+      }
+
+      std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    fextl::string FEXServerPath = fextl::fmt::format("{}/FEXServer", InterpreterDir);
-    // Check if a local FEXServer next to FEX exists
-    // If it does then it takes priority over the installed one
-    if (!FHU::Filesystem::Exists(FEXServerPath)) {
-      FEXServerPath = "FEXServer";
+    if (LocalServerFD == -1) {
+      // Still couldn't connect to the socket.
+      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket after launching the process");
     }
-
-    // Set-up our SIGCHLD handler to ignore the signal.
-    // This is early in the initialization stage so no handlers have been installed.
-    //
-    // We want to ignore the signal so that if FEXServer starts in daemon mode, it
-    // doesn't leave a zombie process around waiting for something to get the result.
-    struct sigaction action {};
-    action.sa_handler = SIG_IGN;
-    sigaction(SIGCHLD, &action, &action);
-
-    pid_t pid = fork();
-    if (pid == 0) {
-      // Child
-      close(fds[0]); // Close read end of pipe
-
-      const char* argv[4];
-
-      auto pipe_string = fextl::fmt::format("{}", fds[1]);
-      argv[0] = FEXServerPath.c_str();
-      argv[1] = "--wait_pipe";
-      argv[2] = pipe_string.c_str();
-      argv[3] = nullptr;
-
-      if (execvp(argv[0], (char* const*)argv) == -1) {
-        // Let the parent know that we couldn't execute for some reason
-        uint64_t error {1};
-        write(fds[1], &error, sizeof(error));
-
-        // Give a hopefully helpful error message for users
-        LogMan::Msg::EFmt("Couldn't execute: {}", argv[0]);
-        LogMan::Msg::EFmt("This means the squashFS rootfs won't be mounted.");
-        LogMan::Msg::EFmt("Expect errors!");
-        // Destroy this fork
-        exit(1);
-      }
-
-      FEX_UNREACHABLE;
-    } else {
-      // Parent
-      // Wait for the child to exit so we can check if it is mounted or not
-      close(fds[1]); // Close write end of the pipe
-
-      // Wait for a message from FEXServer
-      pollfd PollFD;
-      PollFD.fd = fds[0];
-      PollFD.events = POLLIN | POLLOUT | POLLRDHUP | POLLERR | POLLHUP | POLLNVAL;
-
-      // Wait for a result on the pipe that isn't EINTR
-      while (poll(&PollFD, 1, -1) == -1 && errno == EINTR)
-        ;
-
-      // Check if child signaled an error
-      uint64_t error = 0;
-      ssize_t bytes_read = read(fds[0], &error, sizeof(error));
-      close(fds[0]);
-      if (bytes_read > 0 && error != 0) {
-        return -1;
-      }
-
-      for (size_t i = 0; i < 5; ++i) {
-        ServerFD = ConnectToServer(ConnectionOption::Default);
-
-        if (ServerFD != -1) {
-          break;
-        }
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-      }
-
-      if (ServerFD == -1) {
-        // Still couldn't connect to the socket.
-        LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} (or path based socket) after launching the process", GetServerSocketName());
-      }
-    }
-
-    // Restore the original SIGCHLD handler if it existed.
-    sigaction(SIGCHLD, &action, nullptr);
   }
-  return ServerFD;
+
+  // Restore the original SIGCHLD handler if it existed.
+  sigaction(SIGCHLD, &action, nullptr);
+
+  return LocalServerFD;
+}
+
+int ConnectToAndStartServer(std::string_view InterpreterPath) {
+  int LocalServerFD = ConnectToServer(ConnectionOption::NoPrintConnectionError);
+  if (LocalServerFD == -1) {
+    LocalServerFD = StartServer(InterpreterPath);
+  }
+  return LocalServerFD;
 }
 
 /**
