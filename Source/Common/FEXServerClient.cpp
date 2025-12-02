@@ -138,15 +138,21 @@ fextl::string GetServerSocketName() {
 }
 
 fextl::string GetServerSocketPath() {
+  fextl::string name {};
+#ifndef FEX_STEAM_SUPPORT
   FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
 
-  auto name = ServerSocketPath();
+  name = ServerSocketPath();
 
   if (name.starts_with("/")) {
     return name;
   }
 
   auto Folder = GetTempFolder();
+#else
+  // Under Steam the FEXServer's socket is a game-specific directory.
+  auto Folder = GetServerLockFolder();
+#endif
 
   if (name.empty()) {
     return fextl::fmt::format("{}/{}.FEXServer.Socket", Folder, ::getuid());
@@ -160,25 +166,31 @@ int GetServerFD() {
 }
 
 int ConnectToServer(ConnectionOption ConnectionOption) {
-  auto ServerSocketName = GetServerSocketName();
+  int SocketFD {-1};
+  size_t SizeOfAddr {};
+  struct sockaddr_un addr {};
+  size_t SizeOfSocketString {};
 
   // Create the initial unix socket
-  int SocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  SocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if (SocketFD == -1) {
     LogMan::Msg::EFmt("Couldn't open AF_UNIX socket {}", errno);
     return -1;
   }
 
+  // Steam doesn't get to connect to global sockets.
+#ifndef FEX_STEAM_SUPPORT
+  auto ServerSocketName = GetServerSocketName();
+
   // AF_UNIX has a special feature for named socket paths.
   // If the name of the socket begins with `\0` then it is an "abstract" socket address.
   // The entirety of the name is used as a path to a socket that doesn't have any filesystem backing.
-  struct sockaddr_un addr {};
   addr.sun_family = AF_UNIX;
-  size_t SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
+  SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
   addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
   strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
   // Include final null character.
-  size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
+  SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
 
   if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
     if (ConnectionOption == ConnectionOption::Default || errno != ECONNREFUSED) {
@@ -187,11 +199,13 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
   } else {
     return SocketFD;
   }
+#endif
 
   // Try again with a path-based socket, since abstract sockets will fail if we have been
   // placed in a new netns as part of a sandbox.
   auto ServerSocketPath = GetServerSocketPath();
 
+  addr.sun_family = AF_UNIX;
   SizeOfSocketString = std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1);
   strncpy(addr.sun_path, ServerSocketPath.data(), SizeOfSocketString);
   SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
@@ -321,7 +335,7 @@ int ConnectToAndStartServer(std::string_view InterpreterPath) {
 
       if (ServerFD == -1) {
         // Still couldn't connect to the socket.
-        LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} after launching the process", GetServerSocketName());
+        LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} (or path based socket) after launching the process", GetServerSocketName());
       }
     }
 

@@ -181,11 +181,14 @@ int main(int argc, char** argv, char** const envp) {
     return -1;
   }
 
+  // Steam doesn't get to connect to global sockets.
+#ifndef FEX_STEAM_SUPPORT
   if (!ProcessPipe::InitializeServerSocket(true)) {
     // Couldn't create server socket for some reason
     PipeScanner::ClosePipes();
     return -1;
   }
+#endif
 
   if (!ProcessPipe::InitializeServerSocket(false)) {
     // Couldn't create server socket for some reason
