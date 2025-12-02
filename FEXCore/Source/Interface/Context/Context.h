@@ -88,14 +88,18 @@ public:
    * When loading a code cache, they are used to move cached code to the
    * dynamically chosen base address of the guest binary.
    *
+   * Conversely, relocations are applied in reverse when writing code caches
+   * to ensure consistency across generation runs.
+   *
    * Note that FEX relocations are unrelated to ELF/PE relocations.
    *
    * @param GuestDelta Guest address offset to apply to RIP-relative data
+   * @param ForStorage True for serializing data (producing deterministic output); false for de-serializing it (resolving dynamic symbols)
    *
    * @return Returns true on success
    */
   [[nodiscard]]
-  bool ApplyCodeRelocations(uint64_t GuestDelta, std::span<std::byte> Code, std::span<const CPU::Relocation> Relocations);
+  bool ApplyCodeRelocations(uint64_t GuestDelta, std::span<std::byte> Code, std::span<const CPU::Relocation> Relocations, bool ForStorage);
 };
 
 class ContextImpl final : public FEXCore::Context::Context, public CPU::CodeBufferManager {

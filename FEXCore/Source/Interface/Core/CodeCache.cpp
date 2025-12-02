@@ -229,7 +229,8 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   return true;
 }
 
-bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code, std::span<const FEXCore::CPU::Relocation> EntryRelocations) {
+bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
+                                     std::span<const FEXCore::CPU::Relocation> EntryRelocations, bool ForStorage) {
   CPU::Arm64Emitter Emitter(&CTX, Code.data(), Code.size_bytes());
   for (size_t j = 0; j < EntryRelocations.size(); ++j) {
     const FEXCore::CPU::Relocation& Reloc = EntryRelocations[j];
@@ -238,12 +239,12 @@ bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> C
     switch (Reloc.Header.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
       // Generate a literal so we can place it
-      uint64_t Pointer = GetNamedSymbolLiteral(CTX, Reloc.NamedSymbolLiteral.Symbol);
+      uint64_t Pointer = ForStorage ? 0 : GetNamedSymbolLiteral(CTX, Reloc.NamedSymbolLiteral.Symbol);
       Emitter.dc64(Pointer);
       break;
     }
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE: {
-      uint64_t Pointer = reinterpret_cast<uint64_t>(CTX.ThunkHandler->LookupThunk(Reloc.NamedThunkMove.Symbol));
+      uint64_t Pointer = ForStorage ? 0 : reinterpret_cast<uint64_t>(CTX.ThunkHandler->LookupThunk(Reloc.NamedThunkMove.Symbol));
       if (Pointer == ~0ULL) {
         return false;
       }
