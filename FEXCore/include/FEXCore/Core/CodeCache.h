@@ -31,7 +31,7 @@ struct ExecutableFileInfo {
   ~ExecutableFileInfo();
 
   fextl::unique_ptr<HLE::SourcecodeMap> SourcecodeMap;
-  uint64_t FileId;
+  uint64_t FileId = 0;
   fextl::string Filename;
 };
 
