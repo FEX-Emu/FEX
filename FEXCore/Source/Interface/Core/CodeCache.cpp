@@ -19,6 +19,12 @@
 
 namespace FEXCore {
 
+#if __clang_major__ < 16
+ExecutableFileInfo::ExecutableFileInfo(fextl::unique_ptr<HLE::SourcecodeMap> Map, uint64_t FileId, fextl::string Filename)
+  : SourcecodeMap(std::move(Map))
+  , FileId(FileId)
+  , Filename(Filename) {}
+#endif
 ExecutableFileInfo::~ExecutableFileInfo() = default;
 
 fextl::string CodeMap::GetBaseFilename(const ExecutableFileInfo& MainExecutable, bool AddNombSuffix) {

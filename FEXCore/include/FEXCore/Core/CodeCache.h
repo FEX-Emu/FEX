@@ -30,6 +30,12 @@ namespace HLE {
 struct ExecutableFileInfo {
   ~ExecutableFileInfo();
 
+#if __clang_major__ < 16
+  // Workaround for broken aggregate-initialization with std::piecewise_construct
+  ExecutableFileInfo(fextl::unique_ptr<HLE::SourcecodeMap>, uint64_t, fextl::string);
+  ExecutableFileInfo() = default;
+#endif
+
   fextl::unique_ptr<HLE::SourcecodeMap> SourcecodeMap;
   uint64_t FileId = 0;
   fextl::string Filename;
