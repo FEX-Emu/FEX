@@ -206,7 +206,13 @@ int main(int argc, char** argv, char** const envp) {
     LogMan::Msg::DFmt("[FEXServer] Couldn't set subreaper.");
   }
 
-  if (Options.Foreground) {
+  bool EnableLoggingThread = Options.Foreground;
+#ifndef FEX_STEAM_SUPPORT
+  // If running with Steam support then always enable the logging thread.
+  EnableLoggingThread = true;
+#endif
+
+  if (EnableLoggingThread) {
     // Only start a log thread if we are in the foreground.
     // Prevents FEX from trying to log to nothing.
     Logger::StartLogThread();

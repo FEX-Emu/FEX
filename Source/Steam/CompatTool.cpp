@@ -83,6 +83,7 @@ fextl::string GenerateSteamAppConfig(const FEX::Config::PortableInformation& Por
     bool Multiblock = true;
     bool Thunks_GL = false;
     bool Thunks_Vulkan = false;
+    bool EnableLogging = false;
   };
   SteamOptions Options {};
 
@@ -95,6 +96,11 @@ fextl::string GenerateSteamAppConfig(const FEX::Config::PortableInformation& Por
   const auto steam_fex_multiblock = getenv("STEAM_FEX_MULTIBLOCK");
   if (steam_fex_multiblock) {
     Options.Multiblock = std::strtoull(steam_fex_multiblock, nullptr, 0) != 0;
+  }
+
+  const auto steam_fex_logging = getenv("STEAM_FEX_LOG");
+  if (steam_fex_logging) {
+    Options.EnableLogging = std::strtoull(steam_fex_logging, nullptr, 0) != 0;
   }
 
   // UI overrides.
@@ -123,6 +129,10 @@ fextl::string GenerateSteamAppConfig(const FEX::Config::PortableInformation& Por
     Dest = json_objOpen(Dest, "Config");
     Dest = json_str(Dest, "TSOEnabled", Options.TSO ? "1" : "0");
     Dest = json_str(Dest, "Multiblock", Options.Multiblock ? "1" : "0");
+    Dest = json_str(Dest, "SilentLog", Options.EnableLogging ? "0" : "1");
+    if (Options.EnableLogging) {
+      Dest = json_str(Dest, "OutputLog", "server");
+    }
     Dest = json_objClose(Dest);
   }
 
