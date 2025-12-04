@@ -552,7 +552,7 @@ void OpDispatchBuilder::AVXInsertScalarRound(OpcodeArgs) {
   const uint64_t Mode = Op->Src[2].Literal();
   const auto DstSize = GetGuestVectorLength();
 
-  Ref Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Dest, Op->Src[0], Mode, true);
+  Ref Result = InsertScalarRoundImpl(Op, DstSize, ElementSize, Op->Src[0], Op->Src[1], Mode, true);
   StoreResultFPR_WithOpSize(Op, Op->Dest, Result, DstSize);
 }
 

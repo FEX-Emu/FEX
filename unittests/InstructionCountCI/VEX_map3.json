@@ -2375,7 +2375,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintn s0, s16",
+        "frintn s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
@@ -2387,7 +2387,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintm s0, s16",
+        "frintm s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
@@ -2399,7 +2399,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintp s0, s16",
+        "frintp s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
@@ -2411,7 +2411,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintz s0, s16",
+        "frintz s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
@@ -2423,7 +2423,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frinti s0, s16",
+        "frinti s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
@@ -2435,7 +2435,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintn d0, d16",
+        "frintn d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
@@ -2447,7 +2447,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintm d0, d16",
+        "frintm d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
@@ -2459,7 +2459,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintp d0, d16",
+        "frintp d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
@@ -2471,7 +2471,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintz d0, d16",
+        "frintz d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
@@ -2483,7 +2483,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frinti d0, d16",
+        "frinti d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
