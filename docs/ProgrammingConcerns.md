@@ -82,13 +82,13 @@ Use `FHU::Filesystem::CopyFile` instead.
 #### std::filesystem::temp_directory_path
 See `GetTempFolder()` in `FEXServerClient.cpp` (split/move to `FHU::Filesystem` if needed by other users).
 
-### `std::fstream`
+### Any api that uses `FILE`
 This API always allocates memory and should be avoided.
-Use a combination of open and fextl::string APIs instead of fstream.
+Use a combination of raw FDs and fextl::string APIs instead of fstream.
 
-### `std::fwrite`
-This API allocates a buffer in the background for buffering output.
-Use raw `write` instead.
+#### Includes but not limited to:
+* `<fstream>` -> `std::fstream`
+* `<cstdio>` -> `std::fwrite`
 
 ### `std::string`
 Use `fextl::string` instead.
