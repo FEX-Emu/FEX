@@ -200,6 +200,16 @@ int64_t _lseeki64(int FileHandle, int64_t Offset, int Origin) {
   return Res.QuadPart;
 }
 
+DLLEXPORT_FUNC(long, _lseek, (int FileHandle, long Offset, int Origin)) {
+  LARGE_INTEGER Res;
+  SetFilePointerEx(GetFile(FileHandle)->Handle, LARGE_INTEGER {.QuadPart = Offset}, &Res, OriginToMoveMethod(Origin));
+  return Res.QuadPart;
+}
+
+long lseek(int FileHandle, long Offset, int Origin) {
+  return _lseek(FileHandle, Offset, Origin);
+}
+
 int64_t _telli64(int FileHandle) {
   LARGE_INTEGER Res;
   SetFilePointerEx(GetFile(FileHandle)->Handle, LARGE_INTEGER {}, &Res, FILE_CURRENT);
