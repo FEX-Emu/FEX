@@ -17,7 +17,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintn s16, s16"
+        "frintn s16, s17"
       ]
     },
     "vroundss xmm0, xmm1, 00000001b": {
@@ -28,7 +28,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintm s16, s16"
+        "frintm s16, s17"
       ]
     },
     "vroundss xmm0, xmm1, 00000010b": {
@@ -39,7 +39,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintp s16, s16"
+        "frintp s16, s17"
       ]
     },
     "vroundss xmm0, xmm1, 00000011b": {
@@ -50,7 +50,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintz s16, s16"
+        "frintz s16, s17"
       ]
     },
     "vroundss xmm0, xmm1, 00000100b": {
@@ -61,7 +61,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frinti s16, s16"
+        "frinti s16, s17"
       ]
     },
     "vroundsd xmm0, xmm1, 00000000b": {
@@ -72,7 +72,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintn d16, d16"
+        "frintn d16, d17"
       ]
     },
     "vroundsd xmm0, xmm1, 00000001b": {
@@ -83,7 +83,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintm d16, d16"
+        "frintm d16, d17"
       ]
     },
     "vroundsd xmm0, xmm1, 00000010b": {
@@ -94,7 +94,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintp d16, d16"
+        "frintp d16, d17"
       ]
     },
     "vroundsd xmm0, xmm1, 00000011b": {
@@ -105,7 +105,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frintz d16, d16"
+        "frintz d16, d17"
       ]
     },
     "vroundsd xmm0, xmm1, 00000100b": {
@@ -116,7 +116,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v16.16b",
-        "frinti d16, d16"
+        "frinti d16, d17"
       ]
     }
   }
