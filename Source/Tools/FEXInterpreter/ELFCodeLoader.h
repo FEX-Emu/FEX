@@ -32,7 +32,6 @@
 #include <sys/prctl.h>
 #include <sys/random.h>
 #include <linux/prctl.h>
-#include <unistd.h>
 
 #define PAGE_START(x) ((x) & ~(uintptr_t)(4095))
 #define PAGE_OFFSET(x) ((x) & 4095)
@@ -712,13 +711,24 @@ public:
 
   // Get the current memory map from /proc/self/stat
   static bool GetCurrentMap(struct prctl_mm_map& map) {
-    FILE* f = fopen("/proc/self/stat", "r");
-    if (!f) {
+    int fd = open("/proc/self/stat", O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
       return false;
     }
 
+    // /proc/self/stat has 52 fields of at most 20 digits each (UINT64_MAX).
+    // 52*20 = 1040, so 2048 is a conservative upper bound
+    char stat_buffer[2048];
+    ssize_t bytes_read = read(fd, stat_buffer, sizeof(stat_buffer) - 1);
+    close(fd);
+
+    if (bytes_read <= 0) {
+      return false;
+    }
+    stat_buffer[bytes_read] = '\0'; // So we don't read past to garbage data
+
     // See man proc_pid_stat
-    int items_read = fscanf(f,
+    int items_read = sscanf(stat_buffer,
                             "%*d %*s %*c %*d %*d "      // 1 to 5
                             "%*d %*d %*d %*u %*u "      // 6 to 10
                             "%*u %*u %*u %*u %*u "      // 11 to 15
@@ -732,7 +742,6 @@ public:
                             "%llu",                     // 51
                             &map.start_code, &map.end_code, &map.start_stack, &map.start_data, &map.end_data, &map.start_brk,
                             &map.arg_start, &map.arg_end, &map.env_start, &map.env_end);
-    fclose(f);
 
     if (items_read != 10) {
       return false;
