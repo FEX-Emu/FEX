@@ -17,6 +17,7 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/TypeDefines.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -711,21 +712,14 @@ public:
 
   // Get the current memory map from /proc/self/stat
   static bool GetCurrentMap(struct prctl_mm_map& map) {
-    int fd = open("/proc/self/stat", O_RDONLY | O_CLOEXEC);
-    if (fd < 0) {
-      return false;
-    }
 
     // /proc/self/stat has 52 fields of at most 20 digits each (UINT64_MAX).
     // 52*20 = 1040, so 2048 is a conservative upper bound
     char stat_buffer[2048];
-    ssize_t bytes_read = read(fd, stat_buffer, sizeof(stat_buffer) - 1);
-    close(fd);
+    ssize_t bytes_read = FEXCore::FileLoading::LoadFileToBuffer("/proc/self/stat", stat_buffer);
 
-    if (bytes_read <= 0) {
-      return false;
-    }
-    stat_buffer[bytes_read] = '\0'; // So we don't read past to garbage data
+    // Ensure we don't read past the end into garbage data
+    stat_buffer[std::clamp(bytes_read, 0L, static_cast<ssize_t>(sizeof(stat_buffer)) - 1)] = '\0';
 
     // See man proc_pid_stat
     int items_read = sscanf(stat_buffer,
@@ -766,10 +760,10 @@ public:
 
       int r = prctl(PR_SET_MM, PR_SET_MM_MAP, &map, sizeof(map), 0L);
       if (r != 0) {
-        LogMan::Msg::EFmt("Failed to remap /proc/pid/cmdline data. prctl failed: result {}, errno {}", r, errno);
+        LogMan::Msg::EFmt("Failed to remap /proc/pid/cmdline data (prctl failed: result {}, errno {})", r, errno);
       }
     } else {
-      LogMan::Msg::EFmt("Failed to remap /proc/pid/cmdline data. GetCurrentMap failed. ");
+      LogMan::Msg::EFmt("Failed to remap /proc/pid/cmdline data (GetCurrentMap failed)");
     }
   }
 
