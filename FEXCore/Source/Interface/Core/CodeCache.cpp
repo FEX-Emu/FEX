@@ -2,23 +2,29 @@
 #include "Utils/SpinWaitLock.h"
 
 #include <Interface/Context/Context.h>
+#include <Interface/Core/ArchHelpers/Arm64Emitter.h>
 #include <Interface/Core/JIT/Relocations.h>
+#include <Interface/Core/LookupCache.h>
 
+#include <FEXCore/Core/Thunks.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 
 #include <FEXHeaderUtils/Filesystem.h>
 
-#include <fstream>
-#include <thread>
+#include <git_version.h>
 
 #include <xxhash.h>
 
-#include <Interface/Core/ArchHelpers/Arm64Emitter.h>
-
-#include <FEXCore/Core/Thunks.h>
+#include <fstream>
 
 namespace FEXCore {
 
+#if __clang_major__ < 16
+ExecutableFileInfo::ExecutableFileInfo(fextl::unique_ptr<HLE::SourcecodeMap> Map, uint64_t FileId, fextl::string Filename)
+  : SourcecodeMap(std::move(Map))
+  , FileId(FileId)
+  , Filename(Filename) {}
+#endif
 ExecutableFileInfo::~ExecutableFileInfo() = default;
 
 fextl::string CodeMap::GetBaseFilename(const ExecutableFileInfo& MainExecutable, bool AddNombSuffix) {
@@ -220,12 +226,106 @@ uint64_t CodeCache::ComputeCodeMapId(std::string_view Filename, int FD) {
   return XXH3_64bits(Filename.data(), Filename.size());
 }
 
+struct CodeCacheHeader {
+  char Magic[4] = {'F', 'X', 'C', 'C'};
+  uint32_t FormatVersion = 1;
+  char FEXVersion[8] = {};
+  uint32_t NumBlocks;
+  uint32_t NumCodePages;
+  uint32_t CodeBufferSize;
+  uint32_t NumRelocations;
+  uint64_t SerializedBaseAddress;
+  // TODO: Consider including information from LookupCache.BlockLinks
+};
+
 void CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCacheFile, const ExecutableFileSectionInfo& GuestRIPLookup) {
   // TODO
 }
 
+template<typename T>
+static constexpr auto IsOrderedContainer(const T&) -> std::false_type;
+template<typename... T>
+static constexpr auto IsOrderedContainer(const std::map<T...>&) -> std::true_type;
+template<typename... T>
+static constexpr auto IsOrderedContainer(const std::set<T...>&) -> std::true_type;
+
 bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const ExecutableFileSectionInfo& SourceBinary, uint64_t SerializedBaseAddress) {
-  // TODO
+  auto CodeBuffer = CTX.GetLatest();
+  auto& LookupCache = *Thread.LookupCache->Shared;
+
+  auto Relocations = Thread.CPUBackend->TakeRelocations(SourceBinary.FileStartVA);
+
+  // Write file header
+  CodeCacheHeader header;
+  memcpy(&header.FEXVersion[0], GIT_SHORT_HASH, strlen(GIT_SHORT_HASH));
+  header.NumBlocks = LookupCache.BlockList.size();
+  header.NumCodePages = LookupCache.CodePages.size();
+  header.CodeBufferSize = CTX.LatestOffset;
+  header.NumRelocations = Relocations.size();
+  header.SerializedBaseAddress = SerializedBaseAddress;
+  ::write(fd, &header, sizeof(header));
+
+  // Dump guest<->host block mappings
+  {
+    // Cache contents must be deterministic, so copy the unordered block list and then sort by key
+    static_assert(!decltype(IsOrderedContainer(LookupCache.BlockList))::value, "Already deterministic; drop temporary container");
+    fextl::vector<std::pair<uint64_t, const GuestToHostMap::BlockEntry*>> BlockList;
+    BlockList.reserve(LookupCache.BlockList.size());
+    for (auto& [Guest, BlockEntry] : LookupCache.BlockList) {
+      static_assert(sizeof(Guest) == 8, "Breaking change in code cache data layout");
+      BlockList.emplace_back(Guest, &BlockEntry);
+    }
+    std::ranges::sort(BlockList);
+
+    for (auto [Guest, Host] : BlockList) {
+      static_assert(sizeof(Host->HostCode) == 8, "Breaking change in code cache data layout");
+      static_assert(sizeof(Host->CodePages[0]) == 8, "Breaking change in code cache data layout");
+
+      Guest -= SourceBinary.FileStartVA;
+      ::write(fd, &Guest, sizeof(Guest));
+      uint64_t HostCode = Host->HostCode - reinterpret_cast<uintptr_t>(CodeBuffer->Ptr);
+      ::write(fd, &HostCode, sizeof(HostCode));
+      uint64_t NumCodePages = Host->CodePages.size();
+      ::write(fd, &NumCodePages, sizeof(NumCodePages));
+      LOGMAN_THROW_A_FMT(std::ranges::is_sorted(Host->CodePages), "Code pages aren't sorted");
+      for (auto CodePage : Host->CodePages) {
+        CodePage -= SourceBinary.FileStartVA;
+        ::write(fd, &CodePage, sizeof(CodePage));
+      }
+    }
+  }
+
+  // Dump relocations
+  static_assert(sizeof(Relocations[0]) == 48, "Breaking change in code cache data layout");
+  ::write(fd, Relocations.data(), Relocations.size() * sizeof(Relocations[0]));
+
+  // Pad to next page in file so that the CodeBuffer can be mmap'ed into process on load
+  char Zero[64] {};
+  auto Off = lseek(fd, 0, SEEK_CUR);
+  while (Off != AlignUp(Off, Utils::FEX_PAGE_SIZE)) {
+    auto BytesToWrite = std::min(AlignUp(Off, Utils::FEX_PAGE_SIZE) - Off, sizeof(Zero));
+    ::write(fd, Zero, BytesToWrite);
+    Off += BytesToWrite;
+  }
+
+  // Dump the host code (relocated for position-independent serialization)
+  std::vector CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->Ptr), reinterpret_cast<std::byte*>(CodeBuffer->Ptr) + CTX.LatestOffset);
+  if (!ApplyCodeRelocations(SerializedBaseAddress, CodeBufferData, Relocations, true)) {
+    LOGMAN_THROW_A_FMT(false, "Failed to apply code relocations");
+    return false;
+  }
+  ::write(fd, CodeBufferData.data(), CodeBufferData.size());
+
+  // Dump code pages
+  static_assert(decltype(IsOrderedContainer(LookupCache.CodePages))::value, "Non-deterministic data source");
+  for (auto& [Page, Entrypoints] : LookupCache.CodePages) {
+    static_assert(sizeof(Page) == 8, "Breaking change in code cache data layout");
+    ::write(fd, &Page, sizeof(Page));
+    uint64_t NumEntrypoints = Entrypoints.size();
+    ::write(fd, &NumEntrypoints, sizeof(NumEntrypoints));
+    ::write(fd, Entrypoints.data(), Entrypoints.size() * sizeof(Entrypoints[0]));
+  }
+
   return true;
 }
 

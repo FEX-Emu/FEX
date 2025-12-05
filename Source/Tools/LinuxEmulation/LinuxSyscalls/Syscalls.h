@@ -101,7 +101,17 @@ struct ExecveAtArgs {
 
 uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
 
+class SyscallMmapInterface {
+public:
+  // does a mmap as if done via a guest syscall
+  virtual void* GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
+
+  // does a guest munmap as if done via a guest syscall
+  virtual uint64_t GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) = 0;
+};
+
 class SyscallHandler : public FEXCore::HLE::SyscallHandler,
+                       public SyscallMmapInterface,
                        FEXCore::HLE::SourcecodeResolver,
                        public FEXCore::CodeMapOpener,
                        public FEXCore::Allocator::FEXAllocOperators {
@@ -222,12 +232,12 @@ public:
   }
 
   // does a mmap as if done via a guest syscall
-  virtual void* GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
   void* GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset);
+  using SyscallMmapInterface::GuestMmap;
 
   // does a guest munmap as if done via a guest syscall
-  virtual uint64_t GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) = 0;
   uint64_t GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length);
+  using SyscallMmapInterface::GuestMunmap;
 
   uint64_t GuestMremap(bool Is64Bit, FEXCore::Core::InternalThreadState*, void* old_address, size_t old_size, size_t new_size, int flags,
                        void* new_address);
