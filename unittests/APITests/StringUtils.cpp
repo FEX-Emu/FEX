@@ -80,3 +80,24 @@ TEST_CASE("trim") {
   CHECK(Trim("\vFEXInterpreter\v") == "FEXInterpreter");
   CHECK(Trim(" FEXInterpreter ") == "FEXInterpreter");
 }
+
+TEST_CASE("InPlaceReplace") {
+  auto ReplaceAll = [](fextl::string Str, auto Token, auto New) {
+    ReplaceAllInPlace(Str, Token, New);
+    return Str;
+  };
+  CHECK(ReplaceAll("", "@", "#") == "");
+  // Replace with shorter.
+  CHECK(ReplaceAll("@Test@", "@Test@", "Yes") == "Yes");
+  CHECK(ReplaceAll("@Test@@Test@", "@Test@", "Yes") == "YesYes");
+
+  // Replace with longer.
+  CHECK(ReplaceAll("@Test@", "@Test@", "ThisOne") == "ThisOne");
+  CHECK(ReplaceAll("@Test@@Test@", "@Test@", "ThisOne") == "ThisOneThisOne");
+
+  // Replace token with more tokens.
+  CHECK(ReplaceAll("@@@", "@", "@@") == "@@@@@@");
+
+  // Remove tokens.
+  CHECK(ReplaceAll("@@@", "@", "") == "");
+}

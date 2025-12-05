@@ -14,7 +14,10 @@ if (NOT MINGW_BUILD)
     add_subdirectory(FEXGDBReader/)
   endif()
 
-  add_subdirectory(FEXRootFSFetcher/)
+  if (NOT BUILD_STEAM_SUPPORT)
+    add_subdirectory(FEXRootFSFetcher/)
+  endif()
+
   add_subdirectory(FEXGetConfig/)
   add_subdirectory(FEXServer/)
   add_subdirectory(FEXBash/)

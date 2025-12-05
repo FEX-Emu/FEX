@@ -201,8 +201,10 @@ add_custom_target(CONFIG_INC
   DEPENDS "${OUTPUT_MAN_NAME}"
   DEPENDS "${OUTPUT_MAN_NAME_COMPRESS}")
 
-# Install the compressed man page
-install(FILES ${OUTPUT_MAN_NAME_COMPRESS} COMPONENT Runtime DESTINATION ${MAN_DIR}/man1)
+if (NOT BUILD_STEAM_SUPPORT)
+  # Install the compressed man page
+  install(FILES ${OUTPUT_MAN_NAME_COMPRESS} COMPONENT Runtime DESTINATION ${MAN_DIR}/man1)
+endif()
 
 # Add in diagnostic colours if the option is available.
 # Ninja code generator will kill colours if this isn't here
@@ -289,7 +291,7 @@ AddObject(${PROJECT_NAME}_object OBJECT)
 AddLibrary(${PROJECT_NAME} STATIC)
 AddLibrary(${PROJECT_NAME}_shared SHARED)
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW_BUILD AND NOT BUILD_STEAM_SUPPORT)
   install(TARGETS ${PROJECT_NAME}_shared
     LIBRARY
       DESTINATION ${CMAKE_INSTALL_LIBDIR}

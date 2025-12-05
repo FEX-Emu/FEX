@@ -68,6 +68,13 @@ int GetServerFD();
 bool SetupClient(std::string_view InterpreterPath);
 
 /**
+ * @brief Start a FEXServer instance if possible
+ *
+ * @return socket FD for communicating with server
+ */
+int StartServer(std::string_view InterpreterPath, int watch_fd = -1);
+
+/**
  * @brief Connect to and start a FEXServer instance if required
  *
  * @return socket FD for communicating with server

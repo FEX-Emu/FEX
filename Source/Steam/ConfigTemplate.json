@@ -1,0 +1,9 @@
+{
+    "Config": {
+        "X87ReducedPrecision": "1",
+        "RootFS": "@FEX_ROOTFS_PATH@/",
+        "ThunkHostLibs": "@FEX_COMPAT_TOOL@/usr/lib/aarch64-linux-gnu/fex-emu/HostThunks",
+        "ThunkGuestLibs": "@FEX_COMPAT_TOOL@/usr/share/fex-emu/GuestThunks",
+        "ProfileStats": "1"
+    }
+}
