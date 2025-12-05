@@ -2,7 +2,7 @@ black~=25.1
 darker==2.1.1
 PyGithub==2.6.1
 cryptography>=43.0.1
-urllib3>=2.5.0
+urllib3>=2.6.0
 requests>=2.32.4
 idna>=3.7
 certifi>=2024.7.4
