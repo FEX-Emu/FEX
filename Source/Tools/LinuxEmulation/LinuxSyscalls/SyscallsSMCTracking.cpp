@@ -479,22 +479,30 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
             (ProtMapping.Executable ? PF_X : 0) | (ProtMapping.Writable ? PF_W : 0) | (ProtMapping.Readable ? PF_R : 0));
           return std::ranges::find(ExpectedBases, Resource.FirstVMA->Base) != ExpectedBases.end();
         });
-        LOGMAN_THROW_A_FMT(ResourceIt != ResourceEnd, "ERROR: Could not find base for file mapping at {:#x} (offset {:#x})", addr, offset);
-        Resource = &ResourceIt->second;
+        if (ResourceIt == ResourceEnd) {
+          // This isn't necessarily a fatal exception. It just means the ELF section isn't a part of the ELF Program headers.
+          // Node.js hits this as it maps a section of itself that isn't a part of the program headers.
+          LogMan::Msg::IFmt("Warning: Could not find base for file mapping at {:#x} (offset {:#x}): {}", addr, offset,
+                            std::string_view(Tmp, PathLength));
+        } else {
+          Resource = &ResourceIt->second;
+        }
       }
 
-      const fextl::string Filename = FHU::Filesystem::GetFilename(Resource->MappedFile->Filename);
+      if (Resource->MappedFile) {
+        const fextl::string Filename = FHU::Filesystem::GetFilename(Resource->MappedFile->Filename);
 
-      // We now have the filename and the offset in the filename getting mapped.
-      // Check for extended volatile metadata.
-      auto it = ExtendedMetaData.find(Filename);
-      if (it != ExtendedMetaData.end()) {
-        SyscallHandler::LateApplyExtendedVolatileMetadata LateMetadata;
-        FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(
-          it->second, LateMetadata.VolatileInstructions, LateMetadata.VolatileValidRanges, addr, addr + length, offset, offset + length);
+        // We now have the filename and the offset in the filename getting mapped.
+        // Check for extended volatile metadata.
+        auto it = ExtendedMetaData.find(Filename);
+        if (it != ExtendedMetaData.end()) {
+          SyscallHandler::LateApplyExtendedVolatileMetadata LateMetadata;
+          FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(
+            it->second, LateMetadata.VolatileInstructions, LateMetadata.VolatileValidRanges, addr, addr + length, offset, offset + length);
 
-        if (!LateMetadata.VolatileInstructions.empty() || !LateMetadata.VolatileValidRanges.Empty()) {
-          VolatileMetadata.emplace(std::move(LateMetadata));
+          if (!LateMetadata.VolatileInstructions.empty() || !LateMetadata.VolatileValidRanges.Empty()) {
+            VolatileMetadata.emplace(std::move(LateMetadata));
+          }
         }
       }
     }
