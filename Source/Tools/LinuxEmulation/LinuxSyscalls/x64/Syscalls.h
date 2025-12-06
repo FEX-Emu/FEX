@@ -78,7 +78,7 @@ CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _Signal
 template<typename R, typename... Args>
 void RegisterSyscall(SyscallHandler* Handler, int SyscallNumber, const char* Name, R (*fn)(FEXCore::Core::CpuStateFrame* Frame, Args...)) {
 #ifdef DEBUG_STRACE
-  auto TraceFormatString = fextl::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
+  auto TraceFormatString = fextl::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = {}";
 #endif
   Handler->RegisterSyscall_64(SyscallNumber,
 #ifdef DEBUG_STRACE
