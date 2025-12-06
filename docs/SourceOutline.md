@@ -1,11 +1,11 @@
-# FEX-2511
+# FEX-2512
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
 
 ### Glossary
 
-- Splatter: a code generator backend that concatenates configurable macros instead of doing isel
+- Splatter: a code generator backend that concaternates configurable macros instead of doing isel
 - IR: Intermediate Representation, our high-level opcode representation, loosely modeling arm64
 - SSA: Single Static Assignment, a form of representing IR in memory
 - Basic Block: A block of instructions with no control flow, terminated by control flow
@@ -78,10 +78,6 @@ Emulation mainloop related glue logic
 
 #### thunks
 - [Thunks.h](../FEXCore/include/FEXCore/Core/Thunks.h)
-
-#### x86-guest-code
-- [X86HelperGen.cpp](../FEXCore/Source/Interface/Core/X86HelperGen.cpp): Guest-side assembly helpers used by the backends
-- [X86HelperGen.h](../FEXCore/Source/Interface/Core/X86HelperGen.h)
 
 
 
