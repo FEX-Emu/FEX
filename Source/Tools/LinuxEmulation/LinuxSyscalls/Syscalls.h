@@ -394,19 +394,19 @@ struct ArgToFmtString;
   };
 
 // Base types
-ARG_TO_STR(int, "%d")
-ARG_TO_STR(unsigned int, "%u")
-ARG_TO_STR(long, "%ld")
-ARG_TO_STR(unsigned long, "%lu")
+ARG_TO_STR(int, "{}")
+ARG_TO_STR(unsigned int, "{}")
+ARG_TO_STR(long, "{}")
+ARG_TO_STR(unsigned long, "{}")
 
 // string types
-ARG_TO_STR(char*, "%s")
-ARG_TO_STR(const char*, "%s")
+ARG_TO_STR(char*, "{}")
+ARG_TO_STR(const char*, "{}")
 
 // Pointers
 template<typename T>
 struct ArgToFmtString<T*> {
-  inline static const char* const Format = "%p";
+  inline static const char* const Format = "{:x}";
 };
 
 // Use ArgToFmtString and variadic template to create a format string from an args list
