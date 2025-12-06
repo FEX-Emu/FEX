@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 /*
 $info$
-glossary: Splatter ~ a code generator backend that concaternates configurable macros instead of doing isel
+glossary: Splatter ~ a code generator backend that concatenates configurable macros instead of doing isel
 glossary: IR ~ Intermediate Representation, our high-level opcode representation, loosely modeling arm64
 glossary: SSA ~ Single Static Assignment, a form of representing IR in memory
 glossary: Basic Block ~ A block of instructions with no control flow, terminated by control flow
