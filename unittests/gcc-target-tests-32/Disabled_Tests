@@ -47,3 +47,9 @@ sse4_1-round-vec.c.gcc-target-test-32.n500.gcc-target-32
 # This has a race with SIGPROF
 mcount_pic.c.gcc-target-test-32.n1.gcc-target-32
 mcount_pic.c.gcc-target-test-32.n500.gcc-target-32
+
+# Miscompilation issues
+# Loads integer with fld rather than fild
+# Only triggers issue in n500 due to memcpy fastpath optimization but still disabling both versions.
+pr88240.c.gcc-target-test-32.n1.gcc-target-32
+pr88240.c.gcc-target-test-32.n500.gcc-target-32

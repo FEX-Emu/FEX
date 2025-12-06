@@ -157,7 +157,9 @@ public:
     : Features(Features)
     , GPROpSize(GPROpSize) {
     FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
+    FEX_CONFIG_OPT(StrictReducedPrecision, X87STRICTREDUCEDPRECISION);
     ReducedPrecisionMode = ReducedPrecision;
+    StrictReducedPrecisionMode = StrictReducedPrecision;
   }
   void Run(IREmitter* Emit) override;
 
@@ -165,10 +167,12 @@ private:
   const FEXCore::HostFeatures& Features;
   const OpSize GPROpSize;
   bool ReducedPrecisionMode;
+  bool StrictReducedPrecisionMode;
   FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
 
   // Helpers
   Ref RotateRight8(uint32_t V, Ref Amount);
+  Ref SilenceNaN(Ref Value, OpSize StoreSize);
 
   void F80SplitStore_Helper(const IROp_StoreStackMem* Op, Ref StackNode, Ref AddrNode, Ref Offset, OpSize Align, MemOffsetType OffsetType,
                             uint8_t OffsetScale) {
@@ -215,6 +219,7 @@ private:
     case OpSize::i32Bit:
     case OpSize::i64Bit: {
       StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
+      StackNode = SilenceNaN(StackNode, Op->StoreSize);
       IREmit->_StoreMemFPR(Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
@@ -244,6 +249,9 @@ private:
       [[fallthrough]];
     }
     case OpSize::i64Bit: {
+      if (StrictReducedPrecisionMode) {
+        StackNode = SilenceNaN(StackNode, Op->StoreSize);
+      }
       IREmit->_StoreMemFPR(Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
@@ -333,6 +341,8 @@ private:
   // Cache for Constants
   // ConstantPoll[i] has IREmit->_Constant(i);
   std::array<Ref, 8> ConstantPool {};
+  Ref CachedQuietBit32 {};
+  Ref CachedQuietBit64 {};
   Ref GetConstant(ssize_t Offset);
 
   // Cached value for Top
@@ -367,6 +377,8 @@ inline const X87StackOptimization::StackMemberInfo X87StackOptimization::StackMe
 inline void X87StackOptimization::InvalidateCaches() {
   InvalidateCachedRegs();
   ConstantPool.fill(nullptr);
+  CachedQuietBit32 = nullptr;
+  CachedQuietBit64 = nullptr;
 }
 
 inline void X87StackOptimization::InvalidateCachedRegs() {
@@ -385,12 +397,23 @@ inline void X87StackOptimization::Reset() {
 }
 
 inline Ref X87StackOptimization::GetConstant(ssize_t Offset) {
+  if (Offset == 0x00400000) {
+    if (!CachedQuietBit32) {
+      CachedQuietBit32 = IREmit->_Constant(Offset);
+    }
+    return CachedQuietBit32;
+  }
+  if (Offset == 0x0008000000000000LL) {
+    if (!CachedQuietBit64) {
+      CachedQuietBit64 = IREmit->_Constant(Offset);
+    }
+    return CachedQuietBit64;
+  }
+
   if (Offset < 0 || Offset >= X87StackOptimization::ConstantPool.size()) {
-    // not dealt by pool
     return IREmit->_Constant(Offset);
   }
   if (ConstantPool[Offset] == nullptr) {
-
     ConstantPool[Offset] = IREmit->_Constant(Offset);
   }
   return ConstantPool[Offset];
@@ -491,6 +514,30 @@ inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_
 
 inline Ref X87StackOptimization::RotateRight8(uint32_t V, Ref Amount) {
   return IREmit->_Lshr(OpSize::i32Bit, GetConstant(V | (V << 8)), Amount);
+}
+
+inline Ref X87StackOptimization::SilenceNaN(Ref Value, OpSize StoreSize) {
+  // We expect Value here to reach after conversion - so it's already in the target size (32 or 64 bit float)
+  // Never 80bit since we do not silence 80bit values, since it's likely a copy in that case.
+  LOGMAN_THROW_A_FMT(StoreSize == OpSize::i32Bit || StoreSize == OpSize::i64Bit, "Unexpected store size");
+
+  const auto RegisterSize = OpSize::i64Bit;
+  const auto ElementSize = StoreSize;
+
+  // Create quiet bit constant in FPR
+  Ref QuietBitConst;
+  if (StoreSize == OpSize::i32Bit) {
+    // 0x00400000 - Bit 22 for 32-bit float
+    QuietBitConst = IREmit->_VCastFromGPR(RegisterSize, ElementSize, GetConstant(0x00400000U));
+  } else {
+    // 0x0008000000000000 - Bit 51 for 64-bit double
+    QuietBitConst = IREmit->_VCastFromGPR(RegisterSize, ElementSize, GetConstant(0x0008000000000000ULL));
+  }
+
+  // NaN detection: fcmeq(v, v) == 0xFFFFFFFF if NOT NaN, 0x00000000 if NaN
+  Ref IsNotNaNMask = IREmit->_VFCMPEQ(RegisterSize, ElementSize, Value, Value);
+  Ref Silenced = IREmit->_VOr(RegisterSize, ElementSize, Value, QuietBitConst);
+  return IREmit->_VBSL(RegisterSize, IsNotNaNMask, Value, Silenced);
 }
 
 inline std::optional<X87StackOptimization::StackMemberInfo> X87StackOptimization::MigrateToSlowPath_IfInvalid(uint8_t Offset) {
@@ -1012,6 +1059,9 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           if (Op->StoreSize == OpSize::f80Bit) {
             Store80BitToMem(Op, SourceValue, AddrNode, Offset, Align, OffsetType, OffsetScale);
           } else {
+            if (!ReducedPrecisionMode || StrictReducedPrecisionMode) {
+              SourceValue = SilenceNaN(SourceValue, Op->StoreSize);
+            }
             IREmit->_StoreMemFPR(StoreSize, SourceValue, AddrNode, Offset, Align, OffsetType, OffsetScale);
           }
           break;
