@@ -309,7 +309,7 @@ namespace x32 {
         int rv;
       }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-      int Result = ::getcpu(args->cpu, args->node);
+      int Result = FHU::Syscalls::getcpu(args->cpu, args->node);
       args->rv = SyscallRet(Result);
     }
   } // namespace glibc
