@@ -72,7 +72,7 @@ struct tcp_socket {
    */
   size_t write_some(const mutable_buffer& Buffers, error& ec) {
     auto iov = (iovec*)alloca(sizeof(mutable_buffer) * Buffers.count_chunks());
-    size_t NumIovs = 0;
+    decltype(msghdr::msg_iovlen) NumIovs = 0;
     for (auto Buffer = &Buffers; Buffer; Buffer = Buffer->Next) {
       iov[NumIovs].iov_base = Buffer->Data.data();
       iov[NumIovs].iov_len = Buffer->Data.size_bytes();
@@ -120,7 +120,7 @@ struct tcp_socket {
 private:
   static size_t read_some_from_fd(const mutable_buffer& Buffers, error& ec, int FD) {
     auto iov = (iovec*)alloca(sizeof(mutable_buffer) * Buffers.count_chunks());
-    size_t NumIovs = 0;
+    decltype(msghdr::msg_iovlen) NumIovs = 0;
     for (auto Buffer = &Buffers; Buffer; Buffer = Buffer->Next) {
       iov[NumIovs].iov_base = Buffer->Data.data();
       iov[NumIovs].iov_len = Buffer->Data.size_bytes();
