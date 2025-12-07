@@ -21,6 +21,7 @@ $end_info$
 #include <cstring>
 
 namespace FEX::HLE {
+constexpr uint32_t X86_SA_RESTORER = 0x04000000;
 // Total number of layouts that siginfo supports.
 enum class SigInfoLayout {
   LAYOUT_KILL,
@@ -617,8 +618,7 @@ uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Th
 
   // 32-bit Guest can provide its own restorer or we need to provide our own.
   // On a real host this restorer will live in VDSO.
-  constexpr uint32_t SA_RESTORER = 0x04000000;
-  const bool HasRestorer = (GuestAction->sa_flags & SA_RESTORER) == SA_RESTORER;
+  const bool HasRestorer = (GuestAction->sa_flags & X86_SA_RESTORER) == X86_SA_RESTORER;
   if (HasRestorer) {
     guest_uctx->pretcode = (uint32_t)(uint64_t)GuestAction->restorer;
   } else {
@@ -818,8 +818,7 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
 
   // 32-bit Guest can provide its own restorer or we need to provide our own.
   // On a real host this restorer will live in VDSO.
-  constexpr uint32_t SA_RESTORER = 0x04000000;
-  const bool HasRestorer = (GuestAction->sa_flags & SA_RESTORER) == SA_RESTORER;
+  const bool HasRestorer = (GuestAction->sa_flags & X86_SA_RESTORER) == X86_SA_RESTORER;
   if (HasRestorer) {
     guest_uctx->pretcode = (uint32_t)(uint64_t)GuestAction->restorer;
   } else {
