@@ -243,11 +243,7 @@ void CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCac
 }
 
 template<typename T>
-static constexpr auto IsOrderedContainer(const T&) -> std::false_type;
-template<typename... T>
-static constexpr auto IsOrderedContainer(const std::map<T...>&) -> std::true_type;
-template<typename... T>
-static constexpr auto IsOrderedContainer(const std::set<T...>&) -> std::true_type;
+concept OrderedContainer = requires { typename T::key_compare; };
 
 bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const ExecutableFileSectionInfo& SourceBinary, uint64_t SerializedBaseAddress) {
   auto CodeBuffer = CTX.GetLatest();
@@ -268,7 +264,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   // Dump guest<->host block mappings
   {
     // Cache contents must be deterministic, so copy the unordered block list and then sort by key
-    static_assert(!decltype(IsOrderedContainer(LookupCache.BlockList))::value, "Already deterministic; drop temporary container");
+    static_assert(!OrderedContainer<decltype(LookupCache.BlockList)>, "Already deterministic; drop temporary container");
     fextl::vector<std::pair<uint64_t, const GuestToHostMap::BlockEntry*>> BlockList;
     BlockList.reserve(LookupCache.BlockList.size());
     for (auto& [Guest, BlockEntry] : LookupCache.BlockList) {
@@ -317,7 +313,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   ::write(fd, CodeBufferData.data(), CodeBufferData.size());
 
   // Dump code pages
-  static_assert(decltype(IsOrderedContainer(LookupCache.CodePages))::value, "Non-deterministic data source");
+  static_assert(OrderedContainer<decltype(LookupCache.CodePages)>, "Non-deterministic data source");
   for (auto& [Page, Entrypoints] : LookupCache.CodePages) {
     static_assert(sizeof(Page) == 8, "Breaking change in code cache data layout");
     ::write(fd, &Page, sizeof(Page));
