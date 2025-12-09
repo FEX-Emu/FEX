@@ -75,5 +75,5 @@ jobs:
         overwrite: true
         name: steamrt4_steampipe_depot
         path: ${{runner.workspace}}/install/*
-        retention-days: 1
+        retention-days: 60
         compression-level: 9
