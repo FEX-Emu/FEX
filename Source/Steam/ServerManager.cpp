@@ -3,6 +3,7 @@
 #include "Common/FEXServerClient.h"
 
 #include <cstdio>
+#include <errno.h>
 #include <unistd.h>
 #include <poll.h>
 
@@ -87,21 +88,20 @@ int main(int argc, const char** argv, char** const envp) {
   close(ServerFD);
   ServerFD = -1;
 
-  // stdin will be a pipe, so wait until that FD is closed.
+  // Do a blocking read, discarding any written data and wait for EOF.
   while (true) {
-    pollfd p {
-      .fd = STDIN_FILENO,
-      .events = POLLRDHUP,
-      .revents = 0,
-    };
-
-    int events = poll(&p, 1, -1);
-    if (events == -1 && errno == EINTR) {
-      continue;
-    }
-
-    if (events > 0 && (p.revents & (POLLRDHUP | POLLERR | POLLHUP | POLLNVAL))) {
-      // Error or pressure-vessel hung-up.
+    char buf[4096];
+    auto read_len = ::read(STDIN_FILENO, buf, sizeof(buf));
+    if (read_len < 0) {
+      if (errno == EINTR || errno == EAGAIN) {
+        // Interrupted, try again.
+        continue;
+      } else {
+        // Error on read.
+        break;
+      }
+    } else if (read_len == 0) {
+      // EOF
       break;
     }
   }
