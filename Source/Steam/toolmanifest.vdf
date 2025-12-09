@@ -1,0 +1,8 @@
+"manifest"
+{
+  "commandline" "/FEXCompatTool %verb%"
+  "filter_exclusive_priority" "2"
+  "version" "2"
+  "use_tool_subprocess_reaper" "1"
+  "compatmanager_layer_name" "fex"
+}

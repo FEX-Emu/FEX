@@ -31,3 +31,6 @@ install(FILES emulator.json
 install(FILES ConfigTemplate.json
   DESTINATION /
   COMPONENT Runtime)
+install(FILES toolmanifest.vdf
+  DESTINATION /
+  COMPONENT Runtime)
