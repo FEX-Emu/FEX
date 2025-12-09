@@ -17,6 +17,7 @@ $end_info$
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <fcntl.h>
 #include <linux/audit.h>
@@ -426,7 +427,7 @@ SeccompEmulator::ExecuteFilter(FEXCore::Core::CpuStateFrame* Frame, uint64_t JIT
     uint64_t Mask = 1 << (SIGSYS - 1);
     SignalDelegation->GuestSigProcMask(Thread, SIG_UNBLOCK, &Mask, nullptr);
     SignalDelegation->UninstallHostHandler(SIGSYS);
-    tgkill(::getpid(), ::gettid(), SIGSYS);
+    FHU::Syscalls::tgkill(::getpid(), ::gettid(), SIGSYS);
     break;
   }
   case SECCOMP_RET_TRAP: {

@@ -5,6 +5,7 @@
 
 #include <malloc.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 namespace FEXCore::Allocator {
 

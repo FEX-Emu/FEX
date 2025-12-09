@@ -86,7 +86,7 @@ inline int32_t statx(int dirfd, const char* pathname, int32_t flags, uint32_t ma
 }
 
 inline int32_t renameat2(int olddirfd, const char* oldpath, int newdirfd, const char* newpath, unsigned int flags) {
-#if defined(HAS_SYSCALL_STATX) && HAS_SYSCALL_STATX
+#if defined(HAS_SYSCALL_RENAMEAT2) && HAS_SYSCALL_RENAMEAT2
   return ::renameat2(olddirfd, oldpath, newdirfd, newpath, flags);
 #else
   return ::syscall(SYS_renameat2, olddirfd, oldpath, newdirfd, newpath, flags);
