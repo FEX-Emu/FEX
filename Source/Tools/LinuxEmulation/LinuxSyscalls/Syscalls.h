@@ -198,6 +198,7 @@ public:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
   FEX_CONFIG_OPT(NeedsSeccomp, NEEDSSECCOMP);
+  FEX_CONFIG_OPT(EnableCodeCaching, ENABLECODECACHINGWIP);
 
   uint32_t GetHostKernelVersion() const {
     return HostKernelVersion;
@@ -250,8 +251,9 @@ public:
     fextl::set<uint64_t> VolatileInstructions {};
     FEXCore::IntervalList<uint64_t> VolatileValidRanges {};
   };
-  std::optional<LateApplyExtendedVolatileMetadata>
-  TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset);
+  std::optional<LateApplyExtendedVolatileMetadata> TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length,
+                                                             int prot, int flags, int fd, off_t offset,
+                                                             std::optional<FEXCore::ExecutableFileSectionInfo>& CachedSection);
   void TrackMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length);
   void TrackMremap(FEXCore::Core::InternalThreadState* Thread, uint64_t OldAddress, size_t OldSize, size_t NewSize, int flags, uint64_t NewAddress);
   void TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uint64_t shmaddr, int shmflg, uint64_t Length);
@@ -321,6 +323,8 @@ public:
   constexpr static size_t LDT_ENTRY_SIZE = sizeof(FEXCore::Core::CPUState::gdt_segment);
 
   VMATracking::VMATracking VMATracking;
+
+  const uint64_t CodeCacheConfigId = 0; // TODO: Make unique to active configuration
 
   uint64_t read_ldt(FEXCore::Core::CpuStateFrame* Frame, void* ptr, unsigned long bytecount);
   uint64_t write_ldt(FEXCore::Core::CpuStateFrame* Frame, void* ptr, unsigned long bytecount, bool legacy);
