@@ -17,14 +17,14 @@ void AssertHandler(const char* Message) {
   return MsgHandler(LogMan::ASSERT, Message);
 }
 
-void SignalPVToContinue() {
+void SignalPVToContinue(int* original_stdout) {
   // Tell pressure-vessel that the startup was a success.
   const auto ReadyMsg = "READY=1\n";
-  write(STDOUT_FILENO, ReadyMsg, strlen(ReadyMsg));
+  write(*original_stdout, ReadyMsg, strlen(ReadyMsg));
 
   // pressure-vessel is waiting for EOF on STDOUT from this process to ensure it can run FEX processes.
-  // dup2 atomically replaces stdout with a copy of stderr to achieve this.
-  dup2(STDERR_FILENO, STDOUT_FILENO);
+  close(*original_stdout);
+  *original_stdout = -1;
 }
 
 struct PipesType {
@@ -48,6 +48,21 @@ int main(int argc, const char** argv, char** const envp) {
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
 
+  // Move the ready-indicator pipe from stdout to some other fd,
+  // and mark it so the FEXServer won't inherit it. Otherwise the FEXServer
+  // will hold it open, preventing pressure-vessel from detecting that
+  // we are ready.
+  int original_stdout = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, /* minimum fd = */ 3);
+  if (original_stdout < 0) {
+    perror("F_DUPFD_CLOEXEC");
+    return 126;
+  }
+  // Replace stdout with a copy of our original stderr.
+  if (dup2(STDERR_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
+    perror("dup2");
+    return 126;
+  }
+
   auto pipes = get_pipe();
 
   // Set the write side to close on exec.
@@ -62,7 +77,7 @@ int main(int argc, const char** argv, char** const envp) {
   }
 
   // FEXServer is now running. Tell PV to continue.
-  SignalPVToContinue();
+  SignalPVToContinue(&original_stdout);
 
   // Don't need the read pipe anymore.
   close(pipes.read_pipe);
