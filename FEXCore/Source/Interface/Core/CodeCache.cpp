@@ -3,8 +3,12 @@
 
 #include <Interface/Context/Context.h>
 #include <Interface/Core/ArchHelpers/Arm64Emitter.h>
+#include <Interface/Core/Dispatcher/Dispatcher.h>
+#include <Interface/Core/JIT/DebugData.h>
 #include <Interface/Core/JIT/Relocations.h>
 #include <Interface/Core/LookupCache.h>
+#include <Interface/Core/OpcodeDispatcher.h>
+#include <Interface/IR/PassManager.h>
 
 #include <FEXCore/Core/Thunks.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
@@ -476,7 +480,127 @@ bool CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCac
     }
   }
 
+  if (EnableCodeCacheValidation) {
+    fextl::set<uint64_t> GuestBlocks, HostBlocks;
+    for (auto& [Guest, Host] : BlockList) {
+      GuestBlocks.insert(Guest + BinarySection.FileStartVA);
+      HostBlocks.insert(Host.HostCode);
+    }
+
+    Validate(BinarySection, std::move(GuestBlocks), HostBlocks, CodeBufferRange);
+  }
+
   return true;
+}
+
+void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<uint64_t> GuestBlocks, const fextl::set<uint64_t>& HostBlocks,
+                         std::span<std::byte> CachedCode) {
+  LOGMAN_THROW_A_FMT(!HostBlocks.empty(), "Tried to validate without any host blocks");
+  // Skip any cached data before the first host block
+  CachedCode = CachedCode.subspan(*HostBlocks.begin() - sizeof(CPU::CPUBackend::JITCodeHeader));
+
+  if (!ValidationCTX) {
+    ValidationCTX.reset(static_cast<ContextImpl*>(FEXCore::Context::Context::CreateNewContext(CTX.HostFeatures).release()));
+    ValidationCTX->SetSignalDelegator(CTX.SignalDelegation);
+    ValidationCTX->SetSyscallHandler(CTX.SyscallHandler);
+    ValidationCTX->SetThunkHandler(CTX.ThunkHandler);
+    if (!ValidationCTX->InitCore()) {
+      ERROR_AND_DIE_FMT("Failed to create cache load validation context");
+    }
+
+    ValidationThread.reset(ValidationCTX->CreateThread(0, 0, nullptr));
+
+    auto Frame = ValidationThread->CurrentFrame;
+    Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &ValidationGDT[0];
+    Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_LDT] = &ValidationGDT[0];
+    Frame->State.cs_idx = 0;
+    Frame->State.cs_cached = 0;
+
+    if (ValidationCTX->Config.Is64BitMode()) {
+      ValidationGDT[0].L = 1; // L = Long Mode = 64-bit
+      ValidationGDT[0].D = 0; // D = Default Operand Size = Reserved
+    } else {
+      ValidationGDT[0].L = 0; // L = Long Mode = 32-bit
+      ValidationGDT[0].D = 1; // D = Default Operand Size = 32-bit
+    }
+  }
+
+  auto NewCodeBuffer = ValidationCTX->GetLatest();
+
+  std::span<std::byte> CodeBufferRangeRef =
+    std::as_writable_bytes(std::span {NewCodeBuffer->Ptr, NewCodeBuffer->Ptr + NewCodeBuffer->Size}).subspan(0, CachedCode.size_bytes());
+
+  while (!GuestBlocks.empty()) {
+    auto [CompiledBlocks, _, _2, _3, _4] = ValidationCTX->CompileCode(ValidationThread.get(), *GuestBlocks.begin(), 0 /* TODO: Set MaxInst? */);
+    for (auto& Entry : CompiledBlocks.EntryPoints) {
+      GuestBlocks.erase(Entry.first);
+    }
+  }
+
+  // Patch FEX-internal function addresses with values from the main Context to ensure the code blocks are comparable
+  auto NewRelocations = ValidationThread->CPUBackend->TakeRelocations(Section.FileStartVA);
+  NewRelocations.erase(std::remove_if(NewRelocations.begin(), NewRelocations.end(), [](const CPU::Relocation& Reloc) {
+    return Reloc.Header.Type != CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL && Reloc.Header.Type != CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE;
+  }));
+  (void)ApplyCodeRelocations(Section.FileStartVA, CodeBufferRangeRef, NewRelocations, false);
+
+  if (ValidationCTX->LatestOffset <= CodeBufferRangeRef.size()) {
+    // Reference compilation produced fewer bytes than our cache, so validation is going to fail.
+    // Make sure we don't output any garbage bytes though.
+    CodeBufferRangeRef = CodeBufferRangeRef.subspan(0, ValidationCTX->LatestOffset);
+  }
+
+  auto [Mismatch, _] = std::mismatch(CodeBufferRangeRef.begin(), CodeBufferRangeRef.end(), CachedCode.begin());
+  if (Mismatch != CodeBufferRangeRef.end()) {
+    // Align down to instruction size
+    auto Idx = AlignDown(std::distance(CodeBufferRangeRef.begin(), Mismatch), 4);
+
+    auto BlockIt = std::prev(HostBlocks.lower_bound(*HostBlocks.begin() + Idx + 1));
+    std::optional<uint64_t> GuestBlockAddr;
+    std::optional<uint64_t> GuestBlockAddrRef;
+    if (BlockIt != HostBlocks.end()) {
+      for (int i : {0, 1}) {
+        std::span Buffer = (i == 0 ? CachedCode : CodeBufferRangeRef);
+
+        // Second instruction is always a constant load for relative offset to the (multi)block start
+        int32_t addr = (*reinterpret_cast<uint32_t*>(&Buffer[*BlockIt - *HostBlocks.begin() + 4]) & 0x3ff'ffe0) << 11;
+        addr >>= 14;
+        auto header = reinterpret_cast<CPU::CPUBackend::JITCodeHeader*>(&Buffer[*BlockIt - *HostBlocks.begin() + 4 + addr]);
+        auto tail = reinterpret_cast<CPU::CPUBackend::JITCodeTail*>(reinterpret_cast<uintptr_t>(header) + header->OffsetToBlockTail);
+        (i == 0 ? GuestBlockAddr : GuestBlockAddrRef) = tail->RIP - Section.FileStartVA;
+        LogMan::Msg::EFmt("Recorded rip {}: {:#x} (offset {:#x})", i, tail->RIP, tail->RIP - Section.FileStartVA);
+
+        if (i == 1) {
+          if (tail->RIP >= Section.BeginVA && tail->RIP < Section.EndVA) {
+            auto [IRView, TotalInstructions, TotalInstructionsLength, StartAddr, Length, _] =
+              ValidationCTX->GenerateIR(ValidationThread.get(), tail->RIP, false, FEXCore::Config::Get_MAXINST());
+            fextl::stringstream ss;
+            FEXCore::IR::Dump(&ss, &*IRView);
+            LogMan::Msg::EFmt("IR:\n{}", ss.str());
+          } else {
+            LogMan::Msg::EFmt("Can't dump IR for out-of-range RIP {:#x}", tail->RIP);
+          }
+        }
+      }
+    }
+
+    fextl::string GuestBlockInfo = "UNKNOWN";
+    if (GuestBlockAddr) {
+      GuestBlockInfo = fextl::fmt::format("{:#x}", GuestBlockAddr.value());
+    }
+    if (GuestBlockAddr != GuestBlockAddrRef) {
+      GuestBlockInfo += " (MISMATCH)";
+    }
+    ERROR_AND_DIE_FMT("Cache validation failed at offset {:#x}: {:02x} <-> {:02x} (at {} <-> {}, guest block {})", Idx,
+                      fmt::join(CachedCode.subspan(Idx, 4), ""), fmt::join(CodeBufferRangeRef.subspan(Idx, 4), ""),
+                      fmt::ptr(CachedCode.data()), fmt::ptr(CodeBufferRangeRef.data()), GuestBlockInfo);
+  }
+
+  // Reset Context state for next validation
+  ValidationThread->LookupCache->ClearCache(ValidationThread->LookupCache->AcquireWriteLock());
+  ValidationCTX->LatestOffset = 0;
+
+  LogMan::Msg::IFmt("\tSuccessfully validated cache");
 }
 
 bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
