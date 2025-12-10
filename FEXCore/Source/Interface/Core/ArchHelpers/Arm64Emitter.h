@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <FEXCore/Config/Config.h>
+
 #ifdef VIXL_DISASSEMBLER
 #include <aarch64/disasm-aarch64.h>
-#include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/vector.h>
 #endif
@@ -272,6 +273,8 @@ protected:
 
   FEX_CONFIG_OPT(Disassemble, DISASSEMBLE);
 #endif
+
+  FEX_CONFIG_OPT(EnableCodeCaching, ENABLECODECACHINGWIP);
 };
 
 } // namespace FEXCore::CPU
