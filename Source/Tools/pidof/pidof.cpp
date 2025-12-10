@@ -19,6 +19,7 @@ namespace Config {
 bool SingleShot {};
 bool SkipZombie {true};
 bool DoNotDisplay {};
+bool AllFEX {};
 std::string Separator {" "};
 std::unordered_set<int64_t> OmitPids;
 std::unordered_set<std::string> Programs;
@@ -65,6 +66,9 @@ void LoadOptions(int argc, char** argv) {
   }
 
   for (const auto& Program : Parser.args()) {
+    if (Program == "FEX") {
+      AllFEX = true;
+    }
     Programs.emplace(Program);
   }
 }
@@ -235,14 +239,6 @@ int main(int argc, char** argv) {
       arg += strlen(arg) + 1;
     }
 
-    auto FindFEXArgument = [](auto& Path) -> int32_t {
-      if (Path.ends_with("FEX")) {
-        return 1;
-      }
-
-      return -1;
-    };
-
     struct ProgramPair {
       std::string_view ProgramPath;
       std::string_view ProgramFilename;
@@ -299,9 +295,15 @@ int main(int argc, char** argv) {
     };
 
     int32_t ProgramArg = -1;
-    ProgramArg = FindFEXArgument(pid.exe_link);
-    if (ProgramArg == -1) {
-      ProgramArg = FindFEXArgument(Args[0]);
+    if (pid.exe_link.ends_with("FEX")) {
+      // Skip the first argument if it contains `FEX`, otherwise the application name begins at 0.
+      ProgramArg = Args[0].ends_with("FEX") ? 1 : 0;
+    }
+
+    // If matching all "FEX" instances then add to the matched list.
+    if (ProgramArg != -1 && Config::AllFEX) {
+      MatchedPIDs.emplace(pid.pid);
+      continue;
     }
 
     bool IsWine = false;
