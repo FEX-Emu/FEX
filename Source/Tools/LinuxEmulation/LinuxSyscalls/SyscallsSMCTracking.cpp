@@ -28,6 +28,7 @@ $end_info$
 #include <Linux/Utils/ELFParser.h>
 
 namespace FEX::HLE {
+
 // SMC interactions
 bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
   const auto FaultAddress = (uintptr_t)((siginfo_t*)info)->si_addr;
@@ -93,6 +94,11 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, 
       // If we are not in a single-instruction block, and the SMC write address could intersect with the current block,
       // reconstruct the context and repeat the faulting instruction as a single-instruction block so any SMC it performs
       // is immediately picked up.
+
+      // Mark this page as "SMC-unprotected" so MarkGuestExecutableRange won't re-protect it
+      // during the single-step compilation. This prevents infinite loops when code writes to its own page.
+      ThreadObject->SMCUnprotectedPage = FaultBase;
+
       ThreadObject->SignalInfo.Delegator->SpillSRA(Thread, ucontext, Thread->CurrentFrame->InSyscallInfo & 0xFFFF);
 
       // Adjust context to return to the dispatcher, reloading SRA from thread state
@@ -114,11 +120,69 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
       return;
     }
 
+    // Note: Thread can be null during initialization, so we must check before dereferencing.
+    auto ThreadObject = Thread ? FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread) : nullptr;
+
+    // First, handle any pending re-protection from a previous single-step.
+    // After single-step completes, we need to re-protect the page that was temporarily left writable.
+    uint64_t SMCReprotectPage = ThreadObject ? ThreadObject->SMCReprotectPage : 0;
+    if (SMCReprotectPage != 0) {
+      ThreadObject->SMCReprotectPage = 0;
+
+      // Re-protect the page. We need to check if the VMA is still valid and writable.
+      auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
+      auto Entry = VMATracking.FindVMAEntry(SMCReprotectPage);
+      if (Entry != VMATracking.VMAs.end() && Entry->second.Prot.Writable) {
+        int rv = mprotect((void*)SMCReprotectPage, FEXCore::Utils::FEX_PAGE_SIZE, PROT_READ);
+        LogMan::Throw::AFmt(rv == 0, "mprotect(0x{:x}, 0x{:x}) failed with errno={}", SMCReprotectPage, FEXCore::Utils::FEX_PAGE_SIZE, errno);
+      }
+    }
+
+    // Check if this range includes an SMC-unprotected page that should be skipped.
+    // This prevents infinite loops when code writes to its own page during single-step.
+    uint64_t SMCUnprotectedPage = ThreadObject ? ThreadObject->SMCUnprotectedPage : 0;
+
+    // If the SMCUnprotectedPage is in this range, skip it but queue for re-protection later
+    if (SMCUnprotectedPage != 0 && SMCUnprotectedPage >= Base && SMCUnprotectedPage < Top) {
+      // Queue for re-protection after single-step completes
+      ThreadObject->SMCReprotectPage = SMCUnprotectedPage;
+      ThreadObject->SMCUnprotectedPage = 0;
+    } else if (SMCUnprotectedPage != 0) {
+      // SMCUnprotectedPage is set but NOT in this range - keep it for later, use 0 locally
+      SMCUnprotectedPage = 0;
+    }
+
     auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
 
     // Find the first mapping at or after the range ends, or ::end().
     // Top points to the address after the end of the range
     auto Mapping = VMATracking.VMAs.lower_bound(Top);
+
+    // Helper lambda to protect a range, skipping the SMCUnprotectedPage if it's in the range
+    auto ProtectRangeSkippingSMCPage = [&](uint64_t RangeBase, uint64_t RangeSize) {
+      const uint64_t RangeEnd = RangeBase + RangeSize;
+
+      // Check if SMCUnprotectedPage is within this range
+      if (SMCUnprotectedPage != 0 && SMCUnprotectedPage >= RangeBase && SMCUnprotectedPage < RangeEnd) {
+        const uint64_t SMCPageEnd = SMCUnprotectedPage + FEXCore::Utils::FEX_PAGE_SIZE;
+
+        // Protect the part before SMCUnprotectedPage (if any)
+        if (RangeBase < SMCUnprotectedPage) {
+          int rv = mprotect((void*)RangeBase, SMCUnprotectedPage - RangeBase, PROT_READ);
+          LogMan::Throw::AFmt(rv == 0, "mprotect(0x{:x}, 0x{:x}) failed with errno={}", RangeBase, SMCUnprotectedPage - RangeBase, errno);
+        }
+
+        // Protect the part after SMCUnprotectedPage (if any)
+        if (SMCPageEnd < RangeEnd) {
+          int rv = mprotect((void*)SMCPageEnd, RangeEnd - SMCPageEnd, PROT_READ);
+          LogMan::Throw::AFmt(rv == 0, "mprotect(0x{:x}, 0x{:x}) failed with errno={}", SMCPageEnd, RangeEnd - SMCPageEnd, errno);
+        }
+      } else {
+        // No SMCUnprotectedPage in range, protect everything
+        int rv = mprotect((void*)RangeBase, RangeSize, PROT_READ);
+        LogMan::Throw::AFmt(rv == 0, "mprotect(0x{:x}, 0x{:x}) failed with errno={}", RangeBase, RangeSize, errno);
+      }
+    };
 
     while (Mapping != VMATracking.VMAs.begin()) {
       Mapping--;
@@ -158,9 +222,7 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
           } while ((VMA = VMA->ResourceNextVMA));
 
         } else if (Mapping->second.Prot.Writable) {
-          int rv = mprotect((void*)ProtectBase, ProtectSize, PROT_READ);
-
-          LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", ProtectBase, ProtectSize);
+          ProtectRangeSkippingSMCPage(ProtectBase, ProtectSize);
         }
       }
     }
