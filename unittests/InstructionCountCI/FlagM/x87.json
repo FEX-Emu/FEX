@@ -2001,7 +2001,7 @@
       ]
     },
     "fst dword [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0xd9 !11b /2"
       ],
@@ -2016,11 +2016,16 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov s2, s0",
-        "str s2, [x4]"
+        "mov w20, #0x400000",
+        "fmov s3, w20",
+        "fcmeq v4.4s, v2.4s, v2.4s",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str s4, [x4]"
       ]
     },
     "fstp dword [rax]": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 24,
       "Comment": [
         "0xd9 !11b /3"
       ],
@@ -2035,7 +2040,12 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov s2, s0",
-        "str s2, [x4]",
+        "mov w21, #0x400000",
+        "fmov s3, w21",
+        "fcmeq v4.4s, v2.4s, v2.4s",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str s4, [x4]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -6736,7 +6746,7 @@
       ]
     },
     "fst qword [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0xdd !11b /2"
       ],
@@ -6751,11 +6761,16 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
-        "str d2, [x4]"
+        "mov x20, #0x8000000000000",
+        "fmov d3, x20",
+        "fcmeq d4, d2, d2",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str d4, [x4]"
       ]
     },
     "fstp qword [rax]": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 24,
       "Comment": [
         "0xdd !11b /3"
       ],
@@ -6770,7 +6785,12 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
-        "str d2, [x4]",
+        "mov x21, #0x8000000000000",
+        "fmov d3, x21",
+        "fcmeq d4, d2, d2",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str d4, [x4]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -10885,7 +10905,7 @@
     },
     "memcpy4_32": {
       "x86InstructionCount": 8,
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 33,
       "x86Insts": [
         "fld dword [rax]",
         "fstp dword [rdx]",
@@ -10898,13 +10918,30 @@
       ],
       "ExpectedArm64ASM": [
         "ldr s2, [x4]",
-        "str s2, [x5]",
+        "mov w20, #0x400000",
+        "fmov s3, w20",
+        "fcmeq v4.4s, v2.4s, v2.4s",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str s4, [x5]",
         "ldr s2, [x4, #4]",
-        "str s2, [x5, #4]",
+        "fmov s3, w20",
+        "fcmeq v4.4s, v2.4s, v2.4s",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str s4, [x5, #4]",
         "ldr s2, [x4, #8]",
-        "str s2, [x5, #8]",
+        "fmov s3, w20",
+        "fcmeq v4.4s, v2.4s, v2.4s",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str s4, [x5, #8]",
         "ldr s2, [x4, #12]",
-        "str s2, [x5, #12]",
+        "fmov s3, w20",
+        "fcmeq v4.4s, v2.4s, v2.4s",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str s4, [x5, #12]",
         "ldrb w20, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
         "mov w22, #0x1",
@@ -10917,7 +10954,7 @@
     },
     "memcpy4_64": {
       "x86InstructionCount": 8,
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 33,
       "x86Insts": [
         "fld qword [rax]",
         "fstp qword [rdx]",
@@ -10930,13 +10967,30 @@
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "str d2, [x5]",
+        "mov x20, #0x8000000000000",
+        "fmov d3, x20",
+        "fcmeq d4, d2, d2",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str d4, [x5]",
         "ldr d2, [x4, #8]",
-        "str d2, [x5, #8]",
+        "fmov d3, x20",
+        "fcmeq d4, d2, d2",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str d4, [x5, #8]",
         "ldr d2, [x4, #16]",
-        "str d2, [x5, #16]",
+        "fmov d3, x20",
+        "fcmeq d4, d2, d2",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str d4, [x5, #16]",
         "ldr d2, [x4, #32]",
-        "str d2, [x5, #32]",
+        "fmov d3, x20",
+        "fcmeq d4, d2, d2",
+        "orr v3.8b, v2.8b, v3.8b",
+        "bsl v4.8b, v2.8b, v3.8b",
+        "str d4, [x5, #32]",
         "ldrb w20, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
         "mov w22, #0x1",
