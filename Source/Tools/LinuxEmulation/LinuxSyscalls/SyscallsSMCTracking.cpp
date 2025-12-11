@@ -217,6 +217,32 @@ static fextl::vector<Elf64_Phdr> ReadELFHeaders(int FD, std::span<std::byte> Hea
   return std::move(Parser.phdrs);
 }
 
+static void LoadCodeCache(FEXCore::Core::InternalThreadState& Thread, FEXCore::ExecutableFileSectionInfo& Section, uint64_t CodeCacheConfigId) {
+  auto CacheFilename = fextl::fmt::format("{}cache/{}-{:016x}", FEX::Config::GetCacheDirectory(),
+                                          FEXCore::CodeMap::GetBaseFilename(Section.FileInfo, false), CodeCacheConfigId);
+  int CacheFD = open(CacheFilename.c_str(), O_RDONLY);
+  if (CacheFD == -1) {
+    LogMan::Msg::IFmt("Cache file does not exist: {}", CacheFilename);
+    return;
+  }
+
+  struct stat buf;
+  if (fstat(CacheFD, &buf) != 0) {
+    LogMan::Msg::EFmt("Invalid cache file: {}", CacheFilename);
+    close(CacheFD);
+    return;
+  }
+
+  auto CacheFileSize = buf.st_size;
+  auto MappedCache = (std::byte*)FEXCore::Allocator::mmap(nullptr, CacheFileSize, PROT_READ, MAP_PRIVATE, CacheFD, 0);
+  LOGMAN_THROW_A_FMT(MappedCache, "Failed to map code cache into memory");
+  if (!Thread.CTX->GetCodeCache().LoadData(Thread, MappedCache, Section)) {
+    // TODO: Delete this cache file
+  }
+  FEXCore::Allocator::munmap(MappedCache, CacheFileSize);
+  close(CacheFD);
+}
+
 void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags,
                                 int fd, off_t offset) {
   LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits");
@@ -258,22 +284,7 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
   }
 
   if (EnableCodeCaching && CachedSection) {
-    auto CacheFilename = fextl::fmt::format("{}cache/{}-{:016x}", FEX::Config::GetCacheDirectory(),
-                                            FEXCore::CodeMap::GetBaseFilename(CachedSection->FileInfo, false), CodeCacheConfigId);
-    int FD = open(CacheFilename.c_str(), O_RDONLY);
-    struct stat buf;
-    if (FD != -1 && (fstat(FD, &buf) == 0)) {
-      auto CacheFileSize = buf.st_size;
-      auto MappedCache = (std::byte*)FEXCore::Allocator::mmap(nullptr, CacheFileSize, PROT_READ, MAP_PRIVATE, FD, 0);
-      LOGMAN_THROW_A_FMT(MappedCache, "Failed to map code cache into memory");
-      if (!CTX->GetCodeCache().LoadData(*Thread, MappedCache, *CachedSection)) {
-        // TODO: Delete this cache file
-      }
-      FEXCore::Allocator::munmap(MappedCache, CacheFileSize);
-    }
-    if (FD != -1) {
-      close(FD);
-    }
+    LoadCodeCache(*Thread, *CachedSection, CodeCacheConfigId);
   }
 
   return reinterpret_cast<void*>(Result);
