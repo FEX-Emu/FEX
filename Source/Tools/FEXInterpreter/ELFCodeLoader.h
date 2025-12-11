@@ -377,6 +377,10 @@ public:
     uint64_t val;
   };
 
+  int GetMainElfFD() const {
+    return MainElf.fd;
+  }
+
   std::optional<uintptr_t> LoadMainElfFile(uintptr_t* BrkBase, FEX::HLE::SyscallMmapInterface* const Handler, uint64_t LoadHint = 0) {
     return LoadElfFile(MainElf, BrkBase, Handler, LoadHint);
   }

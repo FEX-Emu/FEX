@@ -405,6 +405,29 @@ int RequestPIDFD(int ServerSocket) {
   return RequestPIDFDPacket(ServerSocket, PacketType::TYPE_GET_PID_FD);
 }
 
+void PopulateCodeCache(int ServerSocket, int ProgramFD, bool HasMultiblock) {
+  fasio::error ec;
+  fasio::tcp_socket Socket {ServerSocket};
+
+  // Send request
+  FEXServerRequestPacket Req {
+    .Header {.Type = HasMultiblock ? PacketType::TYPE_POPULATE_CODE_CACHE : PacketType::TYPE_POPULATE_CODE_CACHE_NO_MULTIBLOCK}};
+
+  fasio::mutable_buffer WriteBuffer {std::as_writable_bytes(std::span {&Req, 1})};
+  WriteBuffer.FD = &ProgramFD;
+  write(Socket, WriteBuffer, ec);
+  if (ec != fasio::error::success) {
+    return;
+  }
+
+  // Wait for success response to ensure FEXServer completed any pending cache generation.
+  // The cache loading code handles missing caches gracefully, so we don't
+  // actually care about the result here.
+  FEXServerResultPacket Res {};
+  fasio::mutable_buffer ResBuffer {std::as_writable_bytes(std::span {&Res, 1})};
+  read(Socket, ResBuffer, ec);
+}
+
 int RequestCodeMapFD(int ServerSocket, int ProgramFD, bool HasMultiblock) {
   fasio::tcp_socket Socket {ServerSocket};
   FEXServerRequestPacket Req {

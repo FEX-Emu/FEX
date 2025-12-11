@@ -385,6 +385,36 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
       break;
     }
 
+    case FEXServerClient::PacketType::TYPE_POPULATE_CODE_CACHE:
+    case FEXServerClient::PacketType::TYPE_POPULATE_CODE_CACHE_NO_MULTIBLOCK: {
+      char Tmp[PATH_MAX];
+      int TmpLen = FEX::get_fdpath(inFD, Tmp);
+      assert(TmpLen != -1);
+
+      std::filesystem::path Path {std::string_view(Tmp, TmpLen)};
+      auto filename_hash = XXH3_64bits(Tmp, TmpLen);
+      const bool HasMultiblock = (Req->Header.Type == FEXServerClient::PacketType::TYPE_POPULATE_CODE_CACHE);
+
+      FEXCore::ExecutableFileInfo MainFileId = {nullptr, filename_hash, fextl::string(Tmp, TmpLen)};
+      fmt::print("Requested {}cache generation for {}\n", HasMultiblock ? "" : "nomb-", MainFileId.Filename);
+
+      // TODO: Implement
+
+      FEXServerClient::FEXServerResultPacket Res {
+        .Header {
+          .Type = FEXServerClient::PacketType::TYPE_SUCCESS,
+        },
+      };
+
+      fasio::mutable_buffer Data = {.Data = std::as_writable_bytes(std::span(&Res, 1))};
+      fasio::error ec;
+      write(Socket, Data, ec);
+      buffer += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
+      close(inFD);
+      inFD = -1;
+      break;
+    }
+
     case FEXServerClient::PacketType::TYPE_QUERY_CODE_MAP:
     case FEXServerClient::PacketType::TYPE_QUERY_CODE_MAP_NO_MULTIBLOCK: {
       char Tmp[PATH_MAX];
