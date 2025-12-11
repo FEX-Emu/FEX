@@ -7,6 +7,7 @@ desc: SMC/MMan Tracking
 $end_info$
 */
 
+#include <Common/Config.h>
 #include "Common/FDUtils.h"
 #include "Common/FEXServerClient.h"
 #include "Common/FileMappingBaseAddress.h"
@@ -171,6 +172,10 @@ void SyscallHandler::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState
   InvalidateCodeRangeIfNecessary(Thread, Start, Length);
 }
 
+static FEXCore::ExecutableFileSectionInfo BuildSectionInfo(const VMATracking::MappedResource& Resource, uint64_t Base, uint64_t Size) {
+  return FEXCore::ExecutableFileSectionInfo {*Resource.MappedFile, Resource.FirstVMA->Base, Base, Base + Size};
+}
+
 std::optional<FEXCore::ExecutableFileSectionInfo>
 SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) {
   auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, &Thread);
@@ -181,7 +186,7 @@ SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& 
   }
 
   auto& [MappingBaseAddr, Entry] = *EntryIt;
-  return FEXCore::ExecutableFileSectionInfo {*Entry.Resource->MappedFile, Entry.Resource->FirstVMA->Base};
+  return BuildSectionInfo(*Entry.Resource, MappingBaseAddr, Entry.Length);
 }
 
 FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) {
@@ -212,6 +217,32 @@ static fextl::vector<Elf64_Phdr> ReadELFHeaders(int FD, std::span<std::byte> Hea
   return std::move(Parser.phdrs);
 }
 
+static void LoadCodeCache(FEXCore::Core::InternalThreadState& Thread, FEXCore::ExecutableFileSectionInfo& Section, uint64_t CodeCacheConfigId) {
+  auto CacheFilename = fextl::fmt::format("{}cache/{}-{:016x}", FEX::Config::GetCacheDirectory(),
+                                          FEXCore::CodeMap::GetBaseFilename(Section.FileInfo, false), CodeCacheConfigId);
+  int CacheFD = open(CacheFilename.c_str(), O_RDONLY);
+  if (CacheFD == -1) {
+    LogMan::Msg::IFmt("Cache file does not exist: {}", CacheFilename);
+    return;
+  }
+
+  struct stat buf;
+  if (fstat(CacheFD, &buf) != 0) {
+    LogMan::Msg::EFmt("Invalid cache file: {}", CacheFilename);
+    close(CacheFD);
+    return;
+  }
+
+  auto CacheFileSize = buf.st_size;
+  auto MappedCache = (std::byte*)FEXCore::Allocator::mmap(nullptr, CacheFileSize, PROT_READ, MAP_PRIVATE, CacheFD, 0);
+  LOGMAN_THROW_A_FMT(MappedCache, "Failed to map code cache into memory");
+  if (!Thread.CTX->GetCodeCache().LoadData(Thread, MappedCache, Section)) {
+    // TODO: Delete this cache file
+  }
+  FEXCore::Allocator::munmap(MappedCache, CacheFileSize);
+  close(CacheFD);
+}
+
 void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags,
                                 int fd, off_t offset) {
   LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits");
@@ -219,6 +250,8 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
   uint64_t Result {};
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
   std::optional<LateApplyExtendedVolatileMetadata> LateMetadata = std::nullopt;
+
+  std::optional<FEXCore::ExecutableFileSectionInfo> CachedSection;
 
   {
     // NOTE: Frontend calls this with a nullptr Thread during initialization, but
@@ -240,7 +273,7 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
       }
     }
 
-    LateMetadata = TrackMmap(Thread, Result, length, prot, flags, fd, offset);
+    LateMetadata = TrackMmap(Thread, Result, length, prot, flags, fd, offset, CachedSection);
   }
 
   InvalidateCodeRangeIfNecessary(Thread, Result, Size);
@@ -248,6 +281,10 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
   if (LateMetadata) {
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
     CTX->AddForceTSOInformation(LateMetadata->VolatileValidRanges, std::move(LateMetadata->VolatileInstructions));
+  }
+
+  if (EnableCodeCaching && CachedSection) {
+    LoadCodeCache(*Thread, *CachedSection, CodeCacheConfigId);
   }
 
   return reinterpret_cast<void*>(Result);
@@ -418,8 +455,9 @@ uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadS
 }
 
 // MMan Tracking
-std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler::TrackMmap(
-  FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset) {
+std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata>
+SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd,
+                          off_t offset, std::optional<FEXCore::ExecutableFileSectionInfo>& CachedSection) {
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
   const auto ProtMapping = VMATracking::VMAProt::fromProt(prot);
 
@@ -517,7 +555,18 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
     Resource->Iterator = Iter;
   }
 
-  VMATracking.TrackVMARange(CTX, Resource, addr, offset, Size, VMATracking::VMAFlags::fromFlags(flags), ProtMapping);
+  VMATracking.TrackVMARange(CTX, Resource, addr, offset, Size, VMATracking::VMAFlags::fromFlags(flags), VMATracking::VMAProt::fromProt(prot));
+
+  // Load code cache if present.
+  // FEXServer was requested to generate library caches on program launch.
+  if (EnableCodeCaching && Resource && Resource->MappedFile && VMATracking::VMAProt::fromProt(prot).Executable) {
+    if (Thread) {
+      CachedSection.emplace(BuildSectionInfo(*Resource, addr, Size));
+    } else {
+      // Cache can't be loaded without a thread; skip this for now
+    }
+  }
+
   return VolatileMetadata;
 }
 

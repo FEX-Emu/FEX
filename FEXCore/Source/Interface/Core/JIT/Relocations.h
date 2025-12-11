@@ -74,6 +74,17 @@ struct RelocGuestRIP final {
 };
 
 union Relocation {
+  // Clang 16 Can't default-initialize this union
+  static Relocation Default() {
+#if __clang_major__ < 17
+    Relocation Ret {.Header {}};
+    memset(&Ret, 0, sizeof(Ret));
+    return Ret;
+#else
+    return {};
+#endif
+  }
+
   RelocationHeader Header {};
 
   RelocNamedSymbolLiteral NamedSymbolLiteral;
