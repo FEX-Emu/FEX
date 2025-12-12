@@ -7,11 +7,12 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/FileLoading.h>
+#include <FEXCore/Utils/WildcardMatcher.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
-
 #include <cstring>
 #include <fmt/format.h>
 #include <functional>
@@ -28,7 +29,7 @@
 
 namespace FEX::Config {
 namespace JSON {
-  static void LoadJSonConfig(const fextl::string& Config, std::function<void(const char* Name, const char* ConfigSring)> Func) {
+  static void LoadJSonConfig(const fextl::string& Config, std::function<void(const char* Name, const char* ConfigString)> Func) {
     fextl::vector<char> Data;
     if (!FEXCore::FileLoading::LoadFile(Data, Config)) {
       return;
@@ -48,21 +49,49 @@ namespace JSON {
       return;
     }
 
-    for (const json_t* ConfigItem = json_getChild(ConfigList); ConfigItem != nullptr; ConfigItem = json_getSibling(ConfigItem)) {
-      const char* ConfigName = json_getName(ConfigItem);
-      const char* ConfigString = json_getValue(ConfigItem);
+    fextl::vector<const json_t*> ConfigBlocks;
+    ConfigBlocks.push_back(ConfigList);
 
-      if (!ConfigName) {
-        LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
-        return;
+    const json_t* OverrideList = json_getProperty(json, "AppOverrides");
+    if (OverrideList) {
+      for (const json_t* Item = json_getChild(OverrideList); Item != nullptr; Item = json_getSibling(Item)) {
+        const char* ItemName = json_getName(Item);
+        const json_t* OverrideNamedList = json_getProperty(OverrideList, ItemName);
+
+        if (!ItemName) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
+          break;
+        }
+
+        if (!OverrideNamedList) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ItemName);
+          break;
+        }
+
+        // Find the first match, then break
+        if (FEXCore::Utils::Wildcard::Matches(ItemName, Config)) {
+          ConfigBlocks.push_back(OverrideNamedList);
+          break;
+        }
       }
+    }
 
-      if (!ConfigString) {
-        LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ConfigName);
-        return;
+    for (auto ConfigBlock : ConfigBlocks) {
+      for (const json_t* ConfigItem = json_getChild(ConfigBlock); ConfigItem != nullptr; ConfigItem = json_getSibling(ConfigItem)) {
+        const char* ConfigName = json_getName(ConfigItem);
+        const char* ConfigString = json_getValue(ConfigItem);
+
+        if (!ConfigName) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
+          return;
+        }
+
+        if (!ConfigString) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ConfigName);
+          return;
+        }
+        Func(ConfigName, ConfigString);
       }
-
-      Func(ConfigName, ConfigString);
     }
   }
 } // namespace JSON
