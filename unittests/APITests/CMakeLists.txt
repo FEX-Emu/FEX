@@ -6,7 +6,8 @@ set(TESTS
   FileMappingBaseAddress
   Filesystem
   InterruptableConditionVariable
-  StringUtils)
+  StringUtils
+  Regex)
 
 list(APPEND LIBS Common FEXCore JemallocLibs)
 
