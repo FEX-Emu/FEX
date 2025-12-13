@@ -118,7 +118,8 @@ endif()
 # These options are meant for package management
 set (TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
 set (TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
-set (OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version in the format of <MMYY>{.<REV>}")
+set (OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version")
+set (OVERRIDE_HASH "detect" CACHE STRING "Override the FEX git hash")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (CMAKE_BUILD_TYPE MATCHES "DEBUG")
@@ -453,6 +454,42 @@ elseif (NOT TUNE_CPU STREQUAL "none")
   endif()
 endif()
 
+set(GIT_DESCRIBE_STRING "FEX-Unknown")
+
+if (OVERRIDE_VERSION STREQUAL "detect")
+  find_package(Git)
+
+  if (GIT_FOUND)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe --abbrev=7
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+      OUTPUT_VARIABLE GIT_DESCRIBE_STRING
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  endif()
+else()
+  set(GIT_DESCRIBE_STRING "${OVERRIDE_VERSION}")
+endif()
+
+set(GIT_SHORT_HASH "Unknown")
+
+if (OVERRIDE_HASH STREQUAL "detect")
+  find_package(Git)
+
+  if (GIT_FOUND)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} rev-parse --short=7 HEAD
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+      OUTPUT_VARIABLE GIT_SHORT_HASH
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  endif()
+else()
+  set(GIT_SHORT_HASH "${OVERRIDE_HASH}")
+endif()
+
 if (ENABLE_IWYU)
   find_program(IWYU_EXE "iwyu")
   if (IWYU_EXE)
@@ -592,30 +629,4 @@ endif()
 
 if (BUILD_STEAM_SUPPORT)
   add_subdirectory(Source/Steam/)
-endif()
-
-set(FEX_VERSION_MAJOR "0")
-set(FEX_VERSION_MINOR "0")
-set(FEX_VERSION_PATCH "0")
-
-if (OVERRIDE_VERSION STREQUAL "detect")
-  find_package(Git)
-  if (GIT_FOUND)
-    execute_process(
-      COMMAND ${GIT_EXECUTABLE} describe --abbrev=0
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-      OUTPUT_VARIABLE GIT_DESCRIBE_STRING
-      RESULT_VARIABLE GIT_ERROR
-      ERROR_QUIET
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    if (NOT ${GIT_ERROR} EQUAL 0)
-      # Likely built in a way that doesn't have tags
-      # Setup a version tag that is unknown
-      set(GIT_DESCRIBE_STRING "FEX-0000")
-    endif()
-  endif()
-else()
-  set(GIT_DESCRIBE_STRING "FEX-${OVERRIDE_VERSION}")
 endif()
