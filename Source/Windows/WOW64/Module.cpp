@@ -187,7 +187,7 @@ void LoadImageVolatileMetadata(const fextl::string& ModuleName, uint64_t Address
 }
 
 void HandleImageMap(uint64_t Address) {
-  fextl::string ModuleName = FEX::Windows::GetSectionFilePath(Address);
+  fextl::string ModuleName = fextl::string {FEX::Windows::BaseName(FEX::Windows::GetSectionFilePath(Address))};
   LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
   FEX_CONFIG_OPT(VolatileMetadata, VOLATILEMETADATA);
   if (VolatileMetadata) {
@@ -508,8 +508,8 @@ public:
 
 void BTCpuProcessInit() {
   FEX::Windows::InitCRTProcess();
-  const auto ExecutablePath = FEX::Windows::GetExecutableFilePath();
-  FEX::Config::LoadConfig(ExecutablePath, _environ, FEX::ReadPortabilityInformation());
+  const auto ExecutableName = FEX::Windows::BaseName(FEX::Windows::GetExecutableFilePath());
+  FEX::Config::LoadConfig(fextl::string {ExecutableName}, _environ, FEX::ReadPortabilityInformation());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 
@@ -582,8 +582,8 @@ void BTCpuProcessInit() {
     StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::SHMStats::AppType::WIN_WOW64);
   }
 
-  if (StartupSleep() && (StartupSleepProcName().empty() || ExecutablePath == StartupSleepProcName())) {
-    LogMan::Msg::IFmt("[{}][{}] Sleeping for {} seconds", GetCurrentProcessId(), ExecutablePath, StartupSleep());
+  if (StartupSleep() && (StartupSleepProcName().empty() || ExecutableName == StartupSleepProcName())) {
+    LogMan::Msg::IFmt("[{}][{}] Sleeping for {} seconds", GetCurrentProcessId(), ExecutableName, StartupSleep());
     std::this_thread::sleep_for(std::chrono::seconds(StartupSleep()));
   }
 }
