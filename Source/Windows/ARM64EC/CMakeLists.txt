@@ -18,6 +18,7 @@ target_link_libraries(arm64ecfex
   Common
   CommonTools
   CommonWindows
+  CommonWindowsRuntime
   ntdll_ex
 )
 

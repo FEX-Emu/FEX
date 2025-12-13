@@ -17,6 +17,7 @@ target_link_libraries(wow64fex
   Common
   CommonTools
   CommonWindows
+  CommonWindowsRuntime
   wow64_ex
   ntdll_ex
 )
