@@ -407,7 +407,7 @@ private:
         if (!NewPageBacking) {
           // Couldn't allocate, clear L2 and retry
           ClearL2Cache(lk);
-          CacheBlockMapping(Address, Entry, false, lk);
+          CacheBlockMapping(FullAddress, Entry, false, lk);
           return;
         }
         Pointers[Address] = NewPageBacking;
