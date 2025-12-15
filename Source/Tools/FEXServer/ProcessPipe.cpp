@@ -131,7 +131,7 @@ bool InitializeServerPipe() {
     ServerLockFD = open(ServerLockPath.c_str(), O_RDWR | O_CLOEXEC, USER_PERMS);
     if (ServerLockFD != -1) {
       // Now that we have opened the file, try to get a write lock.
-      flock lk {
+      struct flock lk {
         .l_type = F_WRLCK,
         .l_whence = SEEK_SET,
         .l_start = 0,
@@ -158,7 +158,7 @@ bool InitializeServerPipe() {
     return false;
   } else {
     // FIFO file was created. Try to get a write lock
-    flock lk {
+    struct flock lk {
       .l_type = F_WRLCK,
       .l_whence = SEEK_SET,
       .l_start = 0,
@@ -175,7 +175,7 @@ bool InitializeServerPipe() {
   }
 
   // Now that a write lock is held, downgrade it to a read lock
-  flock lk {
+  struct flock lk {
     .l_type = F_RDLCK,
     .l_whence = SEEK_SET,
     .l_start = 0,

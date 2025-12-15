@@ -13,9 +13,10 @@ $end_info$
 #include "Common/FileMappingBaseAddress.h"
 
 #include <filesystem>
-#include <sys/shm.h>
+#include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/personality.h>
+#include <sys/shm.h>
 
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/SignalDelegator.h"
@@ -383,6 +384,10 @@ int SyscallHandler::OpenCodeMapFile() {
   if (CodeMapFD == -1) {
     return -1;
   }
+
+  // Acquire exclusive lock to prevent FEXServer from processing this file eagerly
+  [[maybe_unused]] auto ret = flock(CodeMapFD, LOCK_EX);
+  LOGMAN_THROW_A_FMT(ret == 0, "Could not lock code map");
 
   FM.SetProtectedCodeMapFD(CodeMapFD);
 
