@@ -18,7 +18,6 @@ public:
   void addTransition(char c, State *nextState);
 };
 class NFA {
-  static inline fextl::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 public:
   State *startState;
   State *acceptingState;
@@ -37,6 +36,7 @@ public:
   static NFA createForConcatenation(NFA &nfa1, NFA &nfa2);
   static NFA createForKleeneStar(NFA &originalNFA);
   static NFA createForPlus(NFA &originalNFA);
+  static NFA createForQuestion(NFA &originalNFA);
   static fextl::set<State *> epsilonClosure(const fextl::set<State *> &states);
   static fextl::set<State *> move(const fextl::set<State *> &states, char c);
 };
@@ -47,6 +47,7 @@ class Regex {
   fextl::string pattern;
   int pos;
   NFA nfa;
+  bool escaped = false;
 
   // Top level parser, calls parseUnion
   NFA parseExpression();
@@ -58,12 +59,14 @@ class Regex {
   NFA parseConcatenation();
 
   // INFO: "a*", ".*"
-  NFA parseStar();
+  NFA parseStarPlusHuhhhh();
 
   // INFO: "(abc)" or a
   NFA parseAtom();
 
 public:
+  static inline fextl::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;':\"[]\\{}|";
+  static inline fextl::string acceptable_escapable = ".?[]\\|";
   Regex(const fextl::string &s);
   bool matches(const fextl::string &s);
 };
