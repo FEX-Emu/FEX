@@ -1,9 +1,13 @@
+#include "FEXCore/fextl/string.h"
 #include <FEXCore/Utils/Regex.h>
 
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
+#include <functional>
 #include <iostream>
-// Inspiration taken from https://sh4dy.com/2025/05/01/regex_engine/
+// Inspiration taken from dragon book and
+// https://sh4dy.com/2025/05/01/regex_engine/
 namespace FEXCore::Utils {
 /////////////
 // STATE IMPL
@@ -52,7 +56,7 @@ NFA NFA::createForDot() {
   //
   // See if performance is acceptable or not and then we can read more dragon
   // book to find optimization
-  for (auto ch : alphabet)
+  for (auto ch : Regex::alphabet)
     nfa.startState->addTransition(ch, nfa.acceptingState);
   return nfa;
 }
@@ -96,6 +100,25 @@ NFA NFA::createForConcatenation(NFA &nfa1, NFA &nfa2) {
   return newNFA;
 }
 
+// loop back the nfa to itself to enable accepting 1 more time, do not disable accepting state
+NFA NFA::createForPlus(NFA &originalNFA) {
+  NFA newNFA;
+  newNFA.startState = originalNFA.startState;
+  newNFA.acceptingState = originalNFA.acceptingState;
+  newNFA.acceptingState->addEpsilonTransition(newNFA.startState);
+  newNFA.acquireStatesFrom(originalNFA);
+  return newNFA;
+}
+
+NFA NFA::createForQuestion(NFA &originalNFA) {
+  NFA newNFA;
+  newNFA.startState = originalNFA.startState;
+  newNFA.acceptingState = originalNFA.acceptingState;
+  newNFA.startState->addEpsilonTransition(newNFA.acceptingState);
+  newNFA.acquireStatesFrom(originalNFA);
+  return newNFA;
+}
+
 // Dragon book 2nd edition, figure 3.42: NFA for the closure of a regular
 // expression
 NFA NFA::createForKleeneStar(NFA &originalNFA) {
@@ -106,10 +129,6 @@ NFA NFA::createForKleeneStar(NFA &originalNFA) {
   originalNFA.acceptingState->addEpsilonTransition(newNFA.acceptingState);
   originalNFA.acceptingState->isAccepting = false;
   newNFA.acquireStatesFrom(originalNFA);
-  return newNFA;
-}
-NFA NFA::createForPlus(NFA &originalNFA) {
-  NFA newNFA;
   return newNFA;
 }
 
@@ -170,19 +189,27 @@ NFA Regex::parseUnion() {
 }
 
 NFA Regex::parseConcatenation() {
-  NFA result = parseStar();
+  NFA result = parseStarPlusHuhhhh();
   while (pos < pattern.size() && pattern[pos] != '|' && pattern[pos] != ')') {
-    NFA nfaToConcat = parseStar();
+    NFA nfaToConcat = parseStarPlusHuhhhh();
     result = NFA::createForConcatenation(result, nfaToConcat);
   }
   return result;
 }
 
-NFA Regex::parseStar() {
+NFA Regex::parseStarPlusHuhhhh() {
   NFA result = parseAtom();
-  while (pos < pattern.size() && pattern[pos] == '*') {
+  while (pos < pattern.size()) {
+    if (pattern[pos] == '*') {
+      result = NFA::createForKleeneStar(result);
+    } else if (pattern[pos] == '+') {
+      result = NFA::createForPlus(result);
+    } else if (pattern[pos] == '?') {
+      result = NFA::createForQuestion(result);
+    } else {
+      break;
+    }
     pos++;
-    result = NFA::createForKleeneStar(result);
   }
   return result;
 }
@@ -194,6 +221,17 @@ NFA Regex::parseAtom() {
   }
   char curChar = pattern[pos++];
 
+  if (escaped) {
+    escaped = false;
+    if (acceptable_escapable.find(curChar) == fextl::string::npos) {
+      fprintf(stderr, "Expected an acceptable escapable character which "
+                      "consists of \"%s\", but found '%c' "
+                      "while parsing regex for NFA creation\n",
+              acceptable_escapable.c_str(), curChar);
+      std::exit(1);
+    }
+    return NFA::createForChar(curChar);
+  }
   // Move past the opening brace and get the NFA for the expression till a
   // closing brace is found.
   if (curChar == '(') {
@@ -202,17 +240,22 @@ NFA Regex::parseAtom() {
       pos++;
     } else if (pos >= pattern.size()) {
       // TODO: Add error prop here somewhere
-      LogMan::Msg::EFmt("Expected ')', but has no more character to parse from "
-                        "regex for NFA creation\n");
+      fprintf(stderr, "Expected ')', but has no more character to parse from "
+                      "regex for NFA creation\n");
       std::exit(1);
     } else {
-      LogMan::Msg::EFmt(
-          "Expected ')', but encountered character '{}' while parsing"
-          "regex for NFA creation\n",
-          pattern[pos]);
+      fprintf(stderr, "Expected ')', but encountered character '%c' while parsing "
+                      "regex for NFA creation\n",
+              pattern[pos]);
       std::exit(1);
     }
     return result;
+  }
+
+  if (curChar == '\\') {
+    assert(escaped == false && "Cannot have escaped = true here");
+    escaped = true;
+    return parseAtom();
   }
 
   if (curChar == '.')
@@ -226,12 +269,9 @@ bool Regex::matches(const fextl::string &target) {
 
   for (const auto c : target) {
     currentStates = NFA::epsilonClosure(NFA::move(currentStates, c));
-    if (currentStates.empty()) {
-      std::cerr << "Wrong here\n";
+    if (currentStates.empty())
       return false;
-    }
   }
-
   return std::ranges::any_of(currentStates, &State::isAccepting);
 }
 
