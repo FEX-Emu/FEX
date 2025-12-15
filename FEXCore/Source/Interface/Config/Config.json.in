@@ -334,6 +334,14 @@
           "\tstats: Will print stats when disassembling the code"
         ]
       },
+      "X86Disassemble": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enables x86/x86-64 guest disassembly output for compiled blocks.",
+          "Requires FEX to be built with -DENABLE_ZYDIS=TRUE"
+        ]
+      },
       "ForceSVEWidth": {
         "Type": "uint32",
         "Default": "0",
