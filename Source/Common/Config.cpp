@@ -10,7 +10,7 @@
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
-
+#include <FEXCore/Utils/Regex.h>
 #include <cstring>
 #include <functional>
 #ifndef _WIN32
@@ -43,22 +43,59 @@ namespace JSON {
       return;
     }
 
-    for (const json_t* ConfigItem = json_getChild(ConfigList); ConfigItem != nullptr; ConfigItem = json_getSibling(ConfigItem)) {
-      const char* ConfigName = json_getName(ConfigItem);
-      const char* ConfigString = json_getValue(ConfigItem);
+    auto ListApplier = [&Config, &Func](const json_t* jsonList) {
+      for (const json_t* ConfigItem = json_getChild(jsonList); ConfigItem != nullptr; ConfigItem = json_getSibling(ConfigItem)) {
+        const char* ConfigName = json_getName(ConfigItem);
+        const char* ConfigString = json_getValue(ConfigItem);
 
-      if (!ConfigName) {
+        if (!ConfigName) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
+          return;
+        }
+
+        if (!ConfigString) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ConfigName);
+          return;
+        }
+        Func(ConfigName, ConfigString);
+      }
+
+    };
+
+    ListApplier(ConfigList);
+
+    const json_t* RegexList = json_getProperty(json, "RegexConfig");
+    if (!RegexList) {
+      // This is a non-error if the configuration file exists but no RegexConfigList section
+      return;
+    }
+
+    using FEXCore::Utils::Regex;
+
+    for (const json_t* RegexItem = json_getChild(RegexList); RegexItem != nullptr; RegexItem = json_getSibling(RegexItem)) {
+      const char* RegexName = json_getName(RegexItem);
+      const json_t* RegexNamedList = json_getProperty(RegexList, RegexName);
+
+      if (!RegexName) {
         LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
         return;
       }
 
-      if (!ConfigString) {
-        LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ConfigName);
+      if (!RegexNamedList) {
+        LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, RegexName);
         return;
       }
 
-      Func(ConfigName, ConfigString);
+      // Matches the first and then get out
+      // Needs PR review on this
+      if (Regex(RegexName).matches(Config)) {
+        // Safe to assume its just pairs of strings at this point?
+        ListApplier(RegexNamedList);
+        break;
+      }
+
     }
+
   }
 } // namespace JSON
 
