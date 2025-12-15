@@ -150,7 +150,7 @@ DEF_OP(ExitFunction) {
         ARMEmitter::ForwardLabel TFUnset;
         ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
         (void)cbz(ARMEmitter::Size::i32Bit, TMP1, &TFUnset);
-        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, NewRIP);
+        InsertGuestRIPMove(TMP1, NewRIP);
         str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
         ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
         blr(TMP2);
