@@ -6,7 +6,7 @@
 #include <winternl.h>
 
 namespace FEX::Windows {
-fextl::string GetExecutableFilePath() {
+inline fextl::string GetExecutableFilePath() {
   std::array<WCHAR, PATH_MAX> Buf;
   UNICODE_STRING PathW {.Length = 0, .MaximumLength = Buf.size() * sizeof(WCHAR), .Buffer = Buf.data()};
 
@@ -19,16 +19,16 @@ fextl::string GetExecutableFilePath() {
   fextl::string Path(PathA.Buffer);
   RtlFreeAnsiString(&PathA);
 
-  return Path.substr(Path.find_last_of('\\') + 1);
+  return Path;
 }
 
-fextl::string GetSectionFilePath(uint64_t Address) {
+inline fextl::string GetSectionFilePath(uint64_t Address) {
   struct {
     MEMORY_SECTION_NAME Info;
     std::array<WCHAR, PATH_MAX> PathW;
   } Buffer;
 
-  if (NtQueryVirtualMemory(GetCurrentProcess(), reinterpret_cast<void*>(Address), MemoryMappedFilenameInformation, &Buffer, sizeof(Buffer), NULL)) {
+  if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Address), MemoryMappedFilenameInformation, &Buffer, sizeof(Buffer), NULL)) {
     return {};
   }
 
@@ -37,6 +37,10 @@ fextl::string GetSectionFilePath(uint64_t Address) {
   fextl::string Path(PathA.Buffer);
   RtlFreeAnsiString(&PathA);
 
+  return Path;
+}
+
+inline std::string_view BaseName(std::string_view Path) {
   return Path.substr(Path.find_last_of('\\') + 1);
 }
 } // namespace FEX::Windows
