@@ -60,7 +60,7 @@ NFA NFA::createForDot() {
   //
   // See if performance is acceptable or not and then we can read more dragon
   // book to find optimization
-  for (auto ch : Regex::alphabet)
+  for (auto ch : Regex::Alphabet)
     nfa.startState->addTransition(ch, nfa.acceptingState);
   return nfa;
 }
@@ -176,16 +176,16 @@ fextl::set<State *> NFA::move(const fextl::set<State *> &states, const char c) {
 /////////////
 // REGEX IMPL
 /////////////
-Regex::Regex(const fextl::string &s) : pattern(s), pos(0) {
-  nfa = parseExpression();
+Regex::Regex(const fextl::string &s) : Pattern(s), Pos(0) {
+  Nfa = parseExpression();
 }
 
 NFA Regex::parseExpression() { return parseUnion(); }
 
 NFA Regex::parseUnion() {
   NFA result = parseConcatenation();
-  while (pos < pattern.size() && pattern[pos] == '|') {
-    pos++;
+  while (Pos < Pattern.size() && Pattern[Pos] == '|') {
+    Pos++;
     NFA nfaToMakeUnion = parseConcatenation();
     result = NFA::createForUnion(result, nfaToMakeUnion);
   }
@@ -194,7 +194,7 @@ NFA Regex::parseUnion() {
 
 NFA Regex::parseConcatenation() {
   NFA result = parseStarPlusHuhhhh();
-  while (pos < pattern.size() && pattern[pos] != '|' && pattern[pos] != ')') {
+  while (Pos < Pattern.size() && Pattern[Pos] != '|' && Pattern[Pos] != ')') {
     NFA nfaToConcat = parseStarPlusHuhhhh();
     result = NFA::createForConcatenation(result, nfaToConcat);
   }
@@ -203,35 +203,35 @@ NFA Regex::parseConcatenation() {
 
 NFA Regex::parseStarPlusHuhhhh() {
   NFA result = parseAtom();
-  while (pos < pattern.size()) {
-    if (pattern[pos] == '*') {
+  while (Pos < Pattern.size()) {
+    if (Pattern[Pos] == '*') {
       result = NFA::createForKleeneStar(result);
-    } else if (pattern[pos] == '+') {
+    } else if (Pattern[Pos] == '+') {
       result = NFA::createForPlus(result);
-    } else if (pattern[pos] == '?') {
+    } else if (Pattern[Pos] == '?') {
       result = NFA::createForQuestion(result);
     } else {
       break;
     }
-    pos++;
+    Pos++;
   }
   return result;
 }
 // Algo 3.23: Basis
 NFA Regex::parseAtom() {
 
-  if (pos >= pattern.size()) {
+  if (Pos >= Pattern.size()) {
     return NFA::createForEpsilon();
   }
-  char curChar = pattern[pos++];
+  char curChar = Pattern[Pos++];
 
-  if (escaped) {
-    escaped = false;
-    if (acceptable_escapable.find(curChar) == fextl::string::npos) {
+  if (Escaped) {
+    Escaped = false;
+    if (AcceptableEscapable.find(curChar) == fextl::string::npos) {
       fprintf(stderr, "Expected an acceptable escapable character which "
                       "consists of \"%s\", but found '%c' "
                       "while parsing regex for NFA creation\n",
-              acceptable_escapable.c_str(), curChar);
+              AcceptableEscapable.c_str(), curChar);
       std::exit(1);
     }
     return NFA::createForChar(curChar);
@@ -240,9 +240,9 @@ NFA Regex::parseAtom() {
   // closing brace is found.
   if (curChar == '(') {
     NFA result = parseExpression();
-    if (pos < pattern.size() && pattern[pos] == ')') {
-      pos++;
-    } else if (pos >= pattern.size()) {
+    if (Pos < Pattern.size() && Pattern[Pos] == ')') {
+      Pos++;
+    } else if (Pos >= Pattern.size()) {
       // TODO: Add error prop here somewhere
       fprintf(stderr, "Expected ')', but has no more character to parse from "
                       "regex for NFA creation\n");
@@ -250,15 +250,15 @@ NFA Regex::parseAtom() {
     } else {
       fprintf(stderr, "Expected ')', but encountered character '%c' while parsing "
                       "regex for NFA creation\n",
-              pattern[pos]);
+              Pattern[Pos]);
       std::exit(1);
     }
     return result;
   }
 
   if (curChar == '\\') {
-    assert(escaped == false && "Cannot have escaped = true here");
-    escaped = true;
+    assert(Escaped == false && "Cannot have escaped = true here");
+    Escaped = true;
     return parseAtom();
   }
 
@@ -269,7 +269,7 @@ NFA Regex::parseAtom() {
 
 // Dragon book 2nd edition, algorithm 3.22: Simulating an NFA
 bool Regex::matches(const fextl::string &target) {
-  fextl::set<State *> currentStates = NFA::epsilonClosure({nfa.startState});
+  fextl::set<State *> currentStates = NFA::epsilonClosure({Nfa.startState});
 
   for (const auto c : target) {
     currentStates = NFA::epsilonClosure(NFA::move(currentStates, c));

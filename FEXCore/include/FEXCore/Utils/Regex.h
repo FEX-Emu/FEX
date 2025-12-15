@@ -43,11 +43,13 @@ public:
 
 // TODO: probably an NFA vector would be better instead of State vector inside
 // each NFA
+
+// TODO: Better error reporting?
 class Regex {
-  fextl::string pattern;
-  int pos;
-  NFA nfa;
-  bool escaped = false;
+  fextl::string Pattern;
+  int Pos;
+  NFA Nfa;
+  bool Escaped = false;
 
   // Top level parser, calls parseUnion
   NFA parseExpression();
@@ -65,8 +67,8 @@ class Regex {
   NFA parseAtom();
 
 public:
-  static inline fextl::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;':\"[]\\{}|1234567890!@#$%^&*()-=_+";
-  static inline fextl::string acceptable_escapable = ".?[]\\|";
+  static inline fextl::string Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;':\"[]\\{}|1234567890!@#$%^&*()-=_+";
+  static inline fextl::string AcceptableEscapable = ".?[]\\|";
   Regex(const fextl::string &s);
   bool matches(const fextl::string &s);
 };
