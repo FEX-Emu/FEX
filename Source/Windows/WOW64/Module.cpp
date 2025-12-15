@@ -33,6 +33,7 @@ $end_info$
 #include "Common/Config.h"
 #include "Common/Exception.h"
 #include "Common/TSOHandlerConfig.h"
+#include "Common/ImageTracker.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/OvercommitTracker.h"
 #include "Common/CPUFeatures.h"
@@ -41,7 +42,6 @@ $end_info$
 #include "Common/CRT/CRT.h"
 #include "Common/PortabilityInfo.h"
 #include "Common/Handle.h"
-#include "Common/VolatileMetadata.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 #include "Windows/Common/SHMStats.h"
@@ -124,12 +124,11 @@ fextl::unique_ptr<FEX::Windows::StatAlloc> StatAllocHandler;
 std::optional<FEX::Windows::InvalidationTracker> InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
 std::optional<FEX::Windows::OvercommitTracker> OvercommitTracker;
+std::optional<FEX::Windows::ImageTracker> ImageTracker;
 
 std::mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
 std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
-
-static fextl::unordered_map<fextl::string, FEX::VolatileMetadata::ExtendedVolatileMetadata> ExtendedMetaData {};
 
 decltype(__wine_unix_call_dispatcher) WineUnixCall;
 
@@ -163,37 +162,15 @@ bool IsAddressInJit(uint64_t Address) {
   return Thread->CTX->IsAddressInCodeBuffer(Thread, Address);
 }
 
-void LoadImageVolatileMetadata(const fextl::string& ModuleName, uint64_t Address) {
-  const auto Module = reinterpret_cast<HMODULE>(Address);
-  IMAGE_NT_HEADERS* Nt = RtlImageNtHeader(Module);
-  uint64_t EndAddress = Address + Nt->OptionalHeader.SizeOfImage;
-
-  fextl::set<uint64_t> VolatileInstructions;
-  FEXCore::IntervalList<uint64_t> VolatileValidRanges;
-
-  // Load FEX extended volatile metadata.
-  auto it = ExtendedMetaData.find(ModuleName);
-  if (it != ExtendedMetaData.end()) {
-    FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(it->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
-  }
-
-  if (VolatileInstructions.empty() && VolatileValidRanges.Empty()) {
-    return;
-  }
-
-  LogMan::Msg::DFmt("Loaded volatile metadata for {:X}: {} entries", Address, VolatileInstructions.size());
-  std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
-  CTX->AddForceTSOInformation(VolatileValidRanges, std::move(VolatileInstructions));
+void HandleImageMap(uint64_t Address, bool MainImage = false) {
+  fextl::string ModulePath = FEX::Windows::GetSectionFilePath(Address);
+  fextl::string ModuleName = fextl::string {FEX::Windows::BaseName(ModulePath)};
+  InvalidationTracker->HandleImageMap(ModuleName, Address);
+  ImageTracker->HandleImageMap(ModulePath, Address, MainImage);
 }
 
-void HandleImageMap(uint64_t Address) {
-  fextl::string ModuleName = fextl::string {FEX::Windows::BaseName(FEX::Windows::GetSectionFilePath(Address))};
-  LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
-  FEX_CONFIG_OPT(VolatileMetadata, VOLATILEMETADATA);
-  if (VolatileMetadata) {
-    LoadImageVolatileMetadata(ModuleName, Address);
-  }
-  InvalidationTracker->HandleImageMap(ModuleName, Address);
+void HandleImageUnmap(uint64_t Address, uint64_t Size) {
+  ImageTracker->HandleImageUnmap(Address, Size);
 }
 } // namespace
 
@@ -518,9 +495,6 @@ void BTCpuProcessInit() {
 
   FEXCore::Profiler::Init("", "");
 
-  FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
-  ExtendedMetaData = FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig());
-
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
   const auto NtDll = GetModuleHandle("ntdll.dll");
@@ -539,12 +513,13 @@ void BTCpuProcessInit() {
   CTX->InitCore();
   Context::HandlerConfig.emplace(*CTX);
   InvalidationTracker.emplace(*CTX, Threads);
+  ImageTracker.emplace(*CTX);
+
+  auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
+  HandleImageMap(reinterpret_cast<uint64_t>(MainModule), true);
 
   auto NtDllX86 = reinterpret_cast<SYSTEM_DLL_INIT_BLOCK*>(GetProcAddress(NtDll, "LdrSystemDllInitBlock"))->ntdll_handle;
   HandleImageMap(NtDllX86);
-
-  auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
-  HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
 
   CPUFeatures.emplace(*CTX);
 
@@ -1012,8 +987,7 @@ void BTCpuNotifyUnmapViewOfSection(void* Address, BOOL After, ULONG Status) {
     ThreadCreationMutex.lock();
     auto [Start, Size] = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
     if (Size) {
-      std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
-      CTX->RemoveForceTSOInformation(Start, Size);
+      HandleImageUnmap(Start, Size);
     }
   } else {
     ThreadCreationMutex.unlock();
