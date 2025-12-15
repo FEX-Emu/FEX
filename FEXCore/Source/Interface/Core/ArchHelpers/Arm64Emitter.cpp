@@ -418,6 +418,11 @@ FEXCore::X86State::X86Reg Arm64Emitter::GetX86RegRelationToARMReg(ARMEmitter::Re
 }
 
 void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad) {
+  if (EnableCodeCaching) {
+    // Force NOP padding to ensure relocated constants always have enough encoding space available
+    NOPPad = true;
+  }
+
   bool Is64Bit = s == ARMEmitter::Size::i64Bit;
   int Segments = Is64Bit ? 4 : 2;
 
