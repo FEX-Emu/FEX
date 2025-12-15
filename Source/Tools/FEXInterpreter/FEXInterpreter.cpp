@@ -520,6 +520,9 @@ int main(int argc, char** argv, char** const envp) {
     SyscallHandler->FM.TrackFEXFD(FEXServerLogging::FEXServerFD);
   }
 
+  // query ProgramFD now since MapMemory will close it
+  const int ProgramFD = dup(Loader.GetMainElfFD());
+
   {
     Loader.SetVDSOBase(VDSOMapping.VDSOBase);
     Loader.CalculateHWCaps(CTX.get());
@@ -557,6 +560,12 @@ int main(int argc, char** argv, char** const envp) {
   ThunkHandler->RegisterTLSState(ParentThread);
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
+
+  // Request code cache generation
+  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
+    FEXServerClient::PopulateCodeCache(FEXServerClient::GetServerFD(), ProgramFD, FEXCore::Config::Get_MULTIBLOCK());
+  }
+  close(ProgramFD);
 
   CTX->ExecuteThread(ParentThread->Thread);
 
