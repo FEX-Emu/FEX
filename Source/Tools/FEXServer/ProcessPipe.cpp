@@ -593,8 +593,31 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
       FEXCore::ExecutableFileInfo MainFileId = {nullptr, filename_hash, fextl::string(Tmp, TmpLen)};
       fmt::print("Requested {}cache generation for {}\n", HasMultiblock ? "" : "nomb-", MainFileId.Filename);
 
+      auto GetCacheFilename = [](const FEXCore::ExecutableFileInfo& FileId) {
+        return fmt::format("{}cache/{}-{:016x}", FEX::Config::GetCacheDirectory(), FEXCore::CodeMap::GetBaseFilename(FileId, false),
+                           0 /* TODO: Use unique cache id */);
+      };
+
       // Update code maps; any update necessitates an update of the corresponding cache
       auto Binaries = AggregateCodeMaps(MainFileId, HasMultiblock);
+
+      // Check for other conditions that require a cache refresh even when the code map didn't change
+      for (auto& [FileInfo, NeedsRefresh] : Binaries) {
+        if (NeedsRefresh == NeedsCacheRefresh::Yes) {
+          // Already queued for cache generation, no need for further checks
+          continue;
+        }
+
+        // Trigger cache generation for this file if no cache exists or if the cache is older than the most recent update to its code map
+        std::error_code ec;
+        const auto BinaryName = FEXCore::CodeMap::GetBaseFilename(FileInfo, !HasMultiblock);
+        const auto MergedCodeMapFilename = fmt::format("{}/ready/{}", CodeMapDirectory, BinaryName);
+        const auto LastCodeMapUpdate = std::filesystem::last_write_time(MergedCodeMapFilename, ec);
+        if (std::filesystem::last_write_time(GetCacheFilename(FileInfo), ec) < LastCodeMapUpdate || ec) {
+          fmt::println("  Scheduling update for {} cache for {}", ec ? "missing" : "outdated", BinaryName);
+          NeedsRefresh = NeedsCacheRefresh::Yes;
+        }
+      }
 
       // Trigger offline-compile for each binary that needs it
       for (const auto& [File, NeedsRefresh] : Binaries) {
