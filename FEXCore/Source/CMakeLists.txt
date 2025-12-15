@@ -94,6 +94,10 @@ if (ENABLE_VIXL_DISASSEMBLER)
   list(APPEND DEFINES -DVIXL_DISASSEMBLER=1)
 endif()
 
+if (ENABLE_ZYDIS)
+  list(APPEND DEFINES -DZYDIS_DISASSEMBLER=1)
+endif()
+
 if (ARCHITECTURE_arm64 AND HAS_CLANG_PRESERVE_ALL)
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=__attribute__((preserve_all));-DFEXCORE_HAS_PRESERVE_ALL_ATTR=1")
 else()
@@ -104,6 +108,10 @@ set(LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
 
 if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   list(APPEND LIBS vixl)
+endif()
+
+if (ENABLE_ZYDIS)
+  list(APPEND LIBS Zydis::Zydis)
 endif()
 
 if (NOT MINGW)
