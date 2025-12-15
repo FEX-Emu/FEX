@@ -1129,7 +1129,7 @@ void Decoder::BranchTargetInMultiblockRange() {
   // Forbid distant branches to have the cost code better match the guest code layout, avoiding massive (range-wise) code
   // blocks in highly fragmented guest code. Such branches are often not-taken branches to garbage in obfuscated code.
   constexpr uint64_t MAX_FORWARD_BRANCH_DIST = FEXCore::Utils::FEX_PAGE_SIZE * 4;
-  bool ValidMultiblockMember = TargetRIP >= SymbolMinAddress && TargetRIP < std::min(InstEnd + MAX_FORWARD_BRANCH_DIST, SymbolMaxAddress);
+  bool ValidMultiblockMember = TargetRIP >= EntryPoint && TargetRIP < std::min(InstEnd + MAX_FORWARD_BRANCH_DIST, SectionMaxAddress);
 
 #ifdef _M_ARM_64EC
   ValidMultiblockMember = ValidMultiblockMember && !RtlIsEcCode(TargetRIP);
@@ -1322,19 +1322,22 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
   BlockInfo.Is64BitMode = CSSegment->L == 1;
   LOGMAN_THROW_A_FMT(BlockInfo.Is64BitMode == CTX->Config.Is64BitMode, "Expected operating mode to not change at runtime!");
 
-  // XXX: Load symbol data
-  SymbolAvailable = false;
   EntryPoint = PC;
   BlockInfo.EntryPoints = {PC};
   InstStream = _InstStream;
 
   uint64_t TotalInstructions {};
 
-  // If we don't have symbols available then we become a bit optimistic about multiblock ranges
-  if (!SymbolAvailable) {
-    // If we don't have a symbol available then assume all branches are valid for multiblock
-    SymbolMaxAddress = SectionMaxAddress;
-    SymbolMinAddress = EntryPoint;
+  SectionMinAddress = 0;
+  SectionMaxAddress = ~0ULL;
+  Relocations = nullptr;
+
+  if (CTX->GetCodeCache().IsGeneratingCache) {
+    // If generating cache, attempt to load section bounds and relocations
+    if (auto SectionInfo = CTX->SyscallHandler->LookupExecutableFileSection(*Thread, EntryPoint)) {
+      SectionMinAddress = SectionInfo->FileStartVA;
+      SectionMaxAddress = SectionInfo->EndVA;
+    }
   }
 
   DecodedMinAddress = EntryPoint;

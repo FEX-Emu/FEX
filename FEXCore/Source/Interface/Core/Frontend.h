@@ -59,9 +59,6 @@ public:
   uint64_t DecodedMinAddress {};
   uint64_t DecodedMaxAddress {~0ULL};
 
-  void SetSectionMaxAddress(uint64_t v) {
-    SectionMaxAddress = v;
-  }
   void SetExternalBranches(fextl::set<uint64_t>* v) {
     ExternalBranches = v;
   }
@@ -130,13 +127,11 @@ private:
   FEXCore::X86Tables::DecodedInst* DecodeInst;
 
   // This is for multiblock data tracking
-  bool SymbolAvailable {false};
   uint64_t EntryPoint {};
   uint64_t MaxCondBranchForward {};
   uint64_t MaxCondBranchBackwards {~0ULL};
-  uint64_t SymbolMaxAddress {};
-  uint64_t SymbolMinAddress {~0ULL};
   uint64_t SectionMaxAddress {~0ULL};
+  uint64_t SectionMinAddress {};
   uint64_t NextBlockStartAddress {~0ULL};
 
   DecodedBlockInformation BlockInfo;

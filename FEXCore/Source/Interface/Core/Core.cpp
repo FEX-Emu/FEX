@@ -1037,6 +1037,5 @@ void ContextImpl::MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint
 
 void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) {
   Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);
-  Thread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
 }
 } // namespace FEXCore::Context
