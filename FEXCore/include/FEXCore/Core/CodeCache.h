@@ -46,7 +46,14 @@ struct ExecutableFileSectionInfo {
   ExecutableFileInfo& FileInfo;
 
   // Start address that the file is mapped to.
+  // NOTE: Since executable files may be mapped multiple times, this can depend on the queried section.
   uintptr_t FileStartVA;
+
+  // Start address of the section mapping
+  uintptr_t BeginVA;
+
+  // End address that of the section mapping
+  uintptr_t EndVA;
 };
 
 using CodeMapFileId = uint64_t;
@@ -175,8 +182,9 @@ public:
   /**
    * Loads a code cache from mapped memory and appends it to the current Core state.
    * TODO: Optionally recompiles all contained code blocks at runtime for validation.
+   * Returns false if the provided cache file is invalid, and true otherwise.
    */
-  virtual void LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) = 0;
+  virtual bool LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) = 0;
 
   /**
    * Bundles the current Core state (CodeBuffer, GuestToHostMapping, ...) to a code cache and writes it to the given file descriptor.

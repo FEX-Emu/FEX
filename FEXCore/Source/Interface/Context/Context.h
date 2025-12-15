@@ -72,10 +72,11 @@ public:
   ContextImpl& CTX;
   bool IsGeneratingCache = false;
 
-  uint64_t ComputeCodeMapId(std::string_view Filename, int FD) override;
+  FEX_CONFIG_OPT(EnableCodeCaching, ENABLECODECACHINGWIP);
 
-  void LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
+  uint64_t ComputeCodeMapId(std::string_view Filename, int FD) override;
   bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) override;
+  bool LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
 
   void InitiateCacheGeneration() override {
     IsGeneratingCache = true;
