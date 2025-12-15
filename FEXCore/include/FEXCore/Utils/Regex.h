@@ -65,7 +65,7 @@ class Regex {
   NFA parseAtom();
 
 public:
-  static inline fextl::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;':\"[]\\{}|";
+  static inline fextl::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;':\"[]\\{}|1234567890!@#$%^&*()-=_+";
   static inline fextl::string acceptable_escapable = ".?[]\\|";
   Regex(const fextl::string &s);
   bool matches(const fextl::string &s);

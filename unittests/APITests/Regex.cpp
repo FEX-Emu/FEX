@@ -27,8 +27,11 @@ TEST_CASE("Union regex") {
 }
 
 TEST_CASE("Dot regex") {
+  CHECK(Regex(".*").matches("") == true);
+  CHECK(Regex(".*").matches("setup.json") == true);
   CHECK(Regex("setup.*").matches("setup.json") == true);
   CHECK(Regex("setup.*").matches("setup/setup.json") == true);
+  CHECK(Regex(".*setup.*").matches("setup/setup.json") == true);
 
   CHECK(Regex("setup\\.*").matches("setup/setup.json") == false);
   CHECK(Regex("setup\\.*").matches("setup.....") == true);
@@ -45,9 +48,17 @@ TEST_CASE("Plus regex") {
   CHECK(Regex("aa+").matches("aaa") == true);
   CHECK(Regex("aa+").matches("aab") == false);
 }
+
 TEST_CASE("Question regex") {
+  CHECK(Regex(".?").matches("") == true);
+  CHECK(Regex(".?").matches("aa") == false);
   CHECK(Regex("setup.?").matches("setup") == true);
   CHECK(Regex("setup.?").matches("setupa") == true);
   CHECK(Regex("setup.?").matches("setupb") == true);
   CHECK(Regex("aa?").matches("aa") == true);
+}
+
+// Tests potential usage inside fex itself
+TEST_CASE("FEX regex") {
+  CHECK(Regex(".*Config.*").matches("/home/ubuntu/.fex-emu/Config.json") == true);
 }
