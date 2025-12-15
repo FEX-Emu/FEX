@@ -117,9 +117,13 @@ struct DecodedOperand {
     GPR,
     GPRDirect,
     GPRIndirect,
+    GPRIndirectRelocation,
     RIPRelative,
+    RIPRelativeRelocation,
     Literal,
+    LiteralRelocation,
     SIB,
+    SIBRelocation
   };
 
   bool IsNone() const {
@@ -134,15 +138,28 @@ struct DecodedOperand {
   bool IsGPRIndirect() const {
     return Type == OpType::GPRIndirect;
   }
+  bool IsGPRIndirectRelocation() const {
+    return Type == OpType::GPRIndirectRelocation;
+  }
   bool IsRIPRelative() const {
     return Type == OpType::RIPRelative;
+  }
+  bool IsRIPRelativeRelocation() const {
+    return Type == OpType::RIPRelativeRelocation;
   }
   bool IsLiteral() const {
     return Type == OpType::Literal;
   }
+  bool IsLiteralRelocation() const {
+    return Type == OpType::LiteralRelocation;
+  }
   bool IsSIB() const {
     return Type == OpType::SIB;
   }
+  bool IsSIBRelocation() const {
+    return Type == OpType::SIBRelocation;
+  }
+
   uint64_t Literal() const {
     LOGMAN_THROW_A_FMT(IsLiteral(), "Precondition: must be a literal");
     if (Data.Literal.SignExtend) {
@@ -159,16 +176,13 @@ struct DecodedOperand {
     } GPR;
 
     struct {
-      int32_t Displacement;
+      int64_t Displacement;
       uint8_t GPR;
-    } GPRIndirect;
+    } GPRIndirect; // Shared with GPRIndirectRelocation
 
     struct {
-      union {
-        int32_t s;
-        uint32_t u;
-      } Value;
-    } RIPLiteral;
+      int64_t Value;
+    } RIPLiteral; // Shared with RIPLiteralRelocation
 
     struct LiteralType {
       uint32_t Value;
@@ -178,11 +192,15 @@ struct DecodedOperand {
     } Literal;
 
     struct {
-      int32_t Offset;
+      int64_t EntrypointOffset;
+    } LiteralRelocation;
+
+    struct {
+      int64_t Offset;
       uint8_t Scale;
       uint8_t Index; // ~0 invalid
       uint8_t Base; // ~0 invalid
-    } SIB;
+    } SIB; // Shared with SIBRelocation
   };
 
   TypeUnion Data;

@@ -305,7 +305,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
       const uint32_t Literal = ReadData(4);
 
       Operand->Type = DecodedOperand::OpType::RIPRelative;
-      Operand->Data.RIPLiteral.Value.u = Literal;
+      Operand->Data.RIPLiteral.Value = Literal;
     } else {
       // Register-direct addressing
       Operand->Type = DecodedOperand::OpType::GPRDirect;

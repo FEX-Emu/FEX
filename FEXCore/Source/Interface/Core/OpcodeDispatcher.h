@@ -1544,7 +1544,7 @@ private:
   [[nodiscard]]
   static bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
     // Literals are immediates as sources but memory addresses as destinations.
-    return !(Load && Operand.IsLiteral()) && !Operand.IsGPR();
+    return !(Load && (Operand.IsLiteral() || Operand.IsLiteralRelocation())) && !Operand.IsGPR();
   }
 
   [[nodiscard]]
