@@ -4,9 +4,11 @@
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/IR/IR.h"
 
+#include <FEXCore/Core/CodeCache.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <array>
 #include <cstddef>
@@ -97,7 +99,8 @@ private:
 
   uint8_t ReadByte();
   std::optional<uint8_t> PeekByte(uint8_t Offset);
-  uint64_t ReadData(uint8_t Size);
+  std::pair<uint64_t, bool> ReadData(uint8_t Size);
+
   void SkipBytes(uint8_t Size) {
     InstructionSize += Size;
   }
@@ -139,6 +142,8 @@ private:
   fextl::set<uint64_t> BlocksToDecode;
   fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
+
+  fextl::unordered_map<uint32_t, GuestRelocationType>* Relocations {nullptr};
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);

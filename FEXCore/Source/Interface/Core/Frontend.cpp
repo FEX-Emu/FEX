@@ -132,7 +132,7 @@ std::optional<uint8_t> Decoder::PeekByte(uint8_t Offset) {
   }
 }
 
-uint64_t Decoder::ReadData(uint8_t Size) {
+std::pair<uint64_t, bool> Decoder::ReadData(uint8_t Size) {
   LOGMAN_THROW_A_FMT(Size != 0 && Size <= sizeof(uint64_t), "Unknown data size to read");
 
   uint64_t Res = 0;
@@ -154,7 +154,20 @@ uint64_t Decoder::ReadData(uint8_t Size) {
   SkipBytes(Size);
 #endif
 
-  return Res;
+  if (Relocations) {
+    uint32_t SectionOffset = static_cast<uint32_t>(Address - SectionMinAddress);
+    if (auto It = Relocations->find(SectionOffset); It != Relocations->end()) {
+      if (It->second == GuestRelocationType::Rel32 && Size == 4) {
+        return {static_cast<int64_t>(static_cast<int32_t>(Res) - static_cast<int32_t>(EntryPoint)), true};
+      } else if (It->second == GuestRelocationType::Rel64 && Size == 8) {
+        return {static_cast<int64_t>(Res) - static_cast<int64_t>(EntryPoint), true};
+      } else {
+        ERROR_AND_DIE_FMT("Unhandled relocation combination, type: {} size: {}", static_cast<uint8_t>(It->second), Size);
+      }
+    }
+  }
+
+  return {Res, false};
 }
 
 void Decoder::DecodeModRM_16(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM) {
@@ -186,7 +199,9 @@ void Decoder::DecodeModRM_16(X86Tables::DecodedOperand* Operand, X86Tables::ModR
     DisplacementSize = 1;
   }
   if (DisplacementSize) {
-    Literal = ReadData(DisplacementSize);
+    bool IsRelocation = false;
+    std::tie(Literal, IsRelocation) = ReadData(DisplacementSize);
+    LOGMAN_THROW_A_FMT(!IsRelocation, "1/2 byte relocations unsupported");
     if (DisplacementSize == 1) {
       Literal = static_cast<int8_t>(Literal);
     }
@@ -292,7 +307,10 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
     LOGMAN_THROW_A_FMT(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
 
     if (Displacement) {
-      uint64_t Literal = ReadData(Displacement);
+      auto [Literal, IsRelocation] = ReadData(Displacement);
+      if (IsRelocation) {
+        Operand->Type = DecodedOperand::OpType::SIBRelocation;
+      }
       if (Displacement == 1) {
         Literal = static_cast<int8_t>(Literal);
       }
@@ -302,9 +320,8 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
     // Explained in Table 1-14. "Operand Addressing Using ModRM and SIB Bytes"
     if (ModRM.rm == 0b101) {
       // 32bit Displacement
-      const uint32_t Literal = ReadData(4);
-
-      Operand->Type = DecodedOperand::OpType::RIPRelative;
+      auto [Literal, IsRelocation] = ReadData(4);
+      Operand->Type = IsRelocation ? DecodedOperand::OpType::RIPRelativeRelocation : DecodedOperand::OpType::RIPRelative;
       Operand->Data.RIPLiteral.Value = Literal;
     } else {
       // Register-direct addressing
@@ -313,12 +330,12 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
     }
   } else {
     uint8_t DisplacementSize = ModRM.mod == 1 ? 1 : 4;
-    uint32_t Literal = ReadData(DisplacementSize);
+    auto [Literal, IsRelocation] = ReadData(DisplacementSize);
     if (DisplacementSize == 1) {
       Literal = static_cast<int8_t>(Literal);
     }
 
-    Operand->Type = DecodedOperand::OpType::GPRIndirect;
+    Operand->Type = IsRelocation ? DecodedOperand::OpType::GPRIndirectRelocation : DecodedOperand::OpType::GPRIndirect;
     Operand->Data.GPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
     Operand->Data.GPRIndirect.Displacement = Literal;
   }
@@ -614,31 +631,37 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   if (Bytes != 0) {
     LOGMAN_THROW_A_FMT(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
 
-    DecodeInst->Src[CurrentSrc].Data.Literal.Size = Bytes;
 
-    uint64_t Literal = ReadData(Bytes);
+    auto [Literal, IsRelocation] = ReadData(Bytes);
+    if (IsRelocation) {
+      DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::LiteralRelocation;
+      DecodeInst->Src[CurrentSrc].Data.LiteralRelocation.EntrypointOffset = Literal;
+    } else {
+      DecodeInst->Src[CurrentSrc].Data.Literal.Size = Bytes;
 
-    if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SRC_SEXT) || (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_64BIT &&
-                                                                          Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SRC_SEXT64BIT)) {
-      if (Bytes == 1) {
-        Literal = static_cast<int8_t>(Literal);
-      } else if (Bytes == 2) {
-        Literal = static_cast<int16_t>(Literal);
-      } else {
-        Literal = static_cast<int32_t>(Literal);
+      if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SRC_SEXT) ||
+          (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_64BIT &&
+           Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SRC_SEXT64BIT)) {
+        if (Bytes == 1) {
+          Literal = static_cast<int8_t>(Literal);
+        } else if (Bytes == 2) {
+          Literal = static_cast<int16_t>(Literal);
+        } else {
+          Literal = static_cast<int32_t>(Literal);
+        }
+        DecodeInst->Src[CurrentSrc].Data.Literal.Size = DestSize;
+        DecodeInst->Src[CurrentSrc].Data.Literal.SignExtend = true;
       }
-      DecodeInst->Src[CurrentSrc].Data.Literal.Size = DestSize;
-      DecodeInst->Src[CurrentSrc].Data.Literal.SignExtend = true;
-    }
 
-    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::Literal;
-    DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal;
-    ++CurrentSrc;
-
-    if (Bytes == 8) [[unlikely]] {
-      DecodeInst->Src[CurrentSrc].Data.Literal.Size = 4;
       DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::Literal;
-      DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal >> 32;
+      DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal;
+      ++CurrentSrc;
+
+      if (Bytes == 8) [[unlikely]] {
+        DecodeInst->Src[CurrentSrc].Data.Literal.Size = 4;
+        DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::Literal;
+        DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal >> 32;
+      }
     }
 
     Bytes = 0;
@@ -1337,6 +1360,7 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
     if (auto SectionInfo = CTX->SyscallHandler->LookupExecutableFileSection(*Thread, EntryPoint)) {
       SectionMinAddress = SectionInfo->FileStartVA;
       SectionMaxAddress = SectionInfo->EndVA;
+      Relocations = &SectionInfo->FileInfo.Relocations;
     }
   }
 
