@@ -668,13 +668,15 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
       int Index = 0;
       std::string Filename;
       do {
-        Filename = fmt::format("{}/{}.{}.bin", CodeMapDirectory,
+        Filename = fmt::format("{}/new/{}.{}.bin", CodeMapDirectory,
                                FEXCore::CodeMap::GetBaseFilename(
                                  FEXCore::ExecutableFileInfo {nullptr, filename_hash, (fextl::string)BinaryPath.string()}, !HasMultiblock),
                                Index++);
       } while (std::filesystem::exists(Filename));
 
       std::filesystem::create_directories(CodeMapDirectory);
+      std::filesystem::create_directories(CodeMapDirectory + "/new");
+      std::filesystem::create_directories(CodeMapDirectory + "/ready");
       auto CodeMapFD = open(Filename.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, 0644);
 
       fasio::mutable_buffer Data = {.Data = std::as_writable_bytes(std::span(&Res, 1)),
