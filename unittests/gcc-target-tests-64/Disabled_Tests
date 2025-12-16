@@ -2,3 +2,9 @@
 # Crashes or hangs depending on which runner is running it.
 # Also this has a race with SIGPROF
 mcount_pic.c.gcc-target-test-64
+
+# Miscompilation issues
+# Loads integer with fld rather than fild
+# Only triggers issue in n500 due to memcpy fastpath optimization but still disabling both versions.
+pr88240.c.gcc-target-test-64.n1.gcc-target-64
+pr88240.c.gcc-target-test-64.n500.gcc-target-64
