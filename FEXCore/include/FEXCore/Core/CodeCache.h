@@ -39,7 +39,9 @@ struct ExecutableFileInfo {
   ExecutableFileInfo() = default;
 #endif
 
-  fextl::unique_ptr<HLE::SourcecodeMap> SourcecodeMap;
+  // This legacy field must be assignable through const-references
+  mutable fextl::unique_ptr<HLE::SourcecodeMap> SourcecodeMap;
+
   uint64_t FileId = 0;
   fextl::string Filename;
   fextl::unordered_map<uint32_t, GuestRelocationType> Relocations;
@@ -47,7 +49,7 @@ struct ExecutableFileInfo {
 
 // Information associated with a specific section of an executable file
 struct ExecutableFileSectionInfo {
-  ExecutableFileInfo& FileInfo;
+  const ExecutableFileInfo& FileInfo;
 
   // Start address that the file is mapped to.
   // NOTE: Since executable files may be mapped multiple times, this can depend on the queried section.

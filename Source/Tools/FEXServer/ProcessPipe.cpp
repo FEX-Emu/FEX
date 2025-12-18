@@ -385,7 +385,7 @@ static void WriteNewCodeMap(const FEXCore::ExecutableFileInfo& File, const std::
   }
 
   for (auto& Block : Blocks) {
-    OutputCodeMap.AppendBlock(FEXCore::ExecutableFileSectionInfo {const_cast<FEXCore::ExecutableFileInfo&>(File), 0}, Block);
+    OutputCodeMap.AppendBlock(FEXCore::ExecutableFileSectionInfo {File, 0}, Block);
   }
 }
 

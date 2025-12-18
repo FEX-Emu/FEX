@@ -145,7 +145,7 @@ private:
   fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
 
-  fextl::unordered_map<uint32_t, GuestRelocationType>* Relocations {nullptr};
+  const fextl::unordered_map<uint32_t, GuestRelocationType>* Relocations {nullptr};
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);
