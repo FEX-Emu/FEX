@@ -968,14 +968,17 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
 
       const auto GPRSize = this->Config.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit;
 
+      // Thunk entry-points don't get cached, don't need to be padded.
       if (GPRSize == IR::OpSize::i64Bit) {
-        IR::Ref R = emit->_StoreRegister(emit->Constant(Entrypoint), GPRSize);
+        IR::Ref R = emit->_StoreRegister(emit->Constant(Entrypoint, IR::ConstPad::NoPad), GPRSize);
         R->Reg = IR::PhysicalRegister(IR::RegClass::GPRFixed, X86State::REG_R11).Raw;
       } else {
-        emit->_StoreContextFPR(GPRSize, emit->_VCastFromGPR(IR::OpSize::i64Bit, IR::OpSize::i64Bit, emit->Constant(Entrypoint)),
+        emit->_StoreContextFPR(GPRSize,
+                               emit->_VCastFromGPR(IR::OpSize::i64Bit, IR::OpSize::i64Bit, emit->Constant(Entrypoint, IR::ConstPad::NoPad)),
                                offsetof(Core::CPUState, mm[0][0]));
       }
-      emit->_ExitFunction(IR::OpSize::i64Bit, emit->Constant(GuestThunkEntrypoint), IR::BranchHint::None, emit->Invalid(), emit->Invalid());
+      emit->_ExitFunction(IR::OpSize::i64Bit, emit->Constant(GuestThunkEntrypoint, IR::ConstPad::NoPad), IR::BranchHint::None,
+                          emit->Invalid(), emit->Invalid());
     },
     ThunkHandler, (void*)GuestThunkEntrypoint);
 
