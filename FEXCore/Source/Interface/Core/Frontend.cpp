@@ -1358,7 +1358,7 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
   SectionMaxAddress = ~0ULL;
   Relocations = nullptr;
 
-  if (CTX->GetCodeCache().IsGeneratingCache) {
+  if (CTX->GetCodeCache().IsGeneratingCache || EnableCodeCacheValidation) {
     // If generating cache, attempt to load section bounds and relocations
     if (auto SectionInfo = CTX->SyscallHandler->LookupExecutableFileSection(*Thread, EntryPoint)) {
       SectionMinAddress = SectionInfo->FileStartVA;
