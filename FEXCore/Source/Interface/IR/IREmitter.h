@@ -249,7 +249,7 @@ public:
   Ref ConstantRefs[32];
   uint32_t NrConstants;
 
-  Ref Constant(int64_t Value, ConstPad Pad = ConstPad::AutoPad, int32_t MaxBytes = 0) {
+  Ref Constant(int64_t Value, ConstPad Pad, int32_t MaxBytes = 0) {
     const ConstantData Data {
       .Value = Value,
       .Pad = Pad,
