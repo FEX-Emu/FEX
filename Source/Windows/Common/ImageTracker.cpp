@@ -75,9 +75,10 @@ static void LoadImageVolatileMetadata(fextl::set<uint64_t>& VolatileInstructions
   }
 }
 
-ImageTracker::ImageTracker(FEXCore::Context::Context& CTX)
+ImageTracker::ImageTracker(FEXCore::Context::Context& CTX, bool IsGeneratingCache)
   : CTX {CTX}
-  , ExtendedMetaData {FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig())} {}
+  , ExtendedMetaData {FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig())}
+  , IsGeneratingCache {IsGeneratingCache} {}
 
 ImageTracker::MappedImageInfo::MappedImageInfo(std::string_view Path, uint64_t Address, ArchImageNtHeaders* Nt,
                                                fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> Relocations)
@@ -108,7 +109,7 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
   auto ID = FEXCore::CodeMap::GetBaseFilename(ImageInfo->Info, false);
   LogMan::Msg::DFmt("Load module {} ({}): {:X}", ModuleName, ID, Address);
 
-  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
+  if (FEXCore::Config::Get_ENABLECODECACHINGWIP() && !IsGeneratingCache) {
     if (MainImage) {
       LARGE_INTEGER Time;
       NtQuerySystemTime(&Time);
