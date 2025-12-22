@@ -4,6 +4,7 @@
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/IR/IR.h"
 
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeCache.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/set.h>
@@ -86,6 +87,8 @@ private:
   FEXCore::Core::InternalThreadState* Thread;
   FEXCore::Context::ContextImpl* CTX;
   const FEXCore::HLE::SyscallOSABI OSABI {};
+
+  FEX_CONFIG_OPT(EnableCodeCacheValidation, ENABLECODECACHEVALIDATION);
 
   bool DecodeInstructionImpl(uint64_t PC);
   DecodedBlockStatus DecodeInstruction(uint64_t PC);
