@@ -184,7 +184,7 @@ public:
   }
 
   IRPair<IROp_Select> To01(FEXCore::IR::OpSize CompareSize, OrderedNode* Cmp1) {
-    return Select01(CompareSize, CondClass::NEQ, Cmp1, Constant(0));
+    return Select01(CompareSize, CondClass::NEQ, Cmp1, Constant(0, ConstPad::NoPad));
   }
 
   IRPair<IROp_NZCVSelect> _NZCVSelect01(CondClass Cond) {
@@ -203,7 +203,7 @@ public:
       Src2 = -Src2;
     }
 
-    auto Dest = _Add(Size, Src1, Constant(Src2));
+    auto Dest = _Add(Size, Src1, Constant(Src2, ConstPad::NoPad));
     Dest.first->Header.Op = Op;
     return Dest;
   }
