@@ -108,6 +108,25 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
   auto ID = FEXCore::CodeMap::GetBaseFilename(ImageInfo->Info, false);
   LogMan::Msg::DFmt("Load module {} ({}): {:X}", ModuleName, ID, Address);
 
+  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
+    if (MainImage) {
+      LARGE_INTEGER Time;
+      NtQuerySystemTime(&Time);
+      const auto CodeMapDir = fmt::format("{}codemap\\new\\", FEX::Config::GetCacheDirectory());
+      std::error_code ec;
+      if (!std::filesystem::exists(CodeMapDir, ec)) {
+        std::filesystem::create_directories(CodeMapDir, ec);
+      }
+      if (!ec) {
+        ActiveCodeMapPath = fmt::format("{}{}.{}.bin", CodeMapDir, ID, Time.QuadPart);
+
+        auto Writer = fextl::make_unique<FEXCore::CodeMapWriter>(*this, false);
+        Writer->AppendSetMainExecutable(ImageInfo->Info);
+        CTX.SetCodeMapWriter(std::move(Writer));
+      }
+    }
+  }
+
   uint64_t EndAddress = Address + Nt->OptionalHeader.SizeOfImage;
   fextl::set<uint64_t> VolatileInstructions {};
   FEXCore::IntervalList<uint64_t> VolatileValidRanges {};
@@ -139,5 +158,12 @@ std::optional<FEXCore::ExecutableFileSectionInfo> ImageTracker::LookupExecutable
     return {};
   }
   return std::prev(It)->second.SectionInfo;
+}
+
+int ImageTracker::OpenCodeMapFile() {
+  if (ActiveCodeMapPath.empty()) {
+    return -1;
+  }
+  return _sopen(ActiveCodeMapPath.c_str(), O_CREAT | O_TRUNC | O_WRONLY | O_APPEND, _SH_DENYRW, 0644);
 }
 } // namespace FEX::Windows

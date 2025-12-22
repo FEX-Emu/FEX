@@ -36,13 +36,15 @@ FEXCore::CodeMapFileId ComputeCodeMapId(std::string_view FileName, uint32_t Time
 /**
  * @brief Tracks mapped PE code images and handles their volatile metadata
  */
-class ImageTracker {
+class ImageTracker : public FEXCore::CodeMapOpener {
 public:
   ImageTracker(FEXCore::Context::Context& CTX);
   FEXCore::ExecutableFileSectionInfo HandleImageMap(std::string_view Path, uint64_t Address, bool MainImage);
   void HandleImageUnmap(uint64_t Address, uint64_t Size);
 
   std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(uint64_t Address);
+
+  int OpenCodeMapFile() override;
 
 private:
   struct MappedImageInfo {
@@ -60,6 +62,8 @@ private:
 
   std::shared_mutex ImagesLock;
   std::map<uint64_t, MappedImageInfo> MappedImages;
+
+  std::string ActiveCodeMapPath;
 };
 
 } // namespace FEX::Windows
