@@ -68,6 +68,58 @@ typedef struct __IMAGE_LOAD_CONFIG_DIRECTORY64 {
   ULONGLONG GuardMemcpyFunctionPointer;
 } _IMAGE_LOAD_CONFIG_DIRECTORY64, *_PIMAGE_LOAD_CONFIG_DIRECTORY64;
 
+typedef struct __IMAGE_LOAD_CONFIG_DIRECTORY32 {
+  DWORD Size; /* 000 */
+  DWORD TimeDateStamp;
+  WORD MajorVersion;
+  WORD MinorVersion;
+  DWORD GlobalFlagsClear;
+  DWORD GlobalFlagsSet; /* 010 */
+  DWORD CriticalSectionDefaultTimeout;
+  DWORD DeCommitFreeBlockThreshold;
+  DWORD DeCommitTotalFreeThreshold;
+  DWORD LockPrefixTable; /* 020 */
+  DWORD MaximumAllocationSize;
+  DWORD VirtualMemoryThreshold;
+  DWORD ProcessHeapFlags;
+  DWORD ProcessAffinityMask; /* 030 */
+  WORD CSDVersion;
+  WORD DependentLoadFlags;
+  DWORD EditList;
+  DWORD SecurityCookie;
+  DWORD SEHandlerTable; /* 040 */
+  DWORD SEHandlerCount;
+  DWORD GuardCFCheckFunctionPointer;
+  DWORD GuardCFDispatchFunctionPointer;
+  DWORD GuardCFFunctionTable; /* 050 */
+  DWORD GuardCFFunctionCount;
+  DWORD GuardFlags;
+  IMAGE_LOAD_CONFIG_CODE_INTEGRITY CodeIntegrity;
+  DWORD GuardAddressTakenIatEntryTable;
+  DWORD GuardAddressTakenIatEntryCount;
+  DWORD GuardLongJumpTargetTable; /* 070 */
+  DWORD GuardLongJumpTargetCount;
+  DWORD DynamicValueRelocTable;
+  DWORD CHPEMetadataPointer;
+  DWORD GuardRFFailureRoutine; /* 080 */
+  DWORD GuardRFFailureRoutineFunctionPointer;
+  DWORD DynamicValueRelocTableOffset;
+  WORD DynamicValueRelocTableSection;
+  WORD Reserved2;
+  DWORD GuardRFVerifyStackPointerFunctionPointer; /* 090 */
+  DWORD HotPatchTableOffset;
+  DWORD Reserved3;
+  DWORD EnclaveConfigurationPointer;
+  DWORD VolatileMetadataPointer; /* 0a0 */
+  DWORD GuardEHContinuationTable;
+  DWORD GuardEHContinuationCount;
+  DWORD GuardXFGCheckFunctionPointer;
+  DWORD GuardXFGDispatchFunctionPointer; /* 0b0 */
+  DWORD GuardXFGTableDispatchFunctionPointer;
+  DWORD CastGuardOsDeterminedFailureMode;
+  DWORD GuardMemcpyFunctionPointer;
+} _IMAGE_LOAD_CONFIG_DIRECTORY32, *_PIMAGE_LOAD_CONFIG_DIRECTORY32;
+
 typedef struct _IMAGE_CHPE_RANGE_ENTRY {
   union {
     ULONG StartOffset;
