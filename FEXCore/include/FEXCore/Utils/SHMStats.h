@@ -79,12 +79,12 @@ template<typename T, size_t FlatOffset = 0>
 class AccumulationBlock final {
 public:
   AccumulationBlock(T* Stat)
-    : Begin {GetCycleCounter()}
+    : Begin {Stat ? GetCycleCounter() : 0}
     , Stat {Stat} {}
 
   ~AccumulationBlock() {
-    const auto Duration = GetCycleCounter() - Begin + FlatOffset;
     if (Stat) {
+      const auto Duration = GetCycleCounter() - Begin + FlatOffset;
       auto ref = std::atomic_ref<T>(*Stat);
       ref.fetch_add(Duration, std::memory_order_relaxed);
     }
