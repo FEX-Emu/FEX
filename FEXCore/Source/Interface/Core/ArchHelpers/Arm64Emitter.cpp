@@ -438,13 +438,13 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
   LOGMAN_THROW_A_FMT(MaxBytes == 0 || (Constant >> (MaxBytes * 8)) == 0, "MaxBytes provided but data can't fit within provided range.");
 
   if (Is64Bit && ((~Constant) >> 16) == 0) {
-    movn(s, Reg, (~Constant) & 0xFFFF);
-
     if (NOPPad) {
       nop();
       nop();
       nop();
     }
+
+    movn(s, Reg, (~Constant) & 0xFFFF);
     return;
   }
 
@@ -456,13 +456,13 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
   }
 
   if (!Is64Bit && ((~Constant) & 0xFFFF0000) == 0) {
-    movn(s, Reg.W(), (~Constant) & 0xFFFF);
-
     if (NOPPad) {
       nop();
       nop();
       nop();
     }
+
+    movn(s, Reg.W(), (~Constant) & 0xFFFF);
     return;
   }
 
@@ -483,24 +483,24 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     // `movz` is better than `orr` since hardware will rename or merge if possible when `movz` is used.
     const auto IsImm = ARMEmitter::Emitter::IsImmLogical(Constant, RegSizeInBits(s));
     if (IsImm) {
-      orr(s, Reg, ARMEmitter::Reg::zr, Constant);
       if (NOPPad) {
         nop();
         nop();
         nop();
       }
+      orr(s, Reg, ARMEmitter::Reg::zr, Constant);
       return;
     }
   }
 
   // If we can't handle negatives with the orr, try with movn+movk
   if (Is64Bit && ((~Constant) >> 32) == 0) {
-    movn(s, Reg, (~Constant) & 0xFFFF);
-    movk(s, Reg, (Constant >> 16) & 0xFFFF, 16);
     if (NOPPad) {
       nop();
       nop();
     }
+    movn(s, Reg, (~Constant) & 0xFFFF);
+    movk(s, Reg, (Constant >> 16) & 0xFFFF, 16);
     return;
   }
 
