@@ -1367,7 +1367,7 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RDX, RDX);
 }
 
-uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit) {
+uint32_t OpDispatchBuilder::GetConstantShift(X86Tables::DecodedOp Op, bool Is1Bit) {
   if (Is1Bit) {
     return 1;
   } else {
@@ -1402,7 +1402,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
 void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
-  uint64_t Shift = LoadConstantShift(Op, SHL1Bit);
+  uint64_t Shift = GetConstantShift(Op, SHL1Bit);
   const auto Size = GetSrcBitSize(Op);
 
   Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Constant(Shift));
@@ -1425,7 +1425,7 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
   const auto Size = GetSrcBitSize(Op);
   auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
 
-  uint64_t Shift = LoadConstantShift(Op, SHR1Bit);
+  uint64_t Shift = GetConstantShift(Op, SHR1Bit);
   auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Constant(Shift));
 
   CalculateFlags_ShiftRightImmediate(OpSizeFromSrc(Op), ALUOp, Dest, Shift);
@@ -1477,7 +1477,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
-  uint64_t Shift = LoadConstantShift(Op, false);
+  uint64_t Shift = GetConstantShift(Op, false);
   const auto Size = GetSrcBitSize(Op);
 
   Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = Size >= 32});
@@ -1545,7 +1545,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
-  uint64_t Shift = LoadConstantShift(Op, false);
+  uint64_t Shift = GetConstantShift(Op, false);
   const auto Size = GetSrcBitSize(Op);
 
   if (Shift != 0) {
@@ -1586,7 +1586,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
   }
 
   if (Immediate) {
-    uint64_t Shift = LoadConstantShift(Op, SHR1Bit);
+    uint64_t Shift = GetConstantShift(Op, SHR1Bit);
     Ref Result = _Ashr(OpSize, Dest, Constant(Shift));
 
     CalculateFlags_SignShiftRightImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
@@ -1614,7 +1614,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
   ArithRef UnmaskedSrc;
   if (Is1Bit || IsImmediate) {
-    UnmaskedConst = LoadConstantShift(Op, Is1Bit);
+    UnmaskedConst = GetConstantShift(Op, Is1Bit);
     UnmaskedSrc = ARef(UnmaskedConst);
   } else {
     UnmaskedSrc = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
