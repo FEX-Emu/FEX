@@ -167,6 +167,12 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
         Writer->AppendSetMainExecutable(ImageInfo->Info);
         CTX.SetCodeMapWriter(std::move(Writer));
       }
+      LoadAOTImages(*ImageInfo);
+    }
+
+    auto AOTImage = AOTImages.find(ID);
+    if (AOTImage != AOTImages.end()) {
+      CTX.GetCodeCache().LoadData(nullptr, AOTImage->second.Data, ImageInfo->SectionInfo);
     }
   }
 
@@ -208,5 +214,80 @@ int ImageTracker::OpenCodeMapFile() {
     return -1;
   }
   return _sopen(ActiveCodeMapPath.c_str(), O_CREAT | O_TRUNC | O_WRONLY | O_APPEND, _SH_DENYRW, 0644);
+}
+
+void ImageTracker::LoadAOTImages(MappedImageInfo& ImageInfo) {
+  const auto AnsiPath =
+    fmt::format("\\??\\{}cache\\{}", FEX::Config::GetCacheDirectory(), FEXCore::CodeMap::GetBaseFilename(ImageInfo.Info, false));
+
+  // Iterate over all files in the given executable's cache directory, mapping them into memory for future use.
+  // Each cache file name matches the unique ID (as returned by FEXCore::CodeMap::GetBaseFilename) of the image it corresponds to.
+  ScopedUnicodeString NtPath(AnsiPath.c_str());
+
+  OBJECT_ATTRIBUTES DirAttr;
+  InitializeObjectAttributes(&DirAttr, &*NtPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
+
+  ScopedHandle DirHandle;
+  IO_STATUS_BLOCK IOSB;
+  if (!NT_SUCCESS(NtOpenFile(&*DirHandle, FILE_LIST_DIRECTORY | SYNCHRONIZE, &DirAttr, &IOSB, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                             FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT))) {
+    return;
+  }
+
+  std::array<uint8_t, 0x1000> DirBuffer;
+  bool FirstScan = true;
+  auto QueryDir = [&]() {
+    NTSTATUS Status = NtQueryDirectoryFile(*DirHandle, nullptr, nullptr, nullptr, &IOSB, DirBuffer.data(), DirBuffer.size(),
+                                           FileBothDirectoryInformation, FALSE, nullptr, FirstScan);
+    if (FirstScan) {
+      FirstScan = false;
+    }
+    return NT_SUCCESS(Status);
+  };
+
+  while (QueryDir()) {
+    auto* Info = reinterpret_cast<PFILE_BOTH_DIRECTORY_INFORMATION>(DirBuffer.data());
+
+    while (true) {
+      UNICODE_STRING CurrentFileName;
+      CurrentFileName.Buffer = Info->FileName;
+      CurrentFileName.Length = static_cast<USHORT>(Info->FileNameLength);
+      CurrentFileName.MaximumLength = CurrentFileName.Length;
+
+      bool Skip = (Info->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) || (Info->FileNameLength == 2 && Info->FileName[0] == '.') ||
+                  (Info->FileNameLength == 4 && Info->FileName[0] == '.' && Info->FileName[1] == '.');
+
+      if (!Skip) {
+        OBJECT_ATTRIBUTES FileAttr;
+        InitializeObjectAttributes(&FileAttr, &CurrentFileName, OBJ_CASE_INSENSITIVE, *DirHandle, nullptr);
+
+        ScopedHandle FileHandle;
+        if (NT_SUCCESS(NtOpenFile(&*FileHandle, GENERIC_READ | SYNCHRONIZE, &FileAttr, &IOSB, FILE_SHARE_READ, FILE_SYNCHRONOUS_IO_NONALERT))) {
+          ScopedHandle SectionHandle;
+          if (NT_SUCCESS(NtCreateSection(&*SectionHandle, SECTION_MAP_EXECUTE | SECTION_MAP_READ, nullptr, nullptr, PAGE_EXECUTE_READ,
+                                         SEC_COMMIT, *FileHandle))) {
+            void* LoadAddress = nullptr;
+            SIZE_T MappedSize = 0;
+            if (NT_SUCCESS(NtMapViewOfSection(*SectionHandle, NtCurrentProcess(), &LoadAddress, 0, 0, nullptr, &MappedSize, ViewUnmap,
+                                              MEM_RESERVE | MEM_TOP_DOWN, PAGE_EXECUTE_READ))) {
+              fextl::string UniqueId;
+              ULONG AnsiLength = 0;
+              RtlUnicodeToMultiByteSize(&AnsiLength, Info->FileName, Info->FileNameLength);
+              UniqueId.resize(AnsiLength);
+              RtlUnicodeToMultiByteN(UniqueId.data(), AnsiLength, NULL, Info->FileName, Info->FileNameLength);
+
+              AOTImages[UniqueId] = {.Data = static_cast<std::byte*>(LoadAddress)};
+              LogMan::Msg::IFmt("Loaded cache: {}", UniqueId);
+            }
+          }
+        }
+      }
+
+      if (Info->NextEntryOffset == 0) {
+        break;
+      }
+      Info = reinterpret_cast<PFILE_BOTH_DIRECTORY_INFORMATION>(reinterpret_cast<uint8_t*>(Info) + Info->NextEntryOffset);
+    }
+  }
 }
 } // namespace FEX::Windows
