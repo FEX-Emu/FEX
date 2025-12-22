@@ -936,7 +936,7 @@
         ]
       },
 
-      "GPR = Constant i64:$Constant, ConstPad:$Pad{ConstPad::AutoPad}, i32:$MaxBytes{0}": {
+      "GPR = Constant i64:$Constant, ConstPad:$Pad, i32:$MaxBytes{0}": {
         "Desc": ["Generates a 64bit constant inside of a GPR",
                  "Unsupported to create a constant in FPR"
                 ],
