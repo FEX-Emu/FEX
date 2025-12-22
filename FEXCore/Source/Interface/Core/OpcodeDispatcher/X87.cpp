@@ -769,7 +769,7 @@ void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
 
 void OpDispatchBuilder::FNCLEX(OpcodeArgs) {
   // Clear the exception flag bit
-  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Constant(0, ConstPad::NoPad));
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
