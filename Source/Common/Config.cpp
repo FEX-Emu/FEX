@@ -622,6 +622,7 @@ fextl::string GetCacheDirectory() {
     return CacheOverride;
   }
 
+#ifndef _WIN32
 #ifdef FEX_STEAM_SUPPORT
   const char* SteamDataPath = getenv("STEAM_COMPAT_SHADER_PATH");
   if (SteamDataPath) {
@@ -632,6 +633,10 @@ fextl::string GetCacheDirectory() {
   const char* HomeDir = GetHomeDirectory();
   const char* CacheXDG = getenv("XDG_CACHE_HOME");
   return (CacheXDG ? fextl::string {CacheXDG} : (fextl::string {HomeDir} + "/.cache")) + "/fex-emu/";
+#else
+  const char* PrefixAppData = getenv("LOCALAPPDATA");
+  return PrefixAppData ? (fextl::string {PrefixAppData} + "\\fex-emu\\") : fextl::string {".\\"};
+#endif
 }
 
 fextl::string GetConfigFileLocation(bool Global, const PortableInformation& PortableInfo) {
