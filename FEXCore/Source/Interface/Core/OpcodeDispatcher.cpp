@@ -475,7 +475,8 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
     // Unset the 'active' bit in the packed TF, skipping the single step exception after this instruction
-    SetRFLAG<FEXCore::X86State::RFLAG_TF_RAW_LOC>(_And(OpSize::i32Bit, GetRFLAG(FEXCore::X86State::RFLAG_TF_RAW_LOC), Constant(1)));
+    SetRFLAG<FEXCore::X86State::RFLAG_TF_RAW_LOC>(
+      _And(OpSize::i32Bit, GetRFLAG(FEXCore::X86State::RFLAG_TF_RAW_LOC), Constant(1, ConstPad::NoPad)));
     _StoreContextGPR(DstSize, NewSegment, offsetof(FEXCore::Core::CPUState, ss_idx));
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
@@ -1168,7 +1169,7 @@ void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
   Ref Src = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit, 8);
 
   // Clear bits that aren't supposed to be set
-  Src = _Andn(OpSize::i64Bit, Src, Constant(0b101000));
+  Src = _Andn(OpSize::i64Bit, Src, Constant(0b101000, ConstPad::NoPad));
 
   // Set the bit that is always set here
   Src = _Or(OpSize::i64Bit, Src, _InlineConstant(0b10));
@@ -1193,17 +1194,17 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
     CarryInvert();
     break;
   case 0xF8: // CLC
-    SetCFInverted(Constant(1));
+    SetCFInverted(Constant(1, ConstPad::NoPad));
     break;
   case 0xF9: // STC
-    SetCFInverted(Constant(0));
+    SetCFInverted(Constant(0, ConstPad::NoPad));
     break;
   case 0xFC: // CLD
     // Transformed
-    StoreDF(Constant(1));
+    StoreDF(Constant(1, ConstPad::NoPad));
     break;
   case 0xFD: // STD
-    StoreDF(Constant(-1));
+    StoreDF(Constant(-1, ConstPad::NoPad));
     break;
   }
 }
@@ -1299,7 +1300,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
     case FEXCore::X86State::REG_RBP: // GS
     case FEXCore::X86State::REG_R13: // GS
       if (Is64BitMode) {
-        Segment = Constant(0);
+        Segment = Constant(0, ConstPad::NoPad);
       } else {
         Segment = _LoadContextGPR(OpSize::i16Bit, offsetof(FEXCore::Core::CPUState, gs_idx));
       }
@@ -1307,7 +1308,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
     case FEXCore::X86State::REG_RSP: // FS
     case FEXCore::X86State::REG_R12: // FS
       if (Is64BitMode) {
-        Segment = Constant(0);
+        Segment = Constant(0, ConstPad::NoPad);
       } else {
         Segment = _LoadContextGPR(OpSize::i16Bit, offsetof(FEXCore::Core::CPUState, fs_idx));
       }
@@ -1405,7 +1406,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   uint64_t Shift = GetConstantShift(Op, SHL1Bit);
   const auto Size = GetSrcBitSize(Op);
 
-  Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Constant(Shift));
+  Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Constant(Shift, ConstPad::NoPad));
 
   CalculateFlags_ShiftLeftImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
   CalculateDeferredFlags();
@@ -1426,7 +1427,7 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
   auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
 
   uint64_t Shift = GetConstantShift(Op, SHR1Bit);
-  auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Constant(Shift));
+  auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Constant(Shift, ConstPad::NoPad));
 
   CalculateFlags_ShiftRightImmediate(OpSizeFromSrc(Op), ALUOp, Dest, Shift);
   CalculateDeferredFlags();
@@ -1455,7 +1456,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   // a64 masks the bottom bits, so if we're using a native 32/64-bit shift, we
   // can negate to do the subtract (it's congruent), which saves a constant.
-  auto ShiftRight = Size >= 32 ? _Neg(OpSize::i64Bit, Shift) : Sub(OpSize::i64Bit, Constant(Size), Shift);
+  auto ShiftRight = Size >= 32 ? _Neg(OpSize::i64Bit, Shift) : Sub(OpSize::i64Bit, Constant(Size, ConstPad::NoPad), Shift);
 
   auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, Shift);
   auto Tmp2 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src, ShiftRight);
@@ -1471,7 +1472,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   //
   // TODO: This whole function wants to be wrapped in the if. Maybe b/w pass is
   // a good idea after all.
-  Res = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Shift, Constant(0), Dest, Res);
+  Res = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Shift, Constant(0, ConstPad::NoPad), Dest, Res);
 
   HandleShift(Op, Res, Dest, ShiftType::LSL, Shift);
 }
@@ -1486,11 +1487,11 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
   if (Shift != 0) {
     Ref Res {};
     if (Size < 32) {
-      Ref ShiftLeft = Constant(Shift);
+      Ref ShiftLeft = Constant(Shift, ConstPad::NoPad);
       auto ShiftRight = Size - Shift;
 
       auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, ShiftLeft);
-      Ref Tmp2 = ShiftRight ? _Lshr(OpSize::i32Bit, Src, Constant(ShiftRight)) : Src;
+      Ref Tmp2 = ShiftRight ? _Lshr(OpSize::i32Bit, Src, Constant(ShiftRight, ConstPad::NoPad)) : Src;
 
       Res = _Or(OpSize::i64Bit, Tmp1, Tmp2);
     } else {
@@ -1526,7 +1527,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
     Shift = _And(OpSize::i64Bit, Shift, _InlineConstant(0x1F));
   }
 
-  auto ShiftLeft = Sub(OpSize::i64Bit, Constant(Size), Shift);
+  auto ShiftLeft = Sub(OpSize::i64Bit, Constant(Size, ConstPad::NoPad), Shift);
 
   auto Tmp1 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Shift);
   auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
@@ -1536,7 +1537,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
   // where shift = 0 and the source register still gets Zext
-  Res = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Shift, Constant(0), Dest, Res);
+  Res = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Shift, Constant(0, ConstPad::NoPad), Dest, Res);
 
   HandleShift(Op, Res, Dest, ShiftType::LSR, Shift);
 }
@@ -1551,8 +1552,8 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   if (Shift != 0) {
     Ref Res {};
     if (Size < 32) {
-      Ref ShiftRight = Constant(Shift);
-      auto ShiftLeft = Constant(Size - Shift);
+      Ref ShiftRight = Constant(Shift, ConstPad::NoPad);
+      auto ShiftLeft = Constant(Size - Shift, ConstPad::NoPad);
 
       auto Tmp1 = _Lshr(OpSize::i32Bit, Dest, ShiftRight);
       auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
@@ -1587,7 +1588,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
 
   if (Immediate) {
     uint64_t Shift = GetConstantShift(Op, SHR1Bit);
-    Ref Result = _Ashr(OpSize, Dest, Constant(Shift));
+    Ref Result = _Ashr(OpSize, Dest, Constant(Shift, ConstPad::NoPad));
 
     CalculateFlags_SignShiftRightImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
     CalculateDeferredFlags();
@@ -1681,21 +1682,21 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   const auto SrcSize = IR::OpSizeAsBits(Size);
   const auto MaxSrcBit = SrcSize - 1;
-  auto MaxSrcBitOp = Constant(MaxSrcBit);
+  auto MaxSrcBitOp = Constant(MaxSrcBit, ConstPad::NoPad);
 
   // Shift the operand down to the starting bit
   auto Start = _Bfe(OpSizeFromSrc(Op), 8, 0, Src2);
   auto Shifted = _Lshr(Size, Src1, Start);
 
   // Shifts larger than operand size need to be set to zero.
-  auto SanitizedShifted = _Select(Size, Size, CondClass::ULE, Start, MaxSrcBitOp, Shifted, Constant(0));
+  auto SanitizedShifted = _Select(Size, Size, CondClass::ULE, Start, MaxSrcBitOp, Shifted, Constant(0, ConstPad::NoPad));
 
   // Now handle the length specifier.
   auto Length = _Bfe(Size, 8, 8, Src2);
 
   // Now build up the mask
   // (1 << Length) - 1 = ~(~0 << Length)
-  auto AllOnes = Constant(~0ull);
+  auto AllOnes = Constant(~0ull, ConstPad::NoPad);
   auto InvertedMask = _Lshl(Size, AllOnes, Length);
 
   // Now put it all together and make the result.
@@ -1810,7 +1811,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   // Clear the high bits specified by the index. A64 only considers bottom bits
   // of the shift, so we don't need to mask bottom 8-bits ourselves.
   // Out-of-bounds results ignored after.
-  auto Mask = _Lshl(Size, Constant(-1), Index);
+  auto Mask = _Lshl(Size, Constant(-1, ConstPad::NoPad), Index);
   auto MaskResult = _Andn(Size, Src, Mask);
 
   // If the index is above OperandSize, we don't clear anything. BZHI only
@@ -1819,7 +1820,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   //
   // Because we're clobbering flags internally we ignore all carry invert
   // shenanigans and use the raw versions here.
-  _TestNZ(OpSize::i64Bit, Index, Constant(0xFF & ~(OperandSize - 1)));
+  _TestNZ(OpSize::i64Bit, Index, Constant(0xFF & ~(OperandSize - 1), ConstPad::NoPad));
   auto Result = _NZCVSelect(Size, CondClass::NEQ, Src, MaskResult);
   StoreResultGPR(Op, Result);
 
@@ -1913,7 +1914,7 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
 
   // Handles ADCX and ADOX
   const bool IsADCX = Op->OP == 0x1F6;
-  auto Zero = Constant(0);
+  auto Zero = Constant(0, ConstPad::NoPad);
 
   // Before we go trashing NZCV, save the current NZCV state.
   Ref OldNZCV = GetNZCV();
@@ -2333,7 +2334,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-    Ref Tmp = Constant(0);
+    Ref Tmp = Constant(0, ConstPad::NoPad);
 
     for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
       // Insert incoming value
@@ -2712,9 +2713,9 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
 
   Ref MaskConst {};
   if (Size == OpSize::i64Bit) {
-    MaskConst = Constant(~0ULL);
+    MaskConst = Constant(~0ULL, ConstPad::NoPad);
   } else {
-    MaskConst = Constant((1ULL << SizeBits) - 1);
+    MaskConst = Constant((1ULL << SizeBits) - 1, ConstPad::NoPad);
   }
 
   if (DestIsLockedMem(Op)) {
@@ -2733,7 +2734,7 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
     auto Dest = Op->Dest;
     if (Dest.Data.GPR.HighBits) {
       LOGMAN_THROW_A_FMT(Size == OpSize::i8Bit, "Only 8-bit GPRs get high bits");
-      MaskConst = Constant(0xFF00);
+      MaskConst = Constant(0xFF00, ConstPad::NoPad);
       Dest.Data.GPR.HighBits = false;
     }
 
@@ -2795,8 +2796,8 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
 }
 
 Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
-  auto Nibble = _And(OpSize::i64Bit, A, Constant(0xF));
-  auto Greater = Select01(OpSize::i64Bit, CondClass::UGT, Nibble, Constant(9));
+  auto Nibble = _And(OpSize::i64Bit, A, Constant(0xF, ConstPad::NoPad));
+  auto Greater = Select01(OpSize::i64Bit, CondClass::UGT, Nibble, Constant(9, ConstPad::NoPad));
 
   return _Or(OpSize::i64Bit, LoadAF(), Greater);
 }
@@ -2808,13 +2809,13 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
-  CFInv = _And(OpSize::i64Bit, CFInv, Select01(OpSize::i64Bit, CondClass::ULE, AL, Constant(0x99)));
+  CFInv = _And(OpSize::i64Bit, CFInv, Select01(OpSize::i64Bit, CondClass::ULE, AL, Constant(0x99, ConstPad::NoPad)));
 
   // AL = AF ? (AL + 0x6) : AL;
-  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, AF, Constant(0), Add(OpSize::i64Bit, AL, 0x6), AL);
+  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, AF, Constant(0, ConstPad::NoPad), Add(OpSize::i64Bit, AL, 0x6), AL);
 
   // AL = CF ? (AL + 0x60) : AL;
-  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, CFInv, Constant(0), Add(OpSize::i64Bit, AL, 0x60), AL);
+  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, CFInv, Constant(0, ConstPad::NoPad), Add(OpSize::i64Bit, AL, 0x60), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
@@ -2831,16 +2832,16 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
-  CF = _Or(OpSize::i64Bit, CF, Select01(OpSize::i64Bit, CondClass::UGT, AL, Constant(0x99)));
+  CF = _Or(OpSize::i64Bit, CF, Select01(OpSize::i64Bit, CondClass::UGT, AL, Constant(0x99, ConstPad::NoPad)));
 
   // NewCF = CF | (AF && (Borrow from AL - 6))
-  auto NewCF = _Or(OpSize::i32Bit, CF, _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::ULT, AL, Constant(6), AF, CF));
+  auto NewCF = _Or(OpSize::i32Bit, CF, _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::ULT, AL, Constant(6, ConstPad::NoPad), AF, CF));
 
   // AL = AF ? (AL - 0x6) : AL;
-  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, AF, Constant(0), Sub(OpSize::i64Bit, AL, 0x6), AL);
+  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, AF, Constant(0, ConstPad::NoPad), Sub(OpSize::i64Bit, AL, 0x6), AL);
 
   // AL = CF ? (AL - 0x60) : AL;
-  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, CF, Constant(0), Sub(OpSize::i64Bit, AL, 0x60), AL);
+  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, CF, Constant(0, ConstPad::NoPad), Sub(OpSize::i64Bit, AL, 0x60), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
@@ -2863,7 +2864,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   A = NZCVSelect(OpSize::i32Bit, CondClass::UGE /* CF = 1 */, Add(OpSize::i32Bit, A, 0x106), A);
 
   // AL = AL & 0x0F
-  A = _And(OpSize::i32Bit, A, Constant(0xFF0F));
+  A = _And(OpSize::i32Bit, A, Constant(0xFF0F, ConstPad::NoPad));
   StoreGPRRegister(X86State::REG_RAX, A, OpSize::i16Bit);
 }
 
@@ -2880,13 +2881,13 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   A = NZCVSelect(OpSize::i32Bit, CondClass::UGE /* CF = 1 */, Sub(OpSize::i32Bit, A, 0x106), A);
 
   // AL = AL & 0x0F
-  A = _And(OpSize::i32Bit, A, Constant(0xFF0F));
+  A = _And(OpSize::i32Bit, A, Constant(0xFF0F, ConstPad::NoPad));
   StoreGPRRegister(X86State::REG_RAX, A, OpSize::i16Bit);
 }
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   auto AL = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit);
-  auto Imm8 = Constant(Op->Src[0].Literal() & 0xFF);
+  auto Imm8 = Constant(Op->Src[0].Literal() & 0xFF, ConstPad::NoPad);
   Ref Quotient = _AllocateGPR(true);
   Ref Remainder = _AllocateGPR(true);
   _UDiv(OpSize::i64Bit, AL, Invalid(), Imm8, Quotient, Remainder);
@@ -2900,10 +2901,10 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
   auto A = LoadGPRRegister(X86State::REG_RAX);
-  auto AH = _Lshr(OpSize::i32Bit, A, Constant(8));
-  auto Imm8 = Constant(Op->Src[0].Literal() & 0xFF);
+  auto AH = _Lshr(OpSize::i32Bit, A, Constant(8, ConstPad::NoPad));
+  auto Imm8 = Constant(Op->Src[0].Literal() & 0xFF, ConstPad::NoPad);
   auto NewAL = Add(OpSize::i64Bit, A, _Mul(OpSize::i64Bit, AH, Imm8));
-  auto Result = _And(OpSize::i64Bit, NewAL, Constant(0xFF));
+  auto Result = _And(OpSize::i64Bit, NewAL, Constant(0xFF, ConstPad::NoPad));
   StoreGPRRegister(X86State::REG_RAX, Result, OpSize::i16Bit);
 
   SetNZ_ZeroCV(OpSize::i8Bit, Result);
@@ -3000,8 +3001,9 @@ void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
     GDTStoreSize = OpSize::i32Bit;
   }
 
-  _StoreMemGPRAutoTSO(OpSize::i16Bit, DestAddress, Constant(0));
-  _StoreMemGPRAutoTSO(GDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = OpSize::i64Bit}, Constant(GDTAddress));
+  _StoreMemGPRAutoTSO(OpSize::i16Bit, DestAddress, Constant(0, ConstPad::NoPad));
+  _StoreMemGPRAutoTSO(GDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = OpSize::i64Bit},
+                      Constant(GDTAddress, ConstPad::NoPad));
 }
 
 void OpDispatchBuilder::SIDTOp(OpcodeArgs) {
@@ -3016,29 +3018,30 @@ void OpDispatchBuilder::SIDTOp(OpcodeArgs) {
     IDTStoreSize = OpSize::i32Bit;
   }
 
-  _StoreMemGPRAutoTSO(OpSize::i16Bit, DestAddress, Constant(0xfff));
-  _StoreMemGPRAutoTSO(IDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = OpSize::i64Bit}, Constant(IDTAddress));
+  _StoreMemGPRAutoTSO(OpSize::i16Bit, DestAddress, Constant(0xfff, ConstPad::NoPad));
+  _StoreMemGPRAutoTSO(IDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = OpSize::i64Bit},
+                      Constant(IDTAddress, ConstPad::NoPad));
 }
 
 void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
   const bool IsMemDst = DestIsMem(Op);
 
   IR::OpSize DstSize {OpSize::iInvalid};
-  Ref Const = Constant((1U << 31) | ///< PG - Paging
-                       (0U << 30) | ///< CD - Cache Disable
-                       (0U << 29) | ///< NW - Not Writethrough (Legacy, now ignored)
-                       ///< [28:19] - Reserved
-                       (1U << 18) | ///< AM - Alignment Mask
-                       ///< 17 - Reserved
-                       (1U << 16) | ///< WP - Write Protect
-                       ///< [15:6] - Reserved
-                       (1U << 5) | ///< NE - Numeric Error
-                       (1U << 4) | ///< ET - Extension Type (Legacy, now reserved and 1)
-                       (0U << 3) | ///< TS - Task Switched
-                       (0U << 2) | ///< EM - Emulation
-                       (1U << 1) | ///< MP - Monitor Coprocessor
-                       (1U << 0)); ///< PE - Protection Enabled
-
+  Ref Const = Constant((1U << 31) |   ///< PG - Paging
+                         (0U << 30) | ///< CD - Cache Disable
+                         (0U << 29) | ///< NW - Not Writethrough (Legacy, now ignored)
+                         ///< [28:19] - Reserved
+                         (1U << 18) | ///< AM - Alignment Mask
+                         ///< 17 - Reserved
+                         (1U << 16) | ///< WP - Write Protect
+                         ///< [15:6] - Reserved
+                         (1U << 5) | ///< NE - Numeric Error
+                         (1U << 4) | ///< ET - Extension Type (Legacy, now reserved and 1)
+                         (0U << 3) | ///< TS - Task Switched
+                         (0U << 2) | ///< EM - Emulation
+                         (1U << 1) | ///< MP - Monitor Coprocessor
+                         (1U << 0),  ///< PE - Protection Enabled
+                       ConstPad::NoPad);
   const auto OpAddr = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0);
   if (Is64BitMode) {
     DstSize = OpAddr == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? OpSize::i16Bit :
@@ -3069,8 +3072,8 @@ OpDispatchBuilder::CycleCounterPair OpDispatchBuilder::CycleCounter(bool SelfSyn
   Ref CounterHigh {};
   auto Counter = _CycleCounter(SelfSynchronizingLoads);
   if (CTX->Config.TSCScale) {
-    CounterLow = _Lshl(OpSize::i32Bit, Counter, Constant(CTX->Config.TSCScale));
-    CounterHigh = _Lshr(OpSize::i64Bit, Counter, Constant(32 - CTX->Config.TSCScale));
+    CounterLow = _Lshl(OpSize::i32Bit, Counter, Constant(CTX->Config.TSCScale, ConstPad::NoPad));
+    CounterHigh = _Lshr(OpSize::i64Bit, Counter, Constant(32 - CTX->Config.TSCScale, ConstPad::NoPad));
   } else {
     CounterLow = _Bfe(OpSize::i64Bit, 32, 0, Counter);
     CounterHigh = _Bfe(OpSize::i64Bit, 32, 32, Counter);
@@ -3098,7 +3101,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     HandledLock = true;
 
     Ref DestAddress = MakeSegmentAddress(Op, Op->Dest);
-    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), Constant(1), DestAddress);
+    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), Constant(1, ConstPad::NoPad), DestAddress);
   } else {
     Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
@@ -3109,7 +3112,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     // Addition producing upper garbage
     Result = Add(OpSize::i32Bit, Dest, 1);
     CalculatePF(Result);
-    CalculateAF(Dest, Constant(1));
+    CalculateAF(Dest, Constant(1, ConstPad::NoPad));
 
     // Correctly set NZ flags, preserving C
     HandleNZCV_RMW();
@@ -3119,7 +3122,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     // getting a negative. So compare the sign bits to calculate V.
     _RmifNZCV(_Andn(OpSize::i32Bit, Result, Dest), Size - 1, 1);
   } else {
-    Result = CalculateFlags_ADD(OpSizeFromSrc(Op), Dest, Constant(1), false);
+    Result = CalculateFlags_ADD(OpSizeFromSrc(Op), Dest, Constant(1, ConstPad::NoPad), false);
   }
 
   if (!IsLocked) {
@@ -3139,7 +3142,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     Ref DestAddress = MakeSegmentAddress(Op, Op->Dest);
 
     // Use Add instead of Sub to avoid a NEG
-    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), Constant(Size == 64 ? -1 : ((1ULL << Size) - 1)), DestAddress);
+    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), Constant(Size == 64 ? -1 : ((1ULL << Size) - 1), ConstPad::NoPad), DestAddress);
   } else {
     Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
@@ -3150,7 +3153,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     // Subtraction producing upper garbage
     Result = Sub(OpSize::i32Bit, Dest, 1);
     CalculatePF(Result);
-    CalculateAF(Dest, Constant(1));
+    CalculateAF(Dest, Constant(1, ConstPad::NoPad));
 
     // Correctly set NZ flags, preserving C
     HandleNZCV_RMW();
@@ -3160,7 +3163,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     // getting a positive. So compare the sign bits to calculate V.
     _RmifNZCV(_Andn(OpSize::i32Bit, Dest, Result), Size - 1, 1);
   } else {
-    Result = CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, Constant(1), false);
+    Result = CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, Constant(1, ConstPad::NoPad), false);
   }
 
   if (!IsLocked) {
@@ -3208,7 +3211,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     Ref Counter = LoadGPRRegister(X86State::REG_RCX);
 
     auto Result = _MemSet(CTX->IsAtomicTSOEnabled(), Size, Segment ?: InvalidNode, Dest, Src, Counter, LoadDir(1));
-    StoreGPRRegister(X86State::REG_RCX, Constant(0));
+    StoreGPRRegister(X86State::REG_RCX, Constant(0, ConstPad::NoPad));
     StoreGPRRegister(X86State::REG_RDI, Result);
   }
 }
@@ -3251,7 +3254,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
       Result_Src = Sub(OpSize::i64Bit, Result_Src, SrcSegment);
     }
 
-    StoreGPRRegister(X86State::REG_RCX, Constant(0));
+    StoreGPRRegister(X86State::REG_RCX, Constant(0, ConstPad::NoPad));
     StoreGPRRegister(X86State::REG_RDI, Result_Dst);
     StoreGPRRegister(X86State::REG_RSI, Result_Src);
   } else {
@@ -3607,7 +3610,7 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   if (Size == OpSize::i16Bit) {
     // BSWAP of 16bit is undef. ZEN+ causes the lower 16bits to get zero'd
-    Dest = Constant(0);
+    Dest = Constant(0, ConstPad::NoPad);
   } else {
     Dest = LoadSourceGPR_WithOpSize(Op, Op->Dest, GetGPROpSize(), Op->Flags);
     Dest = _Rev(Size, Dest);
@@ -3629,7 +3632,7 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
   // Bit 1 is always 1
   // Bit 9 is always 1 because we always have interrupts enabled
 
-  Src = _Or(OpSize::i64Bit, Src, Constant(0x202));
+  Src = _Or(OpSize::i64Bit, Src, Constant(0x202, ConstPad::NoPad));
 
   SetPackedRFLAG(false, Src);
 
@@ -3642,7 +3645,7 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
   HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
 
   const auto Size = OpSizeFromSrc(Op);
-  auto ZeroConst = Constant(0);
+  auto ZeroConst = Constant(0, ConstPad::NoPad);
 
   if (DestIsLockedMem(Op)) {
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
@@ -4330,7 +4333,7 @@ Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, IR::OpSize Size, uint8_t Of
     // Extract the subregister if requested.
     const auto OpSize = std::max(OpSize::i32Bit, Size);
     if (AllowUpperGarbage) {
-      Reg = _Lshr(OpSize, Reg, Constant(Offset));
+      Reg = _Lshr(OpSize, Reg, Constant(Offset, ConstPad::NoPad));
     } else {
       Reg = _Bfe(OpSize, IR::OpSizeAsBits(Size), Offset, Reg);
     }
@@ -4437,7 +4440,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(RegClass Class, FEXCore::X86Table
       // For X87 extended doubles, split before storing
       _StoreMemFPR(OpSize::i64Bit, MemStoreDst, Src, Align);
       auto Upper = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Src, 1);
-      _StoreMemGPR(OpSize::i16Bit, Upper, MemStoreDst, Constant(8), std::min(Align, OpSize::i64Bit), MemOffsetType::SXTX, 1);
+      _StoreMemGPR(OpSize::i16Bit, Upper, MemStoreDst, Constant(8, ConstPad::NoPad), std::min(Align, OpSize::i64Bit), MemOffsetType::SXTX, 1);
     }
   } else {
     _StoreMemAutoTSO(Class, OpSize, A, Src, Align == OpSize::iInvalid ? OpSize : Align);
@@ -4513,7 +4516,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     FlushRegisterCache();
 
     // Move 0 into the register
-    StoreResultGPR(Op, Constant(0));
+    StoreResultGPR(Op, Constant(0, ConstPad::NoPad));
     return;
   }
 
@@ -4548,7 +4551,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     // adjusted constant here will inline into the arm64 and instruction, so if
     // flags are not needed, we save an instruction overall.
     if (ALUIROp == IR::IROps::OP_ANDWITHFLAGS) {
-      Src = Constant(Const | ~((1ull << IR::OpSizeAsBits(Size)) - 1));
+      Src = Constant(Const | ~((1ull << IR::OpSizeAsBits(Size)) - 1), ConstPad::NoPad);
       ALUIROp = IR::IROps::OP_AND;
     }
   }
@@ -4603,7 +4606,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
 void OpDispatchBuilder::LSLOp(OpcodeArgs) {
   // Emulate by always returning failure, this deviates from both Linux and Windows but
   // shouldn't be depended on by anything.
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Constant(0));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(Constant(0, ConstPad::NoPad));
 }
 
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
