@@ -651,18 +651,10 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
           Literal = static_cast<int32_t>(Literal);
         }
         DecodeInst->Src[CurrentSrc].Data.Literal.Size = DestSize;
-        DecodeInst->Src[CurrentSrc].Data.Literal.SignExtend = true;
       }
 
       DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::Literal;
       DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal;
-      ++CurrentSrc;
-
-      if (Bytes == 8) [[unlikely]] {
-        DecodeInst->Src[CurrentSrc].Data.Literal.Size = 4;
-        DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::Literal;
-        DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal >> 32;
-      }
     }
 
     Bytes = 0;
