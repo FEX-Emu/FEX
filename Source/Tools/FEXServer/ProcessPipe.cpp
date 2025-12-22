@@ -58,7 +58,11 @@ constexpr size_t static MAX_FD_DISTANCE = 32;
 rlimit MaxFDs {};
 std::atomic<size_t> NumFilesOpened {};
 
-static std::string CodeMapDirectory;
+// Path to directory for unprocessed code maps dumped by FEX
+static std::string NewCodeMapDirectory;
+
+// Path to directory for processed code maps (suitable for cache generation)
+static std::string ReadyCodeMapDirectory;
 
 void SetWatchFD(int FD) {
   WatchFD = FD;
@@ -300,7 +304,7 @@ ImportPendingCodeMaps(const FEXCore::ExecutableFileInfo& MainFileId, bool HasMul
   // - If exclusively lockable, we know the client either closed or crashed
   std::vector<std::string> CodeMaps;
   for (int Index = 0; true; ++Index) {
-    auto CodeMap = fmt::format("{}/new/{}.{}.bin", CodeMapDirectory, FEXCore::CodeMap::GetBaseFilename(MainFileId, !HasMultiblock), Index);
+    auto CodeMap = fmt::format("{}/{}.{}.bin", NewCodeMapDirectory, FEXCore::CodeMap::GetBaseFilename(MainFileId, !HasMultiblock), Index);
     auto FD = open(CodeMap.c_str(), O_RDONLY);
     if (FD == -1) {
       break;
@@ -403,7 +407,7 @@ static std::map<FEXCore::ExecutableFileInfo, NeedsCacheRefresh> AggregateCodeMap
 
   // Read all dependencies discovered in previous runs
   {
-    auto MainFileCodeMapPath = fmt::format("{}/ready/{}", CodeMapDirectory, FEXCore::CodeMap::GetBaseFilename(MainFileId, !HasMultiblock));
+    auto MainFileCodeMapPath = fmt::format("{}/{}", ReadyCodeMapDirectory, FEXCore::CodeMap::GetBaseFilename(MainFileId, !HasMultiblock));
     std::ifstream MainFileCodeMap(MainFileCodeMapPath, std::ios_base::binary);
     for (auto& [FileId, Contents] : FEXCore::CodeMap::ParseCodeMap(MainFileCodeMap)) {
       Result.emplace(std::piecewise_construct, std::forward_as_tuple(nullptr, FileId, Contents.Filename),
@@ -421,7 +425,7 @@ static std::map<FEXCore::ExecutableFileInfo, NeedsCacheRefresh> AggregateCodeMap
   // For each referenced library, add referenced offsets to that library's reference code map
   for (auto& [File, Blocks] : IncomingCodeMap) {
     const auto BinaryName = std::string {FEXCore::CodeMap::GetBaseFilename(File, !HasMultiblock)};
-    auto OutputName = fmt::format("{}/ready/{}", CodeMapDirectory, BinaryName);
+    auto OutputName = fmt::format("{}/{}", ReadyCodeMapDirectory, BinaryName);
 
     // Check if the new code maps add any new information to the previous code map
     if (auto ReferenceCodeMap = std::ifstream(OutputName, std::ios_base::binary)) {
@@ -611,7 +615,7 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
         // Trigger cache generation for this file if no cache exists or if the cache is older than the most recent update to its code map
         std::error_code ec;
         const auto BinaryName = FEXCore::CodeMap::GetBaseFilename(FileInfo, !HasMultiblock);
-        const auto MergedCodeMapFilename = fmt::format("{}/ready/{}", CodeMapDirectory, BinaryName);
+        const auto MergedCodeMapFilename = fmt::format("{}/{}", ReadyCodeMapDirectory, BinaryName);
         const auto LastCodeMapUpdate = std::filesystem::last_write_time(MergedCodeMapFilename, ec);
         if (std::filesystem::last_write_time(GetCacheFilename(FileInfo), ec) < LastCodeMapUpdate || ec) {
           fmt::println("  Scheduling update for {} cache for {}", ec ? "missing" : "outdated", BinaryName);
@@ -627,7 +631,7 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
 
         const auto BinaryName = (std::string)FEXCore::CodeMap::GetBaseFilename(File, !HasMultiblock);
         fmt::println("Generating cache for {}", BinaryName);
-        int Status = RunOfflineCompiler(fmt::format("{}/ready/{}", CodeMapDirectory, BinaryName).c_str());
+        int Status = RunOfflineCompiler(fmt::format("{}/{}", ReadyCodeMapDirectory, BinaryName).c_str());
         if (Status != 0) {
           fmt::println("ERROR: Cache generation failed with status {}", Status);
         }
@@ -668,15 +672,14 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
       int Index = 0;
       std::string Filename;
       do {
-        Filename = fmt::format("{}/new/{}.{}.bin", CodeMapDirectory,
+        Filename = fmt::format("{}/{}.{}.bin", NewCodeMapDirectory,
                                FEXCore::CodeMap::GetBaseFilename(
                                  FEXCore::ExecutableFileInfo {nullptr, filename_hash, (fextl::string)BinaryPath.string()}, !HasMultiblock),
                                Index++);
       } while (std::filesystem::exists(Filename));
 
-      std::filesystem::create_directories(CodeMapDirectory);
-      std::filesystem::create_directories(CodeMapDirectory + "/new");
-      std::filesystem::create_directories(CodeMapDirectory + "/ready");
+      std::filesystem::create_directories(NewCodeMapDirectory);
+      std::filesystem::create_directories(ReadyCodeMapDirectory);
       auto CodeMapFD = open(Filename.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, 0644);
 
       fasio::mutable_buffer Data = {.Data = std::as_writable_bytes(std::span(&Res, 1)),
@@ -760,7 +763,8 @@ void SetConfiguration(bool Foreground, uint32_t PersistentTimeout) {
   ProcessPipe::Foreground = Foreground;
   ProcessPipe::RequestTimeout = PersistentTimeout;
 
-  CodeMapDirectory = FEX::Config::GetCacheDirectory() + "codemap";
+  NewCodeMapDirectory = FEX::Config::GetCacheDirectory() + "codemap/new";
+  ReadyCodeMapDirectory = FEX::Config::GetCacheDirectory() + "codemap/ready";
 }
 
 void Shutdown() {
