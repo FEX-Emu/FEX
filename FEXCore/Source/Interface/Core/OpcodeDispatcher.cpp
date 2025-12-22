@@ -4148,14 +4148,14 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg
   // In some cases the upper 16-bits of the 32-bit GPR contain garbage to ignore.
   auto GDT = _Bfe(OpSize::i32Bit, 1, 2, Segment);
   // Fun quirk, if we mask the selector then it is premultiplied by 8 which we need to do for accessing anyway.
-  auto SegmentOffset = _And(OpSize::i32Bit, Segment, _Constant(0xfff8));
+  auto SegmentOffset = _And(OpSize::i32Bit, Segment, _Constant(0xfff8, ConstPad::NoPad));
   Ref SegmentBase = _LoadContextGPRIndexed(GDT, OpSize::i64Bit, offsetof(FEXCore::Core::CPUState, segment_arrays[0]), 8);
   Ref NewSegment = _LoadMemGPR(OpSize::i64Bit, SegmentBase, SegmentOffset, OpSize::i8Bit, MemOffsetType::UXTW, 1);
   CheckLegacySegmentWrite(NewSegment, SegmentReg);
 
   // Extract the 32-bit base from the GDT segment.
-  auto Upper32 = _Lshr(OpSize::i64Bit, NewSegment, _Constant(32));
-  auto Masked = _And(OpSize::i32Bit, Upper32, _Constant(0xFF00'0000));
+  auto Upper32 = _Lshr(OpSize::i64Bit, NewSegment, _Constant(32, ConstPad::NoPad));
+  auto Masked = _And(OpSize::i32Bit, Upper32, _Constant(0xFF00'0000, ConstPad::NoPad));
   Ref Merged = _Orlshr(OpSize::i32Bit, Masked, NewSegment, 16);
   NewSegment = _Bfi(OpSize::i32Bit, 8, 16, Merged, Upper32);
 
