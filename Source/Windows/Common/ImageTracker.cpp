@@ -75,7 +75,7 @@ static void LoadImageVolatileMetadata(fextl::set<uint64_t>& VolatileInstructions
   }
 }
 
-static fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> LoadImageRelocations(ArchImageNtHeaders* Nt, uint64_t Address) {
+static fextl::robin_map<uint32_t, FEXCore::GuestRelocationType> LoadImageRelocations(ArchImageNtHeaders* Nt, uint64_t Address) {
   const auto Module = reinterpret_cast<HMODULE>(Address);
   ULONG Size;
 
@@ -85,7 +85,7 @@ static fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> LoadImageRel
     return {};
   }
 
-  fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> Result;
+  fextl::robin_map<uint32_t, FEXCore::GuestRelocationType> Result;
   const uint64_t RelocationBlocksEnd = RelocationBlocksBegin + Size - sizeof(IMAGE_BASE_RELOCATION);
   for (uint64_t CurrentRelocation = RelocationBlocksBegin; CurrentRelocation < RelocationBlocksEnd;) {
     const auto* Block = reinterpret_cast<IMAGE_BASE_RELOCATION*>(CurrentRelocation);
@@ -118,7 +118,7 @@ ImageTracker::ImageTracker(FEXCore::Context::Context& CTX, bool IsGeneratingCach
   , IsGeneratingCache {IsGeneratingCache} {}
 
 ImageTracker::MappedImageInfo::MappedImageInfo(std::string_view Path, uint64_t Address, ArchImageNtHeaders* Nt,
-                                               fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> Relocations)
+                                               fextl::robin_map<uint32_t, FEXCore::GuestRelocationType> Relocations)
   : Info {.FileId = ComputeCodeMapId(BaseName(Path), Nt->FileHeader.TimeDateStamp, Nt->OptionalHeader.SizeOfImage),
           .Filename = ToLower(Path), // Normalize path case as Windows paths are case-insensitive
           .Relocations = std::move(Relocations)}
@@ -135,7 +135,7 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
       if (IsGeneratingCache) {
         return LoadImageRelocations(Nt, Address);
       }
-      return fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> {};
+      return fextl::robin_map<uint32_t, FEXCore::GuestRelocationType> {};
     }();
     std::unique_lock Lk {ImagesLock};
     auto [It, Inserted] = MappedImages.emplace(std::piecewise_construct, std::forward_as_tuple(Address),

@@ -52,7 +52,7 @@ private:
     FEXCore::ExecutableFileSectionInfo SectionInfo;
 
     MappedImageInfo(std::string_view Path, uint64_t Address, ArchImageNtHeaders* Nt,
-                    fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> Relocations);
+                    fextl::robin_map<uint32_t, FEXCore::GuestRelocationType> Relocations);
   };
 
   FEXCore::Context::Context& CTX;
