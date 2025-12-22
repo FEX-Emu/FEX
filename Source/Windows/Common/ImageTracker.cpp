@@ -75,6 +75,43 @@ static void LoadImageVolatileMetadata(fextl::set<uint64_t>& VolatileInstructions
   }
 }
 
+static fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> LoadImageRelocations(ArchImageNtHeaders* Nt, uint64_t Address) {
+  const auto Module = reinterpret_cast<HMODULE>(Address);
+  ULONG Size;
+
+  const auto RelocationBlocksBegin =
+    reinterpret_cast<uint64_t>(RtlImageDirectoryEntryToData(Module, true, IMAGE_DIRECTORY_ENTRY_BASERELOC, &Size));
+  if (!RelocationBlocksBegin) {
+    return {};
+  }
+
+  fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> Result;
+  const uint64_t RelocationBlocksEnd = RelocationBlocksBegin + Size - sizeof(IMAGE_BASE_RELOCATION);
+  for (uint64_t CurrentRelocation = RelocationBlocksBegin; CurrentRelocation < RelocationBlocksEnd;) {
+    const auto* Block = reinterpret_cast<IMAGE_BASE_RELOCATION*>(CurrentRelocation);
+    if (!Block->SizeOfBlock) {
+      break;
+    }
+    const uint64_t BlockEnd = CurrentRelocation + Block->SizeOfBlock; // Includes the size of IMAGE_BASE_RELOCATION
+    CurrentRelocation += sizeof(IMAGE_BASE_RELOCATION);
+
+    for (; CurrentRelocation < BlockEnd; CurrentRelocation += 2) {
+      auto PackedRelocation = *reinterpret_cast<uint16_t*>(CurrentRelocation);
+      uint32_t RelocatedRVA = Block->VirtualAddress + (PackedRelocation & 0xfff);
+      uint8_t Type = PackedRelocation >> 12;
+
+      switch (Type) {
+      case IMAGE_REL_BASED_ABSOLUTE: break;
+      case IMAGE_REL_BASED_HIGHLOW: Result[RelocatedRVA] = FEXCore::GuestRelocationType::Rel32; break;
+      case IMAGE_REL_BASED_DIR64: Result[RelocatedRVA] = FEXCore::GuestRelocationType::Rel64; break;
+      default: ERROR_AND_DIE_FMT("Unhandled relocation");
+      }
+    }
+  }
+
+  return Result;
+}
+
 ImageTracker::ImageTracker(FEXCore::Context::Context& CTX, bool IsGeneratingCache)
   : CTX {CTX}
   , ExtendedMetaData {FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig())}
@@ -94,10 +131,15 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
   auto* Nt = reinterpret_cast<ArchImageNtHeaders*>(RtlImageNtHeader(Module));
   MappedImageInfo* ImageInfo = nullptr;
   {
+    auto Relocations = [&]() {
+      if (IsGeneratingCache) {
+        return LoadImageRelocations(Nt, Address);
+      }
+      return fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> {};
+    }();
     std::unique_lock Lk {ImagesLock};
-    auto [It, Inserted] =
-      MappedImages.emplace(std::piecewise_construct, std::forward_as_tuple(Address),
-                           std::forward_as_tuple(Path, Address, Nt, fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> {}));
+    auto [It, Inserted] = MappedImages.emplace(std::piecewise_construct, std::forward_as_tuple(Address),
+                                               std::forward_as_tuple(Path, Address, Nt, std::move(Relocations)));
 
     if (!Inserted) {
       return It->second.SectionInfo;
