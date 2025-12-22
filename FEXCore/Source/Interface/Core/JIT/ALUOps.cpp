@@ -43,8 +43,15 @@ DEF_BINOP_WITH_CONSTANT(Ror, rorv, ror)
 DEF_OP(Constant) {
   auto Op = IROp->C<IR::IROp_Constant>();
   auto Dst = GetReg(Node);
-  // TODO: Audit the frontend generating these constants and pass through padding information.
-  LoadConstant(ARMEmitter::Size::i64Bit, Dst, Op->Constant, CPU::Arm64Emitter::PadType::AUTOPAD);
+
+  const auto PadType = [Pad = Op->Pad]() {
+    switch (Pad) {
+    case IR::ConstPad::NoPad: return CPU::Arm64Emitter::PadType::NOPAD;
+    case IR::ConstPad::DoPad: return CPU::Arm64Emitter::PadType::DOPAD;
+    default: return CPU::Arm64Emitter::PadType::AUTOPAD;
+    }
+  }();
+  LoadConstant(ARMEmitter::Size::i64Bit, Dst, Op->Constant, PadType, Op->MaxBytes);
 }
 
 DEF_OP(EntrypointOffset) {

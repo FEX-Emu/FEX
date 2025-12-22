@@ -149,6 +149,17 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, RoundMode Arg)
   }();
 }
 
+static void PrintArg(fextl::stringstream* out, const IRListView*, ConstPad Arg) {
+  *out << [Arg] {
+    switch (Arg) {
+    case ConstPad::NoPad: return "NoPad";
+    case ConstPad::DoPad: return "DoPad";
+    case ConstPad::AutoPad: return "AutoPad";
+    }
+    return "<Unknown ConstPad Type>";
+  }();
+}
+
 static void PrintArg(fextl::stringstream* out, const IRListView*, NamedVectorConstant Arg) {
   *out << [Arg] {
     // clang-format off
