@@ -42,7 +42,7 @@ void __attribute__((noinline)) __jit_debug_register_code() {
 
 namespace FEXCore {
 
-void GDBJITRegister(FEXCore::ExecutableFileInfo& Entry, uintptr_t VAFileStart, uint64_t GuestRIP, uintptr_t HostEntry,
+void GDBJITRegister(const FEXCore::ExecutableFileInfo& Entry, uintptr_t VAFileStart, uint64_t GuestRIP, uintptr_t HostEntry,
                     FEXCore::Core::DebugData& DebugData) {
   auto map = Entry.SourcecodeMap.get();
 
@@ -113,7 +113,7 @@ void GDBJITRegister(FEXCore::ExecutableFileInfo& Entry, uintptr_t VAFileStart, u
 } // namespace FEXCore
 #else
 namespace FEXCore {
-void GDBJITRegister(FEXCore::ExecutableFileInfo&, uintptr_t, uint64_t, uintptr_t, FEXCore::Core::DebugData&) {
+void GDBJITRegister(const FEXCore::ExecutableFileInfo&, uintptr_t, uint64_t, uintptr_t, FEXCore::Core::DebugData&) {
   ERROR_AND_DIE_FMT("GDBSymbols support not compiled in");
 }
 } // namespace FEXCore
