@@ -159,7 +159,7 @@ void Dispatcher::EmitDispatcher() {
   ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 0);
   lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 12);
   lsrv(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
-  tbz(TMP1, 0, &l_NotECCode);
+  (void)tbz(TMP1, 0, &l_NotECCode);
 
   str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
 
