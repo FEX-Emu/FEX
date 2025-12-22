@@ -561,9 +561,10 @@ int main(int argc, char** argv, char** const envp) {
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 
-  // Request code cache generation
+  // Request code cache generation and load caches for all binaries loaded previously
   if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
     FEXServerClient::PopulateCodeCache(FEXServerClient::GetServerFD(), ProgramFD, FEXCore::Config::Get_MULTIBLOCK());
+    SyscallHandler->TriggerPostStartupCodeCacheLoad(*ParentThread->Thread);
   }
   close(ProgramFD);
 
