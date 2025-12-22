@@ -70,13 +70,30 @@ public:
   ~CodeCache();
 
   ContextImpl& CTX;
+  fextl::unique_ptr<ContextImpl> ValidationCTX;
+  fextl::unique_ptr<Core::InternalThreadState> ValidationThread;
+  FEXCore::Core::CPUState::gdt_segment ValidationGDT[32] {};
   bool IsGeneratingCache = false;
 
   FEX_CONFIG_OPT(EnableCodeCaching, ENABLECODECACHINGWIP);
+  FEX_CONFIG_OPT(EnableCodeCacheValidation, ENABLECODECACHEVALIDATION);
 
   uint64_t ComputeCodeMapId(std::string_view Filename, int FD) override;
   bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) override;
   bool LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
+
+  /**
+   * Performs expensive extra validation on the loaded code cache data.
+   *
+   * This kicks off an in-process recompile of all cached blocks and compares
+   * them with the cached data. Differences will be reported as fatal errors,
+   * which can uncover bugs like for example:
+   * - mismatches of the JIT configuration used during cache generation
+   * - hidden position dependencies due to missing FEX relocations
+   * - incorrect instruction padding
+   */
+  void Validate(const ExecutableFileSectionInfo&, fextl::set<uint64_t> GuestBlocks, const fextl::set<uint64_t>& HostBlocks,
+                std::span<std::byte> CachedCode);
 
   void InitiateCacheGeneration() override {
     IsGeneratingCache = true;
