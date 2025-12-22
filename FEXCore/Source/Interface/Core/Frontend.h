@@ -4,9 +4,11 @@
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/IR/IR.h"
 
+#include <FEXCore/Core/CodeCache.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <array>
 #include <cstddef>
@@ -28,6 +30,7 @@ public:
     INVALID_INST,
     NOEXEC_INST,
     PARTIAL_DECODE_INST,
+    BAD_RELOCATION,
   };
 
   // New Frontend decoding
@@ -59,9 +62,6 @@ public:
   uint64_t DecodedMinAddress {};
   uint64_t DecodedMaxAddress {~0ULL};
 
-  void SetSectionMaxAddress(uint64_t v) {
-    SectionMaxAddress = v;
-  }
   void SetExternalBranches(fextl::set<uint64_t>* v) {
     ExternalBranches = v;
   }
@@ -100,7 +100,8 @@ private:
 
   uint8_t ReadByte();
   std::optional<uint8_t> PeekByte(uint8_t Offset);
-  uint64_t ReadData(uint8_t Size);
+  std::pair<uint64_t, bool> ReadData(uint8_t Size);
+
   void SkipBytes(uint8_t Size) {
     InstructionSize += Size;
   }
@@ -117,6 +118,7 @@ private:
   uint64_t ExecutableRangeEnd {};
   bool ExecutableRangeWritable {};
   bool HitNonExecutableRange {};
+  bool HitBadRelocation {};
 
   const uint8_t* InstStream {};
   IR::OpSize GetGPROpSize() const {
@@ -130,13 +132,11 @@ private:
   FEXCore::X86Tables::DecodedInst* DecodeInst;
 
   // This is for multiblock data tracking
-  bool SymbolAvailable {false};
   uint64_t EntryPoint {};
   uint64_t MaxCondBranchForward {};
   uint64_t MaxCondBranchBackwards {~0ULL};
-  uint64_t SymbolMaxAddress {};
-  uint64_t SymbolMinAddress {~0ULL};
   uint64_t SectionMaxAddress {~0ULL};
+  uint64_t SectionMinAddress {};
   uint64_t NextBlockStartAddress {~0ULL};
 
   DecodedBlockInformation BlockInfo;
@@ -144,6 +144,8 @@ private:
   fextl::set<uint64_t> BlocksToDecode;
   fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
+
+  fextl::unordered_map<uint32_t, GuestRelocationType>* Relocations {nullptr};
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);

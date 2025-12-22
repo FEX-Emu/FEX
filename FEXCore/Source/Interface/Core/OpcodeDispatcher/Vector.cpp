@@ -5017,7 +5017,8 @@ void OpDispatchBuilder::VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, 
 
 OpDispatchBuilder::RefVSIB OpDispatchBuilder::LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags) {
   const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
-  LOGMAN_THROW_A_FMT(Operand.IsSIB() && IsVSIB, "Trying to load VSIB for something that isn't the correct type!");
+  LOGMAN_THROW_A_FMT((Operand.IsSIB() || Operand.IsSIBRelocation()) && IsVSIB, "Trying to load VSIB for something that isn't the correct "
+                                                                               "type!");
 
   // VSIB is a very special case which has a ton of encoded data.
   // Get it in a format we can reason about.
@@ -5029,12 +5030,24 @@ OpDispatchBuilder::RefVSIB OpDispatchBuilder::LoadVSIB(const X86Tables::DecodedO
                      "Base must be a GPR.");
   const auto Index_XMM_gpr = Index_gpr - X86State::REG_XMM_0;
 
-  return {
+  OpDispatchBuilder::RefVSIB A {
     .Low = LoadXMMRegister(Index_XMM_gpr),
     .BaseAddr = Base_gpr != FEXCore::X86State::REG_INVALID ? LoadGPRRegister(Base_gpr, OpSize::i64Bit, 0, false) : nullptr,
-    .Displacement = Operand.Data.SIB.Offset,
     .Scale = Operand.Data.SIB.Scale,
   };
+
+  if (Operand.IsSIBRelocation()) {
+    auto EPOffset = _EntrypointOffset(OpSize::i64Bit, Operand.Data.SIB.Offset);
+    if (A.BaseAddr) {
+      A.BaseAddr = Add(OpSize::i64Bit, EPOffset, A.BaseAddr);
+    } else {
+      A.BaseAddr = EPOffset;
+    }
+  } else {
+    A.Displacement = static_cast<int32_t>(Operand.Data.SIB.Offset);
+  }
+
+  return A;
 }
 
 template<OpSize AddrElementSize>

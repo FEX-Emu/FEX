@@ -1347,7 +1347,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
     // Source is memory(literal)
     // Dest is GPR
     Ref Src {};
-    if (Op->Src[0].Data.Literal.Size <= 4) {
+    if (Op->Src[0].IsLiteralRelocation() || Op->Src[0].Data.Literal.Size <= 4) {
       Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
     } else {
       const auto OpSize = OpSizeFromSrc(Op);
@@ -1365,7 +1365,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
-    if (Op->Src[1].Data.Literal.Size <= 4) {
+    if (Op->Src[1].IsLiteralRelocation() || Op->Src[1].Data.Literal.Size <= 4) {
       StoreResultGPR(Op, Op->Src[1], Src);
     } else {
       const auto OpSize = OpSizeFromSrc(Op);
@@ -4234,18 +4234,26 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
   } else if (Operand.IsGPRDirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
     A.NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPR.GPR);
-  } else if (Operand.IsGPRIndirect()) {
+  } else if (Operand.IsGPRIndirect() || Operand.IsGPRIndirectRelocation()) {
     A.Base = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
-    A.Offset = Operand.Data.GPRIndirect.Displacement;
+    if (Operand.IsGPRIndirectRelocation()) {
+      A.Base = Add(GPRSize, _EntrypointOffset(GPRSize, Operand.Data.GPRIndirect.Displacement), A.Base);
+    } else {
+      A.Offset = static_cast<int32_t>(Operand.Data.GPRIndirect.Displacement);
+    }
     A.NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPRIndirect.GPR);
-  } else if (Operand.IsRIPRelative()) {
+  } else if (Operand.IsRIPRelative() || Operand.IsRIPRelativeRelocation()) {
     if (Is64BitMode) {
-      A.Base = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
+      A.Base = GetRelocatedPC(Op, static_cast<int32_t>(Operand.Data.RIPLiteral.Value));
     } else {
       // 32bit this isn't RIP relative but instead absolute
-      A.Offset = Operand.Data.RIPLiteral.Value.u;
+      if (Operand.IsRIPRelativeRelocation()) {
+        A.Base = _EntrypointOffset(GPRSize, Operand.Data.RIPLiteral.Value);
+      } else {
+        A.Offset = Operand.Data.RIPLiteral.Value;
+      }
     }
-  } else if (Operand.IsSIB()) {
+  } else if (Operand.IsSIB() || Operand.IsSIBRelocation()) {
     const bool IsVSIB = IsLoad && ((Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0);
 
     if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
@@ -4266,8 +4274,20 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
       A.IndexScale = Operand.Data.SIB.Scale;
     }
 
-    A.Offset = Operand.Data.SIB.Offset;
+    if (Operand.IsSIBRelocation()) {
+      auto EPOffset = _EntrypointOffset(GPRSize, Operand.Data.SIB.Offset);
+      if (A.Base) {
+        A.Base = Add(GPRSize, EPOffset, A.Base);
+      } else {
+        A.Base = EPOffset;
+      }
+    } else {
+      A.Offset = static_cast<int32_t>(Operand.Data.SIB.Offset);
+    }
+
     A.NonTSO |= IsNonTSOReg(AccessType, Operand.Data.SIB.Base) || IsNonTSOReg(AccessType, Operand.Data.SIB.Index);
+  } else if (Operand.IsLiteralRelocation()) {
+    A.Base = _EntrypointOffset(GPRSize, Operand.Data.LiteralRelocation.EntrypointOffset);
   } else {
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }
@@ -4502,7 +4522,7 @@ void OpDispatchBuilder::MOVGPROp(OpcodeArgs, uint32_t SrcIndex) {
 
 void OpDispatchBuilder::MOVGPRImmediate(OpcodeArgs) {
   Ref Src {};
-  if (Op->Src[0].Data.Literal.Size <= 4) {
+  if (Op->Src[0].IsLiteralRelocation() || Op->Src[0].Data.Literal.Size <= 4) {
     Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit, .AllowUpperGarbage = true});
   } else {
     // 8-byte literal is special cased.
