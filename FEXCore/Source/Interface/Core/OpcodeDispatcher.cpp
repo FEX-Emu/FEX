@@ -1325,35 +1325,12 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
 }
 
 void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
-
-  auto GenMemSrcFromOp = [&](size_t StartingSource) -> AddressMode {
-    const uint64_t Lower = Op->Src[StartingSource].Literal();
-    const uint64_t Upper = Op->Src[StartingSource + 1].Literal();
-    const uint64_t Combined = (Upper << 32) | Lower;
-    const auto GPRSize = GetGPROpSize();
-
-    AddressMode A {
-      .Segment = GetSegment(Op->Flags),
-      .Offset = static_cast<int64_t>(Combined),
-      .AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize,
-      .NonTSO = false,
-    };
-
-    return A;
-  };
   switch (Op->OP) {
   case 0xA0:
   case 0xA1: {
     // Source is memory(literal)
     // Dest is GPR
-    Ref Src {};
-    if (Op->Src[0].IsLiteralRelocation() || Op->Src[0].Data.Literal.Size <= 4) {
-      Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
-    } else {
-      const auto OpSize = OpSizeFromSrc(Op);
-      auto A = GenMemSrcFromOp(0);
-      Src = _LoadMemGPRAutoTSO(OpSize, A, OpSize::i8Bit);
-    }
+    auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
     StoreResultGPR(Op, Op->Dest, Src);
     break;
   }
@@ -1365,13 +1342,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
-    if (Op->Src[1].IsLiteralRelocation() || Op->Src[1].Data.Literal.Size <= 4) {
-      StoreResultGPR(Op, Op->Src[1], Src);
-    } else {
-      const auto OpSize = OpSizeFromSrc(Op);
-      auto A = GenMemSrcFromOp(1);
-      _StoreMemGPRAutoTSO(OpSize, A, Src, OpSize::i8Bit);
-    }
+    StoreResultGPR(Op, Op->Src[1], Src);
     break;
   }
   }
@@ -4517,20 +4488,6 @@ void OpDispatchBuilder::MOVGPROp(OpcodeArgs, uint32_t SrcIndex) {
   // StoreResult will store with the same size as the input, so we allow upper
   // garbage on the input. The zero extension would be pointless.
   Ref Src = LoadSourceGPR(Op, Op->Src[SrcIndex], Op->Flags, {.Align = OpSize::i8Bit, .AllowUpperGarbage = true});
-  StoreResultGPR(Op, Src, OpSize::i8Bit);
-}
-
-void OpDispatchBuilder::MOVGPRImmediate(OpcodeArgs) {
-  Ref Src {};
-  if (Op->Src[0].IsLiteralRelocation() || Op->Src[0].Data.Literal.Size <= 4) {
-    Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit, .AllowUpperGarbage = true});
-  } else {
-    // 8-byte literal is special cased.
-    const uint64_t Lower = Op->Src[0].Literal();
-    const uint64_t Upper = Op->Src[1].Literal();
-    const uint64_t Combined = (Upper << 32) | Lower;
-    Src = _Constant(Combined);
-  }
   StoreResultGPR(Op, Src, OpSize::i8Bit);
 }
 
