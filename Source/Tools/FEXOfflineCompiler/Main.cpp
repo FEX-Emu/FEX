@@ -32,12 +32,17 @@ public:
   }
 
   FEXCore::ExecutableFileInfo FileInfo;
+  std::map<uint64_t, uint64_t> FileRanges;
 
   uintptr_t VAFileStart = 0;
 
   // These are no-ops implementations of the SyscallHandler API
-  std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState&, uint64_t) override {
-    return FEXCore::ExecutableFileSectionInfo {FileInfo, VAFileStart};
+  std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState&, uint64_t Address) override {
+    auto It = FileRanges.upper_bound(Address - VAFileStart);
+    LOGMAN_THROW_A_FMT(It != FileRanges.begin(), "Could not find associated file mapping");
+    --It;
+    LOGMAN_THROW_A_FMT(VAFileStart + It->first + It->second > Address, "Could not find associated file mapping for {:#x}", Address);
+    return FEXCore::ExecutableFileSectionInfo {FileInfo, VAFileStart, VAFileStart + It->first, VAFileStart + It->first + It->second};
   }
 
   FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override {
@@ -49,6 +54,7 @@ public:
     if (Ret != MAP_FAILED && VAFileStart == 0) {
       VAFileStart = reinterpret_cast<uintptr_t>(Ret);
     }
+    FileRanges[reinterpret_cast<uintptr_t>(Ret) - VAFileStart] = Size;
     return Ret;
   }
 
@@ -174,7 +180,7 @@ GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintpt
     auto FilenameNew = Filename + ".new";
     int fd = open(FilenameNew.c_str(), O_CREAT | O_WRONLY, 0644);
     {
-      auto Entry = SyscallHandler->LookupExecutableFileSection(*Thread, Loader.GetMainElfBase()).value();
+      auto Entry = SyscallHandler->LookupExecutableFileSection(*Thread, SyscallHandler->VAFileStart).value();
       CTX->GetCodeCache().SaveData(*Thread, fd, Entry, 0 /* TODO: Use static base address information if available */);
     }
     std::filesystem::rename(FilenameNew.c_str(), Filename.c_str());
