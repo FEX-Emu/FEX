@@ -162,7 +162,8 @@ std::pair<uint64_t, bool> Decoder::ReadData(uint8_t Size) {
       } else if (It->second == GuestRelocationType::Rel64 && Size == 8) {
         return {static_cast<int64_t>(Res) - static_cast<int64_t>(EntryPoint), true};
       } else {
-        ERROR_AND_DIE_FMT("Unhandled relocation combination, type: {} size: {}", static_cast<uint8_t>(It->second), Size);
+        HitBadRelocation = true;
+        Res = 0;
       }
     }
   }
@@ -1058,15 +1059,17 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
 Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
   // Will be set if DecodeInstructionImpl tries to read non-executable memory
   HitNonExecutableRange = false;
+  HitBadRelocation = false;
   bool ErrorDuringDecoding = !DecodeInstructionImpl(PC);
 
-  if (ErrorDuringDecoding || HitNonExecutableRange) [[unlikely]] {
+  if (ErrorDuringDecoding || HitNonExecutableRange || HitBadRelocation) [[unlikely]] {
     // Put an invalid instruction in the stream so the core can raise SIGILL if hit
     // Error while decoding instruction. We don't know the table or instruction size
     DecodeInst->TableInfo = nullptr;
-    auto Result = ErrorDuringDecoding  ? DecodedBlockStatus::INVALID_INST :
-                  DecodeInst->InstSize ? DecodedBlockStatus::PARTIAL_DECODE_INST :
-                                         DecodedBlockStatus::NOEXEC_INST;
+    auto Result = ErrorDuringDecoding   ? DecodedBlockStatus::INVALID_INST :
+                  DecodeInst->InstSize  ? DecodedBlockStatus::PARTIAL_DECODE_INST :
+                  HitNonExecutableRange ? DecodedBlockStatus::NOEXEC_INST :
+                                          DecodedBlockStatus::BAD_RELOCATION;
     DecodeInst->InstSize = 0;
     return Result;
   } else if (!DecodeInst->TableInfo || (DecodeInst->TableInfo->Type == TYPE_INST && !DecodeInst->TableInfo->OpcodeDispatcher.OpDispatch)) {
@@ -1474,9 +1477,10 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
           EraseBlock = true;
         } else {
           LogMan::Msg::EFmt("{} instruction in entry block: {:X}",
-                            BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST ? "Invalid" :
-                            BlockIt->BlockStatus == DecodedBlockStatus::NOEXEC_INST  ? "NoExec" :
-                                                                                       "PartialDecode",
+                            BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST   ? "Invalid" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::NOEXEC_INST    ? "NoExec" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::BAD_RELOCATION ? "BadRelocation" :
+                                                                                         "PartialDecode",
                             OpAddress);
         }
         break;

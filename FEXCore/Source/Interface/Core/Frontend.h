@@ -30,6 +30,7 @@ public:
     INVALID_INST,
     NOEXEC_INST,
     PARTIAL_DECODE_INST,
+    BAD_RELOCATION,
   };
 
   // New Frontend decoding
@@ -117,6 +118,7 @@ private:
   uint64_t ExecutableRangeEnd {};
   bool ExecutableRangeWritable {};
   bool HitNonExecutableRange {};
+  bool HitBadRelocation {};
 
   const uint8_t* InstStream {};
   IR::OpSize GetGPROpSize() const {
