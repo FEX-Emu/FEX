@@ -135,7 +135,7 @@ DEF_OP(VAESKeyGenAssist) {
   if (Op->RCON) {
     tbl(Dst.Q(), Dst.Q(), Swizzle.Q());
 
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP1, static_cast<uint64_t>(Op->RCON) << 32);
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP1, static_cast<uint64_t>(Op->RCON) << 32, CPU::Arm64Emitter::PadType::NOPAD);
     dup(ARMEmitter::SubRegSize::i64Bit, VTMP2.Q(), TMP1);
     eor(Dst.Q(), Dst.Q(), VTMP2.Q());
   } else {
