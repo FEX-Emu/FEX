@@ -5156,7 +5156,7 @@ void OpDispatchBuilder::Extrq_imm(OpcodeArgs) {
   }
 
   const uint64_t Mask = ~0ULL >> (MaskWidth == 0 ? 0 : (64 - MaskWidth));
-  const Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask));
+  const Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask, ConstPad::NoPad));
   Result = _VAnd(OpSize::i128Bit, OpSize::i64Bit, Result, MaskVector);
 
   StoreResultFPR(Op, Result);
@@ -5170,7 +5170,7 @@ void OpDispatchBuilder::Insertq_imm(OpcodeArgs) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   const uint64_t Mask = ~0ULL >> (MaskWidth == 0 ? 0 : (64 - MaskWidth));
-  Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask));
+  Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask, ConstPad::NoPad));
 
   // Mask incoming source.
   Src = _VAnd(OpSize::i64Bit, OpSize::i64Bit, Src, MaskVector);
