@@ -43,7 +43,15 @@ DEF_BINOP_WITH_CONSTANT(Ror, rorv, ror)
 DEF_OP(Constant) {
   auto Op = IROp->C<IR::IROp_Constant>();
   auto Dst = GetReg(Node);
-  LoadConstant(ARMEmitter::Size::i64Bit, Dst, Op->Constant);
+
+  const auto PadType = [Pad = Op->Pad]() {
+    switch (Pad) {
+    case IR::ConstPad::NoPad: return CPU::Arm64Emitter::PadType::NOPAD;
+    case IR::ConstPad::DoPad: return CPU::Arm64Emitter::PadType::DOPAD;
+    default: return CPU::Arm64Emitter::PadType::AUTOPAD;
+    }
+  }();
+  LoadConstant(ARMEmitter::Size::i64Bit, Dst, Op->Constant, PadType, Op->MaxBytes);
 }
 
 DEF_OP(EntrypointOffset) {
@@ -1289,7 +1297,7 @@ DEF_OP(MaskGenerateFromBitWidth) {
   auto Op = IROp->C<IR::IROp_MaskGenerateFromBitWidth>();
   auto BitWidth = GetReg(Op->BitWidth);
 
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, -1);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, -1, CPU::Arm64Emitter::PadType::NOPAD);
   cmp(ARMEmitter::Size::i64Bit, BitWidth, 0);
   lslv(ARMEmitter::Size::i64Bit, TMP2, TMP1, BitWidth);
   csinv(ARMEmitter::Size::i64Bit, GetReg(Node), TMP1, TMP2, ARMEmitter::Condition::CC_EQ);

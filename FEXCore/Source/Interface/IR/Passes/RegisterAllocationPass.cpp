@@ -94,8 +94,9 @@ private:
 
     // Remat if we can
     if (Rematerializable(IROp)) {
-      uint64_t Const = IROp->C<IR::IROp_Constant>()->Constant;
-      return IREmit->_Constant(Const);
+      const auto Op = IROp->C<IR::IROp_Constant>();
+      uint64_t Const = Op->Constant;
+      return IREmit->_Constant(Const, Op->Pad, Op->MaxBytes);
     }
 
     // Otherwise fill from stack
@@ -513,8 +514,8 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
     if (CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
       const auto Result = CPUID->RunXCRFunction(ConstantFunction);
       IREmit->SetWriteCursorBefore(CodeNode);
-      IREmit->_Constant(Result.eax).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
-      IREmit->_Constant(Result.edx).Node->Reg = PhysicalRegister(Op->OutEDX).Raw;
+      IREmit->_Constant(Result.eax, ConstPad::NoPad).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
+      IREmit->_Constant(Result.edx, ConstPad::NoPad).Node->Reg = PhysicalRegister(Op->OutEDX).Raw;
       IREmit->RemovePostRA(CodeNode);
       return false;
     }
@@ -532,10 +533,10 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
 
       IREmit->SetWriteCursorBefore(CodeNode);
       IREmit->_Fence(IR::FenceType::Inst);
-      IREmit->_Constant(Result.eax).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
-      IREmit->_Constant(Result.ebx).Node->Reg = PhysicalRegister(Op->OutEBX).Raw;
-      IREmit->_Constant(Result.ecx).Node->Reg = PhysicalRegister(Op->OutECX).Raw;
-      IREmit->_Constant(Result.edx).Node->Reg = PhysicalRegister(Op->OutEDX).Raw;
+      IREmit->_Constant(Result.eax, ConstPad::NoPad).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
+      IREmit->_Constant(Result.ebx, ConstPad::NoPad).Node->Reg = PhysicalRegister(Op->OutEBX).Raw;
+      IREmit->_Constant(Result.ecx, ConstPad::NoPad).Node->Reg = PhysicalRegister(Op->OutECX).Raw;
+      IREmit->_Constant(Result.edx, ConstPad::NoPad).Node->Reg = PhysicalRegister(Op->OutEDX).Raw;
       IREmit->RemovePostRA(CodeNode);
       return false;
     }

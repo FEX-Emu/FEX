@@ -372,7 +372,7 @@ public:
   void CMOVOp(OpcodeArgs);
   void CPUIDOp(OpcodeArgs);
   void XGetBVOp(OpcodeArgs);
-  uint32_t LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit);
+  uint32_t GetConstantShift(X86Tables::DecodedOp Op, bool Is1Bit);
   void SHLOp(OpcodeArgs);
   void SHLImmediateOp(OpcodeArgs, bool SHL1Bit);
   void SHROp(OpcodeArgs);
@@ -1172,7 +1172,7 @@ public:
         auto Const = Header->C<IR::IROp_LoadNamedVectorConstant>();
 
         if (Const->Constant == IR::NamedVectorConstant::NAMED_VECTOR_ZERO) {
-          Ref Zero = _Constant(0);
+          Ref Zero = _Constant(0, ConstPad::NoPad);
           Ref STP = _StoreContextPair(IR::OpSize::i64Bit, RegClass::GPR, Zero, Zero, Offset);
 
           // XXX: This works around InlineConstant not having an associated

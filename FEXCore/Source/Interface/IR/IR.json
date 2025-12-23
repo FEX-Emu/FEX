@@ -105,6 +105,11 @@
       "PosInfinity = 2,",
       "TowardsZero = 3, /* Truncate */",
       "Host        = 4,"
+    ],
+    "class ConstPad : uint8_t": [
+      "NoPad = 0,",
+      "DoPad = 1,",
+      "AutoPad = 2,"
     ]
   },
   "Defines": [
@@ -142,6 +147,7 @@
     "MemOffsetType": "MemOffsetType",
     "BreakDefinition": "BreakDefinition",
     "RoundType": "RoundMode",
+    "ConstPad": "ConstPad",
     "FloatCompareOp": "FloatCompareOp",
     "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant",
     "IndexNamedVectorConstant": "FEXCore::IR::IndexNamedVectorConstant",
@@ -930,11 +936,15 @@
         ]
       },
 
-      "GPR = Constant i64:$Constant": {
+      "GPR = Constant i64:$Constant, ConstPad:$Pad{ConstPad::AutoPad}, i32:$MaxBytes{0}": {
         "Desc": ["Generates a 64bit constant inside of a GPR",
                  "Unsupported to create a constant in FPR"
                 ],
-        "DestSize": "OpSize::i64Bit"
+        "DestSize": "OpSize::i64Bit",
+        "EmitValidation": [
+          "MaxBytes >= 0 && MaxBytes <= 8 && (MaxBytes & 1) == 0",
+          "MaxBytes == 0 || (Constant >> (MaxBytes * 8)) == 0"
+        ]
       },
 
       "InlineConstant i64:$Constant": {
