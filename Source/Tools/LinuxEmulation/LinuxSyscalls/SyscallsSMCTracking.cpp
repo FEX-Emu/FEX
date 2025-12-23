@@ -237,7 +237,7 @@ static void LoadCodeCache(FEXCore::Core::InternalThreadState& Thread, FEXCore::E
   auto CacheFileSize = buf.st_size;
   auto MappedCache = (std::byte*)FEXCore::Allocator::mmap(nullptr, CacheFileSize, PROT_READ, MAP_PRIVATE, CacheFD, 0);
   LOGMAN_THROW_A_FMT(MappedCache, "Failed to map code cache into memory");
-  if (!Thread.CTX->GetCodeCache().LoadData(Thread, MappedCache, Section)) {
+  if (!Thread.CTX->GetCodeCache().LoadData(&Thread, MappedCache, Section)) {
     // TODO: Delete this cache file
   }
   FEXCore::Allocator::munmap(MappedCache, CacheFileSize);

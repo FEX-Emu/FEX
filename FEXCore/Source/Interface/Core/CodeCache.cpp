@@ -329,7 +329,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   return true;
 }
 
-bool CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCacheFile, const ExecutableFileSectionInfo& BinarySection) {
+bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCacheFile, const ExecutableFileSectionInfo& BinarySection) {
   if (!EnableCodeCaching) {
     return true;
   }
@@ -384,8 +384,8 @@ bool CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCac
 
     // Consistency check: VMA regions at the top and end should belong to the same file
     auto [min_val, max_val] = ranges::minmax_element(BlockList, std::less {}, &decltype(BlockList)::value_type::first);
-    auto MinBound = CTX.SyscallHandler->LookupExecutableFileSection(&Thread, min_val->first + BinarySection.FileStartVA);
-    auto MaxBound = CTX.SyscallHandler->LookupExecutableFileSection(&Thread, max_val->first + BinarySection.FileStartVA);
+    auto MinBound = CTX.SyscallHandler->LookupExecutableFileSection(Thread, min_val->first + BinarySection.FileStartVA);
+    auto MaxBound = CTX.SyscallHandler->LookupExecutableFileSection(Thread, max_val->first + BinarySection.FileStartVA);
     if (&MinBound->FileInfo != &BinarySection.FileInfo || &MaxBound->FileInfo != &BinarySection.FileInfo) {
       ERROR_AND_DIE_FMT("Cached blocks offsets {:#x}-{:#x} out of bounds for guest library {} ({:016x} @ {:#x}) while trying to load "
                         "section {:#x}-{:#x}!",
@@ -417,10 +417,12 @@ bool CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCac
 
   // Prepare CodeBuffer: Page aligned and big enough to hold all cached data
   auto Lock = std::unique_lock {CTX.CodeBufferWriteMutex};
-  if (auto Prev = Thread.CPUBackend->CheckCodeBufferUpdate()) {
-    Allocator::VirtualDontNeed(Thread.CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
-    auto lk = Thread.LookupCache->AcquireWriteLock();
-    Thread.LookupCache->ChangeGuestToHostMapping(*Prev, *CTX.GetLatest()->LookupCache, lk);
+  if (Thread) {
+    if (auto Prev = Thread->CPUBackend->CheckCodeBufferUpdate()) {
+      Allocator::VirtualDontNeed(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
+      auto lk = Thread->LookupCache->AcquireWriteLock();
+      Thread->LookupCache->ChangeGuestToHostMapping(*Prev, *CTX.GetLatest()->LookupCache, lk);
+    }
   }
 
   auto CodeBuffer = CTX.GetLatest();
@@ -430,9 +432,13 @@ bool CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCac
   CTX.LatestOffset += Delta;
 
   while (CTX.LatestOffset + header.CodeBufferSize > CodeBuffer->Size - Utils::FEX_PAGE_SIZE) {
-    CTX.ClearCodeCache(&Thread);
-    CodeBuffer = CTX.GetLatest();
-    LogMan::Msg::IFmt("Increased code buffer size to {} MiB for cache load", CodeBuffer->Size / 1024 / 1024);
+    if (Thread) {
+      CTX.ClearCodeCache(Thread);
+      CodeBuffer = CTX.GetLatest();
+      LogMan::Msg::IFmt("Increased code buffer size to {} MiB for cache load", CodeBuffer->Size / 1024 / 1024);
+    } else {
+      ERROR_AND_DIE_FMT("Cannot extend codebuffer without thread!");
+    }
   }
 
   // Read CodeBuffer data from file. Make sure the destination is page-aligned.
@@ -475,7 +481,7 @@ bool CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCac
       MappedCacheFile += NumEntrypoints * sizeof(Entrypoints[0]);
 
       if (LookupCache.AddBlockExecutableRange(Entrypoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE, WriteLock)) {
-        CTX.SyscallHandler->MarkGuestExecutableRange(&Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+        CTX.SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
       }
     }
   }
