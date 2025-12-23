@@ -64,7 +64,7 @@ $end_info$
 #include <sys/sysinfo.h>
 #include <sys/signal.h>
 
-namespace {
+namespace FEX::Logging {
 static bool SilentLog {};
 static int OutputFD {STDERR_FILENO};
 
@@ -86,18 +86,62 @@ void AssertHandler(const char* Message) {
   return MsgHandler(LogMan::ASSERT, Message);
 }
 
-} // Anonymous namespace
+namespace FEXServer {
+  static int FEXServerFD {-1};
 
-namespace FEXServerLogging {
-int FEXServerFD {-1};
-void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
-  FEXServerClient::MsgHandler(FEXServerFD, Level, Message);
+  void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
+    FEXServerClient::MsgHandler(FEXServerFD, Level, Message);
+  }
+
+  void AssertHandler(const char* Message) {
+    FEXServerClient::AssertHandler(FEXServerFD, Message);
+  }
+} // namespace FEXServer
+
+void Init() {
+  FEX_CONFIG_OPT(SilentLog, SILENTLOG);
+  FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
+  FEX::Logging::SilentLog = SilentLog();
+
+  if (SilentLog()) {
+    LogMan::Throw::UnInstallHandler();
+    LogMan::Msg::UnInstallHandler();
+  } else {
+    const auto& LogFile = OutputLog();
+    // If stderr or stdout then we need to dup the FD
+    // In some cases some applications will close stderr and stdout
+    // then redirect the FD to either a log OR some cases just not use
+    // stderr/stdout and the FD will be reused for regular FD ops.
+    //
+    // We want to maintain the original output location otherwise we
+    // can run in to problems of writing to some file
+    auto LogFD = OutputFD;
+    if (LogFile == "stderr") {
+      LogFD = dup(STDERR_FILENO);
+    } else if (LogFile == "stdout") {
+      LogFD = dup(STDOUT_FILENO);
+    } else if (LogFile == "server") {
+      Logging::FEXServer::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
+      if (FEXServer::FEXServerFD != -1) {
+        LogMan::Throw::InstallHandler(Logging::FEXServer::AssertHandler);
+        LogMan::Msg::InstallHandler(Logging::FEXServer::MsgHandler);
+      }
+    } else if (!LogFile.empty()) {
+      constexpr int USER_PERMS = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+      LogFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, USER_PERMS);
+    }
+
+    if (LogFD == -1) {
+      LogMan::Msg::EFmt("Couldn't open log file. Going Silent.");
+      Logging::SilentLog = true;
+    } else {
+      OutputFD = LogFD;
+    }
+  }
+  DisableOutputColors = !isatty(OutputFD);
 }
 
-void AssertHandler(const char* Message) {
-  FEXServerClient::AssertHandler(FEXServerFD, Message);
-}
-} // namespace FEXServerLogging
+} // namespace FEX::Logging
 
 bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
   int FD {-1};
@@ -271,8 +315,9 @@ int main(int argc, char** argv, char** const envp) {
   int FEXFD {StealFEXFDFromEnv("FEX_EXECVEFD")};
   int FEXSeccompFD {StealFEXFDFromEnv("FEX_SECCOMPFD")};
 
-  LogMan::Throw::InstallHandler(AssertHandler);
-  LogMan::Msg::InstallHandler(MsgHandler);
+  // Early init trivial handlers.
+  LogMan::Throw::InstallHandler(FEX::Logging::AssertHandler);
+  LogMan::Msg::InstallHandler(FEX::Logging::MsgHandler);
 
   auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv);
   auto Args = ArgsLoader->Get();
@@ -314,49 +359,11 @@ int main(int argc, char** argv, char** const envp) {
     return -1;
   }
 
-  FEX_CONFIG_OPT(SilentLog, SILENTLOG);
-  FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);
   FEX_CONFIG_OPT(HostEnvironment, HOSTENV);
-  ::SilentLog = SilentLog();
 
-  if (::SilentLog) {
-    LogMan::Throw::UnInstallHandler();
-    LogMan::Msg::UnInstallHandler();
-  } else {
-    const auto& LogFile = OutputLog();
-    // If stderr or stdout then we need to dup the FD
-    // In some cases some applications will close stderr and stdout
-    // then redirect the FD to either a log OR some cases just not use
-    // stderr/stdout and the FD will be reused for regular FD ops.
-    //
-    // We want to maintain the original output location otherwise we
-    // can run in to problems of writing to some file
-    auto LogFD = OutputFD;
-    if (LogFile == "stderr") {
-      LogFD = dup(STDERR_FILENO);
-    } else if (LogFile == "stdout") {
-      LogFD = dup(STDOUT_FILENO);
-    } else if (LogFile == "server") {
-      FEXServerLogging::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
-      if (FEXServerLogging::FEXServerFD != -1) {
-        LogMan::Throw::InstallHandler(FEXServerLogging::AssertHandler);
-        LogMan::Msg::InstallHandler(FEXServerLogging::MsgHandler);
-      }
-    } else if (!LogFile.empty()) {
-      constexpr int USER_PERMS = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-      LogFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, USER_PERMS);
-    }
-
-    if (LogFD == -1) {
-      LogMan::Msg::EFmt("Couldn't open log file. Going Silent.");
-      ::SilentLog = true;
-    } else {
-      OutputFD = LogFD;
-    }
-  }
-  DisableOutputColors = !isatty(OutputFD);
+  FEX::Logging::Init();
 
   if (StartupSleep() && (StartupSleepProcName().empty() || Program.ProgramName == StartupSleepProcName())) {
     LogMan::Msg::IFmt("[{}][{}] Sleeping for {} seconds", ::getpid(), Program.ProgramName, StartupSleep());
@@ -512,12 +519,12 @@ int main(int argc, char** argv, char** const envp) {
   SignalDelegation->SetVDSOSymbols();
 
   // Now that we have the syscall handler. Track some FDs that are FEX owned.
-  if (OutputFD > 2) {
-    SyscallHandler->FM.TrackFEXFD(OutputFD);
+  if (FEX::Logging::OutputFD > 2) {
+    SyscallHandler->FM.TrackFEXFD(FEX::Logging::OutputFD);
   }
   SyscallHandler->FM.TrackFEXFD(FEXServerClient::GetServerFD());
-  if (FEXServerLogging::FEXServerFD != -1) {
-    SyscallHandler->FM.TrackFEXFD(FEXServerLogging::FEXServerFD);
+  if (FEX::Logging::FEXServer::FEXServerFD != -1) {
+    SyscallHandler->FM.TrackFEXFD(FEX::Logging::FEXServer::FEXServerFD);
   }
 
   // query ProgramFD now since MapMemory will close it
