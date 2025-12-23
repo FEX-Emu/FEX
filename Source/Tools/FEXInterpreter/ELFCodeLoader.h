@@ -409,6 +409,12 @@ public:
       return false;
     }
 
+    if (Thread) {
+      // Update the thread persona.
+      auto ThreadObject = static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
+      ThreadObject->persona = ::personality(0xffffffff);
+    }
+
     // What about ASLR and such ?
     // ADDR_LIMIT_3GB STACK -> 0xc0000000 else -> 0xFFFFe000
 
