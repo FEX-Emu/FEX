@@ -292,7 +292,6 @@ public:
   std::optional<FEXCore::ExecutableFileSectionInfo>
   LookupExecutableFileSection(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) final override;
 
-  void TriggerPostStartupCodeCacheLoad(FEXCore::Core::InternalThreadState&);
   int OpenCodeMapFile() override;
 
   FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override;
@@ -324,8 +323,6 @@ public:
   constexpr static size_t LDT_ENTRY_SIZE = sizeof(FEXCore::Core::CPUState::gdt_segment);
 
   VMATracking::VMATracking VMATracking;
-  // Collects file mappings added during FEX startup.
-  fextl::vector<FEXCore::ExecutableFileSectionInfo> StartupBinaryLoads;
 
   const uint64_t CodeCacheConfigId = 0; // TODO: Make unique to active configuration
 

@@ -153,18 +153,19 @@ GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintpt
     return std::nullopt;
   }
 
+  if (!Is64Bit) {
+    // Block upper address space
+    FEXCore::Allocator::SetupHooks();
+  }
+
+  auto Thread = SetupCompileThread(*CTX, Is64Bit);
+
   {
-    if (!Is64Bit) {
-      // Block upper address space
-      FEXCore::Allocator::SetupHooks();
-    }
-    auto ElfBase = Loader.LoadMainElfFile(nullptr, SyscallHandler.get());
+    auto ElfBase = Loader.LoadMainElfFile(nullptr, SyscallHandler.get(), Thread);
     if (!ElfBase.has_value()) {
       ERROR_AND_DIE_FMT("Failed to load ELF file {} ({})", Binary.Filename, Binary.FileId);
     }
   }
-
-  auto Thread = SetupCompileThread(*CTX, Is64Bit);
 
   CTX->GetCodeCache().InitiateCacheGeneration();
 

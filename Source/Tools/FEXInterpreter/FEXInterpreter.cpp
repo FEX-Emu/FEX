@@ -523,16 +523,20 @@ int main(int argc, char** argv, char** const envp) {
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
                                                FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(),
                                                                             std::move(FEX::Allocator::Allocator));
+  SyscallHandler->SetCodeLoader(&Loader);
+  CTX->SetSignalDelegator(SignalDelegation.get());
+  CTX->SetSyscallHandler(SyscallHandler.get());
+  CTX->SetThunkHandler(ThunkHandler.get());
+
   if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
     CTX->SetCodeMapWriter(fextl::make_unique<FEXCore::CodeMapWriter>(*SyscallHandler));
   }
 
-  // Load VDSO in to memory prior to mapping our ELFs.
-  auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
-
-  // Pass in our VDSO thunks
-  ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions(Loader.Is64BitMode()));
-  SignalDelegation->SetVDSOSymbols();
+  FEX_CONFIG_OPT(GdbServer, GDBSERVER);
+  fextl::unique_ptr<FEX::GdbServer> DebugServer;
+  if (GdbServer) {
+    DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
+  }
 
   // Now that we have the syscall handler. Track some FDs that are FEX owned.
   if (FEX::Logging::OutputFD > 2) {
@@ -543,53 +547,51 @@ int main(int argc, char** argv, char** const envp) {
     SyscallHandler->FM.TrackFEXFD(FEX::Logging::FEXServer::FEXServerFD);
   }
 
-  // query ProgramFD now since MapMemory will close it
-  const int ProgramFD = dup(Loader.GetMainElfFD());
-
-  {
-    Loader.SetVDSOBase(VDSOMapping.VDSOBase);
-    Loader.CalculateHWCaps(CTX.get());
-
-    if (!Loader.MapMemory(SyscallHandler.get())) {
-      // failed to map
-      LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-      return -ENOEXEC;
-    }
-  }
-
-  SyscallHandler->SetCodeLoader(&Loader);
-
-  auto BRKInfo = Loader.GetBRKInfo();
-
-  SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
-
-  CTX->SetSignalDelegator(SignalDelegation.get());
-  CTX->SetSyscallHandler(SyscallHandler.get());
-  CTX->SetThunkHandler(ThunkHandler.get());
-
-  FEX_CONFIG_OPT(GdbServer, GDBSERVER);
-  fextl::unique_ptr<FEX::GdbServer> DebugServer;
-  if (GdbServer) {
-    DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
-  }
-
   if (!CTX->InitCore()) {
     return 1;
   }
 
-  auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+  // Create a thread without a RIP or stack pointer setup initially.
+  auto ParentThread = SyscallHandler->TM.CreateThread(0, 0);
   SyscallHandler->TM.TrackThread(ParentThread);
   SignalDelegation->RegisterTLSState(ParentThread);
   ThunkHandler->RegisterTLSState(ParentThread);
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 
-  // Request code cache generation and load caches for all binaries loaded previously
-  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
-    FEXServerClient::PopulateCodeCache(FEXServerClient::GetServerFD(), ProgramFD, FEXCore::Config::Get_MULTIBLOCK());
-    SyscallHandler->TriggerPostStartupCodeCacheLoad(*ParentThread->Thread);
+  // Load VDSO in to memory prior to mapping our ELFs.
+  auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(ParentThread->Thread, Loader.Is64BitMode(), SyscallHandler.get());
+
+  // Pass in our VDSO thunks
+  ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions(Loader.Is64BitMode()));
+  SignalDelegation->SetVDSOSymbols();
+
+  {
+    Loader.SetVDSOBase(VDSOMapping.VDSOBase);
+    Loader.CalculateHWCaps(CTX.get());
+
+    if (!Loader.MapMemory(SyscallHandler.get(), ParentThread->Thread)) {
+      // failed to map
+      LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      return -ENOEXEC;
+    }
   }
-  close(ProgramFD);
+
+  auto BRKInfo = Loader.GetBRKInfo();
+
+  SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
+
+  // Request code cache generation
+  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
+    FEXServerClient::PopulateCodeCache(FEXServerClient::GetServerFD(), Loader.GetMainElfFD(), FEXCore::Config::Get_MULTIBLOCK());
+  }
+
+  // Pull RIP and stack pointer from loader and set the thread data to it.
+  ParentThread->Thread->CurrentFrame->State.rip = Loader.DefaultRIP();
+  ParentThread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = Loader.GetStackPointer();
+
+  // Close the loader FDs after everything has been parsed and mapped.
+  Loader.CloseFDs();
 
   CTX->ExecuteThread(ParentThread->Thread);
 
@@ -598,10 +600,10 @@ int main(int argc, char** argv, char** const envp) {
 
   auto ProgramStatus = ParentThread->StatusCode;
 
+  FEX::VDSO::UnloadVDSOMapping(ParentThread->Thread, SyscallHandler.get(), VDSOMapping);
+
   SignalDelegation->UninstallTLSState(ParentThread);
   SyscallHandler->TM.DestroyThread(ParentThread);
-
-  FEX::VDSO::UnloadVDSOMapping(VDSOMapping);
 
   DebugServer.reset();
   SyscallHandler.reset();
