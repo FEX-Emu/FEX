@@ -178,8 +178,8 @@ static FEXCore::ExecutableFileSectionInfo BuildSectionInfo(const VMATracking::Ma
 }
 
 std::optional<FEXCore::ExecutableFileSectionInfo>
-SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) {
-  auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, &Thread);
+SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) {
+  auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
 
   auto EntryIt = VMATracking.FindVMAEntry(GuestAddr);
   if (EntryIt == VMATracking.VMAs.end() || !EntryIt->second.Resource || !EntryIt->second.Resource->MappedFile) {

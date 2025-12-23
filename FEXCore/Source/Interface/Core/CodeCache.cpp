@@ -384,8 +384,8 @@ bool CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCac
 
     // Consistency check: VMA regions at the top and end should belong to the same file
     auto [min_val, max_val] = ranges::minmax_element(BlockList, std::less {}, &decltype(BlockList)::value_type::first);
-    auto MinBound = CTX.SyscallHandler->LookupExecutableFileSection(Thread, min_val->first + BinarySection.FileStartVA);
-    auto MaxBound = CTX.SyscallHandler->LookupExecutableFileSection(Thread, max_val->first + BinarySection.FileStartVA);
+    auto MinBound = CTX.SyscallHandler->LookupExecutableFileSection(&Thread, min_val->first + BinarySection.FileStartVA);
+    auto MaxBound = CTX.SyscallHandler->LookupExecutableFileSection(&Thread, max_val->first + BinarySection.FileStartVA);
     if (&MinBound->FileInfo != &BinarySection.FileInfo || &MaxBound->FileInfo != &BinarySection.FileInfo) {
       ERROR_AND_DIE_FMT("Cached blocks offsets {:#x}-{:#x} out of bounds for guest library {} ({:016x} @ {:#x}) while trying to load "
                         "section {:#x}-{:#x}!",

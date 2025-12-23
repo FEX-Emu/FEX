@@ -37,7 +37,7 @@ public:
   uintptr_t VAFileStart = 0;
 
   // These are no-ops implementations of the SyscallHandler API
-  std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState&, uint64_t Address) override {
+  std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState*, uint64_t Address) override {
     auto It = FileRanges.upper_bound(Address - VAFileStart);
     LOGMAN_THROW_A_FMT(It != FileRanges.begin(), "Could not find associated file mapping");
     --It;
@@ -180,7 +180,7 @@ GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintpt
     auto FilenameNew = Filename + ".new";
     int fd = open(FilenameNew.c_str(), O_CREAT | O_WRONLY, 0644);
     {
-      auto Entry = SyscallHandler->LookupExecutableFileSection(*Thread, SyscallHandler->VAFileStart).value();
+      auto Entry = SyscallHandler->LookupExecutableFileSection(Thread, SyscallHandler->VAFileStart).value();
       CTX->GetCodeCache().SaveData(*Thread, fd, Entry, 0 /* TODO: Use static base address information if available */);
     }
     std::filesystem::rename(FilenameNew.c_str(), Filename.c_str());
