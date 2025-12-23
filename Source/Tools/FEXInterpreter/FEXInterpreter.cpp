@@ -143,6 +143,44 @@ void Init() {
 
 } // namespace FEX::Logging
 
+namespace FEX::Allocator {
+static fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
+static fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
+static fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
+
+void Init(bool Is64Bit) {
+  if (Is64Bit) {
+    // Destroy the 48th bit if it exists
+    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
+  } else {
+    // Reserve [0x1_0000_0000, 0x2_0000_0000).
+    // Safety net if 32-bit address calculation overflows in to 64-bit range.
+    constexpr uint64_t First64BitAddr = 0x1'0000'0000ULL;
+    Low4GB = FEXCore::Allocator::StealMemoryRegion(First64BitAddr, First64BitAddr + First64BitAddr);
+
+    // Setup our userspace allocator
+    FEXCore::Allocator::SetupHooks();
+    Allocator = FEX::HLE::CreatePassthroughAllocator();
+
+    // Now that the upper 32-bit address space is blocked for future allocations,
+    // exhaust all of jemalloc's remaining internal allocations that it reserved before.
+    // TODO: It's unclear how reliably this exhausts those reserves
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+    void* data;
+    do {
+      data = malloc(0x1);
+    } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
+    free(data);
+  }
+}
+
+void Shutdown() {
+  FEXCore::Allocator::ClearHooks();
+  FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
+  FEXCore::Allocator::ReclaimMemoryRegion(Low4GB);
+}
+} // namespace FEX::Allocator
+
 bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
   int FD {-1};
 
@@ -449,33 +487,7 @@ int main(int argc, char** argv, char** const envp) {
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-  fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
-  fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
-
-  if (Loader.Is64BitMode()) {
-    // Destroy the 48th bit if it exists
-    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
-  } else {
-    // Reserve [0x1_0000_0000, 0x2_0000_0000).
-    // Safety net if 32-bit address calculation overflows in to 64-bit range.
-    constexpr uint64_t First64BitAddr = 0x1'0000'0000ULL;
-    Low4GB = FEXCore::Allocator::StealMemoryRegion(First64BitAddr, First64BitAddr + First64BitAddr);
-
-    // Setup our userspace allocator
-    FEXCore::Allocator::SetupHooks();
-    Allocator = FEX::HLE::CreatePassthroughAllocator();
-
-    // Now that the upper 32-bit address space is blocked for future allocations,
-    // exhaust all of jemalloc's remaining internal allocations that it reserved before.
-    // TODO: It's unclear how reliably this exhausts those reserves
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-    void* data;
-    do {
-      data = malloc(0x1);
-    } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
-    free(data);
-  }
+  FEX::Allocator::Init(Loader.Is64BitMode());
 
   FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
 
@@ -504,9 +516,9 @@ int main(int argc, char** argv, char** const envp) {
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName, SupportsAVX);
   auto ThunkHandler = FEX::HLE::CreateThunkHandler();
 
-  auto SyscallHandler = Loader.Is64BitMode() ?
-                          FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
-                          FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(), std::move(Allocator));
+  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
+                                               FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(),
+                                                                            std::move(FEX::Allocator::Allocator));
   if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
     CTX->SetCodeMapWriter(fextl::make_unique<FEXCore::CodeMapWriter>(*SyscallHandler));
   }
@@ -600,9 +612,7 @@ int main(int argc, char** argv, char** const envp) {
   LogMan::Throw::UnInstallHandler();
   LogMan::Msg::UnInstallHandler();
 
-  FEXCore::Allocator::ClearHooks();
-  FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
-  FEXCore::Allocator::ReclaimMemoryRegion(Low4GB);
+  FEX::Allocator::Shutdown();
 
   // Allocator is now original system allocator
   FEXCore::Telemetry::Shutdown(Program.ProgramName);
