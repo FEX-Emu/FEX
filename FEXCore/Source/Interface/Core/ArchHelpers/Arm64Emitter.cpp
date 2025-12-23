@@ -417,23 +417,34 @@ FEXCore::X86State::X86Reg Arm64Emitter::GetX86RegRelationToARMReg(ARMEmitter::Re
   return FEXCore::X86State::X86Reg::REG_INVALID;
 }
 
-void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad) {
-  if (EnableCodeCaching) {
-    // Force NOP padding to ensure relocated constants always have enough encoding space available
+void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, PadType Pad, int MaxBytes) {
+  bool NOPPad = false;
+  if (Pad == PadType::DOPAD) {
     NOPPad = true;
+  } else if (Pad == PadType::NOPAD) {
+    NOPPad = false;
+  } else if (Pad == PadType::AUTOPAD) {
+    // Force NOP padding to ensure relocated constants always have enough encoding space available
+    NOPPad = EnableCodeCaching;
   }
 
   bool Is64Bit = s == ARMEmitter::Size::i64Bit;
-  int Segments = Is64Bit ? 4 : 2;
+  const auto UpperBound = Is64Bit ? 4 : 2;
+  int Segments = MaxBytes ? (MaxBytes / 2) : UpperBound;
+
+  LOGMAN_THROW_A_FMT(MaxBytes >= 0 && MaxBytes <= (UpperBound * 2) && (MaxBytes & 1) == 0,
+                     "MaxBytes must be bounded in the range of [0, {}] and 16-bit aligned", UpperBound);
+  // If MaxBytes specified then make sure to sanity check incoming data.
+  LOGMAN_THROW_A_FMT(MaxBytes == 0 || (Constant >> (MaxBytes * 8)) == 0, "MaxBytes provided but data can't fit within provided range.");
 
   if (Is64Bit && ((~Constant) >> 16) == 0) {
-    movn(s, Reg, (~Constant) & 0xFFFF);
-
     if (NOPPad) {
       nop();
       nop();
       nop();
     }
+
+    movn(s, Reg, (~Constant) & 0xFFFF);
     return;
   }
 
@@ -441,17 +452,17 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     // If the upper 32-bits is all zero, we can now switch to a 32-bit move.
     s = ARMEmitter::Size::i32Bit;
     Is64Bit = false;
-    Segments = 2;
+    Segments = std::min(Segments, 2);
   }
 
   if (!Is64Bit && ((~Constant) & 0xFFFF0000) == 0) {
-    movn(s, Reg.W(), (~Constant) & 0xFFFF);
-
     if (NOPPad) {
       nop();
       nop();
       nop();
     }
+
+    movn(s, Reg.W(), (~Constant) & 0xFFFF);
     return;
   }
 
@@ -472,24 +483,24 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     // `movz` is better than `orr` since hardware will rename or merge if possible when `movz` is used.
     const auto IsImm = ARMEmitter::Emitter::IsImmLogical(Constant, RegSizeInBits(s));
     if (IsImm) {
-      orr(s, Reg, ARMEmitter::Reg::zr, Constant);
       if (NOPPad) {
         nop();
         nop();
         nop();
       }
+      orr(s, Reg, ARMEmitter::Reg::zr, Constant);
       return;
     }
   }
 
   // If we can't handle negatives with the orr, try with movn+movk
   if (Is64Bit && ((~Constant) >> 32) == 0) {
-    movn(s, Reg, (~Constant) & 0xFFFF);
-    movk(s, Reg, (Constant >> 16) & 0xFFFF, 16);
     if (NOPPad) {
       nop();
       nop();
     }
+    movn(s, Reg, (~Constant) & 0xFFFF);
+    movk(s, Reg, (Constant >> 16) & 0xFFFF, 16);
     return;
   }
 
