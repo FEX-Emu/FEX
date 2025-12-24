@@ -2,7 +2,7 @@ set(CMAKE_AUTOMOC ON)
 
 add_executable(FEXConfig)
 target_sources(FEXConfig PRIVATE Main.cpp Main.h)
-target_include_directories(FEXConfig PRIVATE ${CMAKE_SOURCE_DIR}/Source/)
+
 target_link_libraries(FEXConfig PRIVATE Common JemallocDummy)
 if (Qt6_FOUND)
   qt_add_resources(QT_RESOURCES qml6.qrc)

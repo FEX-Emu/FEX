@@ -5,8 +5,6 @@ set(SRCS Main.cpp
 add_executable(${NAME} ${SRCS})
 list(APPEND LIBS FEXCore Common JemallocDummy xxHash::xxhash)
 
-target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/)
-
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(${NAME}
     PRIVATE
