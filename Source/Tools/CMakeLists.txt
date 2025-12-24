@@ -1,6 +1,6 @@
 add_subdirectory(CommonTools)
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   if (BUILD_FEXCONFIG)
     find_package(Qt6 COMPONENTS Qml Quick Widgets QUIET)
     if (NOT Qt6_FOUND)

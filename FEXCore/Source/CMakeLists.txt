@@ -9,7 +9,7 @@ set (FEXCORE_BASE_SRCS
   Utils/SpinWaitLock.cpp
   )
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   list(APPEND FEXCORE_BASE_SRCS
     Utils/Allocator/64BitAllocator.cpp)
 endif()
@@ -108,7 +108,7 @@ if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   list (APPEND LIBS vixl)
 endif()
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   list (APPEND LIBS dl)
 else()
   list (APPEND LIBS synchronization)
@@ -291,7 +291,7 @@ AddObject(${PROJECT_NAME}_object OBJECT)
 AddLibrary(${PROJECT_NAME} STATIC)
 AddLibrary(${PROJECT_NAME}_shared SHARED)
 
-if (NOT MINGW_BUILD AND NOT BUILD_STEAM_SUPPORT)
+if (NOT MINGW AND NOT BUILD_STEAM_SUPPORT)
   install(TARGETS ${PROJECT_NAME}_shared
     LIBRARY
       DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -310,7 +310,7 @@ if (ENABLE_JEMALLOC_GLIBC_ALLOC)
   target_link_libraries(JemallocLibs INTERFACE FEX_jemalloc_glibc)
 endif()
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   # Dummy project to use for host tools.
   # This overrides use of jemalloc in FEXCore with the normal glibc allocator.
   add_library(JemallocDummy STATIC Utils/AllocatorHooks.cpp)

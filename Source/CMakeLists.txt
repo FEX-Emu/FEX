@@ -6,6 +6,6 @@ add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-strict-aliasing>)
 add_subdirectory(Common/)
 add_subdirectory(Tools/)
 
-if (MINGW_BUILD)
+if (MINGW)
   add_subdirectory(Windows/)
 endif()

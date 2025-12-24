@@ -3,7 +3,7 @@ set(SRCS
   DummyHandlers.cpp
   )
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   list(APPEND SRCS
   Linux/Utils/ELFContainer.cpp
   )

@@ -49,15 +49,11 @@ if (NOT HOSTLIBS_DATA_DIRECTORY)
   set(HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_FULL_LIBDIR}/fex-emu")
 endif()
 
-string(FIND ${CMAKE_BASE_NAME} mingw CONTAINS_MINGW)
-if (NOT CONTAINS_MINGW EQUAL -1)
-  message (STATUS "Mingw build")
-  set (MINGW_BUILD TRUE)
+if (MINGW)
+  message (STATUS "Building for MinGW")
   set (ENABLE_JEMALLOC TRUE)
   set (ENABLE_JEMALLOC_GLIBC_ALLOC FALSE)
-endif()
-
-if (NOT MINGW_BUILD)
+else ()
   message (STATUS "Clang version ${CMAKE_CXX_COMPILER_VERSION}")
   set (CLANG_MINIMUM_VERSION 13.0)
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CLANG_MINIMUM_VERSION})
@@ -88,7 +84,7 @@ if (ENABLE_FEXCORE_PROFILER)
     add_definitions(-DTRACY_NO_SAMPLING=1)
     # This pulls in libbacktrace which allocators in global constructors (before FEX can set up its allocator hooks)
     add_definitions(-DTRACY_NO_CALLSTACK=1)
-    if (MINGW_BUILD)
+    if (MINGW)
       message(FATAL_ERROR "Tracy profiler not supported")
     endif()
   else()
@@ -188,7 +184,7 @@ check_cxx_source_compiles(
   HAS_CLANG_PRESERVE_ALL)
 unset(CMAKE_REQUIRED_FLAGS)
 if (HAS_CLANG_PRESERVE_ALL)
-  if (MINGW_BUILD)
+  if (MINGW)
     message(STATUS "Ignoring broken clang::preserve_all support")
     set(HAS_CLANG_PRESERVE_ALL FALSE)
   else()
@@ -277,7 +273,7 @@ if (ENABLE_JEMALLOC_GLIBC_ALLOC)
   # Required for thunks to work.
   # All host native libraries will use this allocator, while *most* other FEX internal allocations will use the other jemalloc allocator.
   add_subdirectory(External/jemalloc_glibc/)
-elseif (NOT MINGW_BUILD)
+elseif (NOT MINGW)
   message (STATUS
     " jemalloc glibc allocator disabled!\n"
     " This is not a recommended configuration!\n"
@@ -288,7 +284,7 @@ endif()
 if (ENABLE_JEMALLOC)
   # The jemalloc subproject that all FEXCore fextl objects allocate through.
   add_subdirectory(External/jemalloc/)
-elseif (NOT MINGW_BUILD)
+elseif (NOT MINGW)
   message (STATUS
     " jemalloc disabled!\n"
     " This is not a recommended configuration!\n"
@@ -518,7 +514,7 @@ add_subdirectory(FEXHeaderUtils/)
 add_subdirectory(CodeEmitter/)
 add_subdirectory(FEXCore/)
 
-if (_M_ARM_64 AND NOT MINGW_BUILD AND NOT BUILD_STEAM_SUPPORT)
+if (_M_ARM_64 AND NOT MINGW AND NOT BUILD_STEAM_SUPPORT)
   # Binfmt_misc files must be installed prior to Source/ installs
   add_subdirectory(Data/binfmts/)
 endif()
