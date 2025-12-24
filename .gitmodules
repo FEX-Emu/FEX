@@ -49,3 +49,7 @@
 [submodule "External/range-v3"]
 	path = External/range-v3
 	url = https://github.com/ericniebler/range-v3.git
+[submodule "External/zydis"]
+	shallow = true
+	path = External/zydis
+	url = https://github.com/zyantific/zydis.git

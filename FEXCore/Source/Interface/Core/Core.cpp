@@ -9,6 +9,9 @@ $end_info$
 */
 
 #include <cstdint>
+#ifdef ZYDIS_DISASSEMBLER
+#include <Zydis/Zydis.h>
+#endif
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CPUBackend.h"
@@ -536,8 +539,24 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
     const auto GPRSize = Thread->OpDispatcher->GetGPROpSize();
 
+#ifdef ZYDIS_DISASSEMBLER
+    FEX_CONFIG_OPT(X86Disassemble, X86DISASSEMBLE);
+    const auto ZydisMachineMode = Config.Is64BitMode ? ZYDIS_MACHINE_MODE_LONG_64 : ZYDIS_MACHINE_MODE_LEGACY_32;
+    if (X86Disassemble()) {
+      const uint64_t DecodedMin = Thread->FrontendDecoder->DecodedMinAddress;
+      const uint64_t DecodedMax = Thread->FrontendDecoder->DecodedMaxAddress;
+      LogMan::Msg::IFmt("Guest x86 Begin (RIP={:#x}, {:#x}-{:#x})", GuestRIP, DecodedMin, DecodedMax);
+    }
+#endif
+
     for (size_t j = 0; j < CodeBlocks->size(); ++j) {
       const FEXCore::Frontend::Decoder::DecodedBlocks& Block = CodeBlocks->at(j);
+
+#ifdef ZYDIS_DISASSEMBLER
+      if (X86Disassemble() && CodeBlocks->size() > 1) {
+        LogMan::Msg::IFmt("  Block {} Entry={:#x} NumInsts={}", j, Block.Entry, Block.NumInstructions);
+      }
+#endif
 
       bool BlockInForceTSOValidRange = false;
       auto InstForceTSOIt = ForceTSOInstructions.end();
@@ -570,6 +589,19 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
         TableInfo = Block.DecodedInstructions[i].TableInfo;
         DecodedInfo = &Block.DecodedInstructions[i];
+
+#ifdef ZYDIS_DISASSEMBLER
+        if (X86Disassemble()) {
+          const uint8_t* InstBytes = reinterpret_cast<const uint8_t*>(InstAddress);
+          ZydisDisassembledInstruction ZydisInst;
+          if (ZYAN_SUCCESS(ZydisDisassembleIntel(ZydisMachineMode, InstAddress, InstBytes, DecodedInfo->InstSize, &ZydisInst))) {
+            LogMan::Msg::IFmt("{:#x}: {}", InstAddress, ZydisInst.text);
+          } else {
+            LogMan::Msg::IFmt("{:#x}: (decode failed, {} bytes)", InstAddress, DecodedInfo->InstSize);
+          }
+        }
+#endif
+
         bool IsLocked = DecodedInfo->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
 
         // Do a partial register cache flush before every instruction. This
@@ -689,6 +721,12 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         }
       }
     }
+
+#ifdef ZYDIS_DISASSEMBLER
+    if (X86Disassemble()) {
+      LogMan::Msg::IFmt("Guest x86 End");
+    }
+#endif
 
     Thread->OpDispatcher->Finalize();
 
