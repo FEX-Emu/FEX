@@ -17,7 +17,7 @@ public:
   }
 
   // These are no-ops implementations of the SyscallHandler API
-  std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState&, uint64_t) override {
+  std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState*, uint64_t) override {
     return std::nullopt;
   }
 

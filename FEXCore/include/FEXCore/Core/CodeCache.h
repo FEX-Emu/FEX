@@ -190,7 +190,7 @@ public:
    * TODO: Optionally recompiles all contained code blocks at runtime for validation.
    * Returns false if the provided cache file is invalid, and true otherwise.
    */
-  virtual bool LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) = 0;
+  virtual bool LoadData(Core::InternalThreadState*, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) = 0;
 
   /**
    * Bundles the current Core state (CodeBuffer, GuestToHostMapping, ...) to a code cache and writes it to the given file descriptor.

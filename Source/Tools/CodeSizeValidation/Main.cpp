@@ -449,7 +449,7 @@ public:
 
   // These are no-ops implementations of the SyscallHandler API
   std::optional<FEXCore::ExecutableFileSectionInfo>
-  LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) override {
+  LookupExecutableFileSection(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) override {
     return std::nullopt;
   }
 

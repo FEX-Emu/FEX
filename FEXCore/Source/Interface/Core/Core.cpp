@@ -723,7 +723,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
 ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) {
   if (SourcecodeResolver && Config.GDBSymbols()) {
-    auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto MappedSection = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
     if (MappedSection) {
       MappedSection->FileInfo.SourcecodeMap =
         SourcecodeResolver->GenerateMap(MappedSection->FileInfo.Filename, CodeMap::GetBaseFilename(MappedSection->FileInfo, false));
@@ -804,7 +804,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   if (Config.BlockJITNaming()) {
     auto FragmentBasePtr = CompiledCode.BlockBegin;
 
-    auto GuestRIPLookup = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto GuestRIPLookup = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
 
     if (DebugData->Subblocks.size()) {
       for (auto& Subblock : DebugData->Subblocks) {
@@ -827,7 +827,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   }
 
   if (Config.LibraryJITNaming() || Config.GDBSymbols()) {
-    auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto MappedSection = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
     if (MappedSection) {
       if (Config.LibraryJITNaming()) {
         Symbols.RegisterNamedRegion(Thread->SymbolBuffer.get(), CodePtr, DebugData->HostCodeSize, MappedSection->FileInfo.Filename);
@@ -866,7 +866,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   }
 
   if (CodeMapWriter) {
-    auto Region = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto Region = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
     if (Region && Region->FileStartVA != 0) {
       CodeMapWriter->AppendBlock(*Region, GuestRIP);
     }
