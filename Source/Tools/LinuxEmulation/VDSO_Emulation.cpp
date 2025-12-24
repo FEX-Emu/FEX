@@ -614,12 +614,6 @@ void LoadGuestVDSOSymbols(char* VDSOBase) {
   using ELFSymbolType = std::conditional_t<Is64Bit, Elf64_Sym, Elf32_Sym>;
 
   // We need to load symbols we care about.
-  if (Is64Bit) {
-    // We don't care about any 64-bit symbols right now.
-    return;
-  }
-
-  // 32-bit symbol loading.
   auto Header = reinterpret_cast<const ELFHeaderType*>(VDSOBase);
 
   // First walk the section headers to find the symbol table.
