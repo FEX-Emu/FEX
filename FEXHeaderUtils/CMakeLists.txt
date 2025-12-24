@@ -62,3 +62,4 @@ if (HAS_SYSCALL_RENAMEAT2)
 endif ()
 
 target_include_directories(FEXHeaderUtils INTERFACE .)
+target_link_libraries(FEXHeaderUtils INTERFACE jemalloc::jemalloc)

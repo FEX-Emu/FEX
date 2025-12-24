@@ -191,7 +191,7 @@ if (BITNESS EQUAL 64)
   # target_link_libraries(SDL2-guest PRIVATE dl)
 
   generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
-  target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
+  target_include_directories(libvulkan-guest-deps INTERFACE ${VULKAN_HEADERS_DIR})
   add_guest_lib(vulkan "libvulkan.so.1")
 
   generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)

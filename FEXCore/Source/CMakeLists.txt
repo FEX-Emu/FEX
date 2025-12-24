@@ -105,7 +105,7 @@ endif()
 set (LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
 
 if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
-  list (APPEND LIBS vixl)
+  list (APPEND LIBS vixl::vixl)
 endif()
 
 if (NOT MINGW)
@@ -275,7 +275,7 @@ function(AddObject Name Type)
   target_compile_options(${Name} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
   AddDefaultOptionsToTarget(${Name})
 
-  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
+  set_target_properties(${Name} PROPERTIES OUTPUlT_NAME FEXCore)
 endfunction()
 
 function(AddLibrary Name Type)
