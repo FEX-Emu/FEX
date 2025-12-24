@@ -24,12 +24,6 @@ include(CheckCXXCompilerFlag)
 include(CheckIncludeFileCXX)
 include(CheckCXXSourceCompiles)
 
-if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
-    # Useful to have for freestanding libFEXCore
-    add_subdirectory(External/vixl/)
-    include_directories(External/vixl/src/)
-endif()
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

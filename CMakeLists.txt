@@ -34,6 +34,7 @@ set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend to use fo
 option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hooking with fault for CI testing")
 option(USE_PDB_DEBUGINFO "Builds debug info in PDB format" FALSE)
 option(BUILD_STEAM_SUPPORT "Builds FEX for integration into Steam" FALSE)
+option(USE_CPM "Fetch externals with CPM instead of submodules" FALSE)
 
 set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
 set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
@@ -63,6 +64,15 @@ endif()
 
 if (BUILD_STEAM_SUPPORT)
   add_definitions(-DFEX_STEAM_SUPPORT=1)
+endif()
+
+if (USE_CPM)
+  list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/)
+  set(CPM_SOURCE_CACHE ${CMAKE_SOURCE_DIR}/.cache/cpm)
+  set(CPM_USE_LOCAL_PACKAGES ON)
+
+  include(CPM)
+  include(FEXCPMWrapper)
 endif()
 
 if (ENABLE_FEXCORE_PROFILER)
@@ -131,7 +141,6 @@ if (ENABLE_GDB_SYMBOLS)
   message(STATUS "GDBSymbols support enabled")
   add_definitions(-DGDB_SYMBOLS_ENABLED=1)
 endif()
-
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -268,28 +277,19 @@ if (ENABLE_COVERAGE)
   link_libraries(-fprofile-instr-generate -fcoverage-mapping)
 endif()
 
-if (ENABLE_JEMALLOC_GLIBC_ALLOC)
-  # The glibc jemalloc subproject which hooks the glibc allocator.
-  # Required for thunks to work.
-  # All host native libraries will use this allocator, while *most* other FEX internal allocations will use the other jemalloc allocator.
-  add_subdirectory(External/jemalloc_glibc/)
-elseif (NOT MINGW)
-  message (STATUS
-    " jemalloc glibc allocator disabled!\n"
-    " This is not a recommended configuration!\n"
-    " This will very explicitly break thunk execution!\n"
-    " Use at your own risk!")
+add_subdirectory(External)
+if (USE_CPM)
+  if (BUILD_TESTING)
+    find_package(Catch2 3 REQUIRED)
+  endif()
+
+  if (BUILD_THUNKS)
+    find_package(Vulkan-Headers REQUIRED)
+  endif()
 endif()
 
-if (ENABLE_JEMALLOC)
-  # The jemalloc subproject that all FEXCore fextl objects allocate through.
-  add_subdirectory(External/jemalloc/)
-elseif (NOT MINGW)
-  message (STATUS
-    " jemalloc disabled!\n"
-    " This is not a recommended configuration!\n"
-    " This will very explicitly break 32-bit application execution!\n"
-    " Use at your own risk!")
+if (BUILD_TESTING)
+  include(Catch)
 endif()
 
 if (USE_PDB_DEBUGINFO)
@@ -303,70 +303,17 @@ set (CMAKE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_LINKER_FLAGS_RELWITHDEBINFO} -fn
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer")
 set (CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-pointer")
 
-include_directories(External/robin-map/include/)
-
-include(CTest)
-if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
-  add_subdirectory(External/vixl/)
-  include_directories(SYSTEM External/vixl/src/)
-endif()
-
-if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
-  add_subdirectory(External/tracy)
-endif()
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # This means we were attempted to get compiled with GCC
   message(FATAL_ERROR "FEX doesn't support getting compiled with GCC!")
 endif()
 
-find_package(PkgConfig REQUIRED)
 find_package(Python 3.9 REQUIRED COMPONENTS Interpreter)
 
-set(BUILD_SHARED_LIBS OFF)
-
-pkg_search_module(xxhash IMPORTED_TARGET xxhash libxxhash)
-if (TARGET PkgConfig::xxhash AND NOT CMAKE_CROSSCOMPILING)
-  add_library(xxHash::xxhash ALIAS PkgConfig::xxhash)
-else()
-  set(XXHASH_BUNDLED_MODE TRUE)
-  set(XXHASH_BUILD_XXHSUM FALSE)
-  add_subdirectory(External/xxhash/cmake_unofficial/)
-endif()
+include(CTest)
 
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
-
-if (BUILD_TESTING)
-  find_package(Catch2 3 QUIET)
-  if (NOT Catch2_FOUND)
-    add_subdirectory(External/Catch2/)
-
-    # Pull in catch_discover_tests definition
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/External/Catch2/contrib/")
-  endif()
-
-  include(Catch)
-else ()
-  # Override any previously generated test list to avoid running stale test binaries
-  file(GENERATE OUTPUT CTestTestfile.cmake CONTENT "# No tests since BUILD_TESTING is disabled")
-endif()
-
-find_package(fmt QUIET)
-if (NOT fmt_FOUND)
-  # Disable fmt install
-  set(FMT_INSTALL OFF)
-  add_subdirectory(External/fmt/)
-endif()
-
-find_package(range-v3 QUIET)
-if (NOT range-v3_FOUND)
-  add_subdirectory(External/range-v3/)
-  target_compile_definitions(range-v3 INTERFACE RANGES_DISABLE_DEPRECATED_WARNINGS)
-endif()
-
-add_subdirectory(External/tiny-json/)
-include_directories(External/tiny-json/)
 
 include_directories(Source/)
 include_directories("${CMAKE_BINARY_DIR}/Source/")
@@ -508,8 +455,6 @@ if (BUILD_TESTING)
   set(TEST_JOB_FLAG "-j${TEST_JOB_COUNT}")
 endif()
 
-add_subdirectory(External/SoftFloat-3e/)
-add_subdirectory(External/cephes/)
 add_subdirectory(FEXHeaderUtils/)
 add_subdirectory(CodeEmitter/)
 add_subdirectory(FEXCore/)
@@ -540,6 +485,10 @@ if (BUILD_TESTING)
 endif()
 
 if (BUILD_THUNKS)
+  if (TARGET Vulkan::Headers)
+    message(STATUS "Vulkan exists")
+  endif()
+
   set (FEX_PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR})
   add_subdirectory(ThunkLibs/Generator)
 
@@ -549,6 +498,7 @@ if (BUILD_THUNKS)
   # Thunk targets for IDE integration of guest code, only
   add_subdirectory(ThunkLibs/GuestLibs)
 
+  # TODO(crueter): Move to CPM
   # Thunk targets for guest libraries
   include(ExternalProject)
   ExternalProject_Add(guest-libs

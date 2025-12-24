@@ -18,7 +18,8 @@ if (NOT MINGW)
 endif()
 
 add_library(${NAME} STATIC ${SRCS})
-target_link_libraries(${NAME} FEXCore_Base cpp-optparse tiny-json FEXHeaderUtils range-v3::range-v3)
+
+target_link_libraries(${NAME} PUBLIC FEXCore_Base cpp-optparse tiny-json::tiny-json FEXHeaderUtils range-v3::range-v3)
 target_include_directories(${NAME} PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 set_target_properties(${NAME} PROPERTIES

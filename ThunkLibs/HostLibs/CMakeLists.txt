@@ -128,7 +128,7 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   endif()
 
   generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp ${GUEST_BITNESS})
-  target_include_directories(libvulkan-${GUEST_BITNESS}-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
+  target_include_directories(libvulkan-${GUEST_BITNESS}-deps INTERFACE ${VULKAN_HEADERS_DIR})
   add_host_lib(vulkan ${GUEST_BITNESS})
 
   generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp ${GUEST_BITNESS})
