@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="/">
+    <file>main.qml</file>
+    <file>icon.png</file>
+  </qresource>
+  <qresource prefix="/dialogs">
+    <file>FileDialog.qml</file>
+    <file>FolderDialog.qml</file>
+    <file>MessageDialog.qml</file>
+  </qresource>
+</RCC>

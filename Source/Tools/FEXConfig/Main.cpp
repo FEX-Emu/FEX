@@ -401,9 +401,10 @@ ConfigRuntime::ConfigRuntime(const QString& ConfigFilename) {
   qmlRegisterSingletonInstance<ConfigModel>("FEX.ConfigModel", 1, 0, "ConfigModel", &ConfigModelInst);
   qmlRegisterSingletonInstance<HostLibsModel>("FEX.HostLibsModel", 1, 0, "HostLibsModel", &HostLibs);
   qmlRegisterSingletonInstance<RootFSModel>("FEX.RootFSModel", 1, 0, "RootFSModel", &RootFSList);
-  Engine.load(QUrl("qrc:/main.qml"));
 
-  Window = qobject_cast<QQuickWindow*>(Engine.rootObjects().first());
+  Engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+
+  Window = qobject_cast<QQuickWindow*>(Engine.rootObjects().at(0));
   if (!ConfigFilename.isEmpty()) {
     Window->setProperty("configFilename", QUrl::fromLocalFile(ConfigFilename));
   } else {
