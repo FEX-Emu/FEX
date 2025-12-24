@@ -259,7 +259,7 @@ function(AddDefaultOptionsToTarget Name)
   endif()
 endfunction()
 
-# Build FEXCore_Config static library
+# Build FEXCore_Base static library
 add_library(FEXCore_Base STATIC ${FEXCORE_BASE_SRCS})
 target_link_libraries(FEXCore_Base ${LIBS})
 AddDefaultOptionsToTarget(FEXCore_Base)
@@ -268,26 +268,27 @@ if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
   target_link_libraries(FEXCore_Base TracyClient)
 endif()
 
-function(AddObject Name Type)
-  add_library(${Name} ${Type} ${SRCS})
+function(AddObject Name)
+  add_library(${Name} OBJECT ${SRCS})
 
-  target_link_libraries(${Name} FEXCore_Base)
+  target_link_libraries(${Name} PRIVATE FEXCore_Base)
   target_compile_options(${Name} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
   AddDefaultOptionsToTarget(${Name})
-
-  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 endfunction()
 
 function(AddLibrary Name Type)
   add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
-  target_link_libraries(${Name} FEXCore_Base)
-  target_compile_options(${Name} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
+  # During generation of the import library (dll.a), MinGW needs some extra symbols from libraries
+  # such as fmt, which are propagated by FEXCore_Base. Wonderful.
+  if (MINGW)
+    target_link_libraries(${Name} FEXCore_Base)
+  endif()
   AddDefaultOptionsToTarget(${Name})
 endfunction()
 
-AddObject(${PROJECT_NAME}_object OBJECT)
+AddObject(${PROJECT_NAME}_object)
 AddLibrary(${PROJECT_NAME} STATIC)
 AddLibrary(${PROJECT_NAME}_shared SHARED)
 
