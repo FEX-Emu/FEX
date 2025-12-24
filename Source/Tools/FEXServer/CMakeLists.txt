@@ -9,8 +9,7 @@ set(SRCS Main.cpp
 add_executable(${NAME} ${SRCS})
 
 target_include_directories(${NAME} PRIVATE
-  ${CMAKE_BINARY_DIR}/generated
-  ${CMAKE_SOURCE_DIR}/Source/)
+  ${CMAKE_BINARY_DIR}/generated)
 
 target_link_libraries(${NAME} PRIVATE FEXCore Common CommonTools JemallocDummy ${PTHREAD_LIB})
 

@@ -21,7 +21,6 @@ set_target_properties(FEX PROPERTIES
 
 target_include_directories(FEX
   PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/
     ${CMAKE_BINARY_DIR}/generated
 )
 target_link_libraries(FEX
