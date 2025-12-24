@@ -65,6 +65,7 @@ public:
       LOGMAN_THROW_A_FMT((Desired & WRITE_WAITER_COUNT_MASK) != 0, "Overflow in write-waiters!");
     } while (AtomicFutex.compare_exchange_strong(Expected, Desired, std::memory_order_acq_rel, std::memory_order_acquire) == false);
 #else
+    // Increment the number of writers waiting. The following loop will attempt to acquire the write-lock while decrementing the waiter count.
     Expected = AtomicFutex.fetch_add(WRITE_WAITER_INCREMENT);
     Desired = Expected + WRITE_WAITER_INCREMENT;
 #endif
@@ -101,6 +102,15 @@ public:
         LOGMAN_THROW_A_FMT((Desired & WRITE_OWNED_BIT) == WRITE_OWNED_BIT, "Somehow acquired a write-lock without it being set!");
         return;
       }
+
+      // Two paths to get here.
+      // Desired[31] = 1 (WRITE_OWNED_BIT)
+      // OR
+      // Desired[15:0] != 0 (READ_OWNER_COUNT_MASK)
+      // Meaning that there was already a writer that owned the lock, or reads were owning it.
+      // This thread already incremented `WRITE_WAITER_INCREMENT` before this loop.
+      // - Linux waits for the full 32-bits to change (With bitset wakeup).
+      // - Win32 also waits for the full 32-bits to change (with offset addr on the reader side to reduce stampeding).
       FutexWaitForWriteAvailable(Desired);
 
       Expected = AtomicFutex.load(std::memory_order_relaxed);
@@ -145,6 +155,12 @@ public:
         return;
       }
 
+      // Only one path to get here.
+      // Desired[31][29:16] != 0 (Either writer-owned, or writer-waiting)
+      // Desired[30][15:0]  == READ_WAIT_BIT and number of read-owners (draining to zero as write-side is set)
+      // - Linux waits for full 32-bit futex.
+      // - Win32 waits for upper 16-bits to not match (Either zero writer owned, writer-wait is draining, and `READ_WAITER_BIT` changed).
+      // Can get some spurious wake-ups which will `or` the `READ_WAITER_BIT` again, which does nothing.
       FutexWaitForReadAvailable(Desired);
 
       Expected = AtomicFutex.load(std::memory_order_relaxed);
@@ -167,7 +183,12 @@ public:
       }
     } while (AtomicFutex.compare_exchange_strong(Expected, Desired, std::memory_order_acq_rel, std::memory_order_acquire) == false);
 
-    // If success, then `Expected` has old value. Containing `READ_WAITER_BIT` which was just masked off, and also `WRITE_WAITER_COUNT_MASK`.
+    // `Expected` has old value. Containing `READ_WAITER_BIT` which was just masked off, and also `WRITE_WAITER_COUNT_MASK`.
+    //
+    // Two paths here to be careful about dead-locking other waiters:
+    // - If there are any writers waiting, those get priority to wake.
+    // - If there are zero writers waiting, and there are read waiters then make sure to wake them all.
+    // Failure to send wake events can cause readers to "infinitely" hang! (ignoring spurious wake-up).
     if ((Expected & WRITE_WAITER_COUNT_MASK)) {
       // Handle write-write handoff.
       FutexWakeWriter();
@@ -195,6 +216,11 @@ public:
 #endif
 
     // Handle read->write handoff if there are any waiting writers, and no readers left.
+    // Only one path here but still need to be careful to not dead-lock waiting writers.
+    // - If there are waiters /but/ this is not the final unlock_shared, then don't wake writer.
+    //   - Writer would wake and immediately sleep again if we woke on every unlock_shared.
+    // - If there are waiters and this is the final unlock_shared, then wake a /single/ writer.
+    // - We ignore any reader-waiters here as they must wait their turn for writers that are waiting.
     if ((Desired & WRITE_WAITER_COUNT_MASK) && (Desired & READ_OWNER_COUNT_MASK) == 0) {
       FutexWakeWriter();
     }
