@@ -11,7 +11,7 @@ set(SRCS
   VolatileMetadata.cpp
   )
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   list (APPEND SRCS
     FEXServerClient.cpp
     FileFormatCheck.cpp)

@@ -1,4 +1,4 @@
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   add_subdirectory(APITests/)
   add_subdirectory(POSIX/)
   add_subdirectory(gvisor-tests/)

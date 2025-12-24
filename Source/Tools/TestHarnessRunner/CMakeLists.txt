@@ -1,7 +1,7 @@
 list(APPEND LIBS FEXCore Common JemallocLibs)
 
 set (SRCS TestHarnessRunner.cpp)
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   list(APPEND SRCS TestHarnessRunner/HostRunner.cpp)
   list(APPEND LIBS LinuxEmulation CommonTools)
 endif()
