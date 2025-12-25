@@ -109,10 +109,10 @@ public:
     return _Jump(InvalidNode);
   }
   IRPair<IROp_CondJump> _CondJump(Ref ssa0, CondClass cond = CondClass::NEQ) {
-    return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
+    return _CondJump(ssa0, _Constant(0, ConstPad::NoPad), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
   }
   IRPair<IROp_CondJump> _CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClass cond = CondClass::NEQ) {
-    return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
+    return _CondJump(ssa0, _Constant(0, ConstPad::NoPad), ssa1, ssa2, cond, GetOpSize(ssa0));
   }
 
   IRPair<IROp_LoadContext> _LoadContextGPR(OpSize ByteSize, uint32_t Offset) {
@@ -184,7 +184,7 @@ public:
   }
 
   IRPair<IROp_Select> To01(FEXCore::IR::OpSize CompareSize, OrderedNode* Cmp1) {
-    return Select01(CompareSize, CondClass::NEQ, Cmp1, Constant(0));
+    return Select01(CompareSize, CondClass::NEQ, Cmp1, Constant(0, ConstPad::NoPad));
   }
 
   IRPair<IROp_NZCVSelect> _NZCVSelect01(CondClass Cond) {
@@ -203,7 +203,7 @@ public:
       Src2 = -Src2;
     }
 
-    auto Dest = _Add(Size, Src1, Constant(Src2));
+    auto Dest = _Add(Size, Src1, Constant(Src2, ConstPad::NoPad));
     Dest.first->Header.Op = Op;
     return Dest;
   }
@@ -239,22 +239,33 @@ public:
   DEF_ADDSUB(AddWithFlags)
   DEF_ADDSUB(SubWithFlags)
 
-  int64_t Constants[32];
+  struct ConstantData {
+    int64_t Value;
+    ConstPad Pad;
+    int32_t MaxBytes;
+    [[nodiscard]] auto operator<=>(const ConstantData&) const noexcept = default;
+  };
+  ConstantData Constants[32];
   Ref ConstantRefs[32];
   uint32_t NrConstants;
 
-  Ref Constant(int64_t Value) {
+  Ref Constant(int64_t Value, ConstPad Pad, int32_t MaxBytes = 0) {
+    const ConstantData Data {
+      .Value = Value,
+      .Pad = Pad,
+      .MaxBytes = MaxBytes,
+    };
     // Search for the constant in the pool.
     for (unsigned i = 0; i < std::min(NrConstants, 32u); ++i) {
-      if (Constants[i] == Value) {
+      if (Constants[i] == Data) {
         return ConstantRefs[i];
       }
     }
 
     // Otherwise, materialize a fresh constant and pool it.
-    Ref R = _Constant(Value);
+    Ref R = _Constant(Value, Pad, MaxBytes);
     unsigned i = (NrConstants++) & 31;
-    Constants[i] = Value;
+    Constants[i] = Data;
     ConstantRefs[i] = R;
     return R;
   }
