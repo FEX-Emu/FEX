@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-set (PROJECT_NAME FEXCore)
+set(PROJECT_NAME FEXCore)
 project(${PROJECT_NAME}
   VERSION 0.01
   LANGUAGES CXX)

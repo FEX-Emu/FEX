@@ -1,5 +1,5 @@
 
-set (SRCS
+set(SRCS
   # F80 support
   src/extF80_add.c
   src/extF80_div.c

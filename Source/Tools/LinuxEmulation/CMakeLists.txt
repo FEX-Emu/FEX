@@ -1,6 +1,6 @@
 add_compile_options(-fno-operator-names)
 
-set (SRCS
+set(SRCS
   VDSO_Emulation.cpp
   Thunks.cpp
   ArchHelpers/MContext.cpp
@@ -71,37 +71,31 @@ PRIVATE
   -Werror=implicit-fallthrough
 
   -Wno-trigraphs
-  -fwrapv
-)
+  -fwrapv)
 
 set_target_properties(LinuxEmulation PROPERTIES
   C_VISIBILITY_PRESET hidden
   CXX_VISIBILITY_PRESET hidden
-  VISIBILITY_INLINES_HIDDEN TRUE
-)
+  VISIBILITY_INLINES_HIDDEN TRUE)
 
 target_include_directories(LinuxEmulation
 PRIVATE
   ${CMAKE_BINARY_DIR}/generated
   ${CMAKE_CURRENT_SOURCE_DIR}/
-  ${PROJECT_SOURCE_DIR}/External/drm-headers/include/
-)
+  ${PROJECT_SOURCE_DIR}/External/drm-headers/include/)
 
 target_include_directories(LinuxEmulation
   INTERFACE
-  ${CMAKE_CURRENT_SOURCE_DIR}/
-)
+  ${CMAKE_CURRENT_SOURCE_DIR}/)
 
 target_link_libraries(LinuxEmulation
   PRIVATE
   Common
-  CommonTools
-)
+  CommonTools)
 
 target_link_libraries(LinuxEmulation
   INTERFACE
-  FEXCore
-)
+  FEXCore)
 
 set(HEADERS_TO_VERIFY
   LinuxSyscalls/x32/Types.h          x86_32 # This needs to match structs to 32bit structs
@@ -119,7 +113,7 @@ set(HEADERS_TO_VERIFY
 list(LENGTH HEADERS_TO_VERIFY ARG_COUNT)
 math(EXPR ARG_COUNT "${ARG_COUNT}-1")
 
-set (ARGS
+set(ARGS
   "-x" "c++"
   "-std=c++20"
   "-fno-operator-names"

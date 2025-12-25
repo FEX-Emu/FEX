@@ -1,12 +1,8 @@
 set(NAME CommonTools)
-set(SRCS
-  DummyHandlers.cpp
-  )
+set(SRCS DummyHandlers.cpp)
 
 if (NOT MINGW)
-  list(APPEND SRCS
-  Linux/Utils/ELFContainer.cpp
-  )
+  list(APPEND SRCS Linux/Utils/ELFContainer.cpp)
 endif()
 
 add_library(${NAME} STATIC ${SRCS})

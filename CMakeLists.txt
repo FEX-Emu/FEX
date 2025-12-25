@@ -30,18 +30,18 @@ option(ENABLE_VIXL_SIMULATOR "Enable use of VIXL simulator for emulation (only u
 option(ENABLE_VIXL_DISASSEMBLER "Enables debug disassembler output with VIXL" FALSE)
 option(USE_LEGACY_BINFMTMISC "Uses legacy method of setting up binfmt_misc" FALSE)
 option(ENABLE_FEXCORE_PROFILER "Enables use of the FEXCore timeline profiling capabilities" FALSE)
-set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend to use for the FEXCore profiler (gpuvis, tracy)")
+set(FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend to use for the FEXCore profiler (gpuvis, tracy)")
 option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hooking with fault for CI testing")
 option(USE_PDB_DEBUGINFO "Builds debug info in PDB format" FALSE)
 option(BUILD_STEAM_SUPPORT "Builds FEX for integration into Steam" FALSE)
 
-set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
-set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
-set (X86_DEV_ROOTFS "/" CACHE FILEPATH "Path to the sysroot used for cross-compiling for i686 and x86_64")
-set (DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
-set (HOSTLIBS_DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
+set(X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
+set(X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
+set(X86_DEV_ROOTFS "/" CACHE FILEPATH "Path to the sysroot used for cross-compiling for i686 and x86_64")
+set(DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
+set(HOSTLIBS_DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
 if (NOT DATA_DIRECTORY)
-  set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu")
+  set(DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu")
 endif()
 
 include(GNUInstallDirs)
@@ -50,14 +50,14 @@ if (NOT HOSTLIBS_DATA_DIRECTORY)
 endif()
 
 if (MINGW)
-  message (STATUS "Building for MinGW")
-  set (ENABLE_JEMALLOC TRUE)
-  set (ENABLE_JEMALLOC_GLIBC_ALLOC FALSE)
+  message(STATUS "Building for MinGW")
+  set(ENABLE_JEMALLOC TRUE)
+  set(ENABLE_JEMALLOC_GLIBC_ALLOC FALSE)
 else ()
-  message (STATUS "Clang version ${CMAKE_CXX_COMPILER_VERSION}")
-  set (CLANG_MINIMUM_VERSION 13.0)
+  message(STATUS "Clang version ${CMAKE_CXX_COMPILER_VERSION}")
+  set(CLANG_MINIMUM_VERSION 13.0)
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CLANG_MINIMUM_VERSION})
-    message (FATAL_ERROR "Clang version too old for FEX. Need at least ${CLANG_MINIMUM_VERSION} but has ${CMAKE_CXX_COMPILER_VERSION}")
+    message(FATAL_ERROR "Clang version too old for FEX. Need at least ${CLANG_MINIMUM_VERSION} but has ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
 endif()
 
@@ -112,10 +112,10 @@ if(NOT TARGET uninstall)
 endif()
 
 # These options are meant for package management
-set (TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
-set (TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
-set (OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version")
-set (OVERRIDE_HASH "detect" CACHE STRING "Override the FEX git hash")
+set(TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
+set(TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
+set(OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version")
+set(OVERRIDE_HASH "detect" CACHE STRING "Override the FEX git hash")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (CMAKE_BUILD_TYPE MATCHES "DEBUG")
@@ -157,7 +157,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   endif()
   set(_M_X86_64 1)
   add_definitions(-D_M_X86_64=1)
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
 endif()
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64|^arm64|^armv8\.*")
@@ -221,7 +221,7 @@ if (ENABLE_COMPILE_TIME_TRACE)
   link_libraries(-ftime-trace)
 endif()
 
-set (PTHREAD_LIB pthread)
+set(PTHREAD_LIB pthread)
 
 if (USE_LINKER)
   message(STATUS "Overriding linker to: ${USE_LINKER}")
@@ -274,7 +274,7 @@ if (ENABLE_JEMALLOC_GLIBC_ALLOC)
   # All host native libraries will use this allocator, while *most* other FEX internal allocations will use the other jemalloc allocator.
   add_subdirectory(External/jemalloc_glibc/)
 elseif (NOT MINGW)
-  message (STATUS
+  message(STATUS
     " jemalloc glibc allocator disabled!\n"
     " This is not a recommended configuration!\n"
     " This will very explicitly break thunk execution!\n"
@@ -285,7 +285,7 @@ if (ENABLE_JEMALLOC)
   # The jemalloc subproject that all FEXCore fextl objects allocate through.
   add_subdirectory(External/jemalloc/)
 elseif (NOT MINGW)
-  message (STATUS
+  message(STATUS
     " jemalloc disabled!\n"
     " This is not a recommended configuration!\n"
     " This will very explicitly break 32-bit application execution!\n"
@@ -297,11 +297,11 @@ if (USE_PDB_DEBUGINFO)
   add_link_options(-g -Wl,--pdb=)
 endif()
 
-set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
-set (CMAKE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_LINKER_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
+set(CMAKE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_LINKER_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
 
-set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer")
-set (CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-pointer")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer")
+set(CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-pointer")
 
 include_directories(External/robin-map/include/)
 
@@ -461,8 +461,7 @@ if (OVERRIDE_VERSION STREQUAL "detect")
       WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
       OUTPUT_VARIABLE GIT_DESCRIBE_STRING
       ERROR_QUIET
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif()
 else()
   set(GIT_DESCRIBE_STRING "${OVERRIDE_VERSION}")
@@ -479,8 +478,7 @@ if (OVERRIDE_HASH STREQUAL "detect")
       WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
       OUTPUT_VARIABLE GIT_SHORT_HASH
       ERROR_QUIET
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif()
 else()
   set(GIT_SHORT_HASH "${OVERRIDE_HASH}")
@@ -499,7 +497,7 @@ add_compile_options(-Wall)
 if (BUILD_TESTING)
   message(STATUS "Unit tests are enabled")
 
-  set (TEST_JOB_COUNT "" CACHE STRING "Override number of parallel jobs to use while running tests")
+  set(TEST_JOB_COUNT "" CACHE STRING "Override number of parallel jobs to use while running tests")
   if (TEST_JOB_COUNT)
     message(STATUS "Running tests with ${TEST_JOB_COUNT} jobs")
   elseif(CMAKE_VERSION VERSION_LESS "3.29")
@@ -540,7 +538,7 @@ if (BUILD_TESTING)
 endif()
 
 if (BUILD_THUNKS)
-  set (FEX_PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+  set(FEX_PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR})
   add_subdirectory(ThunkLibs/Generator)
 
   # Thunk targets for both host libraries and IDE integration
@@ -567,8 +565,7 @@ if (BUILD_THUNKS)
       "-DX86_DEV_ROOTFS=${X86_DEV_ROOTFS}"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
-    DEPENDS thunkgen
-  )
+    DEPENDS thunkgen)
 
   ExternalProject_Add(guest-libs-32
     PREFIX guest-libs-32
@@ -586,8 +583,7 @@ if (BUILD_THUNKS)
       "-DX86_DEV_ROOTFS=${X86_DEV_ROOTFS}"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
-    DEPENDS thunkgen
-  )
+    DEPENDS thunkgen)
 
   install(
     CODE "MESSAGE(\"-- Installing: guest-libs\")"
@@ -596,8 +592,7 @@ if (BUILD_THUNKS)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
     )"
     DEPENDS guest-libs
-    COMPONENT Runtime
-  )
+    COMPONENT Runtime)
 
   install(
     CODE "MESSAGE(\"-- Installing: guest-libs-32\")"
@@ -606,18 +601,15 @@ if (BUILD_THUNKS)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32
     )"
     DEPENDS guest-libs-32
-    COMPONENT Runtime
-  )
+    COMPONENT Runtime)
 
   add_custom_target(uninstall_guest-libs
     COMMAND ${CMAKE_COMMAND} "--build" "." "--target" "uninstall"
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
-  )
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest)
 
   add_custom_target(uninstall_guest-libs-32
     COMMAND ${CMAKE_COMMAND} "--build" "." "--target" "uninstall"
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32
-  )
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32)
 
   add_dependencies(uninstall uninstall_guest-libs)
   add_dependencies(uninstall uninstall_guest-libs-32)

@@ -1,20 +1,19 @@
-set (MAN_DIR share/man CACHE PATH "MAN_DIR")
+set(MAN_DIR share/man CACHE PATH "MAN_DIR")
 
-set (FEXCORE_BASE_SRCS
+set(FEXCORE_BASE_SRCS
   Interface/Config/Config.cpp
   Utils/Allocator.cpp
   Utils/FileLoading.cpp
   Utils/ForcedAssert.cpp
   Utils/LogManager.cpp
-  Utils/SpinWaitLock.cpp
-  )
+  Utils/SpinWaitLock.cpp)
 
 if (NOT MINGW)
   list(APPEND FEXCORE_BASE_SRCS
     Utils/Allocator/64BitAllocator.cpp)
 endif()
 
-set (SRCS
+set(SRCS
   Common/JitSymbols.cpp
   Interface/Context/Context.cpp
   Interface/Core/LookupCache.cpp
@@ -68,8 +67,7 @@ set (SRCS
   Utils/LongJump.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp
-  Utils/Profiler.cpp
-  )
+  Utils/Profiler.cpp)
 
 if (_M_ARM_64)
   list(APPEND SRCS Utils/ArchHelpers/Arm64.cpp)
@@ -102,7 +100,7 @@ else()
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=;-DFEXCORE_HAS_PRESERVE_ALL_ATTR=0")
 endif()
 
-set (LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
+set(LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
 
 if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   list (APPEND LIBS vixl)
@@ -134,8 +132,8 @@ add_custom_command(
   OUTPUT "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}"
   DEPENDS "${INPUT_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
-  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}"
-  )
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
+    "${INPUT_NAME}" "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}")
 
 set_source_files_properties(${OUTPUT_NAME} PROPERTIES
   GENERATED TRUE)
@@ -147,8 +145,8 @@ add_custom_command(
   OUTPUT "${OUTPUT_IR_DOC}"
   DEPENDS "${INPUT_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py"
-  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py" "${INPUT_NAME}" "${OUTPUT_IR_DOC}"
-  )
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py"
+    "${INPUT_NAME}" "${OUTPUT_IR_DOC}")
 
 set_source_files_properties(${OUTPUT_IR_NAME} PROPERTIES
   GENERATED TRUE)
@@ -175,14 +173,12 @@ add_custom_command(
   DEPENDS "${INPUT_CONFIG_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py"
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py" "${INPUT_CONFIG_NAME}" "${OUTPUT_CONFIG_NAME}" "${OUTPUT_MAN_NAME}"
-  "${OUTPUT_CONFIG_OPTION_NAME}"
-  )
+  "${OUTPUT_CONFIG_OPTION_NAME}")
 
 add_custom_command(
   OUTPUT "${OUTPUT_MAN_NAME_COMPRESS}"
   DEPENDS "${OUTPUT_MAN_NAME}"
-  COMMAND "gzip" "-kf9n" "${OUTPUT_MAN_NAME}"
-  )
+  COMMAND "gzip" "-kf9n" "${OUTPUT_MAN_NAME}")
 
 set_source_files_properties(${OUTPUT_CONFIG_NAME} PROPERTIES
   GENERATED TRUE)
@@ -235,8 +231,7 @@ function(AddDefaultOptionsToTarget Name)
 
     -Wno-trigraphs
     -ffunction-sections
-    -fwrapv
-  )
+    -fwrapv)
 
   if (GCC_COLOR)
     target_compile_options(${Name}
@@ -254,8 +249,7 @@ function(AddDefaultOptionsToTarget Name)
       PRIVATE
       "LINKER:--gc-sections"
       "LINKER:--strip-all"
-      "LINKER:--as-needed"
-    )
+      "LINKER:--as-needed")
   endif()
 endfunction()
 

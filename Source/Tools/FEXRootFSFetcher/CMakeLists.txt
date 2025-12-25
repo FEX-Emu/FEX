@@ -1,6 +1,5 @@
 set(NAME FEXRootFSFetcher)
-set(SRCS Main.cpp
-  XXFileHash.cpp)
+set(SRCS Main.cpp XXFileHash.cpp)
 
 add_executable(${NAME} ${SRCS})
 list(APPEND LIBS FEXCore Common JemallocDummy xxHash::xxhash)
@@ -10,8 +9,7 @@ if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
     PRIVATE
       "LINKER:--gc-sections"
       "LINKER:--strip-all"
-      "LINKER:--as-needed"
-  )
+      "LINKER:--as-needed")
 endif()
 
 install(TARGETS ${NAME}

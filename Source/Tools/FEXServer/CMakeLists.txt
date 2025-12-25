@@ -18,8 +18,7 @@ if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
     PRIVATE
       "LINKER:--gc-sections"
       "LINKER:--strip-all"
-      "LINKER:--as-needed"
-  )
+      "LINKER:--as-needed")
 endif()
 
 install(TARGETS ${NAME}
