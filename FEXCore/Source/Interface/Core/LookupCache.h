@@ -7,8 +7,8 @@
 
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory_resource.h>
-#include <FEXCore/fextl/robin_map.h>
-#include <FEXCore/fextl/robin_set.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/unordered_set.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXCore/fextl/memory_resource.h>
 
@@ -86,7 +86,7 @@ struct GuestToHostMap {
     fextl::vector<uint64_t> CodePages;
   };
 
-  fextl::robin_map<uint64_t, BlockEntry> BlockList;
+  fextl::unordered_map<uint64_t, BlockEntry> BlockList;
 
   fextl::map<uint64_t, fextl::vector<uint64_t>> CodePages;
 
@@ -438,7 +438,7 @@ private:
   }
 
   // Maps from a page index to all blocks in the page that have at some point been fetched into L1/L2
-  fextl::map<uint64_t, fextl::robin_set<uint64_t>> CachedCodePages;
+  fextl::map<uint64_t, fextl::unordered_set<uint64_t>> CachedCodePages;
 
   uintptr_t PagePointer;
   uintptr_t PageMemory;
