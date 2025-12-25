@@ -337,7 +337,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Data/CMake/)
 include(LinkerGC)
 
 ## Externals ##
-include_directories(External/robin-map/include/)
+include_directories(External/unordered_dense/include/)
 
 include(CTest)
 if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
