@@ -271,7 +271,7 @@ DEF_OP(Syscall) {
   // Still without overwriting registers that matter
   // 16bit LoadConstant to be a single instruction
   // This gives the signal handler a value to check to see if we are in a syscall at all
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GPRSpillMask & 0xFFFF);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GPRSpillMask & 0xFFFF, CPU::Arm64Emitter::PadType::NOPAD);
   str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
   uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
@@ -362,29 +362,29 @@ DEF_OP(ValidateCode) {
 
   EmitCheck(8, [&]() {
     ldr(TMP1, Base, Offset);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP2, *(const uint64_t*)(OldCode + Offset));
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP2, *(const uint64_t*)(OldCode + Offset), CPU::Arm64Emitter::PadType::NOPAD);
   });
 
   EmitCheck(4, [&]() {
     ldr(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint32_t*)(OldCode + Offset));
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint32_t*)(OldCode + Offset), CPU::Arm64Emitter::PadType::NOPAD);
   });
 
   EmitCheck(2, [&]() {
     ldrh(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint16_t*)(OldCode + Offset));
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint16_t*)(OldCode + Offset), CPU::Arm64Emitter::PadType::NOPAD);
   });
 
   EmitCheck(1, [&]() {
     ldrb(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint8_t*)(OldCode + Offset));
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint8_t*)(OldCode + Offset), CPU::Arm64Emitter::PadType::NOPAD);
   });
 
   ARMEmitter::ForwardLabel End;
-  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 0);
+  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 0, CPU::Arm64Emitter::PadType::NOPAD);
   b_OrRestart(&End);
   BindOrRestart(&Fail);
-  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 1);
+  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 1, CPU::Arm64Emitter::PadType::NOPAD);
   BindOrRestart(&End);
 }
 
@@ -397,7 +397,8 @@ DEF_OP(ThreadRemoveCodeEntry) {
   // X1: RIP
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, STATE.R());
 
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry);
+  // TODO: Relocations don't seem to be wired up to this...?
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry, CPU::Arm64Emitter::PadType::AUTOPAD);
 
   ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT));
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
