@@ -1,17 +1,28 @@
 set(CMAKE_AUTOMOC ON)
 
-add_executable(FEXConfig)
-target_sources(FEXConfig PRIVATE Main.cpp Main.h)
+add_executable(FEXConfig Main.cpp Main.h)
 
-target_link_libraries(FEXConfig PRIVATE Common JemallocDummy)
-if (Qt6_FOUND)
-  qt_add_resources(QT_RESOURCES qml6.qrc)
-  target_link_libraries(FEXConfig PRIVATE Qt6::Qml Qt6::Quick Qt6::Widgets)
-else()
-  qt_add_resources(QT_RESOURCES qml5.qrc)
-  target_link_libraries(FEXConfig PRIVATE Qt5::Qml Qt5::Quick Qt5::Widgets)
-endif()
-target_sources(FEXConfig PRIVATE ${QT_RESOURCES})
+set(common_qml
+  main.qml
+  icon.png)
+
+set(dialog_qml
+  qt${QT_VERSION_MAJOR}/FileDialog.qml
+  qt${QT_VERSION_MAJOR}/FolderDialog.qml
+  qt${QT_VERSION_MAJOR}/MessageDialog.qml)
+
+file(COPY
+  ${common_qml} ${dialog_qml} qml.qrc
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+qt_add_resources(qml_qrc ${CMAKE_CURRENT_BINARY_DIR}/qml.qrc)
+target_sources(FEXConfig PRIVATE ${qml_qrc})
+
+target_link_libraries(FEXConfig PRIVATE
+  Common JemallocDummy
+  Qt${QT_VERSION_MAJOR}::Qml
+  Qt${QT_VERSION_MAJOR}::Quick
+  Qt${QT_VERSION_MAJOR}::Widgets)
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(FEXConfig
