@@ -353,14 +353,14 @@ private:
   }
 
   constexpr static uint32_t WRITE_OWNED_BIT = 1U << 31;
-  constexpr static uint32_t READ_WAITER_BIT = 1U << 15;
+  constexpr static uint32_t READ_WAITER_BIT = 1U << 30;
   constexpr static uint32_t WRITE_WAITER_OFFSET = 16;
   constexpr static uint32_t WRITE_WAITER_INCREMENT = 1U << WRITE_WAITER_OFFSET;
   constexpr static uint32_t READ_OWNER_INCREMENT = 1;
 
   // Count masks
-  constexpr static uint32_t WRITE_WAITER_COUNT_MASK = 0x7FFFU << WRITE_WAITER_OFFSET;
-  constexpr static uint32_t READ_OWNER_COUNT_MASK = 0x7FFFU;
+  constexpr static uint32_t WRITE_WAITER_COUNT_MASK = 0x3FFFU << WRITE_WAITER_OFFSET;
+  constexpr static uint32_t READ_OWNER_COUNT_MASK = 0xFFFFU;
 
   // Independent futex bit-set masks.
   // Wait for readers to drain.
@@ -373,9 +373,9 @@ private:
 
   // Layout:
   //    Bits[31]: Write-lock bit.
-  // Bits[30:16]: Write-waiter count.
-  //    Bits[15]: Read-waiter bit.
-  //  Bits[14:0]: Read-owner count.
+  //    Bits[30]: Read-waiter bit.
+  // Bits[29:16]: Write-waiter count.
+  //  Bits[15:0]: Read-owner count.
   uint32_t Futex {};
 };
 } // namespace FEXCore::Utils::WritePriorityMutex
