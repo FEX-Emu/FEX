@@ -41,7 +41,7 @@ namespace FEXCore::CPU {
 //    r19-r29 and SP.
 
 namespace x64 {
-#ifndef _M_ARM_64EC
+#ifndef ARCHITECTURE_arm64ec
   // All but x19 and x29 are caller saved
   // Note that rax/rdx are rearranged here so we can coalesce cmpxchg.
   constexpr std::array<ARMEmitter::Register, 18> SRA = {
@@ -802,7 +802,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   auto TmpReg = *OptionalReg;
   auto TmpReg2 = *OptionalReg2;
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   // Load STATE in from the CPU area as x28 is not callee saved in the ARM64EC ABI.
   ldr(TmpReg.X(), ARMEmitter::Reg::r18, TEB_CPU_AREA_OFFSET);
   ldr(STATE, TmpReg, CPU_AREA_EMULATOR_DATA_OFFSET);

@@ -23,7 +23,7 @@ class Context;
 }
 
 namespace FEX::Windows {
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
 using ArchImageNtHeaders = IMAGE_NT_HEADERS64;
 using ArchImageLoadConfigDirectory = _IMAGE_LOAD_CONFIG_DIRECTORY64;
 #else

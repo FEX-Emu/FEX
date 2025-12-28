@@ -5,7 +5,7 @@
 #include <winnt.h>
 
 namespace FEX::ArchHelpers::Context {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 static inline uint64_t GetSp(PCONTEXT Context) {
   return Context->Sp;
 }
@@ -35,7 +35,7 @@ static inline uint64_t* GetArmGPRs(PCONTEXT Context) {
 }
 #endif
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 static inline uint64_t GetSp(PCONTEXT Context) {
   return Context->Rsp;
 }

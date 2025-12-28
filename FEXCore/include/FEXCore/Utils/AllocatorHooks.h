@@ -31,7 +31,7 @@ FEX_DEF_NUM_OPS(ProtectOptions)
 inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Commit = true) {
   // Allocate top-down to avoid polluting the lower VA space, as even on 64-bit some programs (i.e. LuaJIT) require allocations below 4GB.
   DWORD Flags = (Commit ? MEM_COMMIT : 0) | MEM_RESERVE | MEM_TOP_DOWN;
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   MEM_EXTENDED_PARAMETER Parameter {};
   if (Execute) {
     Parameter.Type = MemExtendedParameterAttributeFlags;

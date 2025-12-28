@@ -93,7 +93,7 @@ static inline mcontext_t* GetMContext(void* ucontext) {
 }
 
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 
 constexpr uint32_t FPR_MAGIC = 0x46508001U;
 constexpr uint32_t ESR1_MAGIC = 0x45535201U;
@@ -300,7 +300,7 @@ static inline void RestoreContext(void* ucontext, T* Backup) {
 
 #endif
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 
 static inline uint64_t GetSp(void* ucontext) {
   return GetMContext(ucontext)->gregs[REG_RSP];

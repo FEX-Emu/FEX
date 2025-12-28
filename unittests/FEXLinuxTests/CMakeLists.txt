@@ -63,7 +63,7 @@ function(AddTests Tests BinDirectory Bitness)
       set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/FEXLinuxTestsThunks.json")
     endif()
 
-    if (_M_X86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib")
+    if (ARCHITECTURE_x86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib")
       # Add host test case
       add_test(NAME "${TEST_CASE}.host.flt"
         COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"

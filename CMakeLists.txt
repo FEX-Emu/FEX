@@ -40,6 +40,7 @@ set(X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_
 set(X86_DEV_ROOTFS "/" CACHE FILEPATH "Path to the sysroot used for cross-compiling for i686 and x86_64")
 set(DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
 set(HOSTLIBS_DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
+
 if (NOT DATA_DIRECTORY)
   set(DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu")
 endif()
@@ -49,7 +50,14 @@ if (NOT HOSTLIBS_DATA_DIRECTORY)
   set(HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_FULL_LIBDIR}/fex-emu")
 endif()
 
-if (MINGW)
+## Platform and Compiler Checks ##
+# TODO: *BSD? Solaris? macOS (lol)?
+# GCC and MSVC are unsupported
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  message(FATAL_ERROR "FEX doesn't support GCC! Use Clang instead.")
+elseif (MSVC)
+  message(FATAL_ERROR "FEX doesn't support MSVC! Use Clang on MinGW instead.")
+elseif (MINGW)
   message(STATUS "Building for MinGW")
   set(ENABLE_JEMALLOC TRUE)
   set(ENABLE_JEMALLOC_GLIBC_ALLOC FALSE)
@@ -59,6 +67,32 @@ else ()
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CLANG_MINIMUM_VERSION})
     message(FATAL_ERROR "Clang version too old for FEX. Need at least ${CLANG_MINIMUM_VERSION} but has ${CMAKE_CXX_COMPILER_VERSION}")
   endif()
+endif()
+
+## Architecture Handling ##
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86|amd64")
+  option(ENABLE_X86_HOST_DEBUG "Enables compiling on x86_64 host" FALSE)
+  if (NOT ENABLE_X86_HOST_DEBUG)
+    message(FATAL_ERROR
+      " FEX doesn't support compiling for x86-64 hosts!"
+      " This is /only/ a supported configuration for FEX CI and nothing else!")
+  else()
+    message(STATUS "x86_64 debug build")
+  endif()
+
+  set(ARCHITECTURE_x86_64 1)
+  add_definitions(-DARCHITECTURE_x86_64=1)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
+endif()
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64|^arm64|^armv8\.*")
+  set(ARCHITECTURE_arm64 1)
+  add_definitions(-DARCHITECTURE_arm64=1)
+endif()
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm64ec")
+  set(ARCHITECTURE_arm64ec 1)
+  add_definitions(-DARCHITECTURE_arm64ec=1)
 endif()
 
 if (BUILD_STEAM_SUPPORT)
@@ -132,7 +166,6 @@ if (ENABLE_GDB_SYMBOLS)
   add_definitions(-DGDB_SYMBOLS_ENABLED=1)
 endif()
 
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Bin)
@@ -142,33 +175,7 @@ cmake_policy(SET CMP0083 NEW) # Follow new PIE policy
 include(CheckPIESupported)
 check_pie_supported()
 
-if (ENABLE_LTO)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-else()
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
-endif()
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-  option(ENABLE_X86_HOST_DEBUG "Enables compiling on x86_64 host" FALSE)
-  if (NOT ENABLE_X86_HOST_DEBUG)
-    message(FATAL_ERROR
-    " FEX-Emu doesn't support compiling for x86-64 hosts!"
-    " This is /only/ a supported configuration for FEX CI and nothing else!")
-  endif()
-  set(_M_X86_64 1)
-  add_definitions(-D_M_X86_64=1)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
-endif()
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64|^arm64|^armv8\.*")
-  set(_M_ARM_64 1)
-  add_definitions(-D_M_ARM_64=1)
-endif()
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm64ec")
-  set(_M_ARM_64EC 1)
-  add_definitions(-D_M_ARM_64EC=1)
-endif()
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ${ENABLE_LTO})
 
 include(CheckCXXSourceCompiles)
 set(CMAKE_REQUIRED_FLAGS "-std=c++11 -Wattributes -Werror=attributes")
@@ -192,7 +199,7 @@ if (HAS_CLANG_PRESERVE_ALL)
   endif()
 endif ()
 
-if (_M_ARM_64 AND HAS_CLANG_PRESERVE_ALL)
+if (ARCHITECTURE_arm64 AND HAS_CLANG_PRESERVE_ALL)
   add_definitions("-DFEX_PRESERVE_ALL_ATTR=__attribute__((preserve_all))" "-DFEX_HAS_PRESERVE_ALL_ATTR=1")
 else()
   add_definitions("-DFEX_PRESERVE_ALL_ATTR=" "-DFEX_HAS_PRESERVE_ALL_ATTR=0")
@@ -318,11 +325,6 @@ if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
   add_subdirectory(External/tracy)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  # This means we were attempted to get compiled with GCC
-  message(FATAL_ERROR "FEX doesn't support getting compiled with GCC!")
-endif()
-
 find_package(PkgConfig REQUIRED)
 find_package(Python 3.9 REQUIRED COMPONENTS Interpreter)
 
@@ -413,7 +415,7 @@ if (NOT TUNE_ARCH STREQUAL "generic")
 endif()
 
 if (TUNE_CPU STREQUAL "native")
-  if(_M_ARM_64)
+  if(ARCHITECTURE_arm64)
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 999999.0)
       # Clang 12.0 fixed the -mcpu=native bug with mixed big.little implementers
       # Clang can not currently check for native Apple M1 type in hypervisor. Currently disabled
@@ -516,7 +518,7 @@ add_subdirectory(FEXHeaderUtils/)
 add_subdirectory(CodeEmitter/)
 add_subdirectory(FEXCore/)
 
-if (_M_ARM_64 AND NOT MINGW AND NOT BUILD_STEAM_SUPPORT)
+if (ARCHITECTURE_arm64 AND NOT MINGW AND NOT BUILD_STEAM_SUPPORT)
   # Binfmt_misc files must be installed prior to Source/ installs
   add_subdirectory(Data/binfmts/)
 endif()

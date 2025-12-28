@@ -127,7 +127,7 @@ public:
 
   ~DeferredSignalRefCountGuard() {
     if (Thread) {
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
       // Needs to be atomic so that operations can't end up getting reordered around this.
       // Without this, the refcount and the signal access could get reordered.
       auto Result = Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);

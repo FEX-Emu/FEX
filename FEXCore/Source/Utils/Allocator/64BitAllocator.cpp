@@ -192,7 +192,7 @@ void OSAllocator_64Bit::DetermineVASize() {
 
   UPPER_BOUND = Size;
 
-#if _M_X86_64 // Last page cannot be allocated on x86
+#if ARCHITECTURE_x86_64 // Last page cannot be allocated on x86
   UPPER_BOUND -= FEXCore::Utils::FEX_PAGE_SIZE;
 #endif
 

@@ -4635,7 +4635,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     }
 #endif
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     // This is used when QueryPerformanceCounter is called on recent Windows versions, it causes CNTVCT to be written into RAX.
     constexpr uint8_t GET_CNTVCT_LITERAL = 0x81;
     if (Literal == GET_CNTVCT_LITERAL) {

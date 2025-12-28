@@ -96,7 +96,7 @@ void Dispatcher::EmitDispatcher() {
 
   ARMEmitter::BiDirectionalLabel LoopTop {};
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   (void)b(&LoopTop);
 
   AbsoluteLoopTopAddressEnterECFillSRA = GetCursorAddress<uint64_t>();
@@ -147,7 +147,7 @@ void Dispatcher::EmitDispatcher() {
   // Load in our RIP
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   // Clobbers TMP1/2
   // Check the EC code bitmap incase we need to exit the JIT to call into native code.
   ARMEmitter::ForwardLabel l_NotECCode;
@@ -259,7 +259,7 @@ void Dispatcher::EmitDispatcher() {
     str(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 #endif
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
     LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 1, CPU::Arm64Emitter::PadType::NOPAD);
     strb(TMP1.W(), TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
@@ -267,7 +267,7 @@ void Dispatcher::EmitDispatcher() {
 
     Body();
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
     strb(ARMEmitter::WReg::zr, TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif

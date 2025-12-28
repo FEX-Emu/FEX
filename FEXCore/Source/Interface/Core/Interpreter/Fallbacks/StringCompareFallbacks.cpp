@@ -2,14 +2,14 @@
 #include "Interface/Core/Interpreter/Fallbacks/VectorFallbacks.h"
 #include "Interface/IR/IR.h"
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 #include <arm_neon.h>
 #endif
 
 #include <cstring>
 
 namespace FEXCore::CPU {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 FEXCORE_PRESERVE_ALL_ATTR static int32_t GetImplicitLength(FEXCore::VectorRegType data, uint16_t control) {
   const auto is_using_words = (control & 1) != 0;
 
