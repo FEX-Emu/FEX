@@ -303,6 +303,9 @@ set(CMAKE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_LINKER_FLAGS_RELWITHDEBINFO} -fno
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer")
 set(CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-pointer")
 
+## Modules ##
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/)
+
 include_directories(External/robin-map/include/)
 
 include(CTest)
@@ -325,10 +328,8 @@ find_package(Python 3.9 REQUIRED COMPONENTS Interpreter)
 
 set(BUILD_SHARED_LIBS OFF)
 
-pkg_search_module(xxhash IMPORTED_TARGET xxhash libxxhash)
-if (TARGET PkgConfig::xxhash AND NOT CMAKE_CROSSCOMPILING)
-  add_library(xxHash::xxhash ALIAS PkgConfig::xxhash)
-else()
+find_package(xxhash MODULE QUIET)
+if (NOT TARGET xxHash::xxhash)
   set(XXHASH_BUNDLED_MODE TRUE)
   set(XXHASH_BUILD_XXHSUM FALSE)
   add_subdirectory(External/xxhash/cmake_unofficial/)
