@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(FEX C CXX ASM)
 
-INCLUDE (CheckIncludeFiles)
-CHECK_INCLUDE_FILES ("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
+include(CheckIncludeFiles)
+check_include_files("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
 
 option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires x86 compiler" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
@@ -586,20 +586,18 @@ if (BUILD_THUNKS)
     DEPENDS thunkgen)
 
   install(
-    CODE "MESSAGE(\"-- Installing: guest-libs\")"
+    CODE "message(\"-- Installing: guest-libs\")"
     CODE "
-    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
-    )"
+      execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest)"
     DEPENDS guest-libs
     COMPONENT Runtime)
 
   install(
-    CODE "MESSAGE(\"-- Installing: guest-libs-32\")"
+    CODE "message(\"-- Installing: guest-libs-32\")"
     CODE "
-    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32
-    )"
+      execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32)"
     DEPENDS guest-libs-32
     COMPONENT Runtime)
 
