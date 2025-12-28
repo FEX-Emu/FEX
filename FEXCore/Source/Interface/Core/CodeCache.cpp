@@ -319,11 +319,14 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   // Dump code pages
   static_assert(OrderedContainer<decltype(LookupCache.CodePages)>, "Non-deterministic data source");
   for (auto& [PageIndex, Entrypoints] : LookupCache.CodePages) {
-    uint64_t PageAddr = PageIndex << 12;
+    uint64_t PageAddr = PageIndex << 12 - SourceBinary.FileStartVA;
     ::write(fd, &PageAddr, sizeof(PageAddr));
     uint64_t NumEntrypoints = Entrypoints.size();
     ::write(fd, &NumEntrypoints, sizeof(NumEntrypoints));
-    ::write(fd, Entrypoints.data(), Entrypoints.size() * sizeof(Entrypoints[0]));
+    for (uint64_t Entrypoint : Entrypoints) {
+      Entrypoint -= SourceBinary.FileStartVA;
+      ::write(fd, &Entrypoint, sizeof(Entrypoint));
+    }
   }
 
   return true;
@@ -470,6 +473,7 @@ bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCac
     for (uint32_t i = 0; i < header.NumCodePages; ++i) {
       uint64_t CodePage;
       memcpy(&CodePage, MappedCacheFile, sizeof(CodePage));
+      CodePage += BinarySection.FileStartVA;
       MappedCacheFile += sizeof(CodePage);
 
       uint64_t NumEntrypoints;
@@ -479,6 +483,9 @@ bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCac
       Entrypoints.resize(NumEntrypoints);
       memcpy(Entrypoints.data(), MappedCacheFile, NumEntrypoints * sizeof(Entrypoints[0]));
       MappedCacheFile += NumEntrypoints * sizeof(Entrypoints[0]);
+      for (auto& Entrypoint : Entrypoints) {
+        Entrypoint += BinarySection.FileStartVA;
+      }
 
       if (LookupCache.AddBlockExecutableRange(Entrypoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE, WriteLock)) {
         CTX.SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
