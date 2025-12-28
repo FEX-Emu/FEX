@@ -9,6 +9,7 @@
 
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/CodeCache.h>
 
 #include "Common/VolatileMetadata.h"
 #include "Module.h"
@@ -30,20 +31,35 @@ using ArchImageNtHeaders = IMAGE_NT_HEADERS32;
 using ArchImageLoadConfigDirectory = _IMAGE_LOAD_CONFIG_DIRECTORY32;
 #endif
 
+FEXCore::CodeMapFileId ComputeCodeMapId(std::string_view FileName, uint32_t TimeDateStamp, uint32_t SizeOfImage);
+
 /**
  * @brief Tracks mapped PE code images and handles their volatile metadata
  */
 class ImageTracker {
 public:
   ImageTracker(FEXCore::Context::Context& CTX);
-  void HandleImageMap(std::string_view Path, uint64_t Address, bool MainImage);
+  FEXCore::ExecutableFileSectionInfo HandleImageMap(std::string_view Path, uint64_t Address, bool MainImage);
   void HandleImageUnmap(uint64_t Address, uint64_t Size);
 
+  std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(uint64_t Address);
+
 private:
+  struct MappedImageInfo {
+    FEXCore::ExecutableFileInfo Info;
+    FEXCore::ExecutableFileSectionInfo SectionInfo;
+
+    MappedImageInfo(std::string_view Path, uint64_t Address, ArchImageNtHeaders* Nt,
+                    fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> Relocations);
+  };
+
   FEXCore::Context::Context& CTX;
 
   FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
   fextl::unordered_map<fextl::string, FEX::VolatileMetadata::ExtendedVolatileMetadata> ExtendedMetaData;
+
+  std::shared_mutex ImagesLock;
+  std::map<uint64_t, MappedImageInfo> MappedImages;
 };
 
 } // namespace FEX::Windows
