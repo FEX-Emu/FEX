@@ -318,8 +318,8 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
 
   // Dump code pages
   static_assert(OrderedContainer<decltype(LookupCache.CodePages)>, "Non-deterministic data source");
-  for (auto& [PageIndex, Entrypoints] : LookupCache.CodePages) {
-    uint64_t PageAddr = PageIndex << 12 - SourceBinary.FileStartVA;
+  for (const auto& [PageIndex, Entrypoints] : LookupCache.CodePages) {
+    uint64_t PageAddr = (PageIndex << 12) - SourceBinary.FileStartVA;
     ::write(fd, &PageAddr, sizeof(PageAddr));
     uint64_t NumEntrypoints = Entrypoints.size();
     ::write(fd, &NumEntrypoints, sizeof(NumEntrypoints));
