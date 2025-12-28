@@ -11,7 +11,6 @@
 #include <Interface/IR/PassManager.h>
 
 #include <FEXCore/Core/Thunks.h>
-#include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 
 #include <FEXHeaderUtils/Filesystem.h>
@@ -30,7 +29,6 @@ ExecutableFileInfo::ExecutableFileInfo(fextl::unique_ptr<HLE::SourcecodeMap> Map
   , FileId(FileId)
   , Filename(Filename) {}
 #endif
-ExecutableFileInfo::~ExecutableFileInfo() = default;
 
 fextl::string CodeMap::GetBaseFilename(const ExecutableFileInfo& MainExecutable, bool AddNombSuffix) {
   auto FileId = MainExecutable.FileId;
