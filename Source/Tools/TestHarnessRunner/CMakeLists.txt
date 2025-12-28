@@ -14,10 +14,9 @@ endif()
 
 target_include_directories(TestHarnessRunner
   PRIVATE
-    ${CMAKE_BINARY_DIR}/generated
-)
+    ${CMAKE_BINARY_DIR}/generated)
+
 target_link_libraries(TestHarnessRunner
   PRIVATE
     ${LIBS}
-    ${PTHREAD_LIB}
-)
+    ${PTHREAD_LIB})
