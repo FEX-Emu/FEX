@@ -1,7 +1,6 @@
 list(APPEND LIBS FEXCore Common CommonTools JemallocLibs)
 
-set(SRCS Main.cpp)
-add_executable(CodeSizeValidation ${SRCS})
+add_executable(CodeSizeValidation Main.cpp)
 target_include_directories(CodeSizeValidation
   PRIVATE
     ${CMAKE_BINARY_DIR}/generated)

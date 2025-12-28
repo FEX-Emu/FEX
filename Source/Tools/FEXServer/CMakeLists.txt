@@ -1,27 +1,25 @@
-set(NAME FEXServer)
-set(SRCS Main.cpp
+add_executable(FEXServer
+  Main.cpp
   ArgumentLoader.cpp
   Logger.cpp
   PipeScanner.cpp
   ProcessPipe.cpp
   SquashFS.cpp)
 
-add_executable(${NAME} ${SRCS})
-
-target_include_directories(${NAME} PRIVATE
+target_include_directories(FEXServer PRIVATE
   ${CMAKE_BINARY_DIR}/generated)
 
-target_link_libraries(${NAME} PRIVATE FEXCore Common CommonTools JemallocDummy ${PTHREAD_LIB})
+target_link_libraries(FEXServer PRIVATE FEXCore Common CommonTools JemallocDummy ${PTHREAD_LIB})
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-  target_link_options(${NAME}
+  target_link_options(FEXServer
     PRIVATE
       "LINKER:--gc-sections"
       "LINKER:--strip-all"
       "LINKER:--as-needed")
 endif()
 
-install(TARGETS ${NAME}
+install(TARGETS FEXServer
   RUNTIME
   DESTINATION bin
   COMPONENT Runtime)

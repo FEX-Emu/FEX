@@ -1,6 +1,7 @@
+# TODO: why is this add_compile_options instead of target?
 add_compile_options(-fno-operator-names)
 
-set(SRCS
+add_library(LinuxEmulation STATIC
   VDSO_Emulation.cpp
   Thunks.cpp
   ArchHelpers/MContext.cpp
@@ -61,8 +62,6 @@ set(SRCS
   LinuxSyscalls/Syscalls/NotImplemented.cpp
   LinuxSyscalls/Syscalls/Stubs.cpp)
 
-add_library(LinuxEmulation STATIC ${SRCS})
-
 target_compile_options(LinuxEmulation
 PRIVATE
   -Wall
@@ -96,19 +95,20 @@ target_link_libraries(LinuxEmulation
 target_link_libraries(LinuxEmulation
   INTERFACE
   FEXCore)
-
 set(HEADERS_TO_VERIFY
-  LinuxSyscalls/x32/Types.h          x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x32/Ioctl/asound.h   x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x32/Ioctl/drm.h      x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x32/Ioctl/streams.h  x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x32/Ioctl/usbdev.h   x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x32/Ioctl/input.h    x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x32/Ioctl/sockios.h  x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x32/Ioctl/joystick.h x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x32/Ioctl/v4l2.h     x86_32 # This needs to match structs to 32bit structs
-  LinuxSyscalls/x64/Types.h          x86_64 # This needs to match structs to 64bit structs
-)
+  # These need to match structs to 32bit structs
+  LinuxSyscalls/x32/Types.h          x86_32
+  LinuxSyscalls/x32/Ioctl/asound.h   x86_32
+  LinuxSyscalls/x32/Ioctl/drm.h      x86_32
+  LinuxSyscalls/x32/Ioctl/streams.h  x86_32
+  LinuxSyscalls/x32/Ioctl/usbdev.h   x86_32
+  LinuxSyscalls/x32/Ioctl/input.h    x86_32
+  LinuxSyscalls/x32/Ioctl/sockios.h  x86_32
+  LinuxSyscalls/x32/Ioctl/joystick.h x86_32
+  LinuxSyscalls/x32/Ioctl/v4l2.h     x86_32
+
+  # This needs to match structs to 64bit structs
+  LinuxSyscalls/x64/Types.h          x86_64)
 
 list(LENGTH HEADERS_TO_VERIFY ARG_COUNT)
 math(EXPR ARG_COUNT "${ARG_COUNT}-1")
@@ -118,6 +118,7 @@ set(ARGS
   "-std=c++20"
   "-fno-operator-names"
   "-I${PROJECT_SOURCE_DIR}/External/drm-headers/include/")
+
 # Global include directories
 get_directory_property (INC_DIRS INCLUDE_DIRECTORIES)
 list(TRANSFORM INC_DIRS PREPEND "-I")
