@@ -41,14 +41,14 @@ FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern int glibc_je_is_known_allocation(
 #endif
 
 static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate"))) void HostToGuestTrampolineTemplate() {
-#if defined(_M_X86_64)
+#if defined(ARCHITECTURE_x86_64)
   asm("lea 0f(%rip), %r11 \n"
       "jmpq *0f(%rip) \n"
       ".align 8 \n"
       "0: \n"
       ".quad 0, 0, 0, 0 \n" // TrampolineInstanceInfo
   );
-#elif defined(_M_ARM_64)
+#elif defined(ARCHITECTURE_arm64)
   asm(
     // x11 is part of the custom ABI and needs to point to the TrampolineInstanceInfo.
     "ldr x16, 0f \n"

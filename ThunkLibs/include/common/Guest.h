@@ -17,7 +17,7 @@
 template<typename signature>
 THUNK_ABI const int (*fexthunks_invoke_callback)(void*);
 
-#ifndef _M_ARM_64
+#ifndef ARCHITECTURE_arm64
 #define MAKE_THUNK(lib, name, hash)                                                                    \
   extern "C" __attribute__((visibility("hidden"))) THUNK_ABI int fexthunks_##lib##_##name(void* args); \
   asm(".text\nfexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash);
@@ -110,7 +110,7 @@ inline bool IsLibLoaded(const char* libname) {
 // fexfn_pack_* functions generated for global API functions.
 template<auto Thunk, typename Result, typename... Args>
 inline Result CallHostFunction(Args... args) {
-#ifndef _M_ARM_64
+#ifndef ARCHITECTURE_arm64
 #if __SIZEOF_POINTER__ == 8
   // This magic incantation of using a register variable with an empty asm block is necessary for correct operation!
   // If we only use inline asm that sets a variable then the compiler will reorder the function

@@ -24,7 +24,7 @@ $end_info$
 
 namespace FEXCore {
 namespace ProductNames {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   static const char ARM_UNKNOWN[] = "Unknown ARM CPU";
   static const char ARM_A57[] = "Cortex-A57";
   static const char ARM_A72[] = "Cortex-A72";
@@ -140,7 +140,7 @@ constexpr uint32_t FAMILY_IDENTIFIER = GenerateFamily(CPUFamily {
 });
 #endif
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 uint32_t GetCycleCounterFrequency() {
   uint64_t Result {};
   __asm("mrs %[Res], CNTFRQ_EL0" : [Res] "=r"(Result));
@@ -857,10 +857,10 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0001h(uint32_t Leaf) con
   constexpr uint32_t MaximumSubLeafNumber = 2;
   if (Leaf == 0) {
     // EAX[3:0] Is the host architecture that FEX is running under
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
     // EAX[3:0] = 1 = x86_64 host architecture
     Res.eax |= 0b0001;
-#elif defined(_M_ARM_64)
+#elif defined(ARCHITECTURE_arm64)
     // EAX[3:0] = 2 = AArch64 host architecture
     Res.eax |= 0b0010;
 #else
@@ -1230,7 +1230,7 @@ CPUIDEmu::CPUIDEmu(const FEXCore::Context::ContextImpl* ctx)
 
   SetupFeatures();
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   if (SupportsCPUIndexInTPIDRRO) {
     GetCPUID = GetCPUID_TPIDRRO;
   }

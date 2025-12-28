@@ -42,7 +42,7 @@ $end_info$
 #endif
 
 namespace FEX::HLE {
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 __attribute__((naked)) static void sigrestore() {
   __asm volatile("syscall;" ::"a"(0xF) : "memory");
 }
@@ -110,7 +110,7 @@ void SignalDelegator::RegisterHostSignalHandler(int Signal, HostSignalDelegatorF
 }
 
 void SignalDelegator::SpillSRA(FEXCore::Core::InternalThreadState* Thread, void* ucontext, uint32_t IgnoreMask) {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   Thread->CurrentFrame->State.rip = CTX->RestoreRIPFromHostPC(Thread, ArchHelpers::Context::GetPc(ucontext));
 
   for (size_t i = 0; i < Config.SRAGPRCount; i++) {
@@ -305,7 +305,7 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
   // Otherwise we might load garbage
   if (WasInJIT) {
     uint32_t IgnoreMask {};
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
     if (Frame->InSyscallInfo != 0) {
       // We are in a syscall, this means we are in a weird register state
       // We need to spill SRA but only some of it, since some values have already been spilled
@@ -581,7 +581,7 @@ bool SignalDelegator::HandleFrontendSIGSEGV(FEXCore::Core::InternalThreadState* 
     ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
   }
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR && SigInfo.si_addr >= reinterpret_cast<void*>(Thread->JITGuardPage) &&
       SigInfo.si_addr < reinterpret_cast<void*>(Thread->JITGuardPage + FEXCore::Utils::FEX_PAGE_SIZE)) {
     FEXCore::UncheckedLongJump::ManuallyLoadJumpBuf(Thread->RestartJump, Thread->JITGuardOverflowArgument,
@@ -630,7 +630,7 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
       // - If there are *no* deferred signals
       //  - No need to mprotect, it is already RW
     } else {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
       // If RefCount != 0 then that means we hit an access with nested signal-deferring sections.
       // Increment the PC past the `str zr, [x1]` to continue code execution until we reach the outermost section.
       ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetPc(UContext) + 4);
@@ -791,7 +791,7 @@ bool SignalDelegator::UpdateHostThunk(int Signal) {
   SignalHandler.HostAction.sa_flags = CheckAndAddFlags(SignalHandler.HostAction.sa_flags, SignalHandler.GuestAction.sa_flags,
                                                        SA_NOCLDSTOP | SA_NOCLDWAIT | SA_NODEFER | SA_RESTART);
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 #define SA_RESTORER 0x04000000
   SignalHandler.HostAction.sa_flags |= SA_RESTORER;
   SignalHandler.HostAction.restorer = sigrestore;
@@ -922,7 +922,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
       ucontext_t* _context = (ucontext_t*)ucontext;
       auto& mcontext = _context->uc_mcontext;
       uint64_t PC {};
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
       PC = mcontext.pc;
 #else
       PC = mcontext.gregs[REG_RIP];
@@ -960,7 +960,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
   RegisterHostSignalHandler(SIGILL, SigillHandler, true);
   RegisterHostSignalHandler(SIGSEGV, SigsegvHandler, true);
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   // Register SIGBUS signal handler.
   const auto SigbusHandler = [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* _info, void* ucontext) -> bool {
     const auto PC = ArchHelpers::Context::GetPc(ucontext);

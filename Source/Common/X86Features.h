@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 #include <cpuid.h>
 
 namespace FEX::X86 {

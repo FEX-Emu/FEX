@@ -291,7 +291,7 @@ private:
   // WFE-read-lock is actually quite likely to succeed.
   // Return: true if the lock was acquired.
   bool Attempt_WFE_WriteLock() {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
     const auto Begin = FEXCore::Utils::SpinWaitLock::GetCycleCounter();
     auto Now = Begin;
     const auto Duration = FEXCore::Utils::SpinWaitLock::CycleCounterFrequency / CYCLECOUNT_DIVISOR;
@@ -320,7 +320,7 @@ private:
 
   // Return: true if the lock was acquired.
   bool Attempt_WFE_ReadLock() {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
     // Spin on a WFE for a short-amount of time, waiting for write-owned and writer-count to be zero.
     //  - Attempt to acquire read-lock at that point.
     //  - Don't add read-waiters bit on failure, return false.

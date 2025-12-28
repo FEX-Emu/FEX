@@ -30,8 +30,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
   add_custom_command(OUTPUT ${TMP_FILE}
     DEPENDS "${ASM_SRC}"
     COMMAND "cp" ARGS "${ASM_SRC}" "${TMP_FILE}"
-    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 64\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
-    )
+    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 64\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}")
 
   set(OUTPUT_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.bin")
   set(OUTPUT_CONFIG_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.config.bin")
@@ -51,7 +50,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
   # Format is "<Test Arguments>" "<Test Name>" "<Test Type>"
 
   set(TEST_ARGS)
-  if (_M_ARM_64 OR ENABLE_VIXL_SIMULATOR)
+  if (ARCHITECTURE_arm64 OR ENABLE_VIXL_SIMULATOR)
     list(APPEND TEST_ARGS
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=1 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0"   "jit_1"     "jit"
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0" "jit_500"   "jit"
@@ -61,7 +60,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   if (ENABLE_VIXL_SIMULATOR)
     set(CPU_CLASS Simulator)
-  elseif (_M_X86_64)
+  elseif (ARCHITECTURE_x86_64)
     list(APPEND TEST_ARGS
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1" "host" "host"
       )

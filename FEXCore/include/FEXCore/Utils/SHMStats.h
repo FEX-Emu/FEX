@@ -4,12 +4,12 @@
 #include <cstddef>
 #include <cstdint>
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 #include <x86intrin.h>
 #endif
 
 namespace FEXCore::SHMStats {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 /**
  * @brief Get the raw cycle counter with synchronizing isb.
  *

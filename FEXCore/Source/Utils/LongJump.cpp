@@ -5,7 +5,7 @@
 #include <cstring>
 
 namespace FEXCore::UncheckedLongJump {
-#if defined(_M_ARM_64)
+#if defined(ARCHITECTURE_arm64)
 [[nodiscard]]
 FEX_DEFAULT_VISIBILITY FEX_NAKED uint64_t SetJump(JumpBuf& Buffer) {
   __asm volatile(R"(

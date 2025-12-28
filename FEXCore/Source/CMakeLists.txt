@@ -69,7 +69,7 @@ set(SRCS
   Utils/Threads.cpp
   Utils/Profiler.cpp)
 
-if (_M_ARM_64)
+if (ARCHITECTURE_arm64)
   list(APPEND SRCS Utils/ArchHelpers/Arm64.cpp)
 else()
   list(APPEND SRCS Utils/ArchHelpers/Arm64_stubs.cpp)
@@ -82,19 +82,19 @@ endif()
 
 set(DEFINES -DJIT_ARM64)
 
-if (_M_X86_64)
-  list(APPEND DEFINES -D_M_X86_64=1)
+if (ARCHITECTURE_x86_64)
+  list(APPEND DEFINES -DARCHITECTURE_x86_64=1)
 endif()
 
-if (_M_ARM_64)
-  list(APPEND DEFINES -D_M_ARM_64=1)
+if (ARCHITECTURE_arm64)
+  list(APPEND DEFINES -DARCHITECTURE_arm64=1)
 endif()
 
 if (ENABLE_VIXL_DISASSEMBLER)
   list(APPEND DEFINES -DVIXL_DISASSEMBLER=1)
 endif()
 
-if (_M_ARM_64 AND HAS_CLANG_PRESERVE_ALL)
+if (ARCHITECTURE_arm64 AND HAS_CLANG_PRESERVE_ALL)
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=__attribute__((preserve_all));-DFEXCORE_HAS_PRESERVE_ALL_ATTR=1")
 else()
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=;-DFEXCORE_HAS_PRESERVE_ALL_ATTR=0")
@@ -110,7 +110,7 @@ if (NOT MINGW)
   list (APPEND LIBS dl)
 else()
   list (APPEND LIBS synchronization)
-  if (_M_ARM_64EC)
+  if (ARCHITECTURE_arm64ec)
     list (APPEND LIBS mincore)
   endif()
 endif()
