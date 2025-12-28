@@ -70,7 +70,8 @@ else ()
 endif()
 
 ## Architecture Handling ##
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86|amd64")
+string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} processor)
+if (processor MATCHES "x86|amd64")
   option(ENABLE_X86_HOST_DEBUG "Enables compiling on x86_64 host" FALSE)
   if (NOT ENABLE_X86_HOST_DEBUG)
     message(FATAL_ERROR
@@ -83,16 +84,20 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86|amd64")
   set(ARCHITECTURE_x86_64 1)
   add_definitions(-DARCHITECTURE_x86_64=1)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
-endif()
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64|^arm64|^armv8\.*")
+elseif (processor MATCHES "^aarch64|^arm64|^armv8\.*")
   set(ARCHITECTURE_arm64 1)
   add_definitions(-DARCHITECTURE_arm64=1)
+
+  # arm64ec needs to define both arm64 and arm64ec
+  if (processor MATCHES "^arm64ec")
+    set(ARCHITECTURE_arm64ec 1)
+    add_definitions(-DARCHITECTURE_arm64ec=1)
+  endif()
 endif()
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm64ec")
-  set(ARCHITECTURE_arm64ec 1)
-  add_definitions(-DARCHITECTURE_arm64ec=1)
+if (NOT (ARCHITECTURE_arm64 OR ARCHITECTURE_arm64ec OR ARCHITECTURE_x86_64))
+  message(FATAL_ERROR "Unsupported processor type ${processor}."
+    " If you believe this is in error, file an issue.")
 endif()
 
 if (BUILD_STEAM_SUPPORT)
