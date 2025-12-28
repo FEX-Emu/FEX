@@ -448,7 +448,7 @@ int main(int argc, char** argv, char** const envp) {
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
     fextl::fmt::print(stderr, "Invalid or Unsupported elf file.\n");
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
     fextl::fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
     fextl::fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
     if (LDPath().empty() || FHU::Filesystem::Exists(LDPath()) == false) {

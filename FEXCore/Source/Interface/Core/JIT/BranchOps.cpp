@@ -56,7 +56,7 @@ DEF_OP(ExitFunction) {
   uint64_t NewRIP;
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     if (NewRIP < EC_CODE_BITMAP_MAX_ADDRESS && RtlIsEcCode(NewRIP)) {
       str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
@@ -159,7 +159,7 @@ DEF_OP(ExitFunction) {
 
       EmitLinkedBranch(NewRIP, Op->Hint == IR::BranchHint::Call);
       (void)Bind(&l_CallReturn);
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     }
 #endif
   } else {

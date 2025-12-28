@@ -29,7 +29,7 @@ namespace FEXCore::Utils::SpinWaitLock {
  *
  * On non-ARM platforms it is truly a spin-loop, which is okay for debugging only.
  */
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 
 #define LOADEXCLUSIVE(LoadExclusiveOp, RegSize)                 \
   /* Prime the exclusive monitor with the passed in address. */ \

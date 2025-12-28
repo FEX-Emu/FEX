@@ -28,8 +28,8 @@ build_implib(wow64)
 
 add_subdirectory(Common)
 
-if (_M_ARM_64EC)
+if (ARCHITECTURE_arm64ec)
   add_subdirectory(ARM64EC)
-elseif (_M_ARM_64)
+elseif (ARCHITECTURE_arm64)
   add_subdirectory(WOW64)
 endif()

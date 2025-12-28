@@ -669,14 +669,14 @@ def main():
         "-isystem", "/usr/x86_64-linux-gnu/include",
         "-O2",
         "--target=x86_64-linux-unknown",
-        "-D_M_X86_64",
+        "-DARCHITECTURE_x86_64",
     ]
 
     args_aarch64 = [
         "-isystem", "/usr/aarch64-linux-gnu/include",
         "-O2",
         "--target=aarch64-linux-unknown",
-        "-D_M_ARM_64",
+        "-DARCHITECTURE_arm64",
     ]
 
     args_x86_win32 = [

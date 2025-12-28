@@ -38,9 +38,9 @@ $end_info$
 #include <stdint.h>
 #include <type_traits>
 #include <list>
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 #define SYSCALL_ARCH_NAME x64
-#elif _M_ARM_64
+#elif ARCHITECTURE_arm64
 #include "LinuxSyscalls/Arm64/SyscallsEnum.h"
 #define SYSCALL_ARCH_NAME Arm64
 #endif
@@ -464,9 +464,9 @@ struct clone3_args {
 uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args);
 
 inline static int RemapFromX86Flags(int flags) {
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
   // Nothing to change here
-#elif _M_ARM_64
+#elif ARCHITECTURE_arm64
   constexpr int X86_64_FLAG_O_DIRECT = 040000;
   constexpr int X86_64_FLAG_O_LARGEFILE = 0100000;
   constexpr int X86_64_FLAG_O_DIRECTORY = 0200000;
@@ -502,9 +502,9 @@ inline static int RemapFromX86Flags(int flags) {
 }
 
 inline static int RemapToX86Flags(int flags) {
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
   // Nothing to change here
-#elif _M_ARM_64
+#elif ARCHITECTURE_arm64
   constexpr int X86_64_FLAG_O_DIRECT = 040000;
   constexpr int X86_64_FLAG_O_LARGEFILE = 0100000;
   constexpr int X86_64_FLAG_O_DIRECTORY = 0200000;
@@ -582,7 +582,7 @@ namespace FaultSafeUserMemAccess {
   size_t CopyFromUser(void* Dest, const void* Src, size_t Size);
   [[nodiscard]]
   size_t CopyToUser(void* Dest, const void* Src, size_t Size);
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED && defined(_M_ARM_64)
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED && defined(ARCHITECTURE_arm64)
   // These helpers just check if the user pointer is readable and writable.
   // This is useful in an assert build that can be safely sprinkled through the syscall handler without overhead in release builds.
   void VerifyIsReadable(const void* Src, size_t Size);

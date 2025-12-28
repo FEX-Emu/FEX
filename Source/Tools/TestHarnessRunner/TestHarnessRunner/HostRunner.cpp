@@ -11,7 +11,7 @@
 #include <FEXCore/fextl/unordered_set.h>
 #include <FEXCore/Utils/LogManager.h>
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 #include "Common/X86Features.h"
 #include <asm/ldt.h>
 #include <sys/syscall.h>
@@ -23,7 +23,7 @@
 
 #include <signal.h>
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 static inline int modify_ldt(int func, void* ldt) {
   return ::syscall(SYS_modify_ldt, func, ldt, sizeof(struct user_desc));
 }

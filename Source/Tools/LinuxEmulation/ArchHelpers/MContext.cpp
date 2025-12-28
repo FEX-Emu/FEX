@@ -2,7 +2,7 @@
 #include "ArchHelpers/MContext.h"
 
 namespace FEX::ArchHelpers::Context {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 std::string_view GetESRName(uint64_t ESR) {
   switch ((ESR & ESR1_EC) >> 26) {
   case 0b000'000: return "Unknown";

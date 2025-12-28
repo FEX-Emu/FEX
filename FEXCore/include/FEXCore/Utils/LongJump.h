@@ -9,7 +9,7 @@
 // a libc implementation that does not implement std::longjmp.
 namespace FEXCore::UncheckedLongJump {
 // JumpBuf definition needs to be public because the frontend needs to understand it.
-#if defined(_M_ARM_64)
+#if defined(ARCHITECTURE_arm64)
 struct JumpBuf {
   // All the registers that are required by AAPCS64 to save.
   // GPRs

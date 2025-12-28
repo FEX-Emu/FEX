@@ -1923,7 +1923,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 [[nodiscard]]
 std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType,
                                              uintptr_t ProgramCounter, uint64_t* GPRs, bool IsJIT) {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   constexpr bool is_arm64 = true;
 #else
   constexpr bool is_arm64 = false;

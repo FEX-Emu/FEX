@@ -22,7 +22,7 @@ struct TSOEmulationFacts {
   bool LRCPC1 {}, LRCPC2 {}, LRCPC3 {};
 };
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 bool CheckForHardwareTSO() {
   // Check to see if this is supported.
   auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
@@ -113,7 +113,7 @@ int main(int argc, char** argv, char** envp) {
 
   Parser.add_option("--tso-emulation-info").action("store_true").help("Print how FEX is emulating the x86-TSO memory model.");
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   Parser.add_option("--identification-reg-info").action("store_true").help("Print identification registers");
 #endif
 
@@ -235,7 +235,7 @@ int main(int argc, char** argv, char** envp) {
     fprintf(stdout, "\t64-Byte strict split-lock emulation:  %s\n", StrictInProcessSplitLocks() ? "In-process mutex" : "Tearing");
   }
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   if (Options.is_set_by_user("identification_reg_info")) {
     auto Features = FEX::GetCPUFeaturesFromIDRegisters();
     fextl::string features {};

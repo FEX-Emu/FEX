@@ -590,7 +590,7 @@ uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEX
   } else {
     // This case is common between calls and jumps as the thunk callsite can be left untouched.
     std::atomic_ref<uint64_t>(Record->HostCode).store(HostCode, std::memory_order::seq_cst);
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
     // Make memory write visible to other threads reading the same location
     asm volatile("dc cvau, %0; dsb ish" : : "r"(Record->HostCode) :);
 #endif
@@ -778,7 +778,7 @@ void Arm64JITCore::EmitSuspendInterruptCheck() {
          offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
   }
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   static constexpr uint16_t SuspendMagic {0xCAFE};
 
   ldr(TMP2.W(), STATE_PTR(CpuStateFrame, SuspendDoorbell));

@@ -10,7 +10,7 @@
 #include <range/v3/view/split.hpp>
 #include <range/v3/view/transform.hpp>
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 #include "Common/X86Features.h"
 #endif
 
@@ -19,7 +19,7 @@ namespace FEX {
 void FillMIDRInformationViaLinux(FEXCore::HostFeatures* Features) {
   auto Cores = FEX::CPUInfo::CalculateNumberOfCPUs();
   Features->CPUMIDRs.resize(Cores);
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   for (size_t i = 0; i < Cores; ++i) {
     std::error_code ec {};
     fextl::string MIDRPath = fextl::fmt::format("/sys/devices/system/cpu/cpu{}/regs/identification/midr_el1", i);
@@ -38,7 +38,7 @@ void FillMIDRInformationViaLinux(FEXCore::HostFeatures* Features) {
 #endif
 }
 
-#if defined(_M_ARM_64) && !defined(VIXL_SIMULATOR)
+#if defined(ARCHITECTURE_arm64) && !defined(VIXL_SIMULATOR)
 __attribute__((naked)) static uint64_t ReadSVEVectorLengthInBits() {
   ///< Can't use rdvl instruction directly because compilers will complain that sve/sme is required.
   __asm(R"(
@@ -54,7 +54,7 @@ static int ReadSVEVectorLengthInBits() {
 }
 #endif
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 #define GetSysReg(name, reg)                         \
   static uint64_t Get_##name() {                     \
     uint64_t Result {};                              \
@@ -446,7 +446,7 @@ void FEX::CPUFeatures::FillFeatureFlags() {
   }
 }
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 static uint32_t GetFPCR() {
   uint64_t Result {};
   __asm("mrs %[Res], FPCR" : [Res] "=r"(Result));
@@ -550,7 +550,7 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
   const uint32_t MIDR_Implementer = GetMIDRImplementer(MIDR);
   const uint32_t MIDR_PartNum = GetMIDRPartNum(MIDR);
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   if (MIDR_Implementer == Implementer_QCOM && MIDR_PartNum == PartNum_Oryon1) {
     // Work around an errata in Qualcomm's Oryon.
     // While this CPU implements the RAND extension:
@@ -646,7 +646,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
     WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
   }
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   // Test if this CPU supports float exception trapping by attempting to enable
   // On unsupported these bits are architecturally defined as RAZ/WI
   constexpr uint32_t ExceptionEnableTraps = (1U << 8) |  // Invalid Operation float exception trap enable
@@ -696,7 +696,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
     HostFeatures.DCacheLineSize = HostFeatures.ICacheLineSize = 64;
   }
 
-#if defined(_M_X86_64) && !defined(VIXL_SIMULATOR)
+#if defined(ARCHITECTURE_x86_64) && !defined(VIXL_SIMULATOR)
   FEX::X86::Features Feature {};
   HostFeatures.SupportsAES = Feature.Feat_aes;
   HostFeatures.SupportsCRC = Feature.Feat_crc;
@@ -725,7 +725,7 @@ FEXCore::HostFeatures FetchHostFeatures() {
   if (!CPUFeatureRegisters().empty()) {
     Features = GetCPUFeaturesFromConfig(CPUFeatureRegisters());
   } else {
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
     Features = CPUFeaturesAll {};
 
     // Vixl simulator doesn't support AFP.
@@ -739,7 +739,7 @@ FEXCore::HostFeatures FetchHostFeatures() {
 
   uint64_t CTR = 0;
   uint64_t MIDR = 0;
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   // We need to get the CPU's cache line size
   // We expect sane targets that have correct cacheline sizes across clusters
   __asm volatile("mrs %[ctr], ctr_el0" : [ctr] "=r"(CTR));

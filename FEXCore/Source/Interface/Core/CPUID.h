@@ -159,7 +159,7 @@ private:
 
   struct CPUData {
     const char* ProductName {};
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
     uint32_t MIDR {};
 #endif
     bool IsBig {};
