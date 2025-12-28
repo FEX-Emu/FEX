@@ -30,8 +30,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
   add_custom_command(OUTPUT ${TMP_FILE}
     DEPENDS "${ASM_SRC}"
     COMMAND "cp" ARGS "${ASM_SRC}" "${TMP_FILE}"
-    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\norg 10000h\\nmov eax, 0x17\\nmov ds, ax\\nmov es, ax\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
-    )
+    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\norg 10000h\\nmov eax, 0x17\\nmov ds, ax\\nmov es, ax\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}")
 
   set(OUTPUT_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.bin")
   set(OUTPUT_CONFIG_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.config.bin")
@@ -53,22 +52,19 @@ foreach(ASM_SRC ${ASM_SOURCES})
     list(APPEND TEST_ARGS
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=1 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0"   "jit_1"     "jit"
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0" "jit_500"   "jit"
-      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=1 FEX_TSOENABLED=0" "jit_500_m" "jit"
-      )
+      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=1 FEX_TSOENABLED=0" "jit_500_m" "jit")
   endif()
 
   if (ENABLE_VIXL_SIMULATOR)
     set(CPU_CLASS Simulator)
   elseif (ARCHITECTURE_x86_64)
-    list(APPEND TEST_ARGS
-      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1" "host" "host"
-      )
+    list(APPEND TEST_ARGS "FEX_SILENTLOG=0 FEX_DUMPGPRS=1" "host" "host")
   endif()
 
   if (NOT MINGW)
-    set (LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
+    set(LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
   else()
-    set (LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner.exe")
+    set(LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner.exe")
   endif()
 
   list(LENGTH TEST_ARGS ARG_COUNT)
@@ -113,8 +109,7 @@ endforeach()
 add_custom_target(32bit_asm_files ALL
   DEPENDS "${ASM_DEPENDS}")
 
-add_custom_target(
-  32bit_asm_tests
+add_custom_target(32bit_asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS 32bit_asm_files

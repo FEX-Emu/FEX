@@ -1,4 +1,3 @@
-
 # Careful. Globbing can't see changes to the contents of files
 # Need to do a fresh clean to see changes
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/External/fex-gcc-target-tests-bins/64/*)
@@ -29,8 +28,7 @@ foreach(TEST ${TESTS})
   endforeach()
 endforeach()
 
-add_custom_target(
-  gcc_target_tests_64
+add_custom_target(gcc_target_tests_64
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "40" ${TEST_JOB_FLAG} "-R" "\.*.gcc-target-64$$")

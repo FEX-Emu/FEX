@@ -5,8 +5,7 @@ find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 if (NOT CLANG_RESOURCE_DIR)
   find_program(CLANG_EXEC_PATH clang REQUIRED)
 
-  execute_process(
-    COMMAND ${CLANG_EXEC_PATH} -print-resource-dir
+  execute_process(COMMAND ${CLANG_EXEC_PATH} -print-resource-dir
     OUTPUT_VARIABLE CLANG_RESOURCE_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()

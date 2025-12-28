@@ -5,12 +5,12 @@ include(${FEX_PROJECT_SOURCE_DIR}/Data/CMake/version_to_variables.cmake)
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
 if (ENABLE_CLANG_THUNKS)
-  set (LD_OVERRIDE "-fuse-ld=lld")
+  set(LD_OVERRIDE "-fuse-ld=lld")
   add_link_options(${LD_OVERRIDE})
 endif()
 
 if (NOT X86_DEV_ROOTFS)
-  message(FATAL_ERROR "X86_DEV_ROOTFS must be set (use \"/\" to ignore)")
+  message(FATAL_ERROR "X86_DEV_ROOTFS must be set(use \"/\" to ignore)")
 endif()
 
 find_program(CCACHE_PROGRAM ccache)
@@ -24,9 +24,9 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(CMAKE_CXX_STANDARD 20)
 
   # This gets passed in from the main cmake project
-  set (DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
+  set(DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
   if (NOT DATA_DIRECTORY)
-    set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu")
+    set(DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu")
   endif()
 
   set(TARGET_TYPE SHARED)
@@ -34,8 +34,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 
   # uninstall target
   if(NOT TARGET uninstall)
-    configure_file(
-      "${FEX_PROJECT_SOURCE_DIR}/Data/CMake/cmake_uninstall.cmake.in"
+    configure_file("${FEX_PROJECT_SOURCE_DIR}/Data/CMake/cmake_uninstall.cmake.in"
       "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake"
       IMMEDIATE @ONLY)
 
@@ -60,7 +59,7 @@ function(generate NAME SOURCE_FILE)
   target_include_directories(${NAME}-guest-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   if (BITNESS EQUAL 32)
     target_compile_definitions(${NAME}-guest-deps INTERFACE IS_32BIT_THUNK)
-  endif ()
+  endif()
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-guest-deps,INTERFACE_INCLUDE_DIRECTORIES>")
@@ -90,25 +89,24 @@ function(generate NAME SOURCE_FILE)
       # Expand include directories to space-separated list of -isystem parameters
       "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
     VERBATIM
-    COMMAND_EXPAND_LISTS
-    )
+    COMMAND_EXPAND_LISTS)
 
   list(APPEND OUTPUTS "${OUTFILE}")
   set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
 function(add_guest_lib NAME SONAME)
-  set (SOURCE_FILE ../lib${NAME}/lib${NAME}_Guest.cpp)
+  set(SOURCE_FILE ../lib${NAME}/lib${NAME}_Guest.cpp)
   get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
 
-  set (SOURCE_LDS_FILE ../lib${NAME}/lib${NAME}_Guest.lds)
+  set(SOURCE_LDS_FILE ../lib${NAME}/lib${NAME}_Guest.lds)
   get_filename_component(SOURCE_LDS_FILE_ABS "${SOURCE_LDS_FILE}" ABSOLUTE)
 
-  set (SOURCE_LDS_32_FILE ../lib${NAME}/lib${NAME}_Guest_32.lds)
+  set(SOURCE_LDS_32_FILE ../lib${NAME}/lib${NAME}_Guest_32.lds)
   get_filename_component(SOURCE_LDS_32_FILE_ABS "${SOURCE_LDS_32_FILE}" ABSOLUTE)
 
   if (NOT EXISTS "${SOURCE_FILE_ABS}")
-    set (SOURCE_FILE ../lib${NAME}/Guest.cpp)
+    set(SOURCE_FILE ../lib${NAME}/Guest.cpp)
     get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
     if (NOT EXISTS "${SOURCE_FILE_ABS}")
       message (FATAL_ERROR "Thunk source file for Guest lib ${NAME} doesn't exist!")

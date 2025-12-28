@@ -1,7 +1,6 @@
 add_library(FEXGDBReader SHARED FEXGDBReader.cpp)
 
-install(TARGETS FEXGDBReader
-  RUNTIME
+install(TARGETS FEXGDBReader RUNTIME
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/gdb
   COMPONENT Development)
 

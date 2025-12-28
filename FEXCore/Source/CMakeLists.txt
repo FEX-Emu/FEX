@@ -103,21 +103,20 @@ endif()
 set(LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
 
 if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
-  list (APPEND LIBS vixl)
+  list(APPEND LIBS vixl)
 endif()
 
 if (NOT MINGW)
-  list (APPEND LIBS dl)
+  list(APPEND LIBS dl)
 else()
-  list (APPEND LIBS synchronization)
+  list(APPEND LIBS synchronization)
   if (ARCHITECTURE_arm64ec)
-    list (APPEND LIBS mincore)
+    list(APPEND LIBS mincore)
   endif()
 endif()
 
 # Generate config
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json.in
   ${CMAKE_BINARY_DIR}/generated/Config/Config.json)
 
 # Generate IR include file
@@ -135,8 +134,7 @@ add_custom_command(
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
     "${INPUT_NAME}" "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}")
 
-set_source_files_properties(${OUTPUT_NAME} PROPERTIES
-  GENERATED TRUE)
+set_source_files_properties(${OUTPUT_NAME} PROPERTIES GENERATED TRUE)
 
 # Generate IR documentation
 set(OUTPUT_IR_DOC "${CMAKE_BINARY_DIR}/IR.md")
@@ -148,8 +146,7 @@ add_custom_command(
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py"
     "${INPUT_NAME}" "${OUTPUT_IR_DOC}")
 
-set_source_files_properties(${OUTPUT_IR_NAME} PROPERTIES
-  GENERATED TRUE)
+set_source_files_properties(${OUTPUT_IR_NAME} PROPERTIES GENERATED TRUE)
 
 # Create the target
 add_custom_target(IR_INC
@@ -222,8 +219,7 @@ function(AddDefaultOptionsToTarget Name)
   target_compile_definitions(${Name} PRIVATE ${DEFINES})
   add_dependencies(${Name} CONFIG_INC IR_INC)
 
-  target_compile_options(${Name}
-    PRIVATE
+  target_compile_options(${Name} PRIVATE
     -Wall
     -Werror=cast-qual
     -Werror=ignored-qualifiers
@@ -234,23 +230,14 @@ function(AddDefaultOptionsToTarget Name)
     -fwrapv)
 
   if (GCC_COLOR)
-    target_compile_options(${Name}
-      PRIVATE
-      "-fdiagnostics-color=always")
-  endif()
-  if (CLANG_COLOR)
-    target_compile_options(${Name}
-      PRIVATE
-      "-fcolor-diagnostics")
+    target_compile_options(${Name} PRIVATE "-fdiagnostics-color=always")
   endif()
 
-  if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-    target_link_options(${Name}
-      PRIVATE
-      "LINKER:--gc-sections"
-      "LINKER:--strip-all"
-      "LINKER:--as-needed")
+  if (CLANG_COLOR)
+    target_compile_options(${Name} PRIVATE "-fcolor-diagnostics")
   endif()
+
+  LinkerGC(${Name})
 endfunction()
 
 # Build FEXCore_Base static library
@@ -287,10 +274,9 @@ AddLibrary(${PROJECT_NAME} STATIC)
 AddLibrary(${PROJECT_NAME}_shared SHARED)
 
 if (NOT MINGW AND NOT BUILD_STEAM_SUPPORT)
-  install(TARGETS ${PROJECT_NAME}_shared
-    LIBRARY
-      DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      COMPONENT Libraries)
+  install(TARGETS ${PROJECT_NAME}_shared LIBRARY
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    COMPONENT Libraries)
 endif()
 
 # Meta-library to link jemalloc libraries enabled in the build configuration.

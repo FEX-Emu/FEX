@@ -62,8 +62,7 @@ add_library(LinuxEmulation STATIC
   LinuxSyscalls/Syscalls/NotImplemented.cpp
   LinuxSyscalls/Syscalls/Stubs.cpp)
 
-target_compile_options(LinuxEmulation
-PRIVATE
+target_compile_options(LinuxEmulation PRIVATE
   -Wall
   -Werror=cast-qual
   -Werror=ignored-qualifiers
@@ -77,24 +76,20 @@ set_target_properties(LinuxEmulation PROPERTIES
   CXX_VISIBILITY_PRESET hidden
   VISIBILITY_INLINES_HIDDEN TRUE)
 
-target_include_directories(LinuxEmulation
-PRIVATE
+target_include_directories(LinuxEmulation PRIVATE
   ${CMAKE_BINARY_DIR}/generated
   ${CMAKE_CURRENT_SOURCE_DIR}/
   ${PROJECT_SOURCE_DIR}/External/drm-headers/include/)
 
-target_include_directories(LinuxEmulation
-  INTERFACE
+target_include_directories(LinuxEmulation INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/)
 
-target_link_libraries(LinuxEmulation
-  PRIVATE
+target_link_libraries(LinuxEmulation PRIVATE
   Common
   CommonTools)
 
-target_link_libraries(LinuxEmulation
-  INTERFACE
-  FEXCore)
+target_link_libraries(LinuxEmulation INTERFACE FEXCore)
+
 set(HEADERS_TO_VERIFY
   # These need to match structs to 32bit structs
   LinuxSyscalls/x32/Types.h          x86_32
@@ -143,23 +138,19 @@ foreach(Index RANGE 0 ${ARG_COUNT} 2)
   set(TEST_NAME "${TEST_DESC}/Test_verify_${HEADER}")
   set(TEST_NAME_ARCH "${TEST_DESC}/Test_verify_arch_${HEADER}")
 
-  add_test(
-    NAME ${TEST_NAME}_x86_64
+  add_test(NAME ${TEST_NAME}_x86_64
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py" "-c1" "x86_64" "${REL_HEADER}" ${ARGS})
 
-  add_test(
-    NAME ${TEST_NAME}_aarch64
+  add_test(NAME ${TEST_NAME}_aarch64
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py" "-c1" "aarch64" "${REL_HEADER}" ${ARGS})
 
-  add_test(
-    NAME ${TEST_NAME_ARCH}_x86_64
+  add_test(NAME ${TEST_NAME_ARCH}_x86_64
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py" "-c1" "x86_64" "-c2" "${TEST_TYPE}" "${REL_HEADER}" ${ARGS})
 
-  add_test(
-    NAME ${TEST_NAME_ARCH}_aarch64
+  add_test(NAME ${TEST_NAME_ARCH}_aarch64
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py" "-c1" "aarch64" "-c2" "${TEST_TYPE}" "${REL_HEADER}" ${ARGS})
 
@@ -169,8 +160,7 @@ foreach(Index RANGE 0 ${ARG_COUNT} 2)
   set_property(TEST ${TEST_NAME_ARCH}_aarch64 APPEND PROPERTY DEPENDS "${HEADER}")
 endforeach()
 
-add_custom_target(
-  struct_verifier
+add_custom_target(struct_verifier
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "Test_verify*")

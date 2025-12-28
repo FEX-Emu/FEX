@@ -1,4 +1,4 @@
-set (TESTS
+set(TESTS
   Allocator
   ArgumentParser
   ExtendedVolatileMetadata
@@ -6,8 +6,7 @@ set (TESTS
   FileMappingBaseAddress
   Filesystem
   InterruptableConditionVariable
-  StringUtils
-  )
+  StringUtils)
 
 list(APPEND LIBS Common FEXCore JemallocLibs)
 
@@ -19,8 +18,7 @@ foreach(API_TEST ${TESTS})
     TEST_SUFFIX ".${API_TEST}.APITest")
 endforeach()
 
-add_custom_target(
-  api_tests
+add_custom_target(api_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "\.*.APITest")
