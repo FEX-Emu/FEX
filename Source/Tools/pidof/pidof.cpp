@@ -130,9 +130,7 @@ struct PIDInfo {
 
 std::vector<PIDInfo> PIDs;
 
-int main(int argc, char** argv) {
-  Config::LoadOptions(argc, argv);
-
+static void IteratePids() {
   // Iterate over all pids, storing the data for investigating afterwards.
   for (const auto& Entry : std::filesystem::directory_iterator("/proc/")) {
     // If not a directory then skip.
@@ -217,6 +215,12 @@ int main(int argc, char** argv) {
       .State = State,
     });
   }
+}
+
+int main(int argc, char** argv) {
+  Config::LoadOptions(argc, argv);
+
+  IteratePids();
 
   std::unordered_set<int64_t> MatchedPIDs;
   for (const auto& pid : PIDs) {
