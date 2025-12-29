@@ -244,7 +244,7 @@ public:
   template<typename F>
   void ForeachDirection(F&& Routine) {
     // Otherwise, prepare to branch.
-    auto Zero = Constant(0, ConstPad::NoPad);
+    auto Zero = Constant(0);
 
     // If the shift is zero, do not touch the flags.
     auto ForwardBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -1172,7 +1172,7 @@ public:
         auto Const = Header->C<IR::IROp_LoadNamedVectorConstant>();
 
         if (Const->Constant == IR::NamedVectorConstant::NAMED_VECTOR_ZERO) {
-          Ref Zero = _Constant(0, ConstPad::NoPad);
+          Ref Zero = _Constant(0);
           Ref STP = _StoreContextPair(IR::OpSize::i64Bit, RegClass::GPR, Zero, Zero, Offset);
 
           // XXX: This works around InlineConstant not having an associated
@@ -1263,7 +1263,7 @@ public:
           StoreContextHelper(Size, Class, Value, Offset);
           // If Partial and MMX register, then we need to store all 1s in bits 64-80
           if (Partial && Index >= MM0Index && Index <= MM7Index) {
-            _StoreContextGPR(OpSize::i16Bit, Constant(0xFFFF, ConstPad::NoPad), Offset + 8);
+            _StoreContextGPR(OpSize::i16Bit, Constant(0xFFFF), Offset + 8);
           }
         }
       }
@@ -1697,7 +1697,7 @@ private:
   }
 
   void ZeroNZCV() {
-    CachedNZCV = Constant(0, ConstPad::NoPad);
+    CachedNZCV = Constant(0);
     NZCVDirty = true;
   }
 
@@ -1712,7 +1712,7 @@ private:
       if (SetPF) {
         CalculatePF(SubWithFlags(SrcSize, Res, (uint64_t)0));
       } else {
-        _SubNZCV(SrcSize, Res, Constant(0, ConstPad::NoPad));
+        _SubNZCV(SrcSize, Res, Constant(0));
       }
 
       CFInverted = true;
@@ -1783,7 +1783,7 @@ private:
       } else {
         // Invert as a GPR
         unsigned Bit = IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-        SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), Constant(1u << Bit, ConstPad::NoPad)));
+        SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), Constant(1u << Bit)));
         CalculateDeferredFlags();
       }
 
@@ -1821,7 +1821,7 @@ private:
     }
 
     HandleNZCVWrite();
-    _SubNZCV(OpSize::i32Bit, Constant(0, ConstPad::NoPad), Value);
+    _SubNZCV(OpSize::i32Bit, Constant(0), Value);
     CFInverted = true;
   }
 
@@ -1846,14 +1846,14 @@ private:
       StoreRegister(Core::CPUState::AF_AS_GREG, false, Value);
     } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // For DF, we need to transform 0/1 into 1/-1
-      StoreDF(_SubShift(OpSize::i64Bit, Constant(1, ConstPad::NoPad), Value, ShiftType::LSL, 1));
+      StoreDF(_SubShift(OpSize::i64Bit, Constant(1), Value, ShiftType::LSL, 1));
     } else if (BitOffset == FEXCore::X86State::RFLAG_TF_RAW_LOC) {
       auto PackedTF = _LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
       // An exception should still be raised after an instruction that unsets TF, leave the unblocked bit set but unset
       // the TF bit to cause such behaviour. The handling code at the start of the next block will then unset the
       // unblocked bit before raising the exception.
-      auto NewPackedTF = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Value, Constant(0, ConstPad::NoPad),
-                                 _And(OpSize::i32Bit, PackedTF, Constant(~1, ConstPad::NoPad)), Constant(1, ConstPad::NoPad));
+      auto NewPackedTF =
+        _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Value, Constant(0), _And(OpSize::i32Bit, PackedTF, Constant(~1)), Constant(1));
       _StoreContextGPR(OpSize::i8Bit, NewPackedTF, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     } else {
       _StoreContextGPR(OpSize::i8Bit, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
@@ -1865,7 +1865,7 @@ private:
     // bits. This allows us to defer the extract in the usual case. When it is
     // read, bit 4 is extracted.  In order to write a constant value of AF, that
     // means we need to left-shift here to compensate.
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Constant(K << 4, ConstPad::NoPad));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Constant(K << 4));
   }
 
   void ZeroPF_AF();
@@ -2089,7 +2089,7 @@ private:
         auto Value = _Bfe(OpSize::i32Bit, 1, IndexNZCV(BitOffset), GetNZCV());
 
         if (Invert) {
-          return _Xor(OpSize::i32Bit, Value, Constant(1, ConstPad::NoPad));
+          return _Xor(OpSize::i32Bit, Value, Constant(1));
         } else {
           return Value;
         }
@@ -2104,7 +2104,7 @@ private:
       return LoadGPR(Core::CPUState::AF_AS_GREG);
     } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // Recover the sign bit, it is the logical DF value
-      return _Lshr(OpSize::i64Bit, LoadDF(), Constant(63, ConstPad::NoPad));
+      return _Lshr(OpSize::i64Bit, LoadDF(), Constant(63));
     } else {
       return _LoadContextGPR(OpSize::i8Bit, offsetof(Core::CPUState, flags[BitOffset]));
     }
@@ -2176,7 +2176,7 @@ private:
       // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so
       // PF[4] is 0 so the XOR with PF will have no effect, so setting the AF
       // byte to zero will indeed zero AF as intended.
-      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Constant(0, ConstPad::NoPad));
+      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Constant(0));
     }
 
     // Convert NZCV from the Arm representation to an eXternal representation
@@ -2210,7 +2210,7 @@ private:
     }
 
     SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C);
-    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0, ConstPad::NoPad));
+    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(V);
     SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Z);
   }
@@ -2332,7 +2332,7 @@ private:
     }
 
     // Otherwise, prepare to branch.
-    auto Zero = Constant(0, ConstPad::NoPad);
+    auto Zero = Constant(0);
 
     // If the shift is zero, do not touch the flags.
     auto SetBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -2405,8 +2405,8 @@ private:
   void ChgStateX87_MMX() override {
     LOGMAN_THROW_A_FMT(MMXState == MMXState_X87, "Expected state to be x87");
     _StackForceSlow();
-    SetX87Top(Constant(0, ConstPad::NoPad)); // top reset to zero
-    _StoreContextGPR(OpSize::i8Bit, Constant(0xFFFFUL, ConstPad::NoPad), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+    SetX87Top(Constant(0)); // top reset to zero
+    _StoreContextGPR(OpSize::i8Bit, Constant(0xFFFFUL), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     MMXState = MMXState_MMX;
   }
 
@@ -2639,11 +2639,11 @@ private:
     }
 
     ArithRef And(uint64_t K) {
-      return IsConstant ? ArithRef(E, C & K) : ArithRef(E, E->_And(OpSize::i64Bit, R, E->Constant(K, ConstPad::NoPad)));
+      return IsConstant ? ArithRef(E, C & K) : ArithRef(E, E->_And(OpSize::i64Bit, R, E->Constant(K)));
     }
 
     ArithRef Presub(uint64_t K) {
-      return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->Sub(OpSize::i64Bit, E->Constant(K, ConstPad::NoPad), R));
+      return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->Sub(OpSize::i64Bit, E->Constant(K), R));
     }
 
     ArithRef Lshl(uint64_t Shift) {
@@ -2652,7 +2652,7 @@ private:
       } else if (IsConstant) {
         return ArithRef(E, C << Shift);
       } else {
-        return ArithRef(E, E->_Lshl(OpSize::i64Bit, R, E->Constant(Shift, ConstPad::NoPad)));
+        return ArithRef(E, E->_Lshl(OpSize::i64Bit, R, E->Constant(Shift)));
       }
     }
 
@@ -2692,7 +2692,7 @@ private:
       }
 
       if (IsConstant) {
-        return E->_Bfi(OpSize::i64Bit, Size, Start, Bitfield, E->Constant(C, ConstPad::NoPad));
+        return E->_Bfi(OpSize::i64Bit, Size, Start, Bitfield, E->Constant(C));
       } else {
         return E->_Bfi(OpSize::i64Bit, Size, Start, Bitfield, R);
       }
@@ -2708,12 +2708,12 @@ private:
 
         return ArithRef(E, Result);
       } else {
-        return ArithRef(E, E->_Lshl(Size, E->Constant(1, ConstPad::NoPad), R));
+        return ArithRef(E, E->_Lshl(Size, E->Constant(1), R));
       }
     }
 
     Ref Ref() {
-      return IsConstant ? E->Constant(C, ConstPad::NoPad) : R;
+      return IsConstant ? E->Constant(C) : R;
     }
 
     bool IsDefinitelyZero() const {

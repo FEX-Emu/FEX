@@ -939,7 +939,7 @@ DEF_OP(VectorImm) {
     LOGMAN_THROW_A_FMT(Op->ShiftAmount == 0, "SVE VectorImm doesn't support a shift");
     if (ElementSize > IR::OpSize::i8Bit && (Op->Immediate & 0x80)) {
       // SVE dup uses sign extension where VectorImm wants zext
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Immediate, CPU::Arm64Emitter::PadType::NOPAD);
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Immediate);
       dup(SubRegSize, Dst.Z(), TMP1);
     } else {
       dup_imm(SubRegSize, Dst.Z(), static_cast<int8_t>(Op->Immediate));
@@ -947,7 +947,7 @@ DEF_OP(VectorImm) {
   } else {
     if (ElementSize == IR::OpSize::i64Bit) {
       // movi with 64bit element size doesn't do what we want here
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, static_cast<uint64_t>(Op->Immediate) << Op->ShiftAmount, CPU::Arm64Emitter::PadType::NOPAD);
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, static_cast<uint64_t>(Op->Immediate) << Op->ShiftAmount);
       dup(SubRegSize, Dst.Q(), TMP1.R());
     } else {
       movi(SubRegSize, Dst.Q(), Op->Immediate, Op->ShiftAmount);
@@ -2521,7 +2521,7 @@ DEF_OP(VUShl) {
         movi(SubRegSize, VTMP1.Q(), MaxShift);
         umin(SubRegSize, VTMP1.Q(), VTMP1.Q(), ShiftVector.Q());
       } else {
-        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, MaxShift, CPU::Arm64Emitter::PadType::NOPAD);
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, MaxShift);
         dup(SubRegSize, VTMP1.Q(), TMP1.R());
 
         // UMIN is silly on Adv.SIMD and doesn't have a variant that handles 64-bit elements
@@ -2577,7 +2577,7 @@ DEF_OP(VUShr) {
         movi(SubRegSize, VTMP1.Q(), MaxShift);
         umin(SubRegSize, VTMP1.Q(), VTMP1.Q(), ShiftVector.Q());
       } else {
-        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, MaxShift, CPU::Arm64Emitter::PadType::NOPAD);
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, MaxShift);
         dup(SubRegSize, VTMP1.Q(), TMP1.R());
 
         // UMIN is silly on Adv.SIMD and doesn't have a variant that handles 64-bit elements
@@ -2636,7 +2636,7 @@ DEF_OP(VSShr) {
         movi(SubRegSize, VTMP1.Q(), MaxShift);
         umin(SubRegSize, VTMP1.Q(), VTMP1.Q(), ShiftVector.Q());
       } else {
-        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, MaxShift, CPU::Arm64Emitter::PadType::NOPAD);
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, MaxShift);
         dup(SubRegSize, VTMP1.Q(), TMP1.R());
 
         // UMIN is silly on Adv.SIMD and doesn't have a variant that handles 64-bit elements

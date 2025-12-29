@@ -387,11 +387,11 @@ inline void X87StackOptimization::Reset() {
 inline Ref X87StackOptimization::GetConstant(ssize_t Offset) {
   if (Offset < 0 || Offset >= X87StackOptimization::ConstantPool.size()) {
     // not dealt by pool
-    return IREmit->_Constant(Offset, ConstPad::NoPad);
+    return IREmit->_Constant(Offset);
   }
   if (ConstantPool[Offset] == nullptr) {
 
-    ConstantPool[Offset] = IREmit->_Constant(Offset, ConstPad::NoPad);
+    ConstantPool[Offset] = IREmit->_Constant(Offset);
   }
   return ConstantPool[Offset];
 }

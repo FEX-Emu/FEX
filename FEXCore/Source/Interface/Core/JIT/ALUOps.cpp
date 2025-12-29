@@ -1297,7 +1297,7 @@ DEF_OP(MaskGenerateFromBitWidth) {
   auto Op = IROp->C<IR::IROp_MaskGenerateFromBitWidth>();
   auto BitWidth = GetReg(Op->BitWidth);
 
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, -1, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, -1);
   cmp(ARMEmitter::Size::i64Bit, BitWidth, 0);
   lslv(ARMEmitter::Size::i64Bit, TMP2, TMP1, BitWidth);
   csinv(ARMEmitter::Size::i64Bit, GetReg(Node), TMP1, TMP2, ARMEmitter::Condition::CC_EQ);

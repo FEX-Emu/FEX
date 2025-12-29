@@ -73,7 +73,7 @@ DEF_OP(Break) {
   uint64_t Constant {};
   memcpy(&Constant, &State, sizeof(State));
 
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Constant, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Constant);
   str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
 
   switch (Op->Reason.Signal) {
@@ -234,7 +234,7 @@ DEF_OP(ProcessorID) {
   // 16bit LoadConstant to be a single instruction
   // We must always spill at least one register (x8) so this value always has a bit set
   // This gives the signal handler a value to check to see if we are in a syscall at all
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SpillMask & 0xFFFF, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SpillMask & 0xFFFF);
   str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
   // Allocate some temporary space for storing the uint32_t CPU and Node IDs
@@ -247,7 +247,7 @@ DEF_OP(ProcessorID) {
 #else
   constexpr auto GetCPUSyscallNum = SYS_getcpu;
 #endif
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, GetCPUSyscallNum, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, GetCPUSyscallNum);
 
   // CPU pointer in x0
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::rsp, 0);
@@ -307,7 +307,7 @@ DEF_OP(MonoBackpatcherWrite) {
 
 #ifdef _M_ARM_64EC
   ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
-  LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 1, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 1);
   strb(TMP1.W(), TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 

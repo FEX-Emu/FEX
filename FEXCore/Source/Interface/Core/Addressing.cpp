@@ -11,7 +11,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, const AddressMode& A, IR::OpSize GPR
   Ref Tmp = A.Base;
 
   if (A.Offset) {
-    Tmp = Tmp ? IREmit->Add(GPRSize, Tmp, A.Offset) : IREmit->Constant(A.Offset, IR::ConstPad::NoPad);
+    Tmp = Tmp ? IREmit->Add(GPRSize, Tmp, A.Offset) : IREmit->Constant(A.Offset);
   }
 
   if (A.Index) {
@@ -21,7 +21,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, const AddressMode& A, IR::OpSize GPR
       if (Tmp) {
         Tmp = IREmit->_AddShift(GPRSize, Tmp, A.Index, ShiftType::LSL, Log2);
       } else {
-        Tmp = IREmit->_Lshl(GPRSize, A.Index, IREmit->Constant(Log2, IR::ConstPad::NoPad));
+        Tmp = IREmit->_Lshl(GPRSize, A.Index, IREmit->Constant(Log2));
       }
     } else {
       Tmp = Tmp ? IREmit->Add(GPRSize, Tmp, A.Index) : A.Index;
@@ -40,7 +40,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, const AddressMode& A, IR::OpSize GPR
     } else if (A.Offset) {
       uint64_t X = A.Offset;
       X &= (1ull << Bits) - 1;
-      Tmp = IREmit->Constant(X, IR::ConstPad::NoPad);
+      Tmp = IREmit->Constant(X);
     }
   }
 
@@ -48,7 +48,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, const AddressMode& A, IR::OpSize GPR
     Tmp = Tmp ? IREmit->Add(GPRSize, Tmp, A.Segment) : A.Segment;
   }
 
-  return Tmp ?: IREmit->Constant(0, IR::ConstPad::NoPad);
+  return Tmp ?: IREmit->Constant(0);
 }
 
 AddressMode SelectAddressMode(IREmitter* IREmit, const AddressMode& A, IR::OpSize GPRSize, bool HostSupportsTSOImm9, bool AtomicTSO,
@@ -102,7 +102,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, const AddressMode& A, IR::OpSiz
 
     return {
       .Base = LoadEffectiveAddress(IREmit, B, GPRSize, true /* AddSegmentBase */, false),
-      .Index = IREmit->Constant(A.Offset, ConstPad::NoPad),
+      .Index = IREmit->Constant(A.Offset),
       .IndexType = MemOffsetType::SXTX,
       .IndexScale = 1,
     };
@@ -135,7 +135,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, const AddressMode& A, IR::OpSiz
 
         return {
           .Base = LoadEffectiveAddress(IREmit, B, GPRSize, true /* AddSegmentBase */, false),
-          .Index = IREmit->Constant(A.Offset, ConstPad::NoPad),
+          .Index = IREmit->Constant(A.Offset),
           .IndexType = MemOffsetType::SXTX,
           .IndexScale = 1,
         };
