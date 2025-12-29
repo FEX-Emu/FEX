@@ -319,7 +319,7 @@ set(CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-point
 ## Modules ##
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/)
 
-include_directories(External/robin-map/include/)
+include_directories(External/unordered_dense/include/)
 
 include(CTest)
 if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
