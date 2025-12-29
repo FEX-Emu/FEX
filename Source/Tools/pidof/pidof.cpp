@@ -328,6 +328,12 @@ int main(int argc, char** argv) {
       continue;
     }
 
+    // If matching all "FEX" instances then add arm64ec/wow64 FEX to the matched list.
+    if (ProgramArg != -1 && Config::AllFEX) {
+      MatchedPIDs.emplace(pid.pid);
+      continue;
+    }
+
     ProgramPair Arg = FindEmulatedWineArgument(ProgramArg, Args, IsWine);
     bool Matched = false;
     for (const auto& CompareProgram : Config::Programs) {
