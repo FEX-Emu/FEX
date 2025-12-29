@@ -51,8 +51,22 @@ if (NOT HOSTLIBS_DATA_DIRECTORY)
   set(HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_FULL_LIBDIR}/fex-emu")
 endif()
 
-## Platform and Compiler Checks ##
-# TODO: *BSD? Solaris? macOS (lol)?
+## Platform Checks ##
+# Only 64-bit Linux and Windows are supported
+
+# NB: SIZEOF_VOID_P is in bytes, not bits
+# On 32-bit systems this is set to 4
+if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+  message(FATAL_ERROR "Unsupported pointer size ${CMAKE_SIZEOF_VOID_P}."
+    " FEX only supports 64-bit (8-byte pointer) systems."
+    " If you believe this is in error, file an issue.")
+elseif (NOT (WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Linux"))
+  message(FATAL_ERROR "Unsupported system type ${CMAKE_SYSTEM_NAME}."
+    " FEX only supports Linux and Windows."
+    " If you believe this is in error, file an issue.")
+endif()
+
+## Compiler Checks ##
 # GCC and MSVC are unsupported
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   message(FATAL_ERROR "FEX doesn't support GCC! Use Clang instead.")
