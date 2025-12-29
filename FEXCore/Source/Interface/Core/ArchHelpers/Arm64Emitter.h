@@ -117,7 +117,7 @@ public:
     // Choose to pad or not depending on if code-caching is enabled.
     AUTOPAD,
   };
-  void LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, PadType Pad = PadType::AUTOPAD, int MaxBytes = 0);
+  void LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, PadType Pad, int MaxBytes = 0);
 
 protected:
   FEXCore::Context::ContextImpl* EmitterCTX;
