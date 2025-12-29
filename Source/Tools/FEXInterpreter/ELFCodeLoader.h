@@ -391,6 +391,7 @@ public:
   bool MapMemory(FEX::HLE::SyscallMmapInterface* const Handler, FEXCore::Core::InternalThreadState* Thread) {
     for (const auto& Header : MainElf.phdrs) {
       if (Header.p_type == PT_GNU_STACK) {
+        HasStackHeader = true;
         if (Header.p_flags & PF_X) {
           ExecutableStack = true;
         }
@@ -400,13 +401,17 @@ public:
       // Both for the main and the interpreter elf
     }
 
-    // Set the process personality here
-    // This needs some more investigation
-    // READ_IMPLIES_EXEC might be default for 32-bit elfs
-    // Also, what about ADDR_LIMIT_3GB & co ?
-    if (-1 == personality(PER_LINUX | (ExecutableStack ? READ_IMPLIES_EXEC : 0))) {
-      LogMan::Msg::EFmt("Setting personality failed");
-      return false;
+    if (!HasStackHeader && !Is64BitMode()) {
+      // 32 bit behavior
+      ExecutableStack = true;
+      // Set the process personality here
+      // This needs some more investigation
+      // READ_IMPLIES_EXEC might be default for 32-bit elfs
+      // Also, what about ADDR_LIMIT_3GB & co ?
+      if (-1 == personality(PER_LINUX | static_cast<unsigned>(READ_IMPLIES_EXEC))) {
+        LogMan::Msg::EFmt("Setting personality failed");
+        return false;
+      }
     }
 
     if (Thread) {
