@@ -36,12 +36,12 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   _SetRoundingMode(roundingMode, false, roundingMode);
   _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  auto NewFSW = _LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size)), Size, MemOffsetType::SXTX, 1);
+  auto NewFSW = _LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size), ConstPad::NoPad), Size, MemOffsetType::SXTX, 1);
   ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
-    SetX87FTW(_LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1));
+    SetX87FTW(_LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size) * 2, ConstPad::NoPad), Size, MemOffsetType::SXTX, 1));
   }
 }
 
@@ -86,7 +86,7 @@ void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FLDF64_Const(OpcodeArgs, uint64_t Num) {
-  auto Data = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(Num));
+  auto Data = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(Num, ConstPad::NoPad));
   _PushStack(Data, Data, OpSize::i64Bit);
 }
 
@@ -376,21 +376,21 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   Ref Gpr = _VExtractToGPR(OpSize::i64Bit, OpSize::i64Bit, Node, 0);
 
   // zero case
-  Ref ExpZV = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(0xfff0'0000'0000'0000UL));
+  Ref ExpZV = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(0xfff0'0000'0000'0000UL, ConstPad::NoPad));
   Ref SigZV = Node;
 
   // non zero case
   Ref ExpNZ = _Bfe(OpSize::i64Bit, 11, 52, Gpr);
-  ExpNZ = Sub(OpSize::i64Bit, ExpNZ, Constant(1023));
+  ExpNZ = Sub(OpSize::i64Bit, ExpNZ, Constant(1023, ConstPad::NoPad));
   Ref ExpNZV = _Float_FromGPR_S(OpSize::i64Bit, OpSize::i64Bit, ExpNZ);
 
-  Ref SigNZ = _And(OpSize::i64Bit, Gpr, Constant(0x800f'ffff'ffff'ffffLL));
-  SigNZ = _Or(OpSize::i64Bit, SigNZ, Constant(0x3ff0'0000'0000'0000LL));
+  Ref SigNZ = _And(OpSize::i64Bit, Gpr, Constant(0x800f'ffff'ffff'ffffLL, ConstPad::NoPad));
+  SigNZ = _Or(OpSize::i64Bit, SigNZ, Constant(0x3ff0'0000'0000'0000LL, ConstPad::NoPad));
   Ref SigNZV = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, SigNZ);
 
   // Comparison and select to push onto stack
   SaveNZCV();
-  _TestNZ(OpSize::i64Bit, Gpr, Constant(0x7fff'ffff'ffff'ffffUL));
+  _TestNZ(OpSize::i64Bit, Gpr, Constant(0x7fff'ffff'ffff'ffffUL, ConstPad::NoPad));
 
   Ref Sig = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, SigZV, SigNZV);
   Ref Exp = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, ExpZV, ExpNZV);
