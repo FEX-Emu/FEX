@@ -25,16 +25,15 @@ include(CheckIncludeFileCXX)
 include(CheckCXXSourceCompiles)
 
 if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
-    # Useful to have for freestanding libFEXCore
-    add_subdirectory(External/vixl/)
-    include_directories(External/vixl/src/)
+  # Useful to have for freestanding libFEXCore
+  add_subdirectory(External/vixl/)
+  include_directories(External/vixl/src/)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/git_version.h.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/git_version.h.in
   ${CMAKE_BINARY_DIR}/generated/git_version.h)
 
 include_directories(${CMAKE_BINARY_DIR}/generated)

@@ -1,17 +1,10 @@
 add_executable(FEXRootFSFetcher Main.cpp XXFileHash.cpp)
-list(APPEND LIBS FEXCore Common JemallocDummy xxHash::xxhash)
+list(APPEND LIBS FEXCore Common JemallocDummy xxHash::xxhash ${PTHREAD_LIB})
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-  target_link_options(FEXRootFSFetcher
-    PRIVATE
-      "LINKER:--gc-sections"
-      "LINKER:--strip-all"
-      "LINKER:--as-needed")
-endif()
+LinkerGC(FEXRootFSFetcher)
 
-install(TARGETS FEXRootFSFetcher
-  RUNTIME
+install(TARGETS FEXRootFSFetcher RUNTIME
   DESTINATION bin
   COMPONENT Runtime)
 
-target_link_libraries(FEXRootFSFetcher PRIVATE ${LIBS} ${PTHREAD_LIB})
+target_link_libraries(FEXRootFSFetcher PRIVATE ${LIBS})

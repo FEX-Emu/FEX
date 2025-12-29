@@ -2,16 +2,9 @@ add_executable(FEXGetConfig Main.cpp)
 
 list(APPEND LIBS Common JemallocDummy)
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-  target_link_options(FEXGetConfig
-    PRIVATE
-      "LINKER:--gc-sections"
-      "LINKER:--strip-all"
-      "LINKER:--as-needed")
-endif()
+LinkerGC(FEXGetConfig)
 
-install(TARGETS FEXGetConfig
-  RUNTIME
+install(TARGETS FEXGetConfig RUNTIME
   DESTINATION bin
   COMPONENT Runtime)
 

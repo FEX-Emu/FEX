@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
 if (ENABLE_CLANG_THUNKS)
-  set (LD_OVERRIDE "-fuse-ld=lld")
+  set(LD_OVERRIDE "-fuse-ld=lld")
   add_link_options(${LD_OVERRIDE})
 endif()
 
@@ -21,7 +21,7 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
   target_include_directories(${NAME}-${GUEST_BITNESS}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   if (GUEST_BITNESS EQUAL 32)
     target_compile_definitions(${NAME}-${GUEST_BITNESS}-deps INTERFACE IS_32BIT_THUNK)
-  endif ()
+  endif()
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-${GUEST_BITNESS}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
@@ -42,9 +42,9 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
 
   file(MAKE_DIRECTORY "${OUTFOLDER}")
 
-  set (BITNESS_FLAGS "")
+  set(BITNESS_FLAGS "")
   if (GUEST_BITNESS EQUAL 32)
-    set (BITNESS_FLAGS "-for-32bit-guest")
+    set(BITNESS_FLAGS "-for-32bit-guest")
   endif()
 
   add_custom_command(
@@ -57,18 +57,17 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
       # Expand include directories to space-separated list of -isystem parameters
       "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
     VERBATIM
-    COMMAND_EXPAND_LISTS
-    )
+    COMMAND_EXPAND_LISTS)
 
   list(APPEND OUTPUTS "${OUTFILE}")
   set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
 function(add_host_lib NAME GUEST_BITNESS)
-  set (SOURCE_FILE ../lib${NAME}/lib${NAME}_Host.cpp)
+  set(SOURCE_FILE ../lib${NAME}/lib${NAME}_Host.cpp)
     get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
   if (NOT EXISTS "${SOURCE_FILE_ABS}")
-    set (SOURCE_FILE ../lib${NAME}/Host.cpp)
+    set(SOURCE_FILE ../lib${NAME}/Host.cpp)
     get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
     if (NOT EXISTS "${SOURCE_FILE_ABS}")
       message (FATAL_ERROR "Thunk source file for Host lib ${NAME} doesn't exist!")
@@ -98,7 +97,7 @@ function(add_host_lib NAME GUEST_BITNESS)
   endif()
 endfunction()
 
-set (BITNESS_LIST "64")
+set(BITNESS_LIST "64")
 foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   #add_host_lib(fex_malloc_symbols ${GUEST_BITNESS})
 
@@ -120,7 +119,7 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   add_host_lib(drm ${GUEST_BITNESS})
 endforeach()
 
-set (BITNESS_LIST "32;64")
+set(BITNESS_LIST "32;64")
 foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   if (BUILD_FEX_LINUX_TESTS)
     generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp ${GUEST_BITNESS})

@@ -1,4 +1,5 @@
-list(APPEND LIBS FEXCore Common JemallocLibs)
+list(APPEND LIBS FEXCore Common JemallocLibs LinuxEmulation
+  CommonTools ${PTHREAD_LIB} fmt::fmt)
 
 set(DEFINES)
 if (ENABLE_VIXL_SIMULATOR)
@@ -18,30 +19,15 @@ set_target_properties(FEX PROPERTIES
   CXX_VISIBILITY_PRESET hidden
   VISIBILITY_INLINES_HIDDEN TRUE)
 
-target_include_directories(FEX
-  PRIVATE
-    ${CMAKE_BINARY_DIR}/generated)
+target_include_directories(FEX PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
-target_link_libraries(FEX
-  PRIVATE
-    ${LIBS}
-    LinuxEmulation
-    CommonTools
-    ${PTHREAD_LIB}
-    fmt::fmt)
+target_link_libraries(FEX PRIVATE ${LIBS})
 
 target_compile_options(FEX PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-  target_link_options(FEX
-    PRIVATE
-      "LINKER:--gc-sections"
-      "LINKER:--strip-all"
-      "LINKER:--as-needed")
-endif()
+LinkerGC(FEX)
 
-install(TARGETS FEX
-  RUNTIME
+install(TARGETS FEX RUNTIME
     DESTINATION bin
     COMPONENT Runtime)
 

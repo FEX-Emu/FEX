@@ -23,8 +23,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
   set_property(TEST "${TEST_NAME}.jit.posix" APPEND PROPERTY ENVIRONMENT "FEX_OUTPUTLOG=stderr;FEX_SILENTLOG=0;FEX_MAXINST=500")
 endforeach()
 
-add_custom_target(
-  posix_tests
+add_custom_target(posix_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "\.*.posix")

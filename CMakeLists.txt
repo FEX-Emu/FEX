@@ -203,7 +203,7 @@ if (HAS_CLANG_PRESERVE_ALL)
   else()
     message(STATUS "Has clang::preserve_all")
   endif()
-endif ()
+endif()
 
 if (ARCHITECTURE_arm64 AND HAS_CLANG_PRESERVE_ALL)
   add_definitions("-DFEX_PRESERVE_ALL_ATTR=__attribute__((preserve_all))" "-DFEX_HAS_PRESERVE_ALL_ATTR=1")
@@ -319,6 +319,9 @@ set(CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-point
 ## Modules ##
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/)
 
+include(LinkerGC)
+
+## Externals ##
 include_directories(External/robin-map/include/)
 
 include(CTest)

@@ -15,13 +15,10 @@ foreach(GEN_CONFIG_SRC ${GEN_CONFIG_SOURCES})
   get_filename_component(CONFIG_NAME ${GEN_CONFIG_SRC} NAME_WLE)
 
   # Configure it
-  configure_file(
-    ${GEN_CONFIG_SRC}
-    ${CMAKE_BINARY_DIR}/Data/AppConfig/${CONFIG_NAME})
+  configure_file(${GEN_CONFIG_SRC} ${CMAKE_BINARY_DIR}/Data/AppConfig/${CONFIG_NAME})
 
   # Then install the configured json
-  install(
-    FILES ${CMAKE_BINARY_DIR}/Data/AppConfig/${CONFIG_NAME}
+  install(FILES ${CMAKE_BINARY_DIR}/Data/AppConfig/${CONFIG_NAME}
     DESTINATION ${DATA_DIRECTORY}/AppConfig/
     COMPONENT Runtime)
 endforeach()

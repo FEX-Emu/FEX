@@ -13,15 +13,8 @@ else()
 endif()
 target_sources(FEXConfig PRIVATE ${QT_RESOURCES})
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-  target_link_options(FEXConfig
-    PRIVATE
-      "LINKER:--gc-sections"
-      "LINKER:--strip-all"
-      "LINKER:--as-needed")
-endif()
+LinkerGC(FEXConfig)
 
-install(TARGETS FEXConfig
-  RUNTIME
+install(TARGETS FEXConfig RUNTIME
   DESTINATION bin
   COMPONENT Runtime)

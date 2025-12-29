@@ -25,9 +25,9 @@ foreach(JSON_SRC ${JSON_SOURCES})
   list(APPEND JSON_DEPENDS "${OUTPUT_JSON_NAME}")
 
   if (NOT MINGW_BUILD)
-    set (LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/CodeSizeValidation")
+    set(LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/CodeSizeValidation")
   else()
-    set (LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/CodeSizeValidation.exe")
+    set(LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/CodeSizeValidation.exe")
   endif()
 
   file(RELATIVE_PATH JSON_PATH_RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${JSON_SRC})
@@ -49,15 +49,13 @@ endforeach()
 add_custom_target(instcountci_test_files ALL
   DEPENDS "${JSON_DEPENDS}")
 
-add_custom_target(
-  instcountci_tests
+add_custom_target(instcountci_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS instcountci_test_files
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "InstCountCI/\.*.instcountci$$")
 
-add_custom_target(
-  instcountci_update_tests
+add_custom_target(instcountci_update_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "InstCountCI/\.*new_numbers$$")

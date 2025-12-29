@@ -54,22 +54,19 @@ foreach(ASM_SRC ${ASM_SOURCES})
     list(APPEND TEST_ARGS
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=1 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0"   "jit_1"     "jit"
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0" "jit_500"   "jit"
-      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=1 FEX_TSOENABLED=0" "jit_500_m" "jit"
-      )
+      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=1 FEX_TSOENABLED=0" "jit_500_m" "jit")
   endif()
 
   if (ENABLE_VIXL_SIMULATOR)
     set(CPU_CLASS Simulator)
   elseif (ARCHITECTURE_x86_64)
-    list(APPEND TEST_ARGS
-      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1" "host" "host"
-      )
+    list(APPEND TEST_ARGS "FEX_SILENTLOG=0 FEX_DUMPGPRS=1" "host" "host")
   endif()
 
   if (NOT MINGW)
-    set (LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
+    set(LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
   else()
-    set (LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner.exe")
+    set(LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner.exe")
   endif()
 
   list(LENGTH TEST_ARGS ARG_COUNT)
@@ -116,19 +113,16 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
 endforeach()
 
-add_custom_target(asm_files ALL
-  DEPENDS "${ASM_DEPENDS}")
+add_custom_target(asm_files ALL DEPENDS "${ASM_DEPENDS}")
 
-add_custom_target(
-  64bit_asm_tests
+add_custom_target(64bit_asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS asm_files
   DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "\.*64Bit\.*.asm$$")
 
-add_custom_target(
-  asm_tests
+add_custom_target(asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS asm_files
