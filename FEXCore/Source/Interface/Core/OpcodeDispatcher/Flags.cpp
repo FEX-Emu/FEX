@@ -28,7 +28,7 @@ constexpr std::array<uint32_t, 17> FlagOffsets = {
 
 void OpDispatchBuilder::ZeroPF_AF() {
   // PF is stored inverted, so invert it when we zero.
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(Constant(1, ConstPad::NoPad));
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(Constant(1));
   SetAF(0);
 }
 
@@ -247,7 +247,7 @@ void OpDispatchBuilder::CalculateAF(Ref Src1, Ref Src2) {
   // We store the XOR of the arguments. At read time, we XOR with the
   // appropriate bit of the result (available as the PF flag) and extract the
   // appropriate bit. Again 64-bit to avoid masking.
-  Ref XorRes = Src1 == Src2 ? Constant(0, ConstPad::NoPad) : _Xor(OpSize::i64Bit, Src1, Src2);
+  Ref XorRes = Src1 == Src2 ? Constant(0) : _Xor(OpSize::i64Bit, Src1, Src2);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 

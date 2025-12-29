@@ -758,14 +758,14 @@ void Arm64JITCore::EmitTFCheck() {
   uint64_t Constant {};
   memcpy(&Constant, &State, sizeof(State));
 
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant);
   str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
   ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
   br(TMP1);
 
   (void)Bind(&l_TFBlocked);
   // If TF was blocked for this instruction, unblock it for the next.
-  LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 0b11, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 0b11);
   strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
   (void)Bind(&l_TFUnset);
 }
@@ -805,7 +805,7 @@ void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool C
     if (ARMEmitter::IsImmAddSub(TotalSpillSlotsSize)) {
       sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, TotalSpillSlotsSize);
     } else {
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize, CPU::Arm64Emitter::PadType::NOPAD);
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize);
       sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::rsp, ARMEmitter::XReg::rsp, TMP1, ARMEmitter::ExtendedType::LSL_64, 0);
     }
   }
@@ -1163,7 +1163,7 @@ void Arm64JITCore::ResetStack() {
     add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, TotalSpillSlotsSize);
   } else {
     // Too big to fit in a 12bit immediate
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize, CPU::Arm64Emitter::PadType::NOPAD);
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize);
     add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::rsp, ARMEmitter::XReg::rsp, TMP1, ARMEmitter::ExtendedType::LSL_64, 0);
   }
 }

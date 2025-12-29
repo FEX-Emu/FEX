@@ -188,7 +188,7 @@ void Dispatcher::EmitDispatcher() {
     if (std::popcount(VirtualMemorySize) == 1) {
       and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), VirtualMemorySize - 1);
     } else {
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP4, VirtualMemorySize, CPU::Arm64Emitter::PadType::NOPAD);
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP4, VirtualMemorySize);
       and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), TMP4);
     }
 
@@ -261,7 +261,7 @@ void Dispatcher::EmitDispatcher() {
 
 #ifdef ARCHITECTURE_arm64ec
     ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 1, CPU::Arm64Emitter::PadType::NOPAD);
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 1);
     strb(TMP1.W(), TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 
@@ -429,7 +429,7 @@ void Dispatcher::EmitDispatcher() {
       PopCalleeSavedRegisters();
       ret();
     } else {
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, 0, CPU::Arm64Emitter::PadType::NOPAD);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, 0);
       ldr(ARMEmitter::XReg::x1, ARMEmitter::Reg::r1);
     }
   }
@@ -488,7 +488,7 @@ void Dispatcher::EmitDispatcher() {
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
-    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, CTX->SignalDelegation->GetThunkCallbackRET(), CPU::Arm64Emitter::PadType::NOPAD);
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, CTX->SignalDelegation->GetThunkCallbackRET());
 
     ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
     sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r2, CTX->Config.Is64BitMode ? 16 : 12);

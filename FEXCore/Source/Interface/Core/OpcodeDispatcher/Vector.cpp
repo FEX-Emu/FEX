@@ -740,7 +740,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
     // Inserting the full lower 32-bits offset 31 so the sign bit ends up at offset 63.
     GPR = _Bfi(OpSize::i64Bit, 32, 31, GPR, GPR);
     // Shift right to only get the two sign bits we care about.
-    GPR = _Lshr(OpSize::i64Bit, GPR, Constant(62, ConstPad::NoPad));
+    GPR = _Lshr(OpSize::i64Bit, GPR, Constant(62));
     StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize());
   } else if (Size == OpSize::i128Bit && ElementSize == OpSize::i32Bit) {
     // Shift all the sign bits to the bottom of their respective elements.
@@ -755,7 +755,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
     Ref GPR = _VExtractToGPR(Size, OpSize::i32Bit, Src, 0);
     StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize());
   } else {
-    Ref CurrentVal = Constant(0, ConstPad::NoPad);
+    Ref CurrentVal = Constant(0);
 
     for (unsigned i = 0; i < NumElements; ++i) {
       // Extract the top bit of the element
@@ -2121,7 +2121,7 @@ Ref OpDispatchBuilder::CVTFPR_To_GPRImpl(OpcodeArgs, Ref Src, IR::OpSize SrcElem
     Ref Converted = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src);
 
     bool Dst32 = GPRSize == OpSize::i32Bit;
-    Ref MaxI = Dst32 ? Constant(0x80000000, ConstPad::NoPad) : Constant(0x8000000000000000, ConstPad::NoPad);
+    Ref MaxI = Dst32 ? Constant(0x80000000) : Constant(0x8000000000000000);
     Ref MaxF = LoadAndCacheNamedVectorConstant(SrcElementSize, (SrcElementSize == OpSize::i32Bit) ?
                                                                  (Dst32 ? NAMED_VECTOR_CVTMAX_F32_I32 : NAMED_VECTOR_CVTMAX_F32_I64) :
                                                                  (Dst32 ? NAMED_VECTOR_CVTMAX_F64_I32 : NAMED_VECTOR_CVTMAX_F64_I64));
@@ -2552,7 +2552,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 
     // XSTATE_BV section of the header is 8 bytes in size, but we only really
     // care about setting at most 3 bits in the first byte. We zero out the rest.
-    _StoreMemGPR(OpSize::i64Bit, RequestedFeatures, Base, Constant(512, ConstPad::NoPad), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(OpSize::i64Bit, RequestedFeatures, Base, Constant(512), OpSize::i8Bit, MemOffsetType::SXTX, 1);
   }
 }
 
@@ -2578,12 +2578,12 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
     _StoreMemGPR(OpSize::i16Bit, MemBase, FCW, OpSize::i16Bit);
   }
 
-  { _StoreMemGPR(OpSize::i16Bit, ReconstructFSW_Helper(), MemBase, Constant(2, ConstPad::NoPad), OpSize::i16Bit, MemOffsetType::SXTX, 1); }
+  { _StoreMemGPR(OpSize::i16Bit, ReconstructFSW_Helper(), MemBase, Constant(2), OpSize::i16Bit, MemOffsetType::SXTX, 1); }
 
   {
     // Abridged FTW
     auto FTW = _LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
-    _StoreMemGPR(OpSize::i8Bit, FTW, MemBase, Constant(4, ConstPad::NoPad), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(OpSize::i8Bit, FTW, MemBase, Constant(4), OpSize::i8Bit, MemOffsetType::SXTX, 1);
   }
 
   // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
@@ -2633,7 +2633,7 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
   //
   // x87 registers are stored rotated depending on the current TOP.
   Ref Top = GetX87Top();
-  auto SevenConst = Constant(7, ConstPad::NoPad);
+  auto SevenConst = Constant(7);
   const auto LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
 
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
@@ -2641,7 +2641,7 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
     if (ReducedPrecisionMode) {
       data = _F80CVTTo(data, OpSize::i64Bit);
     }
-    _StoreMemFPR(OpSize::i128Bit, data, MemBase, Constant(16 * i + 32, ConstPad::NoPad), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    _StoreMemFPR(OpSize::i128Bit, data, MemBase, Constant(16 * i + 32), OpSize::i8Bit, MemOffsetType::SXTX, 1);
     Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 }
@@ -2656,7 +2656,7 @@ void OpDispatchBuilder::SaveSSEState(Ref MemBase) {
 
 void OpDispatchBuilder::SaveMXCSRState(Ref MemBase) {
   // Store MXCSR and the mask for all bits.
-  _StoreMemPairGPR(OpSize::i32Bit, GetMXCSR(), Constant(0xFFFF, ConstPad::NoPad), MemBase, 24);
+  _StoreMemPairGPR(OpSize::i32Bit, GetMXCSR(), Constant(0xFFFF), MemBase, 24);
 }
 
 void OpDispatchBuilder::SaveAVXState(Ref MemBase) {
@@ -2674,7 +2674,7 @@ Ref OpDispatchBuilder::GetMXCSR() {
   Ref MXCSR = _LoadContextGPR(OpSize::i32Bit, offsetof(FEXCore::Core::CPUState, mxcsr));
   // Mask out unsupported bits
   // Keeps FZ, RC, exception masks, and DAZ
-  MXCSR = _And(OpSize::i32Bit, MXCSR, Constant(0xFFC0, ConstPad::NoPad));
+  MXCSR = _And(OpSize::i32Bit, MXCSR, Constant(0xFFC0));
   return MXCSR;
 }
 
@@ -2684,7 +2684,7 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   RestoreX87State(Mem);
   RestoreSSEState(Mem);
 
-  Ref MXCSR = _LoadMemGPR(OpSize::i32Bit, Mem, Constant(24, ConstPad::NoPad), OpSize::i32Bit, MemOffsetType::SXTX, 1);
+  Ref MXCSR = _LoadMemGPR(OpSize::i32Bit, Mem, Constant(24), OpSize::i32Bit, MemOffsetType::SXTX, 1);
   RestoreMXCSRState(MXCSR);
 }
 
@@ -2701,7 +2701,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     // Note: we rematerialize Base/Mask in each block to avoid crossblock
     // liveness.
     Ref Base = XSaveBase(Op);
-    Ref Mask = _LoadMemGPR(OpSize::i64Bit, Base, Constant(512, ConstPad::NoPad), OpSize::i64Bit, MemOffsetType::SXTX, 1);
+    Ref Mask = _LoadMemGPR(OpSize::i64Bit, Base, Constant(512), OpSize::i64Bit, MemOffsetType::SXTX, 1);
 
     Ref BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
     auto CondJump_ = CondJump(BitFlag, CondClass::NEQ);
@@ -2745,7 +2745,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
       1,
       [this, Op] {
         Ref Base = XSaveBase(Op);
-        Ref MXCSR = _LoadMemGPR(OpSize::i32Bit, Base, Constant(24, ConstPad::NoPad), OpSize::i32Bit, MemOffsetType::SXTX, 1);
+        Ref MXCSR = _LoadMemGPR(OpSize::i32Bit, Base, Constant(24), OpSize::i32Bit, MemOffsetType::SXTX, 1);
         RestoreMXCSRState(MXCSR);
       },
       [] { /* Intentionally do nothing*/ }, 2);
@@ -2759,13 +2759,13 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
   _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   {
-    auto NewFSW = _LoadMemGPR(OpSize::i16Bit, MemBase, Constant(2, ConstPad::NoPad), OpSize::i16Bit, MemOffsetType::SXTX, 1);
+    auto NewFSW = _LoadMemGPR(OpSize::i16Bit, MemBase, Constant(2), OpSize::i16Bit, MemOffsetType::SXTX, 1);
     ReconstructX87StateFromFSW_Helper(NewFSW);
   }
 
   {
     // Abridged FTW
-    auto NewFTW = _LoadMemGPR(OpSize::i8Bit, MemBase, Constant(4, ConstPad::NoPad), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    auto NewFTW = _LoadMemGPR(OpSize::i8Bit, MemBase, Constant(4), OpSize::i8Bit, MemOffsetType::SXTX, 1);
     _StoreContextGPR(OpSize::i8Bit, NewFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   }
 
@@ -2789,7 +2789,7 @@ void OpDispatchBuilder::RestoreSSEState(Ref MemBase) {
 
 void OpDispatchBuilder::RestoreMXCSRState(Ref MXCSR) {
   // Mask out unsupported bits
-  MXCSR = _And(OpSize::i32Bit, MXCSR, Constant(0xFFC0, ConstPad::NoPad));
+  MXCSR = _And(OpSize::i32Bit, MXCSR, Constant(0xFFC0));
 
   _StoreContextGPR(OpSize::i32Bit, MXCSR, offsetof(FEXCore::Core::CPUState, mxcsr));
   // We only support the rounding mode and FTZ bit being set
@@ -3988,7 +3988,7 @@ void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, IR::OpSize ElementSize, Ref 
   const auto ElementSizeInBits = IR::OpSizeAsBits(ElementSize);
   const auto MaskConstant = uint64_t {1} << (ElementSizeInBits - 1);
 
-  Ref Mask = _VDupFromGPR(SrcSize, ElementSize, Constant(MaskConstant, ConstPad::NoPad));
+  Ref Mask = _VDupFromGPR(SrcSize, ElementSize, Constant(MaskConstant));
 
   Ref AndTest = _VAnd(SrcSize, OpSize::i8Bit, Src2, Src1);
   Ref AndNotTest = _VAndn(SrcSize, OpSize::i8Bit, Src2, Src1);
@@ -4589,7 +4589,7 @@ void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
   // Get rid of any junk unrelated to the relevant selector index bits (bits [2:0])
   Ref IndexMask = _VectorImm(DstSize, OpSize::i32Bit, 0b111);
 
-  Ref AddConst = Constant(0x03020100, ConstPad::NoPad);
+  Ref AddConst = Constant(0x03020100);
   Ref Repeating3210 = _VDupFromGPR(DstSize, OpSize::i32Bit, AddConst);
   Ref FinalIndices = VPERMDIndices(OpSizeFromDst(Op), Indices, IndexMask, Repeating3210);
 
@@ -4824,7 +4824,7 @@ Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, IR::OpSize ElementSize, 
   Ref ShiftedIndices = _VShlI(DstSize, OpSize::i8Bit, IndexTrn3, IndexShift);
 
   uint64_t VConstant = IsPD ? 0x0706050403020100 : 0x03020100;
-  Ref VectorConst = _VDupFromGPR(DstSize, ElementSize, Constant(VConstant, ConstPad::NoPad));
+  Ref VectorConst = _VDupFromGPR(DstSize, ElementSize, Constant(VConstant));
   Ref FinalIndices {};
 
   if (Is256Bit) {
@@ -4883,7 +4883,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     IntermediateResult = _VPCMPISTRX(Src1, Src2, Control);
   }
 
-  Ref ZeroConst = Constant(0, ConstPad::NoPad);
+  Ref ZeroConst = Constant(0);
 
   if (IsMask) {
     // For the masked variant of the instructions, if control[6] is set, then we
@@ -4920,7 +4920,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
 
     Ref ResultNoFlags = _Bfe(OpSize::i32Bit, 16, 0, IntermediateResult);
 
-    Ref IfZero = Constant(16 >> (Control & 1), ConstPad::NoPad);
+    Ref IfZero = Constant(16 >> (Control & 1));
     Ref IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags) : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
     Ref Result = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
 
@@ -5110,7 +5110,7 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
     if (BaseAddr && VSIB.Displacement) {
       BaseAddr = Add(OpSize::i64Bit, BaseAddr, VSIB.Displacement);
     } else if (VSIB.Displacement) {
-      BaseAddr = Constant(VSIB.Displacement, ConstPad::NoPad);
+      BaseAddr = Constant(VSIB.Displacement);
     } else if (!BaseAddr) {
       BaseAddr = Invalid();
     }
@@ -5156,7 +5156,7 @@ void OpDispatchBuilder::Extrq_imm(OpcodeArgs) {
   }
 
   const uint64_t Mask = ~0ULL >> (MaskWidth == 0 ? 0 : (64 - MaskWidth));
-  const Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask, ConstPad::NoPad));
+  const Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask));
   Result = _VAnd(OpSize::i128Bit, OpSize::i64Bit, Result, MaskVector);
 
   StoreResultFPR(Op, Result);
@@ -5170,7 +5170,7 @@ void OpDispatchBuilder::Insertq_imm(OpcodeArgs) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   const uint64_t Mask = ~0ULL >> (MaskWidth == 0 ? 0 : (64 - MaskWidth));
-  Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask, ConstPad::NoPad));
+  Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask));
 
   // Mask incoming source.
   Src = _VAnd(OpSize::i64Bit, OpSize::i64Bit, Src, MaskVector);

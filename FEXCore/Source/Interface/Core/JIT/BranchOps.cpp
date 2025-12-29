@@ -271,7 +271,7 @@ DEF_OP(Syscall) {
   // Still without overwriting registers that matter
   // 16bit LoadConstant to be a single instruction
   // This gives the signal handler a value to check to see if we are in a syscall at all
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GPRSpillMask & 0xFFFF, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GPRSpillMask & 0xFFFF);
   str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
   uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
@@ -362,29 +362,29 @@ DEF_OP(ValidateCode) {
 
   EmitCheck(8, [&]() {
     ldr(TMP1, Base, Offset);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP2, *(const uint64_t*)(OldCode + Offset), CPU::Arm64Emitter::PadType::NOPAD);
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP2, *(const uint64_t*)(OldCode + Offset));
   });
 
   EmitCheck(4, [&]() {
     ldr(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint32_t*)(OldCode + Offset), CPU::Arm64Emitter::PadType::NOPAD);
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint32_t*)(OldCode + Offset));
   });
 
   EmitCheck(2, [&]() {
     ldrh(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint16_t*)(OldCode + Offset), CPU::Arm64Emitter::PadType::NOPAD);
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint16_t*)(OldCode + Offset));
   });
 
   EmitCheck(1, [&]() {
     ldrb(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint8_t*)(OldCode + Offset), CPU::Arm64Emitter::PadType::NOPAD);
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint8_t*)(OldCode + Offset));
   });
 
   ARMEmitter::ForwardLabel End;
-  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 0, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 0);
   b_OrRestart(&End);
   BindOrRestart(&Fail);
-  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 1, CPU::Arm64Emitter::PadType::NOPAD);
+  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 1);
   BindOrRestart(&End);
 }
 
