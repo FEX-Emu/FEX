@@ -534,7 +534,7 @@ def main():
         "-isystem", "/usr/x86_64-linux-gnu/include/",
         "-O2",
         "--target=x86_64-linux-unknown",
-        "-D_M_X86_64",
+        "-DARCHITECTURE_x86_64",
     ]
 
     # Add all the arguments to the different lists

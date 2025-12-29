@@ -32,7 +32,7 @@ namespace FEXCore::CPU {
 // Contains the address to the currently available CPU state
 constexpr auto STATE = ARMEmitter::XReg::x28;
 
-#ifndef _M_ARM_64EC
+#ifndef ARCHITECTURE_arm64ec
 // GPR temporaries. Only x3 can be used across spill boundaries
 // so if these ever need to change, be very careful about that.
 constexpr auto TMP1 = ARMEmitter::XReg::x0;

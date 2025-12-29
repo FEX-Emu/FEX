@@ -1149,7 +1149,7 @@ void Decoder::BranchTargetInMultiblockRange() {
   constexpr uint64_t MAX_FORWARD_BRANCH_DIST = FEXCore::Utils::FEX_PAGE_SIZE * 4;
   bool ValidMultiblockMember = TargetRIP >= EntryPoint && TargetRIP < std::min(InstEnd + MAX_FORWARD_BRANCH_DIST, SectionMaxAddress);
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   ValidMultiblockMember = ValidMultiblockMember && !RtlIsEcCode(TargetRIP);
 #endif
 

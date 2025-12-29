@@ -2,7 +2,7 @@
 #include "Utils/SpinWaitLock.h"
 
 namespace FEXCore::Utils::SpinWaitLock {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 constexpr uint64_t NanosecondsInSecond = 1'000'000'000ULL;
 
 static uint32_t GetCycleCounterFrequency() {

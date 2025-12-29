@@ -32,7 +32,7 @@ extern "C" {
 
 #define STATUS_EMULATION_SYSCALL ((NTSTATUS)0x40000039)
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
 typedef struct _CHPE_V2_CPU_AREA_INFO {
   BOOLEAN InSimulation;             /* 000 */
   BOOLEAN InSyscallCallback;        /* 001 */
@@ -341,7 +341,7 @@ typedef struct __TEB {                          /* win32/win64 */
 #ifdef _WIN64
   union {
     PVOID DeallocationBStore; /*    /1788 */
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     CHPE_V2_CPU_AREA_INFO* ChpeV2CpuAreaInfo; /*    /1788 */
 #endif
   } DUMMYUNIONNAME;

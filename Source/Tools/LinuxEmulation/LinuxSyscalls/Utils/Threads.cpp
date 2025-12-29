@@ -122,7 +122,7 @@ void StackTracker::DeallocateStackObjectAndExit(void* Ptr, int Status) {
     *ReadyToBeReaped = true;
   }
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
   __asm volatile("mov x8, %[SyscallNum];"
                  "mov w0, %w[Result];"
                  "svc #0;" ::[SyscallNum] "i"(SYSCALL_DEF(exit)),
@@ -137,7 +137,7 @@ void StackTracker::DeallocateStackObjectAndExit(void* Ptr, int Status) {
   FEX_UNREACHABLE;
 }
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 __attribute__((naked)) void StackPivotAndCall(void* Arg, FEXCore::Threads::ThreadFunc Func, uint64_t StackPivot) {
   // x0: Arg
   // x1: Function to call

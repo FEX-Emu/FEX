@@ -2,7 +2,7 @@
 #include "LinuxSyscalls/Syscalls.h"
 
 namespace FEX::HLE::FaultSafeUserMemAccess {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 __attribute__((naked)) size_t CopyFromUser(void* Dest, const void* Src, size_t Size) {
   __asm volatile(R"(
   // Early exit if a memcpy of size zero.
@@ -47,7 +47,7 @@ void* const CopyFromUser_FaultLocation = &CopyFromUser_FaultInst;
 extern "C" uint64_t CopyToUser_FaultInst;
 void* const CopyToUser_FaultLocation = &CopyToUser_FaultInst;
 
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED && defined(_M_ARM_64)
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED && defined(ARCHITECTURE_arm64)
 __attribute__((naked)) bool VerifyIsReadableImpl(const void* Src, size_t Size) {
   __asm volatile(R"(
   // Early exit if size is zero.
@@ -157,7 +157,7 @@ bool IsFaultLocation(uint64_t PC) {
   bool IsMemcpyFault = false;
   IsMemcpyFault |= reinterpret_cast<void*>(PC) == CopyToUser_FaultLocation;
   IsMemcpyFault |= reinterpret_cast<void*>(PC) == CopyFromUser_FaultLocation;
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED && defined(_M_ARM_64)
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED && defined(ARCHITECTURE_arm64)
   IsMemcpyFault |= reinterpret_cast<void*>(PC) == UserReadable_FaultLocation;
   IsMemcpyFault |= reinterpret_cast<void*>(PC) == UserWritable_FaultLocation;
   IsMemcpyFault |= reinterpret_cast<void*>(PC) == UserStringReadable_FaultLocation;

@@ -51,7 +51,7 @@ install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEX
   DESTINATION bin
   COMPONENT LegacyRuntime)
 
-if (_M_ARM_64)
+if (ARCHITECTURE_arm64)
   if (NOT USE_LEGACY_BINFMTMISC)
     # Just restart the systemd service
     add_custom_target(binfmt_misc

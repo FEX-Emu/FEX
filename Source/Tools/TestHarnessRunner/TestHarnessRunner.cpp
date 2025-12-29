@@ -43,7 +43,7 @@ $end_info$
 #include <sys/types.h>
 #include <utility>
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 #include "Common/X86Features.h"
 #endif
 
@@ -265,7 +265,7 @@ int main(int argc, char** argv, char** const envp) {
 
 
   bool IsHostRunner = false;
-#if !defined(VIXL_SIMULATOR) && defined(_M_X86_64)
+#if !defined(VIXL_SIMULATOR) && defined(ARCHITECTURE_x86_64)
   IsHostRunner = true;
   ///< Features that are only unsupported when running using the HostRunner and the CI machine doesn't support the feature getting tested.
   FEX::X86::Features Feature {};

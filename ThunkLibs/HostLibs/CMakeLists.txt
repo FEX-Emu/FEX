@@ -27,9 +27,9 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
   set(prop "$<TARGET_PROPERTY:${NAME}-${GUEST_BITNESS}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
   set(compile_prop "$<TARGET_PROPERTY:${NAME}-${GUEST_BITNESS}-deps,INTERFACE_COMPILE_DEFINITIONS>")
   if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-    list(APPEND compile_prop _M_X86_64=1)
+    list(APPEND compile_prop ARCHITECTURE_x86_64=1)
   elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-    list(APPEND compile_prop _M_ARM_64=1)
+    list(APPEND compile_prop ARCHITECTURE_arm64=1)
   endif()
 
   # Target for IDE integration
