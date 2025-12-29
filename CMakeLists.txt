@@ -328,7 +328,10 @@ find_package(Python 3.9 REQUIRED COMPONENTS Interpreter)
 
 set(BUILD_SHARED_LIBS OFF)
 
-find_package(xxhash MODULE QUIET)
+if (NOT CMAKE_CROSSCOMPILING)
+  find_package(xxhash MODULE QUIET)
+endif()
+
 if (NOT TARGET xxHash::xxhash)
   set(XXHASH_BUNDLED_MODE TRUE)
   set(XXHASH_BUILD_XXHSUM FALSE)
