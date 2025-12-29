@@ -180,6 +180,11 @@ static void IteratePids() {
     std::error_code ec;
     std::string exe_link = std::filesystem::read_symlink(ExePath, ec);
 
+    auto deleted_pos = exe_link.find(" (deleted)");
+    if (deleted_pos != std::string::npos) {
+      exe_link = exe_link.substr(0, deleted_pos);
+    }
+
     // Couldn't read exe path? skip.
     if (ec) {
       continue;
