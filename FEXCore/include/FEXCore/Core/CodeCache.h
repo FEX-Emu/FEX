@@ -195,7 +195,8 @@ public:
    * Bundles the current Core state (CodeBuffer, GuestToHostMapping, ...) to a code cache and writes it to the given file descriptor.
    * Returns true on success.
    */
-  virtual bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) = 0;
+  virtual bool SaveData(Core::InternalThreadState& Threads, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress,
+                        std::function<void*(size_t)> MapFile) = 0;
 
   /**
    * Function to be called before compiling any code for caching purposes

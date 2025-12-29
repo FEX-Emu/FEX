@@ -178,10 +178,31 @@ GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintpt
 
     auto Filename = fmt::format("{}{}-{:016x}", OutDir, FEXCore::CodeMap::GetBaseFilename(Binary, false), CodeCacheConfigId);
     auto FilenameNew = Filename + ".new";
-    int fd = open(FilenameNew.c_str(), O_CREAT | O_WRONLY, 0644);
+    int fd = open(FilenameNew.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
     {
+      void* MappedPtr {};
+      size_t MapSize {};
+
       auto Entry = SyscallHandler->LookupExecutableFileSection(Thread, SyscallHandler->VAFileStart).value();
-      CTX->GetCodeCache().SaveData(*Thread, fd, Entry, 0 /* TODO: Use static base address information if available */);
+      CTX->GetCodeCache().SaveData(*Thread, Entry, 0 /* TODO: Use static base address information if available */, [&](size_t TotalSize) -> void* {
+        if (ftruncate(fd, TotalSize) != 0) {
+          return nullptr;
+        }
+
+        MapSize = TotalSize;
+        MappedPtr = mmap(nullptr, TotalSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+        if (MappedPtr == MAP_FAILED) {
+          MappedPtr = nullptr;
+          return nullptr;
+        }
+
+        return MappedPtr;
+      });
+
+      if (MappedPtr) {
+        munmap(MappedPtr, MapSize);
+      }
     }
     std::filesystem::rename(FilenameNew.c_str(), Filename.c_str());
     close(fd);
