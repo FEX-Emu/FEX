@@ -647,154 +647,163 @@ static uint64_t GetSockOpt(int sockfd, int level, int optname, auto_compat_ptr<v
   SYSCALL_ERRNO();
 }
 
+auto socketcall(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t* Arguments) -> uint64_t {
+  uint64_t Result {};
+
+  switch (call) {
+  case OP_SOCKET: {
+    Result = ::socket(Arguments[0], Arguments[1], Arguments[2]);
+    break;
+  }
+  case OP_BIND: {
+    Result = ::bind(Arguments[0], reinterpret_cast<const struct sockaddr*>(Arguments[1]), Arguments[2]);
+    break;
+  }
+  case OP_CONNECT: {
+    Result = ::connect(Arguments[0], reinterpret_cast<const struct sockaddr*>(Arguments[1]), Arguments[2]);
+    break;
+  }
+  case OP_LISTEN: {
+    Result = ::listen(Arguments[0], Arguments[1]);
+    break;
+  }
+  case OP_ACCEPT: {
+    Result = ::accept(Arguments[0], reinterpret_cast<struct sockaddr*>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]));
+    break;
+  }
+  case OP_GETSOCKNAME: {
+    Result = ::getsockname(Arguments[0], reinterpret_cast<struct sockaddr*>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]));
+    break;
+  }
+  case OP_GETPEERNAME: {
+    Result = ::getpeername(Arguments[0], reinterpret_cast<struct sockaddr*>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]));
+    break;
+  }
+  case OP_SOCKETPAIR: {
+    Result = ::socketpair(Arguments[0], Arguments[1], Arguments[2], reinterpret_cast<int32_t*>(Arguments[3]));
+    break;
+  }
+  case OP_SEND: {
+    Result = ::send(Arguments[0], reinterpret_cast<const void*>(Arguments[1]), Arguments[2], Arguments[3]);
+    break;
+  }
+  case OP_RECV: {
+    Result = ::recv(Arguments[0], reinterpret_cast<void*>(Arguments[1]), Arguments[2], Arguments[3]);
+    break;
+  }
+  case OP_SENDTO: {
+    Result = ::sendto(Arguments[0], reinterpret_cast<const void*>(Arguments[1]), Arguments[2], Arguments[3],
+                      reinterpret_cast<struct sockaddr*>(Arguments[4]), reinterpret_cast<socklen_t>(Arguments[5]));
+    break;
+  }
+  case OP_RECVFROM: {
+    Result = ::recvfrom(Arguments[0], reinterpret_cast<void*>(Arguments[1]), Arguments[2], Arguments[3],
+                        reinterpret_cast<struct sockaddr*>(Arguments[4]), reinterpret_cast<socklen_t*>(Arguments[5]));
+    break;
+  }
+  case OP_SHUTDOWN: {
+    Result = ::shutdown(Arguments[0], Arguments[1]);
+    break;
+  }
+  case OP_SETSOCKOPT: {
+    return SetSockOpt(Arguments[0], Arguments[1], Arguments[2], Arguments[3], reinterpret_cast<socklen_t>(Arguments[4]));
+    break;
+  }
+  case OP_GETSOCKOPT: {
+    return GetSockOpt(Arguments[0], Arguments[1], Arguments[2], reinterpret_cast<void*>(Arguments[3]), reinterpret_cast<socklen_t*>(Arguments[4]));
+    break;
+  }
+  case OP_SENDMSG: {
+    return SendMsg(Arguments[0], reinterpret_cast<const struct msghdr32*>(Arguments[1]), Arguments[2]);
+    break;
+  }
+  case OP_RECVMSG: {
+    return RecvMsg(Arguments[0], reinterpret_cast<struct msghdr32*>(Arguments[1]), Arguments[2]);
+    break;
+  }
+  case OP_ACCEPT4: {
+    return ::accept4(Arguments[0], reinterpret_cast<struct sockaddr*>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]), Arguments[3]);
+    break;
+  }
+  case OP_RECVMMSG: {
+    timespec32* timeout_ts = reinterpret_cast<timespec32*>(Arguments[4]);
+    struct timespec tp64 {};
+    struct timespec* timed_ptr {};
+    if (timeout_ts) {
+      tp64 = *timeout_ts;
+      timed_ptr = &tp64;
+    }
+
+    uint64_t Result = RecvMMsg(Arguments[0], Arguments[1], Arguments[2], Arguments[3], timed_ptr);
+
+    if (timeout_ts) {
+      *timeout_ts = tp64;
+    }
+
+    return Result;
+    break;
+  }
+  case OP_SENDMMSG: {
+    return SendMMsg(Arguments[0], reinterpret_cast<mmsghdr_32*>(Arguments[1]), Arguments[2], Arguments[3]);
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unsupported socketcall op: {}", call); break;
+  }
+  SYSCALL_ERRNO();
+}
+
+auto sendmsg(FEXCore::Core::CpuStateFrame* Frame, int sockfd, const struct msghdr32* msg, int flags) -> uint64_t {
+  return SendMsg(sockfd, msg, flags);
+}
+
+auto sendmmsg(FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) -> uint64_t {
+  return SendMMsg(sockfd, msgvec, vlen, flags);
+}
+
+auto recvmmsg(FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags,
+              timespec32* timeout_ts) -> uint64_t {
+  struct timespec tp64 {};
+  struct timespec* timed_ptr {};
+  if (timeout_ts) {
+    tp64 = *timeout_ts;
+    timed_ptr = &tp64;
+  }
+
+  uint64_t Result = RecvMMsg(sockfd, msgvec, vlen, flags, timed_ptr);
+
+  if (timeout_ts) {
+    *timeout_ts = tp64;
+  }
+
+  return Result;
+}
+
+auto recvmmsg_time64(FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags,
+                     struct timespec* timeout_ts) -> uint64_t {
+  return RecvMMsg(sockfd, msgvec, vlen, flags, timeout_ts);
+}
+
+auto recvmsg(FEXCore::Core::CpuStateFrame* Frame, int sockfd, struct msghdr32* msg, int flags) -> uint64_t {
+  return RecvMsg(sockfd, msg, flags);
+}
+
+auto setsockopt(FEXCore::Core::CpuStateFrame* Frame, int sockfd, int level, int optname, auto_compat_ptr<void> optval, socklen_t optlen) -> uint64_t {
+  return SetSockOpt(sockfd, level, optname, optval, optlen);
+}
+
+auto getsockopt(FEXCore::Core::CpuStateFrame* Frame, int sockfd, int level, int optname, auto_compat_ptr<void> optval,
+                auto_compat_ptr<socklen_t> optlen) -> uint64_t {
+  return GetSockOpt(sockfd, level, optname, optval, optlen);
+}
+
 void RegisterSocket(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL_X32(socketcall, [](FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t* Arguments) -> uint64_t {
-    uint64_t Result {};
-
-    switch (call) {
-    case OP_SOCKET: {
-      Result = ::socket(Arguments[0], Arguments[1], Arguments[2]);
-      break;
-    }
-    case OP_BIND: {
-      Result = ::bind(Arguments[0], reinterpret_cast<const struct sockaddr*>(Arguments[1]), Arguments[2]);
-      break;
-    }
-    case OP_CONNECT: {
-      Result = ::connect(Arguments[0], reinterpret_cast<const struct sockaddr*>(Arguments[1]), Arguments[2]);
-      break;
-    }
-    case OP_LISTEN: {
-      Result = ::listen(Arguments[0], Arguments[1]);
-      break;
-    }
-    case OP_ACCEPT: {
-      Result = ::accept(Arguments[0], reinterpret_cast<struct sockaddr*>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]));
-      break;
-    }
-    case OP_GETSOCKNAME: {
-      Result = ::getsockname(Arguments[0], reinterpret_cast<struct sockaddr*>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]));
-      break;
-    }
-    case OP_GETPEERNAME: {
-      Result = ::getpeername(Arguments[0], reinterpret_cast<struct sockaddr*>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]));
-      break;
-    }
-    case OP_SOCKETPAIR: {
-      Result = ::socketpair(Arguments[0], Arguments[1], Arguments[2], reinterpret_cast<int32_t*>(Arguments[3]));
-      break;
-    }
-    case OP_SEND: {
-      Result = ::send(Arguments[0], reinterpret_cast<const void*>(Arguments[1]), Arguments[2], Arguments[3]);
-      break;
-    }
-    case OP_RECV: {
-      Result = ::recv(Arguments[0], reinterpret_cast<void*>(Arguments[1]), Arguments[2], Arguments[3]);
-      break;
-    }
-    case OP_SENDTO: {
-      Result = ::sendto(Arguments[0], reinterpret_cast<const void*>(Arguments[1]), Arguments[2], Arguments[3],
-                        reinterpret_cast<struct sockaddr*>(Arguments[4]), reinterpret_cast<socklen_t>(Arguments[5]));
-      break;
-    }
-    case OP_RECVFROM: {
-      Result = ::recvfrom(Arguments[0], reinterpret_cast<void*>(Arguments[1]), Arguments[2], Arguments[3],
-                          reinterpret_cast<struct sockaddr*>(Arguments[4]), reinterpret_cast<socklen_t*>(Arguments[5]));
-      break;
-    }
-    case OP_SHUTDOWN: {
-      Result = ::shutdown(Arguments[0], Arguments[1]);
-      break;
-    }
-    case OP_SETSOCKOPT: {
-      return SetSockOpt(Arguments[0], Arguments[1], Arguments[2], Arguments[3], reinterpret_cast<socklen_t>(Arguments[4]));
-      break;
-    }
-    case OP_GETSOCKOPT: {
-      return GetSockOpt(Arguments[0], Arguments[1], Arguments[2], reinterpret_cast<void*>(Arguments[3]),
-                        reinterpret_cast<socklen_t*>(Arguments[4]));
-      break;
-    }
-    case OP_SENDMSG: {
-      return SendMsg(Arguments[0], reinterpret_cast<const struct msghdr32*>(Arguments[1]), Arguments[2]);
-      break;
-    }
-    case OP_RECVMSG: {
-      return RecvMsg(Arguments[0], reinterpret_cast<struct msghdr32*>(Arguments[1]), Arguments[2]);
-      break;
-    }
-    case OP_ACCEPT4: {
-      return ::accept4(Arguments[0], reinterpret_cast<struct sockaddr*>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]), Arguments[3]);
-      break;
-    }
-    case OP_RECVMMSG: {
-      timespec32* timeout_ts = reinterpret_cast<timespec32*>(Arguments[4]);
-      struct timespec tp64 {};
-      struct timespec* timed_ptr {};
-      if (timeout_ts) {
-        tp64 = *timeout_ts;
-        timed_ptr = &tp64;
-      }
-
-      uint64_t Result = RecvMMsg(Arguments[0], Arguments[1], Arguments[2], Arguments[3], timed_ptr);
-
-      if (timeout_ts) {
-        *timeout_ts = tp64;
-      }
-
-      return Result;
-      break;
-    }
-    case OP_SENDMMSG: {
-      return SendMMsg(Arguments[0], reinterpret_cast<mmsghdr_32*>(Arguments[1]), Arguments[2], Arguments[3]);
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unsupported socketcall op: {}", call); break;
-    }
-    SYSCALL_ERRNO();
-  });
-
-  REGISTER_SYSCALL_IMPL_X32(sendmsg, [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, const struct msghdr32* msg, int flags) -> uint64_t {
-    return SendMsg(sockfd, msg, flags);
-  });
-
-  REGISTER_SYSCALL_IMPL_X32(sendmmsg,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen,
-                               int flags) -> uint64_t { return SendMMsg(sockfd, msgvec, vlen, flags); });
-
-  REGISTER_SYSCALL_IMPL_X32(recvmmsg,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen,
-                               int flags, timespec32* timeout_ts) -> uint64_t {
-                              struct timespec tp64 {};
-                              struct timespec* timed_ptr {};
-                              if (timeout_ts) {
-                                tp64 = *timeout_ts;
-                                timed_ptr = &tp64;
-                              }
-
-                              uint64_t Result = RecvMMsg(sockfd, msgvec, vlen, flags, timed_ptr);
-
-                              if (timeout_ts) {
-                                *timeout_ts = tp64;
-                              }
-
-                              return Result;
-                            });
-
-  REGISTER_SYSCALL_IMPL_X32(recvmmsg_time64,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags,
-                               struct timespec* timeout_ts) -> uint64_t { return RecvMMsg(sockfd, msgvec, vlen, flags, timeout_ts); });
-
-  REGISTER_SYSCALL_IMPL_X32(recvmsg, [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, struct msghdr32* msg, int flags) -> uint64_t {
-    return RecvMsg(sockfd, msg, flags);
-  });
-
-  REGISTER_SYSCALL_IMPL_X32(setsockopt,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, int level, int optname, auto_compat_ptr<void> optval,
-                               socklen_t optlen) -> uint64_t { return SetSockOpt(sockfd, level, optname, optval, optlen); });
-
-  REGISTER_SYSCALL_IMPL_X32(getsockopt,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, int level, int optname, auto_compat_ptr<void> optval,
-                               auto_compat_ptr<socklen_t> optlen) -> uint64_t { return GetSockOpt(sockfd, level, optname, optval, optlen); });
+  REGISTER_SYSCALL_IMPL_X32(socketcall, socketcall);
+  REGISTER_SYSCALL_IMPL_X32(sendmsg, sendmsg);
+  REGISTER_SYSCALL_IMPL_X32(sendmmsg, sendmmsg);
+  REGISTER_SYSCALL_IMPL_X32(recvmmsg, recvmmsg);
+  REGISTER_SYSCALL_IMPL_X32(recvmmsg_time64, recvmmsg_time64);
+  REGISTER_SYSCALL_IMPL_X32(recvmsg, recvmsg);
+  REGISTER_SYSCALL_IMPL_X32(setsockopt, setsockopt);
+  REGISTER_SYSCALL_IMPL_X32(getsockopt, getsockopt);
 }
 } // namespace FEX::HLE::x32
