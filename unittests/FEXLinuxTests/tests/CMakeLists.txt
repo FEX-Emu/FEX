@@ -46,3 +46,9 @@ target_link_libraries(smc-shared-2.${BITNESS} PRIVATE rt pthread)
 target_link_libraries(thunk_testlib.${BITNESS} PRIVATE ${CMAKE_DL_LIBS})
 
 target_link_libraries(timer-sigev-thread.${BITNESS} PRIVATE rt pthread)
+
+target_link_libraries(smc-unexec-stack.${BITNESS} PRIVATE -Wl,-z,noexecstack)
+
+target_link_options(smc-exec-stack.${BITNESS} PRIVATE -Wl,-z,execstack)
+
+target_link_options(smc-missing-gnustack.${BITNESS} PRIVATE -fuse-ld=lld -Wl,-z,nognustack)
