@@ -112,6 +112,8 @@ private:
   bool NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op, DecodedHeader Options = {});
   bool NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op);
 
+  void DecodeREXIfValid(int8_t ExpectedOffset = -1);
+
   static constexpr size_t DefaultDecodedBufferSize = 0x10000;
   FEXCore::X86Tables::DecodedInst* DecodedBuffer {};
   Utils::PoolBufferWithTimedRetirement<FEXCore::X86Tables::DecodedInst*, 5000, 500> PoolObject;

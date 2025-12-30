@@ -848,6 +848,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
       switch (EscapeOp) {
       case 0x0F:
         [[unlikely]] { // 3DNow!
+          DecodeREXIfValid(-2);
           // 3DNow! Instruction Encoding: 0F 0F [ModRM] [SIB] [Displacement] [Opcode]
           // Decode ModRM
           uint8_t ModRMByte = ReadByte();
@@ -872,6 +873,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
           break;
         }
       case 0x38: { // F38 Table!
+        DecodeREXIfValid(-2);
         constexpr uint16_t PF_38_NONE = 0;
         constexpr uint16_t PF_38_66 = (1U << 0);
         constexpr uint16_t PF_38_F2 = (1U << 1);
@@ -897,11 +899,11 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
           DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
           DecodeFlags::PopOpAddrIf(&DecodeInst->Flags, DecodeFlags::FLAG_OPERAND_SIZE_LAST);
         }
-
         return NormalOpHeader(&FEXCore::X86Tables::H0F38TableOps[LocalOp], LocalOp);
         break;
       }
       case 0x3A: { // F3A Table!
+        DecodeREXIfValid(-2);
         constexpr uint16_t PF_3A_NONE = 0;
         constexpr uint16_t PF_3A_66 = (1 << 0);
         constexpr uint16_t PF_3A_REX = (1 << 1);
@@ -931,6 +933,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
           bool NoOverlay = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY) != 0;
           bool NoOverlay66 = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
 
+          DecodeREXIfValid(-2);
           if (NoOverlay) { // This section of the table ignores prefix extention
             return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
           } else if (LastEscapePrefix == 0xF3) { // REP
@@ -1010,29 +1013,9 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
         }
 
         if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
-          DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
-
-          // Widening displacement
-          if (Op & 0b1000) {
-            DecodeInst->Flags |= DecodeFlags::FLAG_REX_WIDENING;
-            DecodeFlags::PushOpAddr(&DecodeInst->Flags, DecodeFlags::FLAG_WIDENING_SIZE_LAST);
-          }
-
-          // XGPR_B bit set
-          if (Op & 0b0001) {
-            DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_B;
-          }
-
-          // XGPR_X bit set
-          if (Op & 0b0010) {
-            DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
-          }
-
-          // XGPR_R bit set
-          if (Op & 0b0100) {
-            DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_R;
-          }
+          DecodeInst->REXIndex = InstructionSize;
         } else {
+          DecodeREXIfValid();
           return NormalOpHeader(Info, Op);
         }
 
@@ -1046,6 +1029,37 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
   }
 
   return true;
+}
+
+void Decoder::DecodeREXIfValid(int8_t ExpectedOffset) {
+  LOGMAN_THROW_A_FMT(ExpectedOffset < 0, "Expecting an negative offset for the REX offset!");
+  const int8_t REXIndex = InstructionSize + ExpectedOffset;
+
+  if (DecodeInst->REXIndex != 0 && DecodeInst->REXIndex == REXIndex) {
+    const uint8_t Op = Instruction[REXIndex - 1];
+    DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
+
+    // Widening displacement
+    if (Op & 0b1000) {
+      DecodeInst->Flags |= DecodeFlags::FLAG_REX_WIDENING;
+      DecodeFlags::PushOpAddr(&DecodeInst->Flags, DecodeFlags::FLAG_WIDENING_SIZE_LAST);
+    }
+
+    // XGPR_B bit set
+    if (Op & 0b0001) {
+      DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_B;
+    }
+
+    // XGPR_X bit set
+    if (Op & 0b0010) {
+      DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
+    }
+
+    // XGPR_R bit set
+    if (Op & 0b0100) {
+      DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_R;
+    }
+  }
 }
 
 Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
