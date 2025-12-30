@@ -218,6 +218,7 @@ struct DecodedInst {
   uint8_t ModRM;
   uint8_t SIB;
   uint8_t InstSize;
+  int8_t REXIndex;
 };
 
 union ModRMDecoded {
