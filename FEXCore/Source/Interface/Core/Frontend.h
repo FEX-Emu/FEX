@@ -9,7 +9,7 @@
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/vector.h>
-#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/robin_map.h>
 
 #include <array>
 #include <cstddef>
@@ -150,7 +150,7 @@ private:
   fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
 
-  const fextl::unordered_map<uint32_t, GuestRelocationType>* Relocations {nullptr};
+  const fextl::robin_map<uint32_t, GuestRelocationType>* Relocations {nullptr};
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);
