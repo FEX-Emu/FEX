@@ -14,7 +14,10 @@
 #include "../Priv.h"
 
 WINBOOL WaitOnAddress(volatile void* Address, void* CompareAddress, SIZE_T AddressSize, DWORD dwMilliseconds) {
-  return RtlWaitOnAddress(Address, CompareAddress, AddressSize, dwMilliseconds) == STATUS_SUCCESS;
+  LARGE_INTEGER Time;
+  // A negative value indicates a relative time measured in 100ns intervals.
+  Time.QuadPart = static_cast<ULONGLONG>(dwMilliseconds) * -10000;
+  return RtlWaitOnAddress(const_cast<void*>(Address), CompareAddress, AddressSize, dwMilliseconds == INFINITE ? nullptr : &Time) == STATUS_SUCCESS;
 }
 
 void WakeByAddressAll(PVOID Address) {
