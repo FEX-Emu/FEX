@@ -4,7 +4,6 @@
 #include <sys/mman.h>
 
 bool got_signal = false;
-void *tramp = nullptr;
 
 static void sigsegv_handler(int signal, siginfo_t *siginfo, void* context) {
   REQUIRE(siginfo->si_code == SEGV_ACCERR);
@@ -14,17 +13,21 @@ static void sigsegv_handler(int signal, siginfo_t *siginfo, void* context) {
   REQUIRE(mprotect(fault_addr, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0);
 }
 
-TEST_CASE("smc-unexec-stack: PT_GNU_STACK == RW") {
-  // Register signal handler
+void register_signal_handler() {
   struct sigaction act {};
   act.sa_sigaction = sigsegv_handler;
   act.sa_flags = SA_SIGINFO;
-  sigaction(SIGSEGV, &act, nullptr);
+  REQUIRE(sigaction(SIGSEGV, &act, nullptr) == 0);
+}
+
+TEST_CASE("smc-unexec-stack: PT_GNU_STACK == RW") {
+  register_signal_handler();
 
   // Try executing from stack
-  uint8_t stack_code = 0xC3; // ret instruction
-  tramp = (void *)((uintptr_t)&stack_code & ~(sysconf(_SC_PAGESIZE) - 1));
-  ((void (*)())(&stack_code))();
+  char stack[16384];
+  auto stack_code = (char*)(((uintptr_t)stack + 4095) & ~4095);
+  *stack_code = 0xC3; // ret instruction
+  ((void (*)())(stack_code))();
 
-  REQUIRE(got_signal == true);
+  CHECK(got_signal == true);
 }
