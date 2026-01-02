@@ -55,6 +55,12 @@ private:
                     fextl::robin_map<uint32_t, FEXCore::GuestRelocationType> Relocations);
   };
 
+  struct AOTImageInfo {
+    std::byte* Data;
+  };
+
+  void LoadAOTImages(MappedImageInfo& Info);
+
   FEXCore::Context::Context& CTX;
 
   FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
@@ -62,6 +68,7 @@ private:
 
   std::shared_mutex ImagesLock;
   std::map<uint64_t, MappedImageInfo> MappedImages;
+  std::map<fextl::string, AOTImageInfo> AOTImages;
 
   std::string ActiveCodeMapPath;
   bool IsGeneratingCache;
