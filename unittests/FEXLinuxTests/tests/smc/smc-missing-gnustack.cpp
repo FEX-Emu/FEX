@@ -13,24 +13,32 @@ static void sigsegv_handler(int signal, siginfo_t *siginfo, void* context) {
   REQUIRE(mprotect(fault_addr, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0);
 }
 
-TEST_CASE("smc-missing-gnustack: PT_GNU_STACK missing") {
-  // Register signal handler
+void register_signal_handler() {
   struct sigaction act {};
   act.sa_sigaction = sigsegv_handler;
   act.sa_flags = SA_SIGINFO;
-  sigaction(SIGSEGV, &act, nullptr);
+  REQUIRE(sigaction(SIGSEGV, &act, nullptr) == 0);
+}
+
+TEST_CASE("smc-missing-gnustack: PT_GNU_STACK missing") {
+  register_signal_handler();
 
   // Try executing from stack
-  uint8_t stack_code = 0xC3; // ret
-  ((void (*)())(&stack_code))();
+  char stack[16384];
+  auto stack_code = (char*)(((uintptr_t)stack + 4095) & ~4095);
+  *stack_code = 0xC3; // ret
+  ((void (*)())(stack_code))();
 
 #ifdef __i386__
-  REQUIRE(got_signal == false);
+  CHECK(got_signal == false);
 #else
-  REQUIRE(got_signal == true);
-  got_signal = false;
+  CHECK(got_signal == true);
 #endif
+  got_signal = false;
+}
 
+TEST_CASE("smc-missing-gnustack: mmap other memory") {
+  register_signal_handler();
   // Executing from other memory should fail on 64 bit but work on 32 bit
   size_t page_size = sysconf(_SC_PAGESIZE);
   uint8_t *mem_code = static_cast<uint8_t *>(mmap(NULL, page_size, PROT_READ | PROT_WRITE,
@@ -40,10 +48,11 @@ TEST_CASE("smc-missing-gnustack: PT_GNU_STACK missing") {
   ((void (*)())(mem_code))();
 
 #ifdef __i386__
-  REQUIRE(got_signal == false);
+  CHECK(got_signal == false);
 #else
-  REQUIRE(got_signal == true);
+  CHECK(got_signal == true);
 #endif
+  got_signal = false;
 
-  munmap(mem_code, page_size);
+  REQUIRE(munmap(mem_code, page_size) == 0);
 }
