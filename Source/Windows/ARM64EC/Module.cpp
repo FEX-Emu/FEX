@@ -793,12 +793,10 @@ void NotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL After, NT
 
   if (!After) {
     ThreadCreationMutex.lock();
-    if (FreeType & MEM_DECOMMIT) {
-      InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
-    } else if (FreeType & MEM_RELEASE) {
-      InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
-    }
   } else {
+    if (!Status) {
+      InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+    }
     ThreadCreationMutex.unlock();
   }
 }

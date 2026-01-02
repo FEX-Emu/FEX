@@ -966,12 +966,10 @@ void BTCpuNotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL Af
 void BTCpuNotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL After, ULONG Status) {
   if (!After) {
     ThreadCreationMutex.lock();
-    if (!Size) {
-      InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
-    } else if (FreeType & MEM_DECOMMIT) {
+  } else {
+    if (!Status) {
       InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
     }
-  } else {
     ThreadCreationMutex.unlock();
   }
 }
