@@ -1,8 +1,14 @@
 #!/usr/bin/python3
 import os
 import subprocess
+import platform
 import sys
 import re
+
+try:
+    from packaging.version import Version as version_check
+except:
+    from pkg_resources import parse_version as version_check
 
 _Arch = None
 def GetArch():
@@ -337,10 +343,22 @@ def ExitWithStatus(Status):
     subprocess.call(["sudo", "-K"])
     sys.exit(Status)
 
+def GetKernelVersion():
+    # eg: `6.14.4-061404-generic`
+    return platform.uname().release.split("-")[0]
+
+def IsSupportedKernel():
+    return version_check(GetKernelVersion()) >= version_check("5.15")
+
 def main():
     # Only run on supported arch
     if not IsSupportedArch():
         print ( "{} is not a supported architecture".format(GetArch()))
+        ExitWithStatus(-1)
+
+    # Only run on a new enough kernel
+    if not IsSupportedKernel():
+        print ( "Kernel {} is too old. FEX needs 5.15 minimum".format(GetKernelVersion()))
         ExitWithStatus(-1)
 
     if not IsSupportedDistro():
