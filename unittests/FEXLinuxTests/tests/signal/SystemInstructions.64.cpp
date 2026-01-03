@@ -73,14 +73,14 @@ TEST(13, "mov dr0, rax", "mov dr0, rax", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 TEST(14, "rdpmc", "rdpmc", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 TEST(15, "sti", "sti", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 TEST(16, "swapgs", "swapgs", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
-TEST(17, "sysret", "sysretd", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(17, "sysret", "sysret", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 TEST(18, "wrmsr", "wrmsr", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 
 // Instructions not implemented
 TEST(19, "monitor", "monitor", X86_TRAPNO_UD, 0, 2, SIGILL);
 TEST(20, "mwait", "mwait", X86_TRAPNO_UD, 0, 2, SIGILL);
 TEST(21, "sysenter", "sysenter", X86_TRAPNO_UD, 0, 2, SIGILL);
-TEST(22, "sysexit", "sysexitd", X86_TRAPNO_UD, 0, 2, SIGILL);
+TEST(22, "sysexit", "sysexit", X86_TRAPNO_UD, 0, 2, SIGILL);
 
 // Differs between dr8 and dr0-7 variants.
 // dr0-7: SIGSEGV
