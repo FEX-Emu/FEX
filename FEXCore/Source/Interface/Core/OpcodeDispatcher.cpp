@@ -4101,6 +4101,8 @@ void OpDispatchBuilder::CheckLegacySegmentRead(Ref NewNode, uint32_t SegmentReg)
 
   // Will set the telemetry value if NewNode is != 0
   _TelemetrySetValue(NewNode, TelemIndex);
+  // Telemetry will dirty flags, and user code does not expect LoadSource to clobber flags, fix that up here as this is an edge case.
+  CalculateDeferredFlags();
 #endif
 }
 
@@ -4139,6 +4141,8 @@ void OpDispatchBuilder::CheckLegacySegmentWrite(Ref NewNode, uint32_t SegmentReg
 
   // Will set the telemetry value if NewNode is != 0
   _TelemetrySetValue(NewNode, TelemIndex);
+  // Telemetry will dirty flags, and user code does not expect LoadSource to clobber flags, fix that up here as this is an edge case.
+  CalculateDeferredFlags();
 #endif
 }
 
