@@ -30,32 +30,32 @@ __attribute__((naked)) void DoZeroRegSyscallFault(CPUState* State) {
     push r15
 
     // Load flags
-    push qword [rdi + %[FlagsOffset]]
+    push qword ptr [rdi + %[FlagsOffset]]
     popfq
 
     // Do getpid syscall.
     // Overwrites some arguments.
     // Syscall num
-    mov rax, qword [rdi + %[RAXOffset]]
+    mov rax, qword ptr [rdi + %[RAXOffset]]
 
     // Load remaining registers that we can
-    mov rbx, qword [rdi + %[RBXOffset]];
-    mov rcx, qword [rdi + %[RCXOffset]];
-    mov rdx, qword [rdi + %[RDXOffset]]
-    mov rsi, qword [rdi + %[RSIOffset]]
-    mov rbp, qword [rdi + %[RBPOffset]];
+    mov rbx, qword ptr [rdi + %[RBXOffset]];
+    mov rcx, qword ptr [rdi + %[RCXOffset]];
+    mov rdx, qword ptr [rdi + %[RDXOffset]]
+    mov rsi, qword ptr [rdi + %[RSIOffset]]
+    mov rbp, qword ptr [rdi + %[RBPOffset]];
     // Can't load RSP
-    mov r8, qword [rdi + %[R8Offset]]
-    mov r9, qword [rdi + %[R9Offset]];
-    mov r10, qword [rdi + %[R10Offset]]
-    mov r11, qword [rdi + %[R11Offset]];
-    mov r12, qword [rdi + %[R12Offset]];
-    mov r13, qword [rdi + %[R13Offset]];
-    mov r14, qword [rdi + %[R14Offset]];
-    mov r15, qword [rdi + %[R15Offset]];
+    mov r8, qword ptr [rdi + %[R8Offset]]
+    mov r9, qword ptr [rdi + %[R9Offset]];
+    mov r10, qword ptr [rdi + %[R10Offset]]
+    mov r11, qword ptr [rdi + %[R11Offset]];
+    mov r12, qword ptr [rdi + %[R12Offset]];
+    mov r13, qword ptr [rdi + %[R13Offset]];
+    mov r14, qword ptr [rdi + %[R14Offset]];
+    mov r15, qword ptr [rdi + %[R15Offset]];
 
     // Overwrite RDI last.
-    mov rdi, qword [rdi + %[RDIOffset]];
+    mov rdi, qword ptr [rdi + %[RDIOffset]];
 
     syscall;
 
@@ -66,15 +66,14 @@ __attribute__((naked)) void DoZeroRegSyscallFault(CPUState* State) {
     // We long jump from the signal handler, so this won't continue.
   )"
                  :
-                 // integers are offset by 8 for some reason.
-                 : [RAXOffset] "i"(offsetof(CPUState, Registers[REG_RAX]) - 8), [RDXOffset] "i"(offsetof(CPUState, Registers[REG_RDX]) - 8),
-                   [R10Offset] "i"(offsetof(CPUState, Registers[REG_R10]) - 8), [R8Offset] "i"(offsetof(CPUState, Registers[REG_R8]) - 8),
-                   [RSIOffset] "i"(offsetof(CPUState, Registers[REG_RSI]) - 8), [RDIOffset] "i"(offsetof(CPUState, Registers[REG_RDI]) - 8),
-                   [RBXOffset] "i"(offsetof(CPUState, Registers[REG_RBX]) - 8), [RCXOffset] "i"(offsetof(CPUState, Registers[REG_RCX]) - 8),
-                   [RBPOffset] "i"(offsetof(CPUState, Registers[REG_RBP]) - 8), [R9Offset] "i"(offsetof(CPUState, Registers[REG_R9]) - 8),
-                   [R11Offset] "i"(offsetof(CPUState, Registers[REG_R11]) - 8), [R12Offset] "i"(offsetof(CPUState, Registers[REG_R12]) - 8),
-                   [R13Offset] "i"(offsetof(CPUState, Registers[REG_R13]) - 8), [R14Offset] "i"(offsetof(CPUState, Registers[REG_R14]) - 8),
-                   [R15Offset] "i"(offsetof(CPUState, Registers[REG_R15]) - 8), [FlagsOffset] "i"(offsetof(CPUState, eflags) - 8)
+                 : [RAXOffset] "i"(offsetof(CPUState, Registers[REG_RAX])), [RDXOffset] "i"(offsetof(CPUState, Registers[REG_RDX])),
+                   [R10Offset] "i"(offsetof(CPUState, Registers[REG_R10])), [R8Offset] "i"(offsetof(CPUState, Registers[REG_R8])),
+                   [RSIOffset] "i"(offsetof(CPUState, Registers[REG_RSI])), [RDIOffset] "i"(offsetof(CPUState, Registers[REG_RDI])),
+                   [RBXOffset] "i"(offsetof(CPUState, Registers[REG_RBX])), [RCXOffset] "i"(offsetof(CPUState, Registers[REG_RCX])),
+                   [RBPOffset] "i"(offsetof(CPUState, Registers[REG_RBP])), [R9Offset] "i"(offsetof(CPUState, Registers[REG_R9])),
+                   [R11Offset] "i"(offsetof(CPUState, Registers[REG_R11])), [R12Offset] "i"(offsetof(CPUState, Registers[REG_R12])),
+                   [R13Offset] "i"(offsetof(CPUState, Registers[REG_R13])), [R14Offset] "i"(offsetof(CPUState, Registers[REG_R14])),
+                   [R15Offset] "i"(offsetof(CPUState, Registers[REG_R15])), [FlagsOffset] "i"(offsetof(CPUState, eflags))
 
                  : "memory");
 }

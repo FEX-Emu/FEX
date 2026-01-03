@@ -42,13 +42,13 @@ __attribute__((naked, nocf_check)) static void TestFromSignal(const DataStruct* 
   ffreep st(0);
 
   // Now load **7** values. Keeping the last one zero and our stack top not wrapped around.
-  fldt [rdi + (0 * 16)];
-  fldt [rdi + (1 * 16)];
-  fldt [rdi + (2 * 16)];
-  fldt [rdi + (3 * 16)];
-  fldt [rdi + (4 * 16)];
-  fldt [rdi + (5 * 16)];
-  fldt [rdi + (6 * 16)];
+  fld tbyte ptr [rdi + (0 * 16)];
+  fld tbyte ptr [rdi + (1 * 16)];
+  fld tbyte ptr [rdi + (2 * 16)];
+  fld tbyte ptr [rdi + (3 * 16)];
+  fld tbyte ptr [rdi + (4 * 16)];
+  fld tbyte ptr [rdi + (5 * 16)];
+  fld tbyte ptr [rdi + (6 * 16)];
 
   hlt;
   RetInstruction:
@@ -86,24 +86,27 @@ __attribute__((naked, nocf_check)) static void TestSetInSignal(DataStruct* data)
 
   // Store values until the status word says nothing is left.
   mov eax, 0;
-  .1:
+
+2:
+
   fstsw ax;
   and eax, (7 << 11);
-  jz .2;
-  fstpt [rdi];
+  jz 3f;
+  fstp tbyte ptr [rdi];
   add rdi, 16;
 
-  jmp .1;
-  .2:
+  jmp 2b
+
+3:
 
   // Now load **7** values. Keeping the last one zero and our stack top not wrapped around.
-  fldt [rdi + (0 * 16)];
-  fldt [rdi + (1 * 16)];
-  fldt [rdi + (2 * 16)];
-  fldt [rdi + (3 * 16)];
-  fldt [rdi + (4 * 16)];
-  fldt [rdi + (5 * 16)];
-  fldt [rdi + (6 * 16)];
+  fld tbyte ptr [rdi + (0 * 16)];
+  fld tbyte ptr [rdi + (1 * 16)];
+  fld tbyte ptr [rdi + (2 * 16)];
+  fld tbyte ptr [rdi + (3 * 16)];
+  fld tbyte ptr [rdi + (4 * 16)];
+  fld tbyte ptr [rdi + (5 * 16)];
+  fld tbyte ptr [rdi + (6 * 16)];
 
   ret;
   )" ::

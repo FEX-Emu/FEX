@@ -25,7 +25,8 @@ struct cpuid_fn {
 
 cpuid_fn get_cpuid(uint32_t func, uint32_t leaf = 0) {
   cpuid_fn fn {};
-  __cpuid_count(func, leaf, fn.eax, fn.ebx, fn.ecx, fn.edx);
+  __asm volatile("cpuid" : "=a"(fn.eax), "=b"(fn.ebx), "=c"(fn.ecx), "=d"(fn.edx) : "a"(func), "c"(leaf));
+
   return fn;
 }
 
