@@ -1,7 +1,7 @@
-# Inspired by LLVM's pr-code-format.yml at 
+# Inspired by LLVM's pr-code-format.yml at
 # https://github.com/llvm/llvm-project/blob/main/.github/workflows/pr-code-format.yml
 
-name: "Check code formatting"
+name: Check code formatting
 on:
   pull_request:
     branches:
@@ -13,7 +13,7 @@ jobs:
     if: github.repository == 'FEX-Emu/FEX'
 
     steps:
-      - name: Fetch FEX sources
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -27,18 +27,13 @@ jobs:
           deepen_length: 500
 
       - name: Get changed files
-        id: changed-files
-        uses: step-security/changed-files@3dbe17c78367e7d60f00d78ae6781a35be47b4a1 # v45.0.1
-        with:
-          separator: ","
-          skip_initial_fetch: true
-
-      - name: "Listed files"
-        env:
-          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          echo "Formatting files:"
-          echo "$CHANGED_FILES"
+          BASE=$(git merge-base main HEAD)
+          FILES=$(git diff --name-only "$BASE")
+          echo "CHANGED_FILES=$FILES" >> $GITHUB_ENV
+
+          echo "Changed files:"
+          echo "$FILES"
 
       - name: Check git-clang-format-19 exists
         run: which git-clang-format-19
@@ -46,24 +41,23 @@ jobs:
       - name: Setup Python env
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: './External/code-format-helper/requirements_formatting.txt'
+          python-version: 3.11
+          cache: pip
+          cache-dependency-path: ./External/code-format-helper/requirements_formatting.txt
 
       - name: Install python dependencies
         run: pip install -r ./External/code-format-helper/requirements_formatting.txt
 
       - name: Run code formatter
         env:
-          CLANG_FORMAT_PATH: 'git-clang-format-19'
+          CLANG_FORMAT_PATH: git-clang-format-19
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           START_REV: ${{ github.event.pull_request.base.sha }}
           END_REV: ${{ github.event.pull_request.head.sha }}
-          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           python ./External/code-format-helper/code-format-helper.py \
-            --repo "FEX-emu/FEX" \
-            --issue-number $GITHUB_PR_NUMBER \
-            --start-rev $START_REV \
-            --end-rev $END_REV \
+            --repo "FEX-Emu/FEX" \
+            --issue-number "$GITHUB_PR_NUMBER" \
+            --start-rev "$START_REV" \
+            --end-rev "$END_REV" \
             --changed-files "$CHANGED_FILES"
