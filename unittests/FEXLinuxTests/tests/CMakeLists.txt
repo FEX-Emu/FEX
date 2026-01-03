@@ -3,9 +3,6 @@ project(FEXLinuxTests)
 
 set(CMAKE_CXX_STANDARD 20)
 
-unset(CMAKE_C_FLAGS)
-unset(CMAKE_CXX_FLAGS)
-
 set(GENERATE_GUEST_INSTALL_TARGETS TRUE)
 
 # Use intel masm syntax. ATT style asm syntax is archaic and hard to read.
