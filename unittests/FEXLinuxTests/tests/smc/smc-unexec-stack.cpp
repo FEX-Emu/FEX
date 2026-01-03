@@ -5,12 +5,12 @@
 
 bool got_signal = false;
 
-static void sigsegv_handler(int signal, siginfo_t *siginfo, void* context) {
+static void sigsegv_handler(int signal, siginfo_t* siginfo, void* context) {
   REQUIRE(siginfo->si_code == SEGV_ACCERR);
   got_signal = true;
   size_t page_size = sysconf(_SC_PAGESIZE);
-  void *fault_addr = (void *)((uintptr_t)(siginfo->si_addr) & ~(page_size - 1));
-  REQUIRE(mprotect(fault_addr, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0);
+  void* fault_page = (void*)((uintptr_t)(siginfo->si_addr) & ~(page_size - 1));
+  REQUIRE(mprotect(fault_page, page_size, PROT_READ | PROT_WRITE | PROT_EXEC) == 0);
 }
 
 void register_signal_handler() {
