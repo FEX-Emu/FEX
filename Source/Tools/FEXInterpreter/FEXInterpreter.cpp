@@ -118,8 +118,6 @@ void Init() {
     auto LogFD = OutputFD;
     if (LogFile == "stderr") {
       LogFD = dup(STDERR_FILENO);
-    } else if (LogFile == "stdout") {
-      LogFD = dup(STDOUT_FILENO);
     } else if (LogFile == "server") {
       Logging::FEXServer::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
       if (FEXServer::FEXServerFD != -1) {

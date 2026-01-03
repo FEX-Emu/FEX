@@ -371,7 +371,7 @@
         "Default": "server",
         "Desc": [
           "File to write FEX output to.",
-          "[stdout, stderr, server, <Filename>]"
+          "[stderr, server, <Filename>]"
         ]
       },
       "TelemetryDirectory": {
