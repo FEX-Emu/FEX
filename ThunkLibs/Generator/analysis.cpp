@@ -313,7 +313,12 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
           }
 
           // Get or add parent type to list of structure types
+#if CLANG_VERSION_MAJOR >= 22
+          auto parent_qt = context.getTagType(clang::ElaboratedTypeKeyword::None, std::nullopt, annotated_member->getParent(), false);
+          auto repack_info_it = types.emplace(context.getCanonicalType(parent_qt).getTypePtr(), RepackedType {}).first;
+#else
           auto repack_info_it = types.emplace(context.getCanonicalType(annotated_member->getParent()->getTypeForDecl()), RepackedType {}).first;
+#endif
           if (repack_info_it->second.assumed_compatible) {
             throw report_error(template_arg_loc, "May not annotate members of opaque types");
           }
@@ -498,7 +503,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
             // Convert variadic argument list into a count + pointer pair
             data.param_types.push_back(context.getSizeType());
             data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
-            types.emplace(context.getSizeType()->getTypePtr(), RepackedType {});
+            types.emplace(context.getSizeType().getTypePtr(), RepackedType {});
             if (!annotations.uniform_va_type.value()->isVoidPointerType()) {
               types.emplace(annotations.uniform_va_type->getTypePtr(), RepackedType {});
             }
