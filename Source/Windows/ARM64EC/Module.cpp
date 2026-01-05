@@ -126,6 +126,10 @@ struct ThreadCPUArea {
   }
 };
 
+struct FrontendThreadData {
+  bool InLockedRWXRead {};
+};
+
 namespace {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
 fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
@@ -148,6 +152,10 @@ std::pair<NTSTATUS, ThreadCPUArea> GetThreadCPUArea(HANDLE Thread) {
 
 ThreadCPUArea GetCPUArea() {
   return ThreadCPUArea(NtCurrentTeb());
+}
+
+FrontendThreadData* GetFrontendThreadData(FEXCore::Core::InternalThreadState* Thread) {
+  return static_cast<FrontendThreadData*>(Thread->FrontendPtr);
 }
 
 bool IsEmulatorStackAddress(const ThreadCPUArea CPUArea, uint64_t Address) {
@@ -873,7 +881,30 @@ void BTCpu64NotifyMemoryDirty(void* Address, SIZE_T Size) {
   InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
 }
 
-void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {}
+void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {
+  auto* ThreadState = GetCPUArea().ThreadState();
+  if (!InvalidationTracker || !ThreadState) {
+    return;
+  }
+
+  auto& InLockedRWXRead = GetFrontendThreadData(ThreadState)->InLockedRWXRead;
+  if (!After) {
+    ThreadCreationMutex.lock();
+    CTX->GetCodeInvalidationMutex().lock();
+    if (InvalidationTracker->BeginUntrackedWriteLocked(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size))) {
+      InLockedRWXRead = true;
+    } else {
+      CTX->GetCodeInvalidationMutex().unlock();
+      ThreadCreationMutex.unlock();
+    }
+  } else {
+    if (InLockedRWXRead) {
+      InLockedRWXRead = false;
+      CTX->GetCodeInvalidationMutex().unlock();
+      ThreadCreationMutex.unlock();
+    }
+  }
+}
 
 NTSTATUS ThreadInit() {
   std::scoped_lock Lock(ThreadCreationMutex);
@@ -927,6 +958,8 @@ NTSTATUS ThreadInit() {
                             .AMD64_MxCsr_copy = 0x1f80,
                             .AMD64_ControlWord = 0x27f};
   Exception::LoadStateFromECContext(Thread, CPUArea.ContextAmd64().AMD64_Context);
+
+  Thread->FrontendPtr = new FrontendThreadData();
 
   {
     auto ThreadTID = GetCurrentThreadId();
@@ -982,6 +1015,8 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
     }
   }
   auto ThreadState = CPUArea.ThreadState();
+
+  delete GetFrontendThreadData(ThreadState);
 
   // GDT and LDT are mirrored, only free one.
   delete[] ThreadState->CurrentFrame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT];
