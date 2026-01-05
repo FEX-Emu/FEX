@@ -448,12 +448,12 @@ ApplicationWindow {
                             id: loggingComboBox
                             property string configValue: ConfigModel.has("OutputLog", refreshCache) ? ConfigModel.getString("OutputLog", refreshCache) : ""
 
-                            currentIndex: configValue === "" ? -1 : configValue == "server" ? 0 : configValue == "stderr" ? 1 : configValue == "stdout" ? 2 : 3
+                            currentIndex: configValue === "" ? -1 : configValue == "server" ? 0 : configValue == "stderr" ? 1 : 2
 
                             onActivated: {
                                 configDirty = true
-                                var configNames = [ "server", "stderr", "stdout" ]
-                                if (currentIndex != -1 && currentIndex < 3) {
+                                var configNames = [ "server", "stderr" ]
+                                if (currentIndex != -1 && currentIndex < 2) {
                                     ConfigModel.setString("OutputLog", configNames[currentIndex])
                                 } else {
                                     // Set by text field below
@@ -463,13 +463,12 @@ ApplicationWindow {
                             model: ListModel {
                                 ListElement { text: "FEXServer" }
                                 ListElement { text: "stderr" }
-                                ListElement { text: "stdout" }
                                 ListElement { text: qsTr("File...") }
                             }
                         }
 
                         ConfigTextFieldForPath {
-                            visible: loggingComboBox.currentIndex === 3
+                            visible: loggingComboBox.currentIndex === 2
                             config: "OutputLog"
                         }
                     }
