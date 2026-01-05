@@ -239,22 +239,33 @@ public:
   DEF_ADDSUB(AddWithFlags)
   DEF_ADDSUB(SubWithFlags)
 
-  int64_t Constants[32];
+  struct ConstantData {
+    int64_t Value;
+    ConstPad Pad;
+    int32_t MaxBytes;
+    [[nodiscard]] auto operator<=>(const ConstantData&) const noexcept = default;
+  };
+  ConstantData Constants[32];
   Ref ConstantRefs[32];
   uint32_t NrConstants;
 
-  Ref Constant(int64_t Value) {
+  Ref Constant(int64_t Value, ConstPad Pad = IR::ConstPad::NoPad, int32_t MaxBytes = 0) {
+    const ConstantData Data {
+      .Value = Value,
+      .Pad = Pad,
+      .MaxBytes = MaxBytes,
+    };
     // Search for the constant in the pool.
     for (unsigned i = 0; i < std::min(NrConstants, 32u); ++i) {
-      if (Constants[i] == Value) {
+      if (Constants[i] == Data) {
         return ConstantRefs[i];
       }
     }
 
     // Otherwise, materialize a fresh constant and pool it.
-    Ref R = _Constant(Value);
+    Ref R = _Constant(Value, Pad, MaxBytes);
     unsigned i = (NrConstants++) & 31;
-    Constants[i] = Value;
+    Constants[i] = Data;
     ConstantRefs[i] = R;
     return R;
   }

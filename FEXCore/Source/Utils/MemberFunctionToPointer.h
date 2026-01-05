@@ -20,13 +20,13 @@ public:
   }
 
   uintptr_t GetConvertedPointer() const {
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
     // Itanium C++ ABI (https://itanium-cxx-abi.github.io/cxx-abi/abi.html#member-function-pointers)
     // Low bit of ptr specifies if this Member function pointer is virtual or not
     // Throw an assert if we were trying to cast a virtual member
     LOGMAN_THROW_A_FMT((PMF.ptr & 1) == 0, "C++ Pointer-To-Member representation didn't have low bit set to 0. Are you trying to cast a "
                                            "virtual member?");
-#elif defined(_M_ARM_64)
+#elif defined(ARCHITECTURE_arm64)
     // C++ ABI for the Arm 64-bit Architecture (IHI 0059E)
     // 4.2.1 Representation of pointer to member function
     // Differs from Itanium specification
@@ -39,14 +39,14 @@ public:
 
   // Gets the vtable entry position of a virtual member function.
   size_t GetVTableOffset() const {
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
     // Itanium C++ ABI (https://itanium-cxx-abi.github.io/cxx-abi/abi.html#member-function-pointers)
     // Low bit of ptr specifies if this Member function pointer is virtual or not
     // Throw an assert if we are not loading a virtual member.
     LOGMAN_THROW_A_FMT((PMF.ptr & 1) == 1, "C++ Pointer-To-Member representation didn't have low bit set to 1. This cast only works for "
                                            "virtual members.");
     return PMF.ptr & ~1ULL;
-#elif defined(_M_ARM_64)
+#elif defined(ARCHITECTURE_arm64)
     // C++ ABI for the Arm 64-bit Architecture (IHI 0059E)
     // 4.2.1 Representation of pointer to member function
     // Differs from Itanium specification

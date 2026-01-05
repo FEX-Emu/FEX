@@ -6,10 +6,10 @@ ExternalProject_Add(FEXLinuxTests
   CMAKE_ARGS
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_64_TOOLCHAIN_FILE}"
+  "-DENABLE_CLANG_THUNKS=True"
   "-DBITNESS=64"
   INSTALL_COMMAND ""
-  BUILD_ALWAYS ON
-  )
+  BUILD_ALWAYS ON)
 
 ExternalProject_Add(FEXLinuxTests_32
   PREFIX FEXLinuxTests_32
@@ -18,10 +18,10 @@ ExternalProject_Add(FEXLinuxTests_32
   CMAKE_ARGS
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_32_TOOLCHAIN_FILE}"
+  "-DENABLE_CLANG_THUNKS=True"
   "-DBITNESS=32"
   INSTALL_COMMAND ""
-  BUILD_ALWAYS ON
-  )
+  BUILD_ALWAYS ON)
 
 # this kind of sucks, but reglob
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS tests/*.cpp)
@@ -63,7 +63,7 @@ function(AddTests Tests BinDirectory Bitness)
       set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/FEXLinuxTestsThunks.json")
     endif()
 
-    if (_M_X86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib")
+    if (ARCHITECTURE_x86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib")
       # Add host test case
       add_test(NAME "${TEST_CASE}.host.flt"
         COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
@@ -95,28 +95,22 @@ if(TEST thunk_testlib.64.jit.flt)
 endif()
 
 # Only emulated
-add_custom_target(
-  fex_linux_tests
+add_custom_target(fex_linux_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.jit\.flt$$"
-  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEX
-  )
+  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEX)
 
 # Only host
-add_custom_target(
-  fex_linux_tests_host
+add_custom_target(fex_linux_tests_host
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.host\.flt$$"
-  DEPENDS FEXLinuxTests FEXLinuxTests_32
-  )
+  DEPENDS FEXLinuxTests FEXLinuxTests_32)
 
 # Both host and emulated
-add_custom_target(
-  fex_linux_tests_all
+add_custom_target(fex_linux_tests_all
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.flt$$"
-  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEX
-  )
+  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEX)

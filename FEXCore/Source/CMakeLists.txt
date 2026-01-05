@@ -1,6 +1,6 @@
-set (MAN_DIR share/man CACHE PATH "MAN_DIR")
+set(MAN_DIR share/man CACHE PATH "MAN_DIR")
 
-set (FEXCORE_BASE_SRCS
+set(FEXCORE_BASE_SRCS
   Interface/Config/Config.cpp
   Utils/Allocator.cpp
   Utils/FileLoading.cpp
@@ -10,12 +10,12 @@ set (FEXCORE_BASE_SRCS
   Utils/Regex.cpp
   )
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   list(APPEND FEXCORE_BASE_SRCS
     Utils/Allocator/64BitAllocator.cpp)
 endif()
 
-set (SRCS
+set(SRCS
   Common/JitSymbols.cpp
   Interface/Context/Context.cpp
   Interface/Core/LookupCache.cpp
@@ -69,10 +69,9 @@ set (SRCS
   Utils/LongJump.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp
-  Utils/Profiler.cpp
-  )
+  Utils/Profiler.cpp)
 
-if (_M_ARM_64)
+if (ARCHITECTURE_arm64)
   list(APPEND SRCS Utils/ArchHelpers/Arm64.cpp)
 else()
   list(APPEND SRCS Utils/ArchHelpers/Arm64_stubs.cpp)
@@ -85,42 +84,41 @@ endif()
 
 set(DEFINES -DJIT_ARM64)
 
-if (_M_X86_64)
-  list(APPEND DEFINES -D_M_X86_64=1)
+if (ARCHITECTURE_x86_64)
+  list(APPEND DEFINES -DARCHITECTURE_x86_64=1)
 endif()
 
-if (_M_ARM_64)
-  list(APPEND DEFINES -D_M_ARM_64=1)
+if (ARCHITECTURE_arm64)
+  list(APPEND DEFINES -DARCHITECTURE_arm64=1)
 endif()
 
 if (ENABLE_VIXL_DISASSEMBLER)
   list(APPEND DEFINES -DVIXL_DISASSEMBLER=1)
 endif()
 
-if (_M_ARM_64 AND HAS_CLANG_PRESERVE_ALL)
+if (ARCHITECTURE_arm64 AND HAS_CLANG_PRESERVE_ALL)
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=__attribute__((preserve_all));-DFEXCORE_HAS_PRESERVE_ALL_ATTR=1")
 else()
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=;-DFEXCORE_HAS_PRESERVE_ALL_ATTR=0")
 endif()
 
-set (LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
+set(LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
 
 if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
-  list (APPEND LIBS vixl)
+  list(APPEND LIBS vixl)
 endif()
 
-if (NOT MINGW_BUILD)
-  list (APPEND LIBS dl)
+if (NOT MINGW)
+  list(APPEND LIBS dl)
 else()
-  list (APPEND LIBS synchronization)
-  if (_M_ARM_64EC)
-    list (APPEND LIBS mincore)
+  list(APPEND LIBS synchronization)
+  if (ARCHITECTURE_arm64ec)
+    list(APPEND LIBS mincore)
   endif()
 endif()
 
 # Generate config
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json.in
   ${CMAKE_BINARY_DIR}/generated/Config/Config.json)
 
 # Generate IR include file
@@ -135,11 +133,10 @@ add_custom_command(
   OUTPUT "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}"
   DEPENDS "${INPUT_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
-  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}"
-  )
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
+    "${INPUT_NAME}" "${OUTPUT_NAME}" "${OUTPUT_DISPATCHER_NAME}")
 
-set_source_files_properties(${OUTPUT_NAME} PROPERTIES
-  GENERATED TRUE)
+set_source_files_properties(${OUTPUT_NAME} PROPERTIES GENERATED TRUE)
 
 # Generate IR documentation
 set(OUTPUT_IR_DOC "${CMAKE_BINARY_DIR}/IR.md")
@@ -148,11 +145,10 @@ add_custom_command(
   OUTPUT "${OUTPUT_IR_DOC}"
   DEPENDS "${INPUT_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py"
-  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py" "${INPUT_NAME}" "${OUTPUT_IR_DOC}"
-  )
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py"
+    "${INPUT_NAME}" "${OUTPUT_IR_DOC}")
 
-set_source_files_properties(${OUTPUT_IR_NAME} PROPERTIES
-  GENERATED TRUE)
+set_source_files_properties(${OUTPUT_IR_NAME} PROPERTIES GENERATED TRUE)
 
 # Create the target
 add_custom_target(IR_INC
@@ -176,14 +172,12 @@ add_custom_command(
   DEPENDS "${INPUT_CONFIG_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py"
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py" "${INPUT_CONFIG_NAME}" "${OUTPUT_CONFIG_NAME}" "${OUTPUT_MAN_NAME}"
-  "${OUTPUT_CONFIG_OPTION_NAME}"
-  )
+  "${OUTPUT_CONFIG_OPTION_NAME}")
 
 add_custom_command(
   OUTPUT "${OUTPUT_MAN_NAME_COMPRESS}"
   DEPENDS "${OUTPUT_MAN_NAME}"
-  COMMAND "gzip" "-kf9n" "${OUTPUT_MAN_NAME}"
-  )
+  COMMAND "gzip" "-kf9n" "${OUTPUT_MAN_NAME}")
 
 set_source_files_properties(${OUTPUT_CONFIG_NAME} PROPERTIES
   GENERATED TRUE)
@@ -227,8 +221,7 @@ function(AddDefaultOptionsToTarget Name)
   target_compile_definitions(${Name} PRIVATE ${DEFINES})
   add_dependencies(${Name} CONFIG_INC IR_INC)
 
-  target_compile_options(${Name}
-    PRIVATE
+  target_compile_options(${Name} PRIVATE
     -Wall
     -Werror=cast-qual
     -Werror=ignored-qualifiers
@@ -236,31 +229,20 @@ function(AddDefaultOptionsToTarget Name)
 
     -Wno-trigraphs
     -ffunction-sections
-    -fwrapv
-  )
+    -fwrapv)
 
   if (GCC_COLOR)
-    target_compile_options(${Name}
-      PRIVATE
-      "-fdiagnostics-color=always")
-  endif()
-  if (CLANG_COLOR)
-    target_compile_options(${Name}
-      PRIVATE
-      "-fcolor-diagnostics")
+    target_compile_options(${Name} PRIVATE "-fdiagnostics-color=always")
   endif()
 
-  if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-    target_link_options(${Name}
-      PRIVATE
-      "LINKER:--gc-sections"
-      "LINKER:--strip-all"
-      "LINKER:--as-needed"
-    )
+  if (CLANG_COLOR)
+    target_compile_options(${Name} PRIVATE "-fcolor-diagnostics")
   endif()
+
+  LinkerGC(${Name})
 endfunction()
 
-# Build FEXCore_Config static library
+# Build FEXCore_Base static library
 add_library(FEXCore_Base STATIC ${FEXCORE_BASE_SRCS})
 target_link_libraries(FEXCore_Base ${LIBS})
 AddDefaultOptionsToTarget(FEXCore_Base)
@@ -269,34 +251,34 @@ if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
   target_link_libraries(FEXCore_Base TracyClient)
 endif()
 
-function(AddObject Name Type)
-  add_library(${Name} ${Type} ${SRCS})
+function(AddObject Name)
+  add_library(${Name} OBJECT ${SRCS})
 
-  target_link_libraries(${Name} FEXCore_Base)
+  target_link_libraries(${Name} PRIVATE FEXCore_Base)
   target_compile_options(${Name} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
   AddDefaultOptionsToTarget(${Name})
-
-  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 endfunction()
 
 function(AddLibrary Name Type)
   add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
-  target_link_libraries(${Name} FEXCore_Base)
-  target_compile_options(${Name} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
+  # During generation of the import library (dll.a), MinGW needs some extra symbols from libraries
+  # such as fmt, which are propagated by FEXCore_Base. Wonderful.
+  if (MINGW)
+    target_link_libraries(${Name} FEXCore_Base)
+  endif()
   AddDefaultOptionsToTarget(${Name})
 endfunction()
 
-AddObject(${PROJECT_NAME}_object OBJECT)
+AddObject(${PROJECT_NAME}_object)
 AddLibrary(${PROJECT_NAME} STATIC)
 AddLibrary(${PROJECT_NAME}_shared SHARED)
 
-if (NOT MINGW_BUILD AND NOT BUILD_STEAM_SUPPORT)
-  install(TARGETS ${PROJECT_NAME}_shared
-    LIBRARY
-      DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      COMPONENT Libraries)
+if (NOT MINGW AND NOT BUILD_STEAM_SUPPORT)
+  install(TARGETS ${PROJECT_NAME}_shared LIBRARY
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    COMPONENT Libraries)
 endif()
 
 # Meta-library to link jemalloc libraries enabled in the build configuration.
@@ -311,7 +293,7 @@ if (ENABLE_JEMALLOC_GLIBC_ALLOC)
   target_link_libraries(JemallocLibs INTERFACE FEX_jemalloc_glibc)
 endif()
 
-if (NOT MINGW_BUILD)
+if (NOT MINGW)
   # Dummy project to use for host tools.
   # This overrides use of jemalloc in FEXCore with the normal glibc allocator.
   add_library(JemallocDummy STATIC Utils/AllocatorHooks.cpp)

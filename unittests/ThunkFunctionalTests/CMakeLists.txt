@@ -2,9 +2,9 @@ set(FUNCTIONAL_DEPENDS "")
 
 function(AddThunksTest Bin ThunksFile)
   if (NOT ThunksFile)
-    set (TEST_NAME ThunkFunctionalTest-NoThunks-${Bin})
+    set(TEST_NAME ThunkFunctionalTest-NoThunks-${Bin})
   else()
-    set (TEST_NAME ThunkFunctionalTest-Thunks-${Bin})
+    set(TEST_NAME ThunkFunctionalTest-Thunks-${Bin})
   endif()
 
   add_test(NAME ${TEST_NAME}
@@ -28,22 +28,19 @@ endfunction()
 AddTest("/usr/bin/glxinfo" "GLThunks.json")
 AddTest("/usr/bin/vulkaninfo" "VulkanThunks.json")
 
-add_custom_target(
-  thunk_functional_tests_nothunks
+add_custom_target(thunk_functional_tests_nothunks
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "ThunkFunctionalTest-NoThunks-\.*"
   DEPENDS "${FUNCTIONAL_DEPENDS}")
 
-add_custom_target(
-  thunk_functional_tests_thunks
+add_custom_target(thunk_functional_tests_thunks
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "ThunkFunctionalTest-Thunks-\.*"
   DEPENDS "${FUNCTIONAL_DEPENDS}")
 
-add_custom_target(
-  thunk_functional_tests
+add_custom_target(thunk_functional_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "ThunkFunctionalTest\.*"

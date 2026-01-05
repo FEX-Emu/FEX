@@ -319,7 +319,6 @@ public:
 
   void UnhandledOp(OpcodeArgs);
   void MOVGPROp(OpcodeArgs, uint32_t SrcIndex);
-  void MOVGPRImmediate(OpcodeArgs);
   void MOVGPRNTOp(OpcodeArgs);
   void MOVVectorAlignedOp(OpcodeArgs);
   void MOVVectorUnalignedOp(OpcodeArgs);
@@ -373,7 +372,7 @@ public:
   void CMOVOp(OpcodeArgs);
   void CPUIDOp(OpcodeArgs);
   void XGetBVOp(OpcodeArgs);
-  uint32_t LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit);
+  uint32_t GetConstantShift(X86Tables::DecodedOp Op, bool Is1Bit);
   void SHLOp(OpcodeArgs);
   void SHLImmediateOp(OpcodeArgs, bool SHL1Bit);
   void SHROp(OpcodeArgs);
@@ -1544,7 +1543,7 @@ private:
   [[nodiscard]]
   static bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
     // Literals are immediates as sources but memory addresses as destinations.
-    return !(Load && Operand.IsLiteral()) && !Operand.IsGPR();
+    return !(Load && (Operand.IsLiteral() || Operand.IsLiteralRelocation())) && !Operand.IsGPR();
   }
 
   [[nodiscard]]

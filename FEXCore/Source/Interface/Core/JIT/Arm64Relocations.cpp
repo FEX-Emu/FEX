@@ -28,7 +28,8 @@ void Arm64JITCore::InsertNamedThunkRelocation(ARMEmitter::Register Reg, const IR
 
   uint64_t Pointer = reinterpret_cast<uint64_t>(EmitterCTX->ThunkHandler->LookupThunk(Sum));
 
-  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Pointer, false);
+  // Pointers are required to fit within 48-bit VA space.
+  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Pointer, FEXCore::CPU::Arm64Emitter::PadType::AUTOPAD, 6);
   Relocations.emplace_back(MoveABI);
 }
 
@@ -92,7 +93,8 @@ void Arm64JITCore::InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constan
   MoveABI.GuestRIP.GuestRIP = Constant;
   MoveABI.GuestRIP.RegisterIndex = Reg.Idx();
 
-  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Constant, false);
+  // Pointers are required to fit within 48-bit VA space.
+  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Constant, FEXCore::CPU::Arm64Emitter::PadType::AUTOPAD, 6);
   Relocations.emplace_back(MoveABI);
 }
 

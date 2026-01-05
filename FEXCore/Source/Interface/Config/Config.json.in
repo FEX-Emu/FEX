@@ -23,6 +23,13 @@
           "Enable the code caching subsystem"
         ]
       },
+      "EnableCodeCacheValidation": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enable expensive validation when loading code caches"
+        ]
+      },
       "HostFeatures": {
         "Type": "strenum",
         "Default": "FEXCore::Config::HostFeatures::OFF",
@@ -364,7 +371,7 @@
         "Default": "server",
         "Desc": [
           "File to write FEX output to.",
-          "[stdout, stderr, server, <Filename>]"
+          "[stderr, server, <Filename>]"
         ]
       },
       "TelemetryDirectory": {

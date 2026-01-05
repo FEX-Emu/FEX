@@ -241,7 +241,7 @@ DEF_OP(ProcessorID) {
   sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
 
   // Load the getcpu syscall number
-#if defined(_M_X86_64)
+#if defined(ARCHITECTURE_x86_64)
   // Just to ensure the syscall number doesn't change if compiled for an x86_64 host.
   constexpr auto GetCPUSyscallNum = 0xa8;
 #else
@@ -305,7 +305,7 @@ DEF_OP(MonoBackpatcherWrite) {
     mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, TMP4);
   }
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
   LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 1);
   strb(TMP1.W(), TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
@@ -318,7 +318,7 @@ DEF_OP(MonoBackpatcherWrite) {
     blr(ARMEmitter::Reg::r4);
   }
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
   strb(ARMEmitter::WReg::zr, TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif

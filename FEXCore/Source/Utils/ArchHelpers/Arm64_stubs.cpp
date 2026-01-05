@@ -5,7 +5,7 @@
 
 namespace FEXCore::ArchHelpers::Arm64 {
 
-#ifndef _M_ARM_64
+#ifndef ARCHITECTURE_arm64
 // These are stub implementations that exist only to allow instantiating the arm64 jit
 // on non arm platforms.
 

@@ -16,7 +16,7 @@ $end_info$
 #include <sys/epoll.h>
 
 namespace FEX::HLE {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 template<int syscall_num>
 requires (syscall_num != -1)
 uint64_t SyscallPassthrough0(FEXCore::Core::CpuStateFrame* Frame) {

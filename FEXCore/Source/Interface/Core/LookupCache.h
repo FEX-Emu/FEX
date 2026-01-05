@@ -141,7 +141,7 @@ struct GuestToHostMap {
     BlockLinks->insert({{GuestDestination, HostLink}, delinker});
   }
 
-  bool AddBlockExecutableRange(const fextl::set<uint64_t>& Addresses, uint64_t Start, uint64_t Length, const LookupCacheWriteLockToken&) {
+  bool AddBlockExecutableRange(const std::ranges::input_range auto& Addresses, uint64_t Start, uint64_t Length, const LookupCacheWriteLockToken&) {
     bool rv = false;
 
     for (auto CurrentPage = Start >> 12, EndPage = (Start + Length - 1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
@@ -407,7 +407,7 @@ private:
         if (!NewPageBacking) {
           // Couldn't allocate, clear L2 and retry
           ClearL2Cache(lk);
-          CacheBlockMapping(Address, Entry, false, lk);
+          CacheBlockMapping(FullAddress, Entry, false, lk);
           return;
         }
         Pointers[Address] = NewPageBacking;

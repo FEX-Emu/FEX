@@ -64,7 +64,7 @@ $end_info$
 #include <sys/sysinfo.h>
 #include <sys/signal.h>
 
-namespace {
+namespace FEX::Logging {
 static bool SilentLog {};
 static int OutputFD {STDERR_FILENO};
 
@@ -86,18 +86,98 @@ void AssertHandler(const char* Message) {
   return MsgHandler(LogMan::ASSERT, Message);
 }
 
-} // Anonymous namespace
+namespace FEXServer {
+  static int FEXServerFD {-1};
 
-namespace FEXServerLogging {
-int FEXServerFD {-1};
-void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
-  FEXServerClient::MsgHandler(FEXServerFD, Level, Message);
+  void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
+    FEXServerClient::MsgHandler(FEXServerFD, Level, Message);
+  }
+
+  void AssertHandler(const char* Message) {
+    FEXServerClient::AssertHandler(FEXServerFD, Message);
+  }
+} // namespace FEXServer
+
+void Init() {
+  FEX_CONFIG_OPT(SilentLog, SILENTLOG);
+  FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
+  FEX::Logging::SilentLog = SilentLog();
+
+  if (SilentLog()) {
+    LogMan::Throw::UnInstallHandler();
+    LogMan::Msg::UnInstallHandler();
+  } else {
+    const auto& LogFile = OutputLog();
+    // If stderr or stdout then we need to dup the FD
+    // In some cases some applications will close stderr and stdout
+    // then redirect the FD to either a log OR some cases just not use
+    // stderr/stdout and the FD will be reused for regular FD ops.
+    //
+    // We want to maintain the original output location otherwise we
+    // can run in to problems of writing to some file
+    auto LogFD = OutputFD;
+    if (LogFile == "stderr") {
+      LogFD = dup(STDERR_FILENO);
+    } else if (LogFile == "server") {
+      Logging::FEXServer::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
+      if (FEXServer::FEXServerFD != -1) {
+        LogMan::Throw::InstallHandler(Logging::FEXServer::AssertHandler);
+        LogMan::Msg::InstallHandler(Logging::FEXServer::MsgHandler);
+      }
+    } else if (!LogFile.empty()) {
+      constexpr int USER_PERMS = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+      LogFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, USER_PERMS);
+    }
+
+    if (LogFD == -1) {
+      LogMan::Msg::EFmt("Couldn't open log file. Going Silent.");
+      Logging::SilentLog = true;
+    } else {
+      OutputFD = LogFD;
+    }
+  }
+  DisableOutputColors = !isatty(OutputFD);
 }
 
-void AssertHandler(const char* Message) {
-  FEXServerClient::AssertHandler(FEXServerFD, Message);
+} // namespace FEX::Logging
+
+namespace FEX::Allocator {
+static fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
+static fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
+static fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
+
+void Init(bool Is64Bit) {
+  if (Is64Bit) {
+    // Destroy the 48th bit if it exists
+    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
+  } else {
+    // Reserve [0x1_0000_0000, 0x2_0000_0000).
+    // Safety net if 32-bit address calculation overflows in to 64-bit range.
+    constexpr uint64_t First64BitAddr = 0x1'0000'0000ULL;
+    Low4GB = FEXCore::Allocator::StealMemoryRegion(First64BitAddr, First64BitAddr + First64BitAddr);
+
+    // Setup our userspace allocator
+    FEXCore::Allocator::SetupHooks();
+    Allocator = FEX::HLE::CreatePassthroughAllocator();
+
+    // Now that the upper 32-bit address space is blocked for future allocations,
+    // exhaust all of jemalloc's remaining internal allocations that it reserved before.
+    // TODO: It's unclear how reliably this exhausts those reserves
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+    void* data;
+    do {
+      data = malloc(0x1);
+    } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
+    free(data);
+  }
 }
-} // namespace FEXServerLogging
+
+void Shutdown() {
+  FEXCore::Allocator::ClearHooks();
+  FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
+  FEXCore::Allocator::ReclaimMemoryRegion(Low4GB);
+}
+} // namespace FEX::Allocator
 
 bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
   int FD {-1};
@@ -271,8 +351,9 @@ int main(int argc, char** argv, char** const envp) {
   int FEXFD {StealFEXFDFromEnv("FEX_EXECVEFD")};
   int FEXSeccompFD {StealFEXFDFromEnv("FEX_SECCOMPFD")};
 
-  LogMan::Throw::InstallHandler(AssertHandler);
-  LogMan::Msg::InstallHandler(MsgHandler);
+  // Early init trivial handlers.
+  LogMan::Throw::InstallHandler(FEX::Logging::AssertHandler);
+  LogMan::Msg::InstallHandler(FEX::Logging::MsgHandler);
 
   auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv);
   auto Args = ArgsLoader->Get();
@@ -314,49 +395,11 @@ int main(int argc, char** argv, char** const envp) {
     return -1;
   }
 
-  FEX_CONFIG_OPT(SilentLog, SILENTLOG);
-  FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);
   FEX_CONFIG_OPT(HostEnvironment, HOSTENV);
-  ::SilentLog = SilentLog();
 
-  if (::SilentLog) {
-    LogMan::Throw::UnInstallHandler();
-    LogMan::Msg::UnInstallHandler();
-  } else {
-    const auto& LogFile = OutputLog();
-    // If stderr or stdout then we need to dup the FD
-    // In some cases some applications will close stderr and stdout
-    // then redirect the FD to either a log OR some cases just not use
-    // stderr/stdout and the FD will be reused for regular FD ops.
-    //
-    // We want to maintain the original output location otherwise we
-    // can run in to problems of writing to some file
-    auto LogFD = OutputFD;
-    if (LogFile == "stderr") {
-      LogFD = dup(STDERR_FILENO);
-    } else if (LogFile == "stdout") {
-      LogFD = dup(STDOUT_FILENO);
-    } else if (LogFile == "server") {
-      FEXServerLogging::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
-      if (FEXServerLogging::FEXServerFD != -1) {
-        LogMan::Throw::InstallHandler(FEXServerLogging::AssertHandler);
-        LogMan::Msg::InstallHandler(FEXServerLogging::MsgHandler);
-      }
-    } else if (!LogFile.empty()) {
-      constexpr int USER_PERMS = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-      LogFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, USER_PERMS);
-    }
-
-    if (LogFD == -1) {
-      LogMan::Msg::EFmt("Couldn't open log file. Going Silent.");
-      ::SilentLog = true;
-    } else {
-      OutputFD = LogFD;
-    }
-  }
-  DisableOutputColors = !isatty(OutputFD);
+  FEX::Logging::Init();
 
   if (StartupSleep() && (StartupSleepProcName().empty() || Program.ProgramName == StartupSleepProcName())) {
     LogMan::Msg::IFmt("[{}][{}] Sleeping for {} seconds", ::getpid(), Program.ProgramName, StartupSleep());
@@ -403,7 +446,7 @@ int main(int argc, char** argv, char** const envp) {
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
     fextl::fmt::print(stderr, "Invalid or Unsupported elf file.\n");
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
     fextl::fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
     fextl::fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
     if (LDPath().empty() || FHU::Filesystem::Exists(LDPath()) == false) {
@@ -442,33 +485,7 @@ int main(int argc, char** argv, char** const envp) {
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-  fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
-  fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
-
-  if (Loader.Is64BitMode()) {
-    // Destroy the 48th bit if it exists
-    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
-  } else {
-    // Reserve [0x1_0000_0000, 0x2_0000_0000).
-    // Safety net if 32-bit address calculation overflows in to 64-bit range.
-    constexpr uint64_t First64BitAddr = 0x1'0000'0000ULL;
-    Low4GB = FEXCore::Allocator::StealMemoryRegion(First64BitAddr, First64BitAddr + First64BitAddr);
-
-    // Setup our userspace allocator
-    FEXCore::Allocator::SetupHooks();
-    Allocator = FEX::HLE::CreatePassthroughAllocator();
-
-    // Now that the upper 32-bit address space is blocked for future allocations,
-    // exhaust all of jemalloc's remaining internal allocations that it reserved before.
-    // TODO: It's unclear how reliably this exhausts those reserves
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-    void* data;
-    do {
-      data = malloc(0x1);
-    } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
-    free(data);
-  }
+  FEX::Allocator::Init(Loader.Is64BitMode());
 
   FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
 
@@ -497,9 +514,9 @@ int main(int argc, char** argv, char** const envp) {
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName, SupportsAVX);
   auto ThunkHandler = FEX::HLE::CreateThunkHandler();
 
-  auto SyscallHandler = Loader.Is64BitMode() ?
-                          FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
-                          FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(), std::move(Allocator));
+  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
+                                               FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(),
+                                                                            std::move(FEX::Allocator::Allocator));
   if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
     CTX->SetCodeMapWriter(fextl::make_unique<FEXCore::CodeMapWriter>(*SyscallHandler));
   }
@@ -512,13 +529,16 @@ int main(int argc, char** argv, char** const envp) {
   SignalDelegation->SetVDSOSymbols();
 
   // Now that we have the syscall handler. Track some FDs that are FEX owned.
-  if (OutputFD > 2) {
-    SyscallHandler->FM.TrackFEXFD(OutputFD);
+  if (FEX::Logging::OutputFD > 2) {
+    SyscallHandler->FM.TrackFEXFD(FEX::Logging::OutputFD);
   }
   SyscallHandler->FM.TrackFEXFD(FEXServerClient::GetServerFD());
-  if (FEXServerLogging::FEXServerFD != -1) {
-    SyscallHandler->FM.TrackFEXFD(FEXServerLogging::FEXServerFD);
+  if (FEX::Logging::FEXServer::FEXServerFD != -1) {
+    SyscallHandler->FM.TrackFEXFD(FEX::Logging::FEXServer::FEXServerFD);
   }
+
+  // query ProgramFD now since MapMemory will close it
+  const int ProgramFD = dup(Loader.GetMainElfFD());
 
   {
     Loader.SetVDSOBase(VDSOMapping.VDSOBase);
@@ -558,6 +578,13 @@ int main(int argc, char** argv, char** const envp) {
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 
+  // Request code cache generation and load caches for all binaries loaded previously
+  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
+    FEXServerClient::PopulateCodeCache(FEXServerClient::GetServerFD(), ProgramFD, FEXCore::Config::Get_MULTIBLOCK());
+    SyscallHandler->TriggerPostStartupCodeCacheLoad(*ParentThread->Thread);
+  }
+  close(ProgramFD);
+
   CTX->ExecuteThread(ParentThread->Thread);
 
   DebugServer.reset();
@@ -583,9 +610,7 @@ int main(int argc, char** argv, char** const envp) {
   LogMan::Throw::UnInstallHandler();
   LogMan::Msg::UnInstallHandler();
 
-  FEXCore::Allocator::ClearHooks();
-  FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
-  FEXCore::Allocator::ReclaimMemoryRegion(Low4GB);
+  FEX::Allocator::Shutdown();
 
   // Allocator is now original system allocator
   FEXCore::Telemetry::Shutdown(Program.ProgramName);

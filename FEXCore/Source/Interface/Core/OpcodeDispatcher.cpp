@@ -1325,35 +1325,12 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
 }
 
 void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
-
-  auto GenMemSrcFromOp = [&](size_t StartingSource) -> AddressMode {
-    const uint64_t Lower = Op->Src[StartingSource].Literal();
-    const uint64_t Upper = Op->Src[StartingSource + 1].Literal();
-    const uint64_t Combined = (Upper << 32) | Lower;
-    const auto GPRSize = GetGPROpSize();
-
-    AddressMode A {
-      .Segment = GetSegment(Op->Flags),
-      .Offset = static_cast<int64_t>(Combined),
-      .AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize,
-      .NonTSO = false,
-    };
-
-    return A;
-  };
   switch (Op->OP) {
   case 0xA0:
   case 0xA1: {
     // Source is memory(literal)
     // Dest is GPR
-    Ref Src {};
-    if (Op->Src[0].Data.Literal.Size <= 4) {
-      Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
-    } else {
-      const auto OpSize = OpSizeFromSrc(Op);
-      auto A = GenMemSrcFromOp(0);
-      Src = _LoadMemGPRAutoTSO(OpSize, A, OpSize::i8Bit);
-    }
+    auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
     StoreResultGPR(Op, Op->Dest, Src);
     break;
   }
@@ -1365,13 +1342,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
-    if (Op->Src[1].Data.Literal.Size <= 4) {
-      StoreResultGPR(Op, Op->Src[1], Src);
-    } else {
-      const auto OpSize = OpSizeFromSrc(Op);
-      auto A = GenMemSrcFromOp(1);
-      _StoreMemGPRAutoTSO(OpSize, A, Src, OpSize::i8Bit);
-    }
+    StoreResultGPR(Op, Op->Src[1], Src);
     break;
   }
   }
@@ -1396,7 +1367,7 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RDX, RDX);
 }
 
-uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit) {
+uint32_t OpDispatchBuilder::GetConstantShift(X86Tables::DecodedOp Op, bool Is1Bit) {
   if (Is1Bit) {
     return 1;
   } else {
@@ -1431,7 +1402,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
 void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
-  uint64_t Shift = LoadConstantShift(Op, SHL1Bit);
+  uint64_t Shift = GetConstantShift(Op, SHL1Bit);
   const auto Size = GetSrcBitSize(Op);
 
   Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Constant(Shift));
@@ -1454,7 +1425,7 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
   const auto Size = GetSrcBitSize(Op);
   auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
 
-  uint64_t Shift = LoadConstantShift(Op, SHR1Bit);
+  uint64_t Shift = GetConstantShift(Op, SHR1Bit);
   auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Constant(Shift));
 
   CalculateFlags_ShiftRightImmediate(OpSizeFromSrc(Op), ALUOp, Dest, Shift);
@@ -1506,7 +1477,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
-  uint64_t Shift = LoadConstantShift(Op, false);
+  uint64_t Shift = GetConstantShift(Op, false);
   const auto Size = GetSrcBitSize(Op);
 
   Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = Size >= 32});
@@ -1574,7 +1545,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
-  uint64_t Shift = LoadConstantShift(Op, false);
+  uint64_t Shift = GetConstantShift(Op, false);
   const auto Size = GetSrcBitSize(Op);
 
   if (Shift != 0) {
@@ -1615,7 +1586,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
   }
 
   if (Immediate) {
-    uint64_t Shift = LoadConstantShift(Op, SHR1Bit);
+    uint64_t Shift = GetConstantShift(Op, SHR1Bit);
     Ref Result = _Ashr(OpSize, Dest, Constant(Shift));
 
     CalculateFlags_SignShiftRightImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
@@ -1643,7 +1614,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
   ArithRef UnmaskedSrc;
   if (Is1Bit || IsImmediate) {
-    UnmaskedConst = LoadConstantShift(Op, Is1Bit);
+    UnmaskedConst = GetConstantShift(Op, Is1Bit);
     UnmaskedSrc = ARef(UnmaskedConst);
   } else {
     UnmaskedSrc = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
@@ -3067,7 +3038,6 @@ void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
                        (0U << 2) | ///< EM - Emulation
                        (1U << 1) | ///< MP - Monitor Coprocessor
                        (1U << 0)); ///< PE - Protection Enabled
-
   const auto OpAddr = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0);
   if (Is64BitMode) {
     DstSize = OpAddr == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? OpSize::i16Bit :
@@ -4131,6 +4101,8 @@ void OpDispatchBuilder::CheckLegacySegmentRead(Ref NewNode, uint32_t SegmentReg)
 
   // Will set the telemetry value if NewNode is != 0
   _TelemetrySetValue(NewNode, TelemIndex);
+  // Telemetry will dirty flags, and user code does not expect LoadSource to clobber flags, fix that up here as this is an edge case.
+  CalculateDeferredFlags();
 #endif
 }
 
@@ -4169,6 +4141,8 @@ void OpDispatchBuilder::CheckLegacySegmentWrite(Ref NewNode, uint32_t SegmentReg
 
   // Will set the telemetry value if NewNode is != 0
   _TelemetrySetValue(NewNode, TelemIndex);
+  // Telemetry will dirty flags, and user code does not expect LoadSource to clobber flags, fix that up here as this is an edge case.
+  CalculateDeferredFlags();
 #endif
 }
 
@@ -4234,18 +4208,26 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
   } else if (Operand.IsGPRDirect()) {
     A.Base = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
     A.NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPR.GPR);
-  } else if (Operand.IsGPRIndirect()) {
+  } else if (Operand.IsGPRIndirect() || Operand.IsGPRIndirectRelocation()) {
     A.Base = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
-    A.Offset = Operand.Data.GPRIndirect.Displacement;
+    if (Operand.IsGPRIndirectRelocation()) {
+      A.Base = Add(GPRSize, _EntrypointOffset(GPRSize, Operand.Data.GPRIndirect.Displacement), A.Base);
+    } else {
+      A.Offset = static_cast<int32_t>(Operand.Data.GPRIndirect.Displacement);
+    }
     A.NonTSO |= IsNonTSOReg(AccessType, Operand.Data.GPRIndirect.GPR);
-  } else if (Operand.IsRIPRelative()) {
+  } else if (Operand.IsRIPRelative() || Operand.IsRIPRelativeRelocation()) {
     if (Is64BitMode) {
-      A.Base = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
+      A.Base = GetRelocatedPC(Op, static_cast<int32_t>(Operand.Data.RIPLiteral.Value));
     } else {
       // 32bit this isn't RIP relative but instead absolute
-      A.Offset = Operand.Data.RIPLiteral.Value.u;
+      if (Operand.IsRIPRelativeRelocation()) {
+        A.Base = _EntrypointOffset(GPRSize, Operand.Data.RIPLiteral.Value);
+      } else {
+        A.Offset = Operand.Data.RIPLiteral.Value;
+      }
     }
-  } else if (Operand.IsSIB()) {
+  } else if (Operand.IsSIB() || Operand.IsSIBRelocation()) {
     const bool IsVSIB = IsLoad && ((Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0);
 
     if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
@@ -4266,8 +4248,20 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
       A.IndexScale = Operand.Data.SIB.Scale;
     }
 
-    A.Offset = Operand.Data.SIB.Offset;
+    if (Operand.IsSIBRelocation()) {
+      auto EPOffset = _EntrypointOffset(GPRSize, Operand.Data.SIB.Offset);
+      if (A.Base) {
+        A.Base = Add(GPRSize, EPOffset, A.Base);
+      } else {
+        A.Base = EPOffset;
+      }
+    } else {
+      A.Offset = static_cast<int32_t>(Operand.Data.SIB.Offset);
+    }
+
     A.NonTSO |= IsNonTSOReg(AccessType, Operand.Data.SIB.Base) || IsNonTSOReg(AccessType, Operand.Data.SIB.Index);
+  } else if (Operand.IsLiteralRelocation()) {
+    A.Base = _EntrypointOffset(GPRSize, Operand.Data.LiteralRelocation.EntrypointOffset);
   } else {
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }
@@ -4500,20 +4494,6 @@ void OpDispatchBuilder::MOVGPROp(OpcodeArgs, uint32_t SrcIndex) {
   StoreResultGPR(Op, Src, OpSize::i8Bit);
 }
 
-void OpDispatchBuilder::MOVGPRImmediate(OpcodeArgs) {
-  Ref Src {};
-  if (Op->Src[0].Data.Literal.Size <= 4) {
-    Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit, .AllowUpperGarbage = true});
-  } else {
-    // 8-byte literal is special cased.
-    const uint64_t Lower = Op->Src[0].Literal();
-    const uint64_t Upper = Op->Src[1].Literal();
-    const uint64_t Combined = (Upper << 32) | Lower;
-    Src = _Constant(Combined);
-  }
-  StoreResultGPR(Op, Src, OpSize::i8Bit);
-}
-
 void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
   StoreResultGPR(Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
@@ -4658,7 +4638,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     }
 #endif
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     // This is used when QueryPerformanceCounter is called on recent Windows versions, it causes CNTVCT to be written into RAX.
     constexpr uint8_t GET_CNTVCT_LITERAL = 0x81;
     if (Literal == GET_CNTVCT_LITERAL) {

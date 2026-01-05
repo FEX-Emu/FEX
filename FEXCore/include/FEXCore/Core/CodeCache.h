@@ -7,6 +7,8 @@
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/fextl/robin_map.h>
+#include <FEXCore/HLE/SourcecodeResolver.h>
 
 #include <atomic>
 #include <cstdint>
@@ -26,27 +28,37 @@ namespace HLE {
   struct SourcecodeMap;
 } // namespace HLE
 
+enum class GuestRelocationType : uint32_t { Rel32, Rel64 };
+
 // Generic information associated with an executable file.
 struct ExecutableFileInfo {
-  ~ExecutableFileInfo();
-
 #if __clang_major__ < 16
   // Workaround for broken aggregate-initialization with std::piecewise_construct
   ExecutableFileInfo(fextl::unique_ptr<HLE::SourcecodeMap>, uint64_t, fextl::string);
   ExecutableFileInfo() = default;
 #endif
 
-  fextl::unique_ptr<HLE::SourcecodeMap> SourcecodeMap;
+  // This legacy field must be assignable through const-references
+  mutable fextl::unique_ptr<HLE::SourcecodeMap> SourcecodeMap;
+
   uint64_t FileId = 0;
   fextl::string Filename;
+  fextl::robin_map<uint32_t, GuestRelocationType> Relocations;
 };
 
 // Information associated with a specific section of an executable file
 struct ExecutableFileSectionInfo {
-  ExecutableFileInfo& FileInfo;
+  const ExecutableFileInfo& FileInfo;
 
   // Start address that the file is mapped to.
+  // NOTE: Since executable files may be mapped multiple times, this can depend on the queried section.
   uintptr_t FileStartVA;
+
+  // Start address of the section mapping
+  uintptr_t BeginVA;
+
+  // End address that of the section mapping
+  uintptr_t EndVA;
 };
 
 using CodeMapFileId = uint64_t;
@@ -175,8 +187,9 @@ public:
   /**
    * Loads a code cache from mapped memory and appends it to the current Core state.
    * TODO: Optionally recompiles all contained code blocks at runtime for validation.
+   * Returns false if the provided cache file is invalid, and true otherwise.
    */
-  virtual void LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) = 0;
+  virtual bool LoadData(Core::InternalThreadState*, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) = 0;
 
   /**
    * Bundles the current Core state (CodeBuffer, GuestToHostMapping, ...) to a code cache and writes it to the given file descriptor.

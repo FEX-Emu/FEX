@@ -1,5 +1,5 @@
 
-set (SRCS
+add_library(softfloat_3e STATIC
   # F80 support
   src/extF80_add.c
   src/extF80_div.c
@@ -84,7 +84,7 @@ set (SRCS
   src/s_normSubnormalF32Sig.c
   src/s_f32UIToCommonNaN.c)
 
-if (_M_ARM_64 AND HAS_CLANG_PRESERVE_ALL)
+if (ARCHITECTURE_arm64 AND HAS_CLANG_PRESERVE_ALL)
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=__attribute__((preserve_all));-DFEXCORE_HAS_PRESERVE_ALL_ATTR=1")
 else()
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=;-DFEXCORE_HAS_PRESERVE_ALL_ATTR=0")
@@ -92,7 +92,6 @@ endif()
 
 list(APPEND DEFINES "-DSOFTFLOAT_BUILTIN_CLZ=1;-DINLINE=static inline;-DINLINE_LEVEL=4;-DSOFTFLOAT_FAST_INT64=1;-DSOFTFLOAT_FAST_DIV32TO16=1;-DSOFTFLOAT_FAST_DIV64TO32=1")
 
-add_library(softfloat_3e STATIC ${SRCS})
 target_include_directories(softfloat_3e PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 target_include_directories(softfloat_3e PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/SoftFloat-3e/)
 target_compile_definitions(softfloat_3e PUBLIC ${DEFINES})

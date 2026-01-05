@@ -77,7 +77,7 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
 }
 
 CPUFeatures::CPUFeatures(FEXCore::Context::Context& CTX) {
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
   // Report as a 64-bit host for ARM64EC.
   CpuInfo.ProcessorArchitecture = PROCESSOR_ARCHITECTURE_AMD64;
 #else

@@ -56,6 +56,8 @@ template<>
 struct fex_gen_type<VkPhysicalDevice_T> : fexgen::opaque_type {};
 template<>
 struct fex_gen_type<VkQueue_T> : fexgen::opaque_type {};
+template<>
+struct fex_gen_type<VkExternalComputeQueueNV_T> : fexgen::opaque_type {};
 
 // Mark union types with compatible layout as such
 // TODO: These may still have different alignment requirements!
@@ -2436,6 +2438,8 @@ struct fex_gen_config<vkGetDeviceImageSubresourceLayoutKHR> {};
 template<>
 struct fex_gen_config<vkGetImageSubresourceLayout2KHR> {};
 template<>
+struct fex_gen_config<vkWaitForPresent2KHR> {};
+template<>
 struct fex_gen_config<vkCreatePipelineBinariesKHR> {};
 template<>
 struct fex_gen_config<vkDestroyPipelineBinaryKHR> {};
@@ -2445,6 +2449,8 @@ template<>
 struct fex_gen_config<vkGetPipelineBinaryDataKHR> {};
 template<>
 struct fex_gen_config<vkReleaseCapturedPipelineDataKHR> {};
+template<>
+struct fex_gen_config<vkReleaseSwapchainImagesKHR> {};
 template<>
 struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR> {};
 template<>
@@ -2467,6 +2473,12 @@ template<>
 struct fex_gen_config<vkCmdSetDescriptorBufferOffsets2EXT> {};
 template<>
 struct fex_gen_config<vkCmdBindDescriptorBufferEmbeddedSamplers2EXT> {};
+template<>
+struct fex_gen_config<vkCmdCopyMemoryIndirectKHR> {};
+template<>
+struct fex_gen_config<vkCmdCopyMemoryToImageIndirectKHR> {};
+template<>
+struct fex_gen_config<vkCmdEndRendering2KHR> {};
 #endif
 template<>
 struct fex_gen_config<vkCreateDebugReportCallbackEXT> : fexgen::custom_host_impl {};
@@ -2668,6 +2680,14 @@ struct fex_gen_config<vkGetQueueCheckpointDataNV> {};
 template<>
 struct fex_gen_config<vkGetQueueCheckpointData2NV> {};
 template<>
+struct fex_gen_config<vkSetSwapchainPresentTimingQueueSizeEXT> {};
+template<>
+struct fex_gen_config<vkGetSwapchainTimingPropertiesEXT> {};
+template<>
+struct fex_gen_config<vkGetSwapchainTimeDomainPropertiesEXT> {};
+template<>
+struct fex_gen_config<vkGetPastPresentationTimingEXT> {};
+template<>
 struct fex_gen_config<vkInitializePerformanceApiINTEL> {};
 template<>
 struct fex_gen_config<vkUninitializePerformanceApiINTEL> {};
@@ -2769,18 +2789,25 @@ template<>
 struct fex_gen_config<vkSetPrivateDataEXT> {};
 template<>
 struct fex_gen_config<vkGetPrivateDataEXT> {};
+// These CUDA functions conflict with another extension.
+// template<>
+// struct fex_gen_config<vkCreateCudaModuleNV> {};
+// template<>
+// struct fex_gen_config<vkGetCudaModuleCacheNV> {};
+// template<>
+// struct fex_gen_config<vkCreateCudaFunctionNV> {};
+// template<>
+// struct fex_gen_config<vkDestroyCudaModuleNV> {};
+// template<>
+// struct fex_gen_config<vkDestroyCudaFunctionNV> {};
+// template<>
+// struct fex_gen_config<vkCmdCudaLaunchKernelNV> {};
 template<>
-struct fex_gen_config<vkCreateCudaModuleNV> {};
+struct fex_gen_config<vkCmdDispatchTileQCOM> {};
 template<>
-struct fex_gen_config<vkGetCudaModuleCacheNV> {};
+struct fex_gen_config<vkCmdBeginPerTileExecutionQCOM> {};
 template<>
-struct fex_gen_config<vkCreateCudaFunctionNV> {};
-template<>
-struct fex_gen_config<vkDestroyCudaModuleNV> {};
-template<>
-struct fex_gen_config<vkDestroyCudaFunctionNV> {};
-template<>
-struct fex_gen_config<vkCmdCudaLaunchKernelNV> {};
+struct fex_gen_config<vkCmdEndPerTileExecutionQCOM> {};
 #endif
 template<>
 struct fex_gen_config<vkGetDescriptorSetLayoutSizeEXT> {};
@@ -2974,6 +3001,32 @@ struct fex_gen_config<vkCmdSetRepresentativeFragmentTestEnableNV> {};
 template<>
 struct fex_gen_config<vkCmdSetCoverageReductionModeNV> {};
 template<>
+struct fex_gen_config<vkCreateTensorARM> {};
+#endif
+template<>
+struct fex_gen_config<vkDestroyTensorARM> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCreateTensorViewARM> {};
+#endif
+template<>
+struct fex_gen_config<vkDestroyTensorViewARM> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkGetTensorMemoryRequirementsARM> {};
+template<>
+struct fex_gen_config<vkBindTensorMemoryARM> {};
+template<>
+struct fex_gen_config<vkGetDeviceTensorMemoryRequirementsARM> {};
+template<>
+struct fex_gen_config<vkCmdCopyTensorARM> {};
+template<>
+struct fex_gen_config<vkGetPhysicalDeviceExternalTensorPropertiesARM> {};
+template<>
+struct fex_gen_config<vkGetTensorOpaqueCaptureDescriptorDataARM> {};
+template<>
+struct fex_gen_config<vkGetTensorViewOpaqueCaptureDescriptorDataARM> {};
+template<>
 struct fex_gen_config<vkGetShaderModuleIdentifierEXT> {};
 template<>
 struct fex_gen_config<vkGetShaderModuleCreateInfoIdentifierEXT> {};
@@ -3019,10 +3072,50 @@ template<>
 struct fex_gen_config<vkGetLatencyTimingsNV> {};
 template<>
 struct fex_gen_config<vkQueueNotifyOutOfBandNV> {};
+template<>
+struct fex_gen_config<vkCreateDataGraphPipelinesARM> {};
+template<>
+struct fex_gen_config<vkCreateDataGraphPipelineSessionARM> {};
+template<>
+struct fex_gen_config<vkGetDataGraphPipelineSessionBindPointRequirementsARM> {};
+template<>
+struct fex_gen_config<vkGetDataGraphPipelineSessionMemoryRequirementsARM> {};
+template<>
+struct fex_gen_config<vkBindDataGraphPipelineSessionMemoryARM> {};
+#endif
+template<>
+struct fex_gen_config<vkDestroyDataGraphPipelineSessionARM> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdDispatchDataGraphARM> {};
+template<>
+struct fex_gen_config<vkGetDataGraphPipelineAvailablePropertiesARM> {};
+template<>
+struct fex_gen_config<vkGetDataGraphPipelinePropertiesARM> {};
+template<>
+struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM> {};
+template<>
+struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM> {};
 #endif
 template<>
 struct fex_gen_config<vkCmdSetAttachmentFeedbackLoopEnableEXT> {};
 #ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdBindTileMemoryQCOM> {};
+template<>
+struct fex_gen_config<vkCmdDecompressMemoryEXT> {};
+#endif
+template<>
+struct fex_gen_config<vkCmdDecompressMemoryIndirectCountEXT> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCreateExternalComputeQueueNV> {};
+#endif
+template<>
+struct fex_gen_config<vkDestroyExternalComputeQueueNV> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkGetExternalComputeQueueDataNV> {};
 template<>
 struct fex_gen_config<vkGetClusterAccelerationStructureBuildSizesNV> {};
 template<>
@@ -3051,6 +3144,14 @@ template<>
 struct fex_gen_config<vkUpdateIndirectExecutionSetShaderEXT> {};
 template<>
 struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV> {};
+template<>
+struct fex_gen_config<vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM> {};
+template<>
+struct fex_gen_config<vkCmdEndRendering2EXT> {};
+template<>
+struct fex_gen_config<vkCmdBeginCustomResolveEXT> {};
+template<>
+struct fex_gen_config<vkCmdSetComputeOccupancyPriorityNV> {};
 template<>
 struct fex_gen_config<vkCreateAccelerationStructureKHR> {};
 template<>

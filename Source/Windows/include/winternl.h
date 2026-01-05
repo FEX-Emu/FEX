@@ -10,6 +10,18 @@
 extern "C" {
 #endif
 
+#define SH_COMPAT 0x00 /* Compatibility */
+#define SH_DENYRW 0x10 /* Deny read/write */
+#define SH_DENYWR 0x20 /* Deny write */
+#define SH_DENYRD 0x30 /* Deny read */
+#define SH_DENYNO 0x40 /* Deny nothing */
+
+#define _SH_COMPAT SH_COMPAT
+#define _SH_DENYRW SH_DENYRW
+#define _SH_DENYWR SH_DENYWR
+#define _SH_DENYRD SH_DENYRD
+#define _SH_DENYNO SH_DENYNO
+
 #define NtCurrentProcess() ((HANDLE) ~(ULONG_PTR)0)
 #define NtCurrentThread() ((HANDLE) ~(ULONG_PTR)1)
 
@@ -20,7 +32,7 @@ extern "C" {
 
 #define STATUS_EMULATION_SYSCALL ((NTSTATUS)0x40000039)
 
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
 typedef struct _CHPE_V2_CPU_AREA_INFO {
   BOOLEAN InSimulation;             /* 000 */
   BOOLEAN InSyscallCallback;        /* 001 */
@@ -329,7 +341,7 @@ typedef struct __TEB {                          /* win32/win64 */
 #ifdef _WIN64
   union {
     PVOID DeallocationBStore; /*    /1788 */
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     CHPE_V2_CPU_AREA_INFO* ChpeV2CpuAreaInfo; /*    /1788 */
 #endif
   } DUMMYUNIONNAME;
@@ -497,6 +509,7 @@ NTSTATUS WINAPI NtAllocateVirtualMemoryEx(HANDLE, PVOID*, SIZE_T*, ULONG, ULONG,
 NTSTATUS WINAPI NtAllocateVirtualMemory(HANDLE, PVOID*, ULONG_PTR, SIZE_T*, ULONG, ULONG);
 NTSTATUS WINAPI NtContinue(PCONTEXT, BOOLEAN);
 NTSTATUS WINAPI NtCreateSection(HANDLE*, ACCESS_MASK, const OBJECT_ATTRIBUTES*, const LARGE_INTEGER*, ULONG, ULONG, HANDLE);
+NTSTATUS WINAPI NtDelayExecution(BOOLEAN, const LARGE_INTEGER*);
 NTSTATUS WINAPI NtDuplicateObject(HANDLE, HANDLE, HANDLE, PHANDLE, ACCESS_MASK, ULONG, ULONG);
 NTSTATUS WINAPI NtFlushInstructionCache(HANDLE, LPCVOID, SIZE_T);
 NTSTATUS WINAPI NtFreeVirtualMemory(HANDLE, PVOID*, SIZE_T*, ULONG);
@@ -506,6 +519,8 @@ NTSYSAPI NTSTATUS WINAPI NtMapViewOfSection(HANDLE, HANDLE, PVOID*, ULONG_PTR, S
 NTSTATUS WINAPI NtOpenKeyEx(PHANDLE, ACCESS_MASK, const OBJECT_ATTRIBUTES*, ULONG);
 NTSTATUS WINAPI NtProtectVirtualMemory(HANDLE, PVOID*, SIZE_T*, ULONG, ULONG*);
 NTSTATUS WINAPI NtQueryAttributesFile(const OBJECT_ATTRIBUTES*, FILE_BASIC_INFORMATION*);
+NTSTATUS WINAPI NtQueryDirectoryFile(HANDLE, HANDLE, PIO_APC_ROUTINE, PVOID, PIO_STATUS_BLOCK, PVOID, ULONG, FILE_INFORMATION_CLASS,
+                                     BOOLEAN, PUNICODE_STRING, BOOLEAN);
 NTSTATUS WINAPI NtQueryValueKey(HANDLE, const UNICODE_STRING*, KEY_VALUE_INFORMATION_CLASS, void*, DWORD, DWORD*);
 NTSTATUS WINAPI NtQueryVirtualMemory(HANDLE, LPCVOID, MEMORY_INFORMATION_CLASS, PVOID, SIZE_T, SIZE_T*);
 NTSTATUS WINAPI NtReadFile(HANDLE, HANDLE, PIO_APC_ROUTINE, PVOID, PIO_STATUS_BLOCK, PVOID, ULONG, PLARGE_INTEGER, PULONG);
@@ -549,9 +564,9 @@ NTSTATUS WINAPI RtlWow64SuspendThread(HANDLE, ULONG*);
 void WINAPI RtlAcquireSRWLockShared(RTL_SRWLOCK*);
 void WINAPI RtlReleaseSRWLockShared(RTL_SRWLOCK*);
 BOOLEAN WINAPI RtlTryAcquireSRWLockShared(RTL_SRWLOCK*);
-void WINAPI RtlWakeAddressAll(void*);
-BOOL WINAPI RtlWaitOnAddress(volatile void*, void*, SIZE_T, DWORD);
-void WINAPI RtlWakeAddressSingle(void*);
+void WINAPI RtlWakeAddressAll(const void*);
+NTSTATUS WINAPI RtlWaitOnAddress(const void*, const void*, SIZE_T, const LARGE_INTEGER*);
+void WINAPI RtlWakeAddressSingle(const void*);
 
 #ifdef __cplusplus
 }

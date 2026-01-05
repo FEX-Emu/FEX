@@ -345,7 +345,7 @@ bool ContextImpl::InitCore() {
   // Set up the SignalDelegator config since core is initialized.
   SignalDelegation->SetConfig(Dispatcher->MakeSignalDelegatorConfig());
 
-#if defined(_WIN32) && !defined(_M_ARM_64EC)
+#if defined(_WIN32) && !defined(ARCHITECTURE_arm64ec)
   // WOW64 always needs the interrupt fault check to be enabled.
   Config.NeedsPendingInterruptFaultCheck = true;
 #endif
@@ -655,7 +655,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
               LogMan::Msg::EFmt("Invalid or Unknown instruction: {} 0x{:x}", TableInfo->Name ?: "UND", Block.Entry - GuestRIP);
             }
 
-            if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST) {
+            if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST ||
+                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BAD_RELOCATION) {
               Thread->OpDispatcher->InvalidOp(DecodedInfo);
             } else {
               Thread->OpDispatcher->NoExecOp(DecodedInfo);
@@ -722,7 +723,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
 ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) {
   if (SourcecodeResolver && Config.GDBSymbols()) {
-    auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto MappedSection = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
     if (MappedSection) {
       MappedSection->FileInfo.SourcecodeMap =
         SourcecodeResolver->GenerateMap(MappedSection->FileInfo.Filename, CodeMap::GetBaseFilename(MappedSection->FileInfo, false));
@@ -803,7 +804,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   if (Config.BlockJITNaming()) {
     auto FragmentBasePtr = CompiledCode.BlockBegin;
 
-    auto GuestRIPLookup = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto GuestRIPLookup = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
 
     if (DebugData->Subblocks.size()) {
       for (auto& Subblock : DebugData->Subblocks) {
@@ -826,7 +827,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   }
 
   if (Config.LibraryJITNaming() || Config.GDBSymbols()) {
-    auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto MappedSection = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
     if (MappedSection) {
       if (Config.LibraryJITNaming()) {
         Symbols.RegisterNamedRegion(Thread->SymbolBuffer.get(), CodePtr, DebugData->HostCodeSize, MappedSection->FileInfo.Filename);
@@ -865,7 +866,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   }
 
   if (CodeMapWriter) {
-    auto Region = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto Region = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
     if (Region && Region->FileStartVA != 0) {
       CodeMapWriter->AppendBlock(*Region, GuestRIP);
     }
@@ -967,6 +968,7 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
 
       const auto GPRSize = this->Config.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit;
 
+      // Thunk entry-points don't get cached, don't need to be padded.
       if (GPRSize == IR::OpSize::i64Bit) {
         IR::Ref R = emit->_StoreRegister(emit->Constant(Entrypoint), GPRSize);
         R->Reg = IR::PhysicalRegister(IR::RegClass::GPRFixed, X86State::REG_R11).Raw;
@@ -1037,6 +1039,5 @@ void ContextImpl::MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint
 
 void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) {
   Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);
-  Thread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
 }
 } // namespace FEXCore::Context

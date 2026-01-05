@@ -118,12 +118,12 @@ DWORD OriginToMoveMethod(int Origin) {
 } // namespace
 
 // io.h File Operatons
-DLLEXPORT_FUNC(int, _wopen, (const wchar_t* Filename, int OpenFlag, ...)) {
+DLLEXPORT_FUNC(int, _wsopen, (const wchar_t* Filename, int OpenFlag, int ShareFlag, ...)) {
   DWORD Attrs = 0;
   if (OpenFlag & _O_CREAT) {
     va_list VA;
     int PermMode;
-    va_start(VA, OpenFlag);
+    va_start(VA, ShareFlag);
     PermMode = va_arg(VA, int);
     va_end(VA);
     if (!(PermMode & _S_IWRITE)) {
@@ -134,6 +134,14 @@ DLLEXPORT_FUNC(int, _wopen, (const wchar_t* Filename, int OpenFlag, ...)) {
   ULONG sharing = FILE_SHARE_READ;
   if (access == GENERIC_WRITE) {
     sharing |= FILE_SHARE_WRITE;
+  }
+
+  if (ShareFlag == _SH_DENYRW) {
+    sharing = 0;
+  } else if (ShareFlag == _SH_DENYWR) {
+    sharing &= ~FILE_SHARE_WRITE;
+  } else if (ShareFlag == _SH_DENYRD) {
+    sharing &= ~FILE_SHARE_READ;
   }
 
   HANDLE Handle = CreateFileW(Filename, access, sharing, nullptr, OpenFlagToCreation(OpenFlag), Attrs, nullptr);
@@ -153,7 +161,19 @@ DLLEXPORT_FUNC(int, _wopen, (const wchar_t* Filename, int OpenFlag, ...)) {
   return ErrnoReturn(ENOENT);
 }
 
-DLLEXPORT_FUNC(int, _open, (const char* Filename, int OpenFlag, ...)) {
+DLLEXPORT_FUNC(int, _wopen, (const wchar_t* Filename, int OpenFlag, ...)) {
+  if (OpenFlag & _O_CREAT) {
+    va_list VA;
+    int PermMode;
+    va_start(VA, OpenFlag);
+    PermMode = va_arg(VA, int);
+    va_end(VA);
+    return _wsopen(Filename, OpenFlag, _SH_DENYNO, PermMode);
+  }
+  return _wsopen(Filename, OpenFlag, _SH_DENYNO);
+}
+
+DLLEXPORT_FUNC(int, _sopen, (const char* Filename, int OpenFlag, int ShareFlag, ...)) {
   UNICODE_STRING FilenameW;
   if (!RtlCreateUnicodeStringFromAsciiz(&FilenameW, Filename)) {
     return ErrnoReturn(EINVAL);
@@ -162,15 +182,27 @@ DLLEXPORT_FUNC(int, _open, (const char* Filename, int OpenFlag, ...)) {
   if (OpenFlag & _O_CREAT) {
     va_list VA;
     int PermMode;
-    va_start(VA, OpenFlag);
+    va_start(VA, ShareFlag);
     PermMode = va_arg(VA, int);
     va_end(VA);
-    ret = _wopen(FilenameW.Buffer, OpenFlag, PermMode);
+    ret = _wopen(FilenameW.Buffer, OpenFlag, ShareFlag, PermMode);
   } else {
-    ret = _wopen(FilenameW.Buffer, OpenFlag);
+    ret = _wopen(FilenameW.Buffer, OpenFlag, ShareFlag);
   }
   RtlFreeUnicodeString(&FilenameW);
   return ret;
+}
+
+DLLEXPORT_FUNC(int, _open, (const char* Filename, int OpenFlag, ...)) {
+  if (OpenFlag & _O_CREAT) {
+    va_list VA;
+    int PermMode;
+    va_start(VA, OpenFlag);
+    PermMode = va_arg(VA, int);
+    va_end(VA);
+    return _sopen(Filename, OpenFlag, _SH_DENYNO, PermMode);
+  }
+  return _sopen(Filename, OpenFlag, _SH_DENYNO);
 }
 
 DLLEXPORT_FUNC(int, open, (const char* Filename, int OpenFlag, ...)) {

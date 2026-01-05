@@ -56,11 +56,11 @@ DEF_OP(ExitFunction) {
   uint64_t NewRIP;
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     if (NewRIP < EC_CODE_BITMAP_MAX_ADDRESS && RtlIsEcCode(NewRIP)) {
       str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
-      LoadConstant(ARMEmitter::Size::i64Bit, EC_CALL_CHECKER_PC_REG, NewRIP);
+      InsertGuestRIPMove(EC_CALL_CHECKER_PC_REG, NewRIP);
       ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
       br(TMP2);
     } else {
@@ -150,7 +150,7 @@ DEF_OP(ExitFunction) {
         ARMEmitter::ForwardLabel TFUnset;
         ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
         (void)cbz(ARMEmitter::Size::i32Bit, TMP1, &TFUnset);
-        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, NewRIP);
+        InsertGuestRIPMove(TMP1, NewRIP);
         str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
         ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
         blr(TMP2);
@@ -159,7 +159,7 @@ DEF_OP(ExitFunction) {
 
       EmitLinkedBranch(NewRIP, Op->Hint == IR::BranchHint::Call);
       (void)Bind(&l_CallReturn);
-#ifdef _M_ARM_64EC
+#ifdef ARCHITECTURE_arm64ec
     }
 #endif
   } else {
@@ -397,7 +397,8 @@ DEF_OP(ThreadRemoveCodeEntry) {
   // X1: RIP
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, STATE.R());
 
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry);
+  // TODO: Relocations don't seem to be wired up to this...?
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry, CPU::Arm64Emitter::PadType::AUTOPAD);
 
   ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT));
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {

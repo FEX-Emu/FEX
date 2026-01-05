@@ -12,7 +12,7 @@ namespace FEXCore::Core {
 struct InternalThreadState;
 }
 
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 static inline void store_memory_barrier() {
   asm volatile("dmb ishst;" ::: "memory");
 }

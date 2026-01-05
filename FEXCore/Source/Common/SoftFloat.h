@@ -19,7 +19,7 @@ extern "C" {
 }
 
 struct FEX_PACKED X80SoftFloat {
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 // Define this to push some operations to x87
 // Only useful to see if precision loss is killing something
 // #define DEBUG_X86_FLOAT
@@ -30,7 +30,7 @@ struct FEX_PACKED X80SoftFloat {
 #define BIGFLOAT float128_t
 #define BIGFLOATSIZE 16
 #endif
-#elif defined(_M_ARM_64)
+#elif defined(ARCHITECTURE_arm64)
 #define BIGFLOAT float128_t
 #define BIGFLOATSIZE 16
 #else

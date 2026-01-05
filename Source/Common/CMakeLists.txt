@@ -8,11 +8,10 @@ set(SRCS
   HostFeatures.cpp
   JSONPool.cpp
   SHMStats.cpp
-  VolatileMetadata.cpp
-  )
+  VolatileMetadata.cpp)
 
-if (NOT MINGW_BUILD)
-  list (APPEND SRCS
+if (NOT MINGW)
+  list(APPEND SRCS
     FEXServerClient.cpp
     FileFormatCheck.cpp)
 endif()
@@ -24,5 +23,4 @@ target_include_directories(${NAME} PRIVATE ${CMAKE_BINARY_DIR}/generated)
 set_target_properties(${NAME} PROPERTIES
   C_VISIBILITY_PRESET hidden
   CXX_VISIBILITY_PRESET hidden
-  VISIBILITY_INLINES_HIDDEN TRUE
-)
+  VISIBILITY_INLINES_HIDDEN TRUE)

@@ -53,7 +53,7 @@ static constexpr int SanitizeIOCount(int count) {
   return std::max(0, count);
 }
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 uint32_t ioctl_32(FEXCore::Core::CpuStateFrame*, int fd, uint32_t cmd, uint32_t args) {
   uint32_t Result {};
   __asm volatile("int $0x80;" : "=a"(Result) : "a"(SYSCALL_x86_ioctl), "b"(fd), "c"(cmd), "d"(args) : "memory");

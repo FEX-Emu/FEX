@@ -614,12 +614,6 @@ void LoadGuestVDSOSymbols(char* VDSOBase) {
   using ELFSymbolType = std::conditional_t<Is64Bit, Elf64_Sym, Elf32_Sym>;
 
   // We need to load symbols we care about.
-  if (Is64Bit) {
-    // We don't care about any 64-bit symbols right now.
-    return;
-  }
-
-  // 32-bit symbol loading.
   auto Header = reinterpret_cast<const ELFHeaderType*>(VDSOBase);
 
   // First walk the section headers to find the symbol table.
@@ -774,8 +768,9 @@ void LoadFEXGeneratedCode(bool Is64Bit, VDSOMapping* Mapping, FEX::HLE::SyscallH
   mprotect(Mapping->X86GeneratedCodePtr, Mapping->X86GeneratedCodeSize, PROT_READ | PROT_EXEC);
   {
     auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(Handler->VMATracking.Mutex, nullptr);
+    std::optional<FEXCore::ExecutableFileSectionInfo> IgnoredSection;
     FEX::HLE::_SyscallHandler->TrackMmap(nullptr, reinterpret_cast<uint64_t>(Mapping->X86GeneratedCodePtr), Mapping->X86GeneratedCodeSize,
-                                         PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+                                         PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0, IgnoredSection);
   }
 
   FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(nullptr, reinterpret_cast<uint64_t>(Mapping->X86GeneratedCodePtr),

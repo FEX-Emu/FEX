@@ -4,12 +4,12 @@
 #include <cstddef>
 #include <cstdint>
 
-#ifdef _M_X86_64
+#ifdef ARCHITECTURE_x86_64
 #include <x86intrin.h>
 #endif
 
 namespace FEXCore::SHMStats {
-#ifdef _M_ARM_64
+#ifdef ARCHITECTURE_arm64
 /**
  * @brief Get the raw cycle counter with synchronizing isb.
  *
@@ -79,12 +79,12 @@ template<typename T, size_t FlatOffset = 0>
 class AccumulationBlock final {
 public:
   AccumulationBlock(T* Stat)
-    : Begin {GetCycleCounter()}
+    : Begin {Stat ? GetCycleCounter() : 0}
     , Stat {Stat} {}
 
   ~AccumulationBlock() {
-    const auto Duration = GetCycleCounter() - Begin + FlatOffset;
     if (Stat) {
+      const auto Duration = GetCycleCounter() - Begin + FlatOffset;
       auto ref = std::atomic_ref<T>(*Stat);
       ref.fetch_add(Duration, std::memory_order_relaxed);
     }

@@ -94,8 +94,9 @@ private:
 
     // Remat if we can
     if (Rematerializable(IROp)) {
-      uint64_t Const = IROp->C<IR::IROp_Constant>()->Constant;
-      return IREmit->_Constant(Const);
+      const auto Op = IROp->C<IR::IROp_Constant>();
+      uint64_t Const = Op->Constant;
+      return IREmit->_Constant(Const, Op->Pad, Op->MaxBytes);
     }
 
     // Otherwise fill from stack

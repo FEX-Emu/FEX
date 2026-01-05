@@ -1,28 +1,20 @@
-add_executable(FEXCompatTool
-  CompatTool.cpp)
+set(LIBS FEXCore Common CommonTools JemallocLibs)
 
-target_link_libraries(FEXCompatTool
-  PRIVATE
-  FEXCore Common CommonTools JemallocLibs)
+add_executable(FEXCompatTool CompatTool.cpp)
 
-install(TARGETS FEXCompatTool
-  RUNTIME
-    DESTINATION /
-    COMPONENT Runtime
-)
+target_link_libraries(FEXCompatTool PRIVATE ${LIBS})
 
-add_executable(FEXServerManager
-  ServerManager.cpp)
+install(TARGETS FEXCompatTool RUNTIME
+  DESTINATION /
+  COMPONENT Runtime)
 
-target_link_libraries(FEXServerManager
-  PRIVATE
-  FEXCore Common CommonTools JemallocLibs)
+add_executable(FEXServerManager ServerManager.cpp)
 
-install(TARGETS FEXServerManager
-  RUNTIME
-    DESTINATION bin
-    COMPONENT Runtime
-)
+target_link_libraries(FEXServerManager PRIVATE ${LIBS})
+
+install(TARGETS FEXServerManager RUNTIME
+  DESTINATION bin
+  COMPONENT Runtime)
 
 # Description json gets installed into root of depot
 install(FILES emulator.json

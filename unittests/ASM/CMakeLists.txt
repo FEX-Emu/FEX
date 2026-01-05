@@ -30,8 +30,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
   add_custom_command(OUTPUT ${TMP_FILE}
     DEPENDS "${ASM_SRC}"
     COMMAND "cp" ARGS "${ASM_SRC}" "${TMP_FILE}"
-    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 64\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
-    )
+    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 64\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}")
 
   set(OUTPUT_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.bin")
   set(OUTPUT_CONFIG_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.config.bin")
@@ -51,26 +50,23 @@ foreach(ASM_SRC ${ASM_SOURCES})
   # Format is "<Test Arguments>" "<Test Name>" "<Test Type>"
 
   set(TEST_ARGS)
-  if (_M_ARM_64 OR ENABLE_VIXL_SIMULATOR)
+  if (ARCHITECTURE_arm64 OR ENABLE_VIXL_SIMULATOR)
     list(APPEND TEST_ARGS
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=1 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0"   "jit_1"     "jit"
       "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0" "jit_500"   "jit"
-      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=1 FEX_TSOENABLED=0" "jit_500_m" "jit"
-      )
+      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=1 FEX_TSOENABLED=0" "jit_500_m" "jit")
   endif()
 
   if (ENABLE_VIXL_SIMULATOR)
     set(CPU_CLASS Simulator)
-  elseif (_M_X86_64)
-    list(APPEND TEST_ARGS
-      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1" "host" "host"
-      )
+  elseif (ARCHITECTURE_x86_64)
+    list(APPEND TEST_ARGS "FEX_SILENTLOG=0 FEX_DUMPGPRS=1" "host" "host")
   endif()
 
-  if (NOT MINGW_BUILD)
-    set (LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
+  if (NOT MINGW)
+    set(LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
   else()
-    set (LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner.exe")
+    set(LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner.exe")
   endif()
 
   list(LENGTH TEST_ARGS ARG_COUNT)
@@ -109,7 +105,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_CONFIG_NAME}")
     set_property(TEST ${TEST_NAME} APPEND PROPERTY SKIP_RETURN_CODE 125)
     set_property(TEST ${TEST_NAME} APPEND PROPERTY ENVIRONMENT ${FEX_ARGS_LIST})
-    if (MINGW_BUILD)
+    if (MINGW)
       # Ensure the DOS region can be allocated.
       set_property(TEST ${TEST_NAME} APPEND PROPERTY ENVIRONMENT "WINEPRELOADRESERVE=10000-110000")
     endif()
@@ -117,19 +113,16 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
 endforeach()
 
-add_custom_target(asm_files ALL
-  DEPENDS "${ASM_DEPENDS}")
+add_custom_target(asm_files ALL DEPENDS "${ASM_DEPENDS}")
 
-add_custom_target(
-  64bit_asm_tests
+add_custom_target(64bit_asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS asm_files
   DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "\.*64Bit\.*.asm$$")
 
-add_custom_target(
-  asm_tests
+add_custom_target(asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   DEPENDS asm_files

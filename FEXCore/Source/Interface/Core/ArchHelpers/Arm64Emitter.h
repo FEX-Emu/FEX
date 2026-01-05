@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <FEXCore/Config/Config.h>
+
 #ifdef VIXL_DISASSEMBLER
 #include <aarch64/disasm-aarch64.h>
-#include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/vector.h>
 #endif
@@ -31,7 +32,7 @@ namespace FEXCore::CPU {
 // Contains the address to the currently available CPU state
 constexpr auto STATE = ARMEmitter::XReg::x28;
 
-#ifndef _M_ARM_64EC
+#ifndef ARCHITECTURE_arm64ec
 // GPR temporaries. Only x3 can be used across spill boundaries
 // so if these ever need to change, be very careful about that.
 constexpr auto TMP1 = ARMEmitter::XReg::x0;
@@ -108,7 +109,15 @@ class Arm64Emitter : public ARMEmitter::Emitter {
 public:
   Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr = nullptr, size_t size = 0);
 
-  void LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
+  enum class PadType {
+    // Explicitly does not need padding, even if code-caching is enabled.
+    NOPAD,
+    // Explicitly needs padding, even if code-caching is disabled.
+    DOPAD,
+    // Choose to pad or not depending on if code-caching is enabled.
+    AUTOPAD,
+  };
+  void LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, PadType Pad = PadType::NOPAD, int MaxBytes = 0);
 
 protected:
   FEXCore::Context::ContextImpl* EmitterCTX;
@@ -272,6 +281,8 @@ protected:
 
   FEX_CONFIG_OPT(Disassemble, DISASSEMBLE);
 #endif
+
+  FEX_CONFIG_OPT(EnableCodeCaching, ENABLECODECACHINGWIP);
 };
 
 } // namespace FEXCore::CPU

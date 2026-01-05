@@ -29,21 +29,21 @@ __attribute__((naked)) void DoZeroRegSyscallFault(CPUState State) {
   __asm volatile(
     R"(
     // Load flags
-    push dword [esp + %[FlagsOffset]]
+    push dword ptr [esp + %[FlagsOffset]]
     popfd
 
     // Do getpid syscall.
     // Overwrites some arguments.
     // Syscall num
-    mov eax, qword [esp + %[RAXOffset]]
+    mov eax, dword ptr [esp + %[RAXOffset]]
 
     // Load remaining registers that we can
-    mov ebx, qword [esp + %[RBXOffset]];
-    mov ecx, qword [esp + %[RCXOffset]];
-    mov edx, qword [esp + %[RDXOffset]]
-    mov esi, qword [esp + %[RSIOffset]]
-    mov edi, qword [esp + %[RDIOffset]];
-    mov ebp, qword [esp + %[RBPOffset]];
+    mov ebx, dword ptr [esp + %[RBXOffset]];
+    mov ecx, dword ptr [esp + %[RCXOffset]];
+    mov edx, dword ptr [esp + %[RDXOffset]]
+    mov esi, dword ptr [esp + %[RSIOffset]]
+    mov edi, dword ptr [esp + %[RDIOffset]];
+    mov ebp, dword ptr [esp + %[RBPOffset]];
     // Can't load RSP
 
     int 0x80;
@@ -54,12 +54,11 @@ __attribute__((naked)) void DoZeroRegSyscallFault(CPUState State) {
     // We long jump from the signal handler, so this won't continue.
   )"
     :
-    // integers are offset by 8 for some reason.
-    // But the stack is also offset by 4-bytes due to the call.
-    : [RAXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EAX]) - 4), [RDXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EDX]) - 4),
-      [RSIOffset] "i"(offsetof(CPUState, Registers[TEST_REG_ESI]) - 4), [RDIOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EDI]) - 4),
-      [RBXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EBX]) - 4), [RCXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_ECX]) - 4),
-      [RBPOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EBP]) - 4), [FlagsOffset] "i"(offsetof(CPUState, eflags) - 4)
+    // The stack is offset by 4-bytes due to the call.
+    : [RAXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EAX]) + 4), [RDXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EDX]) + 4),
+      [RSIOffset] "i"(offsetof(CPUState, Registers[TEST_REG_ESI]) + 4), [RDIOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EDI]) + 4),
+      [RBXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EBX]) + 4), [RCXOffset] "i"(offsetof(CPUState, Registers[TEST_REG_ECX]) + 4),
+      [RBPOffset] "i"(offsetof(CPUState, Registers[TEST_REG_EBP]) + 4), [FlagsOffset] "i"(offsetof(CPUState, eflags) + 4)
 
     : "memory");
 }
