@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2025 Rakshit Awasthi
+ * SPDX-License-Identifier: MIT
+ */
 #pragma once
 #include "FEXCore/fextl/memory.h"
 #include "FEXCore/fextl/string.h"
