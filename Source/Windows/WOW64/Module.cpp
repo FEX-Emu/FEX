@@ -360,6 +360,21 @@ void UnlockJITContext(TLS TLS) {
   TLS.ControlWord().fetch_and(~ControlBits::IN_JIT, std::memory_order::relaxed);
 }
 
+class ScopedJITContextLock {
+private:
+  TLS TLSData;
+
+public:
+  ScopedJITContextLock(TLS TLSData)
+    : TLSData {TLSData} {
+    LockJITContext(TLSData);
+  }
+
+  ~ScopedJITContextLock() {
+    UnlockJITContext(TLSData);
+  }
+};
+
 bool HandleSuspendInterrupt(TLS TLS, CONTEXT* Context, uint64_t FaultAddress) {
   if (FaultAddress != reinterpret_cast<uint64_t>(&TLS.ThreadState()->InterruptFaultPage)) {
     return false;
@@ -670,10 +685,9 @@ NTSTATUS BTCpuGetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CON
     return Err;
   }
 
-  if (!(TLS.ControlWord().load(std::memory_order::relaxed) & ControlBits::WOW_CPU_AREA_DIRTY)) {
-    if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
-      return Err;
-    }
+  Context::ScopedJITContextLock Lk {TLS};
+  if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
+    return Err;
   }
 
   return RtlWow64GetThreadContext(*ThreadDup, Context);
@@ -693,10 +707,9 @@ NTSTATUS BTCpuSetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CON
   // Back-up the input context incase we've been passed the CPU area (the flush below would wipe it out otherwise)
   WOW64_CONTEXT TmpContext = *Context;
 
-  if (!(TLS.ControlWord().load(std::memory_order::relaxed) & ControlBits::WOW_CPU_AREA_DIRTY)) {
-    if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
-      return Err;
-    }
+  Context::ScopedJITContextLock Lk {TLS};
+  if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
+    return Err;
   }
 
   // Merge the input context into the CPU area then pass the full context into the JIT
@@ -743,9 +756,8 @@ extern "C" void BTCpuSimulateImpl(CONTEXT* entry_context) {
   TLS.EntryContext() = entry_context;
   TLS.CachedCallRetSp() = TLS.ThreadState()->CurrentFrame->State.callret_sp;
 
-  Context::LockJITContext(TLS);
+  Context::ScopedJITContextLock Lk {TLS};
   CTX->ExecuteThread(TLS.ThreadState());
-  Context::UnlockJITContext(TLS);
 }
 
 NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
