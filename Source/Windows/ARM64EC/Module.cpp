@@ -126,6 +126,10 @@ struct ThreadCPUArea {
   }
 };
 
+struct FrontendThreadData {
+  bool InLockedRWXRead {};
+};
+
 namespace {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
 fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
@@ -148,6 +152,10 @@ std::pair<NTSTATUS, ThreadCPUArea> GetThreadCPUArea(HANDLE Thread) {
 
 ThreadCPUArea GetCPUArea() {
   return ThreadCPUArea(NtCurrentTeb());
+}
+
+FrontendThreadData* GetFrontendThreadData(FEXCore::Core::InternalThreadState* Thread) {
+  return static_cast<FrontendThreadData*>(Thread->FrontendPtr);
 }
 
 bool IsEmulatorStackAddress(const ThreadCPUArea CPUArea, uint64_t Address) {
@@ -928,6 +936,8 @@ NTSTATUS ThreadInit() {
                             .AMD64_ControlWord = 0x27f};
   Exception::LoadStateFromECContext(Thread, CPUArea.ContextAmd64().AMD64_Context);
 
+  Thread->FrontendPtr = new FrontendThreadData();
+
   {
     auto ThreadTID = GetCurrentThreadId();
     Threads.emplace(ThreadTID, Thread);
@@ -982,6 +992,8 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
     }
   }
   auto ThreadState = CPUArea.ThreadState();
+
+  delete GetFrontendThreadData(ThreadState);
 
   // GDT and LDT are mirrored, only free one.
   delete[] ThreadState->CurrentFrame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT];

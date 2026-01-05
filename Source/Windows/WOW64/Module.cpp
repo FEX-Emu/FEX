@@ -107,6 +107,10 @@ struct TLS {
   }
 };
 
+struct FrontendThreadData {
+  bool InLockedRWXRead {};
+};
+
 class WowSyscallHandler;
 
 namespace {
@@ -140,6 +144,10 @@ std::pair<NTSTATUS, TLS> GetThreadTLS(HANDLE Thread) {
 
 TLS GetTLS() {
   return TLS {NtCurrentTeb()};
+}
+
+FrontendThreadData* GetFrontendThreadData(FEXCore::Core::InternalThreadState* Thread) {
+  return static_cast<FrontendThreadData*>(Thread->FrontendPtr);
 }
 
 uint64_t GetWowTEB(void* TEB) {
@@ -595,6 +603,8 @@ void BTCpuThreadInit() {
   TLS.ThreadState() = Thread;
   TLS.ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
 
+  Thread->FrontendPtr = new FrontendThreadData();
+
   auto ThreadTID = GetCurrentThreadId();
   Threads.emplace(ThreadTID, Thread);
   if (StatAllocHandler) {
@@ -640,6 +650,8 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     }
   }
   auto ThreadState = TLS.ThreadState();
+
+  delete GetFrontendThreadData(ThreadState);
 
   // GDT and LDT are mirrored, only free one.
   delete[] ThreadState->CurrentFrame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT];
