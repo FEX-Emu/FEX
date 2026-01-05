@@ -39,6 +39,8 @@ private:
   void DetectMonoBackpatcherBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC);
   void DisableSMCDetection();
   void InvalidateIntervalInternal(uint64_t Address, uint64_t Size);
+  // NOTE: This assumed CodeInvalidationMutex is locked by the caller
+  void InvalidateIntervalInternalLocked(uint64_t Address, uint64_t Size);
 
 
   FEXCore::IntervalList<uint64_t> XIntervals;

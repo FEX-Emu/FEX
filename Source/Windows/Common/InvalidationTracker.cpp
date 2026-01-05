@@ -168,22 +168,22 @@ void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size)
 bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPc, uint64_t FaultAddress) {
   const bool NeedsInvalidate = [&](uint64_t Address) {
     std::shared_lock Lock(IntervalsLock);
-    const bool Enclosed = RWXIntervals.Query(Address).Enclosed;
-    // Invalidate just the single faulting page
-    if (!Enclosed) {
-      return false;
-    }
-
-    ULONG TmpProt;
-    void* TmpAddress = reinterpret_cast<void*>(Address);
-    SIZE_T TmpSize = 1;
-    NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READWRITE, &TmpProt);
-    return true;
+    return RWXIntervals.Query(Address).Enclosed;
   }(FaultAddress);
 
   if (NeedsInvalidate) {
     // IntervalsLock cannot be held during invalidation
-    InvalidateIntervalInternal(FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE);
+    {
+      std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
+
+      InvalidateIntervalInternalLocked(FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE);
+
+      // Invalidate, then unprotect the faulting page with the compilation lock held to ensure that any racing invalidations are not dropped.
+      ULONG TmpProt;
+      void* TmpAddress = reinterpret_cast<void*>(FaultAddress);
+      SIZE_T TmpSize = 1;
+      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READWRITE, &TmpProt);
+    }
     DetectMonoBackpatcherBlock(Thread, HostPc);
     return true;
   }
@@ -254,7 +254,12 @@ void InvalidationTracker::DisableSMCDetection() {
 }
 
 void InvalidationTracker::InvalidateIntervalInternal(uint64_t Address, uint64_t Size) {
-  std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
+  std::scoped_lock CodeLock(CTX.GetCodeInvalidationMutex());
+  InvalidateIntervalInternalLocked(Address, Size);
+}
+
+void InvalidationTracker::InvalidateIntervalInternalLocked(uint64_t Address, uint64_t Size) {
+  // NOTE: This assumes CodeInvalidationMutex is locked by the caller
   CTX.InvalidateCodeBuffersCodeRange(Address, Size);
   for (auto Thread : Threads) {
     CTX.InvalidateThreadCachedCodeRange(Thread.second, Address, Size);
