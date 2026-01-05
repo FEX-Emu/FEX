@@ -19,6 +19,7 @@ namespace Config {
 bool SingleShot {};
 bool SkipZombie {true};
 bool DoNotDisplay {};
+bool AllFEX {};
 std::string Separator {" "};
 std::unordered_set<int64_t> OmitPids;
 std::unordered_set<std::string> Programs;
@@ -65,6 +66,9 @@ void LoadOptions(int argc, char** argv) {
   }
 
   for (const auto& Program : Parser.args()) {
+    if (Program == "FEX") {
+      AllFEX = true;
+    }
     Programs.emplace(Program);
   }
 }
@@ -130,9 +134,7 @@ struct PIDInfo {
 
 std::vector<PIDInfo> PIDs;
 
-int main(int argc, char** argv) {
-  Config::LoadOptions(argc, argv);
-
+static void IteratePids() {
   // Iterate over all pids, storing the data for investigating afterwards.
   for (const auto& Entry : std::filesystem::directory_iterator("/proc/")) {
     // If not a directory then skip.
@@ -178,6 +180,11 @@ int main(int argc, char** argv) {
     std::error_code ec;
     std::string exe_link = std::filesystem::read_symlink(ExePath, ec);
 
+    auto deleted_pos = exe_link.find(" (deleted)");
+    if (deleted_pos != std::string::npos) {
+      exe_link = exe_link.substr(0, deleted_pos);
+    }
+
     // Couldn't read exe path? skip.
     if (ec) {
       continue;
@@ -217,6 +224,12 @@ int main(int argc, char** argv) {
       .State = State,
     });
   }
+}
+
+int main(int argc, char** argv) {
+  Config::LoadOptions(argc, argv);
+
+  IteratePids();
 
   std::unordered_set<int64_t> MatchedPIDs;
   for (const auto& pid : PIDs) {
@@ -234,14 +247,6 @@ int main(int argc, char** argv) {
       Args.emplace_back(arg);
       arg += strlen(arg) + 1;
     }
-
-    auto FindFEXArgument = [](auto& Path) -> int32_t {
-      if (Path.ends_with("FEX")) {
-        return 1;
-      }
-
-      return -1;
-    };
 
     struct ProgramPair {
       std::string_view ProgramPath;
@@ -299,23 +304,33 @@ int main(int argc, char** argv) {
     };
 
     int32_t ProgramArg = -1;
-    ProgramArg = FindFEXArgument(pid.exe_link);
-    if (ProgramArg == -1) {
-      ProgramArg = FindFEXArgument(Args[0]);
+    if (pid.exe_link.ends_with("FEX")) {
+      // Skip the first argument if it contains `FEX`, otherwise the application name begins at 0.
+      ProgramArg = Args[0].ends_with("FEX") ? 1 : 0;
+    }
+
+    // If matching all "FEX" instances then add to the matched list.
+    if (ProgramArg != -1 && Config::AllFEX) {
+      MatchedPIDs.emplace(pid.pid);
+      continue;
     }
 
     bool IsWine = false;
-    if (ProgramArg == -1) {
-      // If we still haven't found a FEX path then this might be an arm64ec FEX application.
-      // The only way to know for sure is the walk the mapped files of the process and check if FEX is mapped.
-      if (FindWineFEXApplication(pid.pid, pid.exe_link, Args)) {
-        // Search from the start.
-        ProgramArg = 0;
-        IsWine = true;
-      }
+    // If we still haven't found a FEX path then this might be an arm64ec FEX application.
+    // The only way to know for sure is the walk the mapped files of the process and check if FEX is mapped.
+    if (FindWineFEXApplication(pid.pid, pid.exe_link, Args)) {
+      // Search from the start.
+      ProgramArg = 0;
+      IsWine = true;
     }
 
     if (ProgramArg == -1 || ProgramArg >= Args.size()) {
+      continue;
+    }
+
+    // If matching all "FEX" instances then add arm64ec/wow64 FEX to the matched list.
+    if (ProgramArg != -1 && Config::AllFEX) {
+      MatchedPIDs.emplace(pid.pid);
       continue;
     }
 
