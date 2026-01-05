@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2025 Rakshit Awasthi
+ * SPDX-License-Identifier: MIT
+ */
 #include "FEXCore/fextl/string.h"
 #include <FEXCore/Utils/Regex.h>
 
@@ -9,9 +13,6 @@
 
 // Implementation for FEX regex enginee, please see unittests/APITests/Regex.cpp
 // for test cases
-
-// Inspiration taken from dragon book and
-// https://sh4dy.com/2025/05/01/regex_engine/
 namespace FEXCore::Utils {
 /////////////
 // STATE IMPL
