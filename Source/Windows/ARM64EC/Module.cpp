@@ -881,7 +881,30 @@ void BTCpu64NotifyMemoryDirty(void* Address, SIZE_T Size) {
   InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
 }
 
-void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {}
+void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {
+  auto* ThreadState = GetCPUArea().ThreadState();
+  if (!InvalidationTracker || !ThreadState) {
+    return;
+  }
+
+  auto& InLockedRWXRead = GetFrontendThreadData(ThreadState)->InLockedRWXRead;
+  if (!After) {
+    ThreadCreationMutex.lock();
+    CTX->GetCodeInvalidationMutex().lock();
+    if (InvalidationTracker->BeginUntrackedWriteLocked(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size))) {
+      InLockedRWXRead = true;
+    } else {
+      CTX->GetCodeInvalidationMutex().unlock();
+      ThreadCreationMutex.unlock();
+    }
+  } else {
+    if (InLockedRWXRead) {
+      InLockedRWXRead = false;
+      CTX->GetCodeInvalidationMutex().unlock();
+      ThreadCreationMutex.unlock();
+    }
+  }
+}
 
 NTSTATUS ThreadInit() {
   std::scoped_lock Lock(ThreadCreationMutex);

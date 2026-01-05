@@ -142,27 +142,7 @@ void InvalidationTracker::InvalidateAlignedInterval(uint64_t Address, uint64_t S
 }
 
 void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size) {
-  const auto End = Address + Size;
-  std::shared_lock Lock(IntervalsLock);
-
-  if (SMCDetectionDisabled) {
-    return;
-  }
-
-  do {
-    const auto Query = RWXIntervals.Query(Address);
-    if (Query.Enclosed) {
-      void* TmpAddress = reinterpret_cast<void*>(Address);
-      SIZE_T TmpSize = static_cast<SIZE_T>(std::min(End, Address + Query.Size) - Address);
-      ULONG TmpProt;
-      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READ, &TmpProt);
-    } else if (!Query.Size) {
-      // No more regions past `Address` in the interval list
-      break;
-    }
-
-    Address += Query.Size;
-  } while (Address < End);
+  ProtectRWXIntervalsInternal(Address, Size, false);
 }
 
 bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPc, uint64_t FaultAddress) {
@@ -188,6 +168,10 @@ bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThread
     return true;
   }
   return false;
+}
+
+bool InvalidationTracker::BeginUntrackedWriteLocked(uint64_t Address, uint64_t Size) {
+  return ProtectRWXIntervalsInternal(Address, Size, true);
 }
 
 FEXCore::HLE::ExecutableRangeInfo InvalidationTracker::QueryExecutableRange(uint64_t Address) {
@@ -264,6 +248,43 @@ void InvalidationTracker::InvalidateIntervalInternalLocked(uint64_t Address, uin
   for (auto Thread : Threads) {
     CTX.InvalidateThreadCachedCodeRange(Thread.second, Address, Size);
   }
+}
+
+bool InvalidationTracker::ProtectRWXIntervalsInternal(uint64_t Address, uint64_t Size, bool ForWriteLocked) {
+  const auto End = Address + Size;
+  std::shared_lock Lock(IntervalsLock);
+
+  if (SMCDetectionDisabled) {
+    return false;
+  }
+
+  bool HitRWXInterval = false;
+  do {
+    const auto Query = RWXIntervals.Query(Address);
+    if (Query.Enclosed) {
+      if (!HitRWXInterval) {
+        if (ForWriteLocked) {
+          // If we are protecting as writable, then the entire range must be invalidated before any protections are
+          // applied and the invalidation mutex must be locked throughout.
+          // Do this lazily only when an RWX region is actually hit.
+          // NOTE: This assumes CodeInvalidationMutex is locked by the caller
+          InvalidateIntervalInternalLocked(Address, Size);
+        }
+        HitRWXInterval = true;
+      }
+      void* TmpAddress = reinterpret_cast<void*>(Address);
+      SIZE_T TmpSize = static_cast<SIZE_T>(std::min(End, Address + Query.Size) - Address);
+      ULONG TmpProt;
+      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, ForWriteLocked ? PAGE_EXECUTE_READWRITE : PAGE_EXECUTE_READ, &TmpProt);
+    } else if (!Query.Size) {
+      // No more regions past `Address` in the interval list
+      break;
+    }
+
+    Address += Query.Size;
+  } while (Address < End);
+
+  return HitRWXInterval;
 }
 
 } // namespace FEX::Windows

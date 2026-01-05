@@ -1004,7 +1004,25 @@ void BTCpuNotifyUnmapViewOfSection(void* Address, BOOL After, ULONG Status) {
   }
 }
 
-void BTCpuNotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {}
+void BTCpuNotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {
+  auto& InLockedRWXRead = GetFrontendThreadData(GetTLS().ThreadState())->InLockedRWXRead;
+  if (!After) {
+    ThreadCreationMutex.lock();
+    CTX->GetCodeInvalidationMutex().lock();
+    if (InvalidationTracker->BeginUntrackedWriteLocked(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size))) {
+      InLockedRWXRead = true;
+    } else {
+      CTX->GetCodeInvalidationMutex().unlock();
+      ThreadCreationMutex.unlock();
+    }
+  } else {
+    if (InLockedRWXRead) {
+      InLockedRWXRead = false;
+      CTX->GetCodeInvalidationMutex().unlock();
+      ThreadCreationMutex.unlock();
+    }
+  }
+}
 
 BOOLEAN WINAPI BTCpuIsProcessorFeaturePresent(UINT Feature) {
   return CPUFeatures->IsFeaturePresent(Feature) ? TRUE : FALSE;
