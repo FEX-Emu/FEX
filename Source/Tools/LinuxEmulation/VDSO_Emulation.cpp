@@ -669,7 +669,7 @@ void LoadGuestVDSOSymbols(char* VDSOBase) {
   }
 }
 
-void LoadFEXGeneratedCode(bool Is64Bit, VDSOMapping* Mapping, FEX::HLE::SyscallHandler* const Handler) {
+void LoadFEXGeneratedCode(FEXCore::Core::InternalThreadState* Thread, bool Is64Bit, VDSOMapping* Mapping, FEX::HLE::SyscallHandler* const Handler) {
   if (VDSOPointers.VDSO_FEX_CallbackRET && (!Is64Bit || (VDSOPointers.VDSO_kernel_sigreturn && VDSOPointers.VDSO_kernel_rt_sigreturn))) {
     // Unnecessary if all VDSO paths have already been loaded.
     return;
@@ -682,8 +682,10 @@ void LoadFEXGeneratedCode(bool Is64Bit, VDSOMapping* Mapping, FEX::HLE::SyscallH
 
   if (Is64Bit) {
     // 64bit mode can have its code anywhere
-    auto Result = FEXCore::Allocator::VirtualAlloc(Mapping->X86GeneratedCodeSize);
-    if (Result != MAP_FAILED) {
+    auto Result =
+      Handler->GuestMmap(Is64Bit, Thread, nullptr, Mapping->X86GeneratedCodeSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    if (!FEX::HLE::HasSyscallError(Result)) {
       Mapping->X86GeneratedCodePtr = Result;
     }
   } else {
@@ -693,18 +695,18 @@ void LoadFEXGeneratedCode(bool Is64Bit, VDSOMapping* Mapping, FEX::HLE::SyscallH
     // We need to have the sigret handler in the lower 32bits of memory space
     // Scan top down and try to allocate a location
     for (size_t Location = 0xFFFF'E000; Location != 0x0; Location -= PageSize) {
-      void* Ptr =
-        ::mmap(reinterpret_cast<void*>(Location), PageSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      auto Ptr = Handler->GuestMmap(Is64Bit, Thread, reinterpret_cast<void*>(Location), PageSize, PROT_READ | PROT_WRITE,
+                                    MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-      if (Ptr != MAP_FAILED && reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
+      if (!FEX::HLE::HasSyscallError(Ptr) && reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
         // Failed to map in the lower 32bits
         // Try again
         // Can happen in the case that host kernel ignores MAP_FIXED_NOREPLACE
-        ::munmap(Ptr, PageSize);
+        Handler->GuestMunmap(Thread, Ptr, PageSize);
         continue;
       }
 
-      if (Ptr != MAP_FAILED) {
+      if (!FEX::HLE::HasSyscallError(Ptr)) {
         Mapping->X86GeneratedCodePtr = Ptr;
         break;
       }
@@ -765,29 +767,20 @@ void LoadFEXGeneratedCode(bool Is64Bit, VDSOMapping* Mapping, FEX::HLE::SyscallH
     CurrentCodeOffset += CallbackRetCode.size();
   }
 
-  mprotect(Mapping->X86GeneratedCodePtr, Mapping->X86GeneratedCodeSize, PROT_READ | PROT_EXEC);
-  {
-    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(Handler->VMATracking.Mutex, nullptr);
-    std::optional<FEXCore::ExecutableFileSectionInfo> IgnoredSection;
-    FEX::HLE::_SyscallHandler->TrackMmap(nullptr, reinterpret_cast<uint64_t>(Mapping->X86GeneratedCodePtr), Mapping->X86GeneratedCodeSize,
-                                         PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0, IgnoredSection);
-  }
-
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(nullptr, reinterpret_cast<uint64_t>(Mapping->X86GeneratedCodePtr),
-                                                            Mapping->X86GeneratedCodeSize);
+  Handler->GuestMprotect(Thread, Mapping->X86GeneratedCodePtr, Mapping->X86GeneratedCodeSize, PROT_READ | PROT_EXEC);
 }
 
-void UnloadVDSOMapping(const VDSOMapping& Mapping) {
+void UnloadVDSOMapping(FEXCore::Core::InternalThreadState* Thread, FEX::HLE::SyscallHandler* const Handler, const VDSOMapping& Mapping) {
   if (Mapping.VDSOBase) {
-    munmap(Mapping.VDSOBase, Mapping.VDSOSize);
+    Handler->GuestMunmap(Thread, Mapping.VDSOBase, Mapping.VDSOSize);
   }
 
   if (Mapping.X86GeneratedCodePtr) {
-    munmap(Mapping.X86GeneratedCodePtr, Mapping.X86GeneratedCodeSize);
+    Handler->GuestMunmap(Thread, Mapping.X86GeneratedCodePtr, Mapping.X86GeneratedCodeSize);
   }
 }
 
-VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler) {
+VDSOMapping LoadVDSOThunks(FEXCore::Core::InternalThreadState* Thread, bool Is64Bit, FEX::HLE::SyscallHandler* const Handler) {
   VDSOMapping Mapping {};
   FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
   fextl::string ThunkGuestPath = ThunkGuestLibs();
@@ -808,7 +801,7 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
       Mapping.VDSOSize = FEXCore::AlignUp(Mapping.VDSOSize, FEXCore::Utils::FEX_PAGE_SIZE);
 
       // Map the VDSO file to memory
-      Mapping.VDSOBase = Handler->GuestMmap(nullptr, nullptr, Mapping.VDSOSize, PROT_READ | PROT_EXEC, MAP_SHARED, VDSOFD, 0);
+      Mapping.VDSOBase = Handler->GuestMmap(Thread, nullptr, Mapping.VDSOSize, PROT_READ | PROT_EXEC, MAP_SHARED, VDSOFD, 0);
 
       // Since we found our VDSO thunk library, find our host VDSO function implementations.
       LoadHostVDSO();
@@ -822,7 +815,7 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
   }
 
   // If VDSO couldn't find sigreturn then FEX needs to provide unique implementations.
-  LoadFEXGeneratedCode(Is64Bit, &Mapping, Handler);
+  LoadFEXGeneratedCode(Thread, Is64Bit, &Mapping, Handler);
 
   if (Is64Bit) {
     // Set the Thunk definition pointers for x86-64

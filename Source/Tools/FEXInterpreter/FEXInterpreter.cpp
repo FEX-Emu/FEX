@@ -239,71 +239,72 @@ bool QueryInterpreterInstalled(bool ExecutedWithFD, const FEX::Config::PortableI
   return ExecutedWithFD || (access("/proc/sys/fs/binfmt_misc/FEX-x86", F_OK) == 0 && access("/proc/sys/fs/binfmt_misc/FEX-x86_64", F_OK) == 0);
 }
 
-namespace FEX::TSO {
-void SetupTSOEmulation(FEXCore::Context::Context* CTX) {
-  // Check to see if this is supported.
-  auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
-  if (Result == -1) {
-    // Unsupported, early exit.
-    return;
-  }
+namespace FEX::Kernel {
+namespace TSO {
+  void SetupTSOEmulation(FEXCore::Context::Context* CTX) {
+    // Check to see if this is supported.
+    auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
+    if (Result == -1) {
+      // Unsupported, early exit.
+      return;
+    }
 
-  FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
+    FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
 
-  if (!TSOEnabled()) {
-    // TSO emulation isn't even enabled, early exit.
-    return;
-  }
+    if (!TSOEnabled()) {
+      // TSO emulation isn't even enabled, early exit.
+      return;
+    }
 
-  if (Result == PR_SET_MEM_MODEL_DEFAULT) {
-    // Try to set the TSO mode if we are currently default.
-    Result = prctl(PR_SET_MEM_MODEL, PR_SET_MEM_MODEL_TSO, 0, 0, 0);
-    if (Result == 0) {
-      // TSO mode successfully enabled. Tell the context to disable TSO emulation through atomics.
-      // This flag gets inherited on thread creation, so FEX only needs to set it at the start.
-      CTX->SetHardwareTSOSupport(true);
+    if (Result == PR_SET_MEM_MODEL_DEFAULT) {
+      // Try to set the TSO mode if we are currently default.
+      Result = prctl(PR_SET_MEM_MODEL, PR_SET_MEM_MODEL_TSO, 0, 0, 0);
+      if (Result == 0) {
+        // TSO mode successfully enabled. Tell the context to disable TSO emulation through atomics.
+        // This flag gets inherited on thread creation, so FEX only needs to set it at the start.
+        CTX->SetHardwareTSOSupport(true);
+      }
     }
   }
-}
-} // namespace FEX::TSO
+} // namespace TSO
 
-namespace FEX::CompatInput {
-void SetupCompatInput(bool enable) {
-  // Check to see if this is supported.
-  auto Result = prctl(PR_GET_COMPAT_INPUT, 0, 0, 0, 0);
-  if (Result == -1) {
-    // Unsupported, early exit.
-    return;
+namespace CompatInput {
+  void SetupCompatInput(bool enable) {
+    // Check to see if this is supported.
+    auto Result = prctl(PR_GET_COMPAT_INPUT, 0, 0, 0, 0);
+    if (Result == -1) {
+      // Unsupported, early exit.
+      return;
+    }
+
+    if (enable) {
+      prctl(PR_SET_COMPAT_INPUT, PR_SET_COMPAT_INPUT_ENABLE, 0, 0, 0);
+    } else {
+      prctl(PR_SET_COMPAT_INPUT, PR_SET_COMPAT_INPUT_DISABLE, 0, 0, 0);
+    }
   }
+} // namespace CompatInput
 
-  if (enable) {
-    prctl(PR_SET_COMPAT_INPUT, PR_SET_COMPAT_INPUT_ENABLE, 0, 0, 0);
-  } else {
-    prctl(PR_SET_COMPAT_INPUT, PR_SET_COMPAT_INPUT_DISABLE, 0, 0, 0);
+namespace GCS {
+  void CheckForGCS() {
+    uint64_t ShadowStackWord {};
+    if (prctl(PR_GET_SHADOW_STACK_STATUS, &ShadowStackWord, 0, 0, 0) == -1) {
+      return;
+    }
+
+    // Kernel supports shadow stack.
+    if (ShadowStackWord & PR_SHADOW_STACK_ENABLE) {
+      // Welp.
+      ERROR_AND_DIE_FMT("Shadow stack is enabled which FEX is incompatible with!");
+    }
+
+    // Disable if we've gotten this far, to ensure guest can't try.
+    prctl(PR_LOCK_SHADOW_STACK_STATUS, ~0ULL, 0, 0, 0);
   }
-}
-} // namespace FEX::CompatInput
+} // namespace GCS
 
-namespace FEX::GCS {
-void CheckForGCS() {
-  uint64_t ShadowStackWord {};
-  if (prctl(PR_GET_SHADOW_STACK_STATUS, &ShadowStackWord, 0, 0, 0) == -1) {
-    return;
-  }
-
-  // Kernel supports shadow stack.
-  if (ShadowStackWord & PR_SHADOW_STACK_ENABLE) {
-    // Welp.
-    ERROR_AND_DIE_FMT("Shadow stack is enabled which FEX is incompatible with!");
-  }
-
-  // Disable if we've gotten this far, to ensure guest can't try.
-  prctl(PR_LOCK_SHADOW_STACK_STATUS, ~0ULL, 0, 0, 0);
-}
-} // namespace FEX::GCS
-
-namespace FEX::UnalignedAtomic {
-void SetupKernelUnalignedAtomics() {
+namespace UnalignedAtomic {
+  void SetupKernelUnalignedAtomics() {
 #ifndef PR_ARM64_SET_UNALIGN_ATOMIC
 #define PR_ARM64_SET_UNALIGN_ATOMIC 0x46455849
 #define PR_ARM64_UNALIGN_ATOMIC_EMULATE (1UL << 0)
@@ -311,16 +312,34 @@ void SetupKernelUnalignedAtomics() {
 #define PR_ARM64_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS (1UL << 2)
 #endif
 
-  // Interfaces with downstream FEX kernel patches to control unaligned atomic handling
-  FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
-  FEX_CONFIG_OPT(KernelUnalignedAtomicBackpatching, KERNELUNALIGNEDATOMICBACKPATCHING);
+    // Interfaces with downstream FEX kernel patches to control unaligned atomic handling
+    FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
+    FEX_CONFIG_OPT(KernelUnalignedAtomicBackpatching, KERNELUNALIGNEDATOMICBACKPATCHING);
 
-  uint64_t Flags = (StrictInProcessSplitLocks() ? PR_ARM64_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
-                   (KernelUnalignedAtomicBackpatching() ? PR_ARM64_UNALIGN_ATOMIC_BACKPATCH : 0) | PR_ARM64_UNALIGN_ATOMIC_EMULATE;
+    uint64_t Flags = (StrictInProcessSplitLocks() ? PR_ARM64_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
+                     (KernelUnalignedAtomicBackpatching() ? PR_ARM64_UNALIGN_ATOMIC_BACKPATCH : 0) | PR_ARM64_UNALIGN_ATOMIC_EMULATE;
 
-  prctl(PR_ARM64_SET_UNALIGN_ATOMIC, Flags, 0, 0, 0);
+    prctl(PR_ARM64_SET_UNALIGN_ATOMIC, Flags, 0, 0, 0);
+  }
+} // namespace UnalignedAtomic
+
+void Init(bool Is64Bit, FEXCore::Context::Context* CTX) {
+  // Setup TSO hardware emulation immediately after initializing the context.
+  TSO::SetupTSOEmulation(CTX);
+  UnalignedAtomic::SetupKernelUnalignedAtomics();
+
+  if (!Is64Bit) {
+    // Tell the kernel we want to use the compat input syscalls even though we're
+    // a 64 bit process.
+    CompatInput::SetupCompatInput(true);
+  } else {
+    // Our parent could be an instance running a 32 bit application, so we need
+    // to disable compat input if we're running a 64 bit one ourselves.
+    CompatInput::SetupCompatInput(false);
+  }
 }
-} // namespace FEX::UnalignedAtomic
+
+} // namespace FEX::Kernel
 
 /**
  * @brief Get an FD from an environment variable and then unset the environment variable.
@@ -364,7 +383,7 @@ int main(int argc, char** argv, char** const envp) {
     return 0;
   }
 
-  FEX::GCS::CheckForGCS();
+  FEX::Kernel::GCS::CheckForGCS();
 
   FEX::Config::LoadConfig(Program.ProgramName, envp, PortableInfo);
 
@@ -442,6 +461,7 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   ELFCodeLoader Loader {Program.ProgramPath, FEXFD, LDPath(), Args, ParsedArgs, envp, &Environment};
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
@@ -483,8 +503,6 @@ int main(int argc, char** argv, char** const envp) {
   // Setup Thread handlers, so FEXCore can create threads.
   auto StackTracker = FEX::LinuxEmulation::Threads::SetupThreadHandlers();
 
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
-
   FEX::Allocator::Init(Loader.Is64BitMode());
 
   FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
@@ -497,19 +515,7 @@ int main(int argc, char** argv, char** const envp) {
     SupportsAVX = HostFeatures.SupportsAVX;
   }
 
-  // Setup TSO hardware emulation immediately after initializing the context.
-  FEX::TSO::SetupTSOEmulation(CTX.get());
-  FEX::UnalignedAtomic::SetupKernelUnalignedAtomics();
-
-  if (!Loader.Is64BitMode()) {
-    // Tell the kernel we want to use the compat input syscalls even though we're
-    // a 64 bit process.
-    FEX::CompatInput::SetupCompatInput(true);
-  } else {
-    // Our parent could be an instance running a 32 bit application, so we need
-    // to disable compat input if we're running a 64 bit one ourselves.
-    FEX::CompatInput::SetupCompatInput(false);
-  }
+  FEX::Kernel::Init(Loader.Is64BitMode(), CTX.get());
 
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName, SupportsAVX);
   auto ThunkHandler = FEX::HLE::CreateThunkHandler();
@@ -517,16 +523,20 @@ int main(int argc, char** argv, char** const envp) {
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
                                                FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(),
                                                                             std::move(FEX::Allocator::Allocator));
+  SyscallHandler->SetCodeLoader(&Loader);
+  CTX->SetSignalDelegator(SignalDelegation.get());
+  CTX->SetSyscallHandler(SyscallHandler.get());
+  CTX->SetThunkHandler(ThunkHandler.get());
+
   if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
     CTX->SetCodeMapWriter(fextl::make_unique<FEXCore::CodeMapWriter>(*SyscallHandler));
   }
 
-  // Load VDSO in to memory prior to mapping our ELFs.
-  auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
-
-  // Pass in our VDSO thunks
-  ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions(Loader.Is64BitMode()));
-  SignalDelegation->SetVDSOSymbols();
+  FEX_CONFIG_OPT(GdbServer, GDBSERVER);
+  fextl::unique_ptr<FEX::GdbServer> DebugServer;
+  if (GdbServer) {
+    DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
+  }
 
   // Now that we have the syscall handler. Track some FDs that are FEX owned.
   if (FEX::Logging::OutputFD > 2) {
@@ -537,53 +547,51 @@ int main(int argc, char** argv, char** const envp) {
     SyscallHandler->FM.TrackFEXFD(FEX::Logging::FEXServer::FEXServerFD);
   }
 
-  // query ProgramFD now since MapMemory will close it
-  const int ProgramFD = dup(Loader.GetMainElfFD());
-
-  {
-    Loader.SetVDSOBase(VDSOMapping.VDSOBase);
-    Loader.CalculateHWCaps(CTX.get());
-
-    if (!Loader.MapMemory(SyscallHandler.get())) {
-      // failed to map
-      LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-      return -ENOEXEC;
-    }
-  }
-
-  SyscallHandler->SetCodeLoader(&Loader);
-
-  auto BRKInfo = Loader.GetBRKInfo();
-
-  SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
-
-  CTX->SetSignalDelegator(SignalDelegation.get());
-  CTX->SetSyscallHandler(SyscallHandler.get());
-  CTX->SetThunkHandler(ThunkHandler.get());
-
-  FEX_CONFIG_OPT(GdbServer, GDBSERVER);
-  fextl::unique_ptr<FEX::GdbServer> DebugServer;
-  if (GdbServer) {
-    DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
-  }
-
   if (!CTX->InitCore()) {
     return 1;
   }
 
-  auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+  // Create a thread without a RIP or stack pointer setup initially.
+  auto ParentThread = SyscallHandler->TM.CreateThread(0, 0);
   SyscallHandler->TM.TrackThread(ParentThread);
   SignalDelegation->RegisterTLSState(ParentThread);
   ThunkHandler->RegisterTLSState(ParentThread);
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 
-  // Request code cache generation and load caches for all binaries loaded previously
-  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
-    FEXServerClient::PopulateCodeCache(FEXServerClient::GetServerFD(), ProgramFD, FEXCore::Config::Get_MULTIBLOCK());
-    SyscallHandler->TriggerPostStartupCodeCacheLoad(*ParentThread->Thread);
+  // Load VDSO in to memory prior to mapping our ELFs.
+  auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(ParentThread->Thread, Loader.Is64BitMode(), SyscallHandler.get());
+
+  // Pass in our VDSO thunks
+  ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions(Loader.Is64BitMode()));
+  SignalDelegation->SetVDSOSymbols();
+
+  {
+    Loader.SetVDSOBase(VDSOMapping.VDSOBase);
+    Loader.CalculateHWCaps(CTX.get());
+
+    if (!Loader.MapMemory(SyscallHandler.get(), ParentThread->Thread)) {
+      // failed to map
+      LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      return -ENOEXEC;
+    }
   }
-  close(ProgramFD);
+
+  auto BRKInfo = Loader.GetBRKInfo();
+
+  SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
+
+  // Request code cache generation
+  if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
+    FEXServerClient::PopulateCodeCache(FEXServerClient::GetServerFD(), Loader.GetMainElfFD(), FEXCore::Config::Get_MULTIBLOCK());
+  }
+
+  // Pull RIP and stack pointer from loader and set the thread data to it.
+  ParentThread->Thread->CurrentFrame->State.rip = Loader.DefaultRIP();
+  ParentThread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = Loader.GetStackPointer();
+
+  // Close the loader FDs after everything has been parsed and mapped.
+  Loader.CloseFDs();
 
   CTX->ExecuteThread(ParentThread->Thread);
 
@@ -592,10 +600,10 @@ int main(int argc, char** argv, char** const envp) {
 
   auto ProgramStatus = ParentThread->StatusCode;
 
+  FEX::VDSO::UnloadVDSOMapping(ParentThread->Thread, SyscallHandler.get(), VDSOMapping);
+
   SignalDelegation->UninstallTLSState(ParentThread);
   SyscallHandler->TM.DestroyThread(ParentThread);
-
-  FEX::VDSO::UnloadVDSOMapping(VDSOMapping);
 
   DebugServer.reset();
   SyscallHandler.reset();

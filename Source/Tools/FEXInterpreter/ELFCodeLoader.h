@@ -76,7 +76,8 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     return FEXCore::AlignUp(max_map_address - min_map_address, FEXCore::Utils::FEX_PAGE_SIZE);
   }
 
-  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr& Header, int prot, int flags, FEX::HLE::SyscallMmapInterface* const Handler) {
+  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr& Header, int prot, int flags,
+               FEX::HLE::SyscallMmapInterface* const Handler, FEXCore::Core::InternalThreadState* Thread) {
 
     auto addr = Base + PAGE_START(Header.p_vaddr);
     auto size = Header.p_filesz + PAGE_OFFSET(Header.p_vaddr);
@@ -89,7 +90,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
       return true;
     }
 
-    void* rv = Handler->GuestMmap(nullptr, (void*)addr, size, prot, flags, file.fd, off);
+    void* rv = Handler->GuestMmap(Thread, (void*)addr, size, prot, flags, file.fd, off);
 
     if (FEX::HLE::HasSyscallError(rv)) {
       // uhoh, something went wrong
@@ -124,7 +125,8 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     return rv;
   }
 
-  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t* BrkBase, FEX::HLE::SyscallMmapInterface* const Handler, uint64_t LoadHint = 0) {
+  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t* BrkBase, FEX::HLE::SyscallMmapInterface* const Handler,
+                                       FEXCore::Core::InternalThreadState* Thread, uint64_t LoadHint = 0) {
 
     uintptr_t LoadBase = 0;
     uintptr_t BrkLoadBase = 0;
@@ -135,7 +137,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
       // Allocate a base address plus BRK padding.
       auto TotalSize = CalculateDYNELFSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
       LoadBase =
-        (uintptr_t)Handler->GuestMmap(nullptr, reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        (uintptr_t)Handler->GuestMmap(Thread, reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if (FEX::HLE::HasSyscallError(LoadBase)) {
         return {};
       }
@@ -154,7 +156,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
       int MapProt = MapFlags(Header);
       int MapType = MAP_PRIVATE | MAP_DENYWRITE | MAP_FIXED;
 
-      if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Handler)) {
+      if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Handler, Thread)) {
         return {};
       }
 
@@ -170,7 +172,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
         }
 
         if (BSSPageStart != BSSPageEnd) {
-          auto bss = Handler->GuestMmap(nullptr, (void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
+          auto bss = Handler->GuestMmap(Thread, (void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
           if (FEX::HLE::HasSyscallError(bss)) {
             LogMan::Msg::EFmt("Failed to allocate BSS @ {}, {}\n", fmt::ptr(bss), errno);
             return {};
@@ -192,7 +194,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
     if (NeedsLateBRKMap) {
       // Map the BRK after ELF if possible.
       BrkLoadBase =
-        (uintptr_t)Handler->GuestMmap(nullptr, reinterpret_cast<void*>(BrkLoadBase), BRK_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        (uintptr_t)Handler->GuestMmap(Thread, reinterpret_cast<void*>(BrkLoadBase), BRK_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if (FEX::HLE::HasSyscallError(BrkLoadBase)) {
         // This isn't a catastrophic failure. This just means the BRK conflicted with the ELF.
         BrkLoadBase = 0;
@@ -381,11 +383,12 @@ public:
     return MainElf.fd;
   }
 
-  std::optional<uintptr_t> LoadMainElfFile(uintptr_t* BrkBase, FEX::HLE::SyscallMmapInterface* const Handler, uint64_t LoadHint = 0) {
-    return LoadElfFile(MainElf, BrkBase, Handler, LoadHint);
+  std::optional<uintptr_t> LoadMainElfFile(uintptr_t* BrkBase, FEX::HLE::SyscallMmapInterface* const Handler,
+                                           FEXCore::Core::InternalThreadState* Thread, uint64_t LoadHint = 0) {
+    return LoadElfFile(MainElf, BrkBase, Handler, Thread, LoadHint);
   }
 
-  bool MapMemory(FEX::HLE::SyscallMmapInterface* const Handler) {
+  bool MapMemory(FEX::HLE::SyscallMmapInterface* const Handler, FEXCore::Core::InternalThreadState* Thread) {
     for (const auto& Header : MainElf.phdrs) {
       if (Header.p_type == PT_GNU_STACK) {
         if (Header.p_flags & PF_X) {
@@ -404,6 +407,12 @@ public:
     if (-1 == personality(PER_LINUX | (ExecutableStack ? READ_IMPLIES_EXEC : 0))) {
       LogMan::Msg::EFmt("Setting personality failed");
       return false;
+    }
+
+    if (Thread) {
+      // Update the thread persona.
+      auto ThreadObject = static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
+      ThreadObject->persona = ::personality(0xffffffff);
     }
 
     // What about ASLR and such ?
@@ -440,7 +449,7 @@ public:
     uint64_t StackHint = Is64BitMode() ? STACK_HINT_64 : STACK_HINT_32;
 
     // Allocate the base of the full 128MB stack range.
-    StackPointerBase = Handler->GuestMmap(nullptr, reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE,
+    StackPointerBase = Handler->GuestMmap(Thread, reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE,
                                           MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
 
 
@@ -451,7 +460,7 @@ public:
 
     // Allocate with permissions the 8MB of regular stack size.
     StackPointer = reinterpret_cast<uintptr_t>(
-      Handler->GuestMmap(nullptr, reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
+      Handler->GuestMmap(Thread, reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
                          StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
     if (FEX::HLE::HasSyscallError(StackPointer)) {
@@ -498,7 +507,7 @@ public:
 
     if (!MainElf.InterpreterElf.empty()) {
       uint64_t InterpLoadBase = 0;
-      if (auto elf = LoadElfFile(InterpElf, nullptr, Handler)) {
+      if (auto elf = LoadElfFile(InterpElf, nullptr, Handler, Thread)) {
         InterpLoadBase = *elf;
       } else {
         LogMan::Msg::EFmt("Failed to load interpreter elf file");
@@ -560,7 +569,7 @@ public:
 
     uintptr_t LoadBase = 0;
 
-    if (auto elf = LoadElfFile(MainElf, &BrkStart, Handler, ELFLoadHint)) {
+    if (auto elf = LoadElfFile(MainElf, &BrkStart, Handler, Thread, ELFLoadHint)) {
       LoadBase = *elf;
       if (MainElf.ehdr.e_type == ET_DYN) {
         BaseOffset = LoadBase;
@@ -573,8 +582,8 @@ public:
     if (BrkStart) {
       // BRK usually comes directly after where the ELF is loaded.
       // If a value was returned then we have mapped the entire `BRK_SIZE` and need to change protections.
-      BrkStart = (uint64_t)Handler->GuestMmap(nullptr, (void*)BrkStart, BRK_SIZE, PROT_READ | PROT_WRITE,
-                                              MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+      BrkStart =
+        (uint64_t)Handler->GuestMmap(Thread, (void*)BrkStart, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
       if (FEX::HLE::HasSyscallError(BrkStart)) {
         LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkStart, errno);
         return false;
@@ -618,7 +627,7 @@ public:
         // If the VDSO thunk doesn't exist then we might not have a vsyscall entry.
         // Newer glibc requires vsyscall to exist now. So let's allocate a buffer and stick a vsyscall in to it.
         auto VSyscallPage =
-          Handler->GuestMmap(nullptr, nullptr, FEXCore::Utils::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+          Handler->GuestMmap(Thread, nullptr, FEXCore::Utils::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
         constexpr static uint8_t VSyscallCode[] = {
           0xcd, 0x80, // int 0x80
           0xc3,       // ret
@@ -643,10 +652,12 @@ public:
 
     SetupStack();
 
-    // Cleanup FDs so they don't stay open
+    return true;
+  }
+
+  void CloseFDs() {
     MainElf.Closefd();
     InterpElf.Closefd();
-    return true;
   }
 
   // Helper for stack setup

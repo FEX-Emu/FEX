@@ -7,6 +7,10 @@
 #include <cstdint>
 #include <span>
 
+namespace FEXCore::Core {
+struct InternalThreadState;
+}
+
 namespace FEX::HLE {
 class SyscallHandler;
 }
@@ -24,8 +28,8 @@ struct VDSOEntrypoints {
   void* VDSO_kernel_rt_sigreturn;
   void* VDSO_FEX_CallbackRET;
 };
-VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler);
-void UnloadVDSOMapping(const VDSOMapping& Mapping);
+VDSOMapping LoadVDSOThunks(FEXCore::Core::InternalThreadState* Thread, bool Is64Bit, FEX::HLE::SyscallHandler* const Handler);
+void UnloadVDSOMapping(FEXCore::Core::InternalThreadState* Thread, FEX::HLE::SyscallHandler* const Handler, const VDSOMapping& Mapping);
 
 uint64_t GetVSyscallEntry(const void* VDSOBase);
 

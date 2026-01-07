@@ -351,18 +351,6 @@ uint64_t SyscallHandler::GuestMremap(bool Is64Bit, FEXCore::Core::InternalThread
   return Result;
 }
 
-void SyscallHandler::TriggerPostStartupCodeCacheLoad(FEXCore::Core::InternalThreadState& Thread) {
-  if (!EnableCodeCaching) {
-    return;
-  }
-
-  FEX_CONFIG_OPT(Multiblock, MULTIBLOCK);
-  for (auto& FileSection : StartupBinaryLoads) {
-    LoadCodeCache(Thread, FileSection, CodeCacheConfigId);
-  }
-  StartupBinaryLoads.clear();
-}
-
 int SyscallHandler::OpenCodeMapFile() {
   // Query from FEXServer whether this is the first instance of this executable; if it is, also enable code dumping!
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
@@ -580,8 +568,8 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
     if (Thread) {
       CachedSection.emplace(BuildSectionInfo(*Resource, addr, Size));
     } else {
-      // Delay loading this entry until FEX is fully initialized
-      StartupBinaryLoads.push_back(BuildSectionInfo(*Resource, addr, Size));
+      // Cache can't be loaded with a thread; skip this for now
+      LogMan::Msg::DFmt("Oops, tried caching without a thread: {}", Resource->MappedFile->Filename);
     }
   }
 
