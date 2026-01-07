@@ -320,72 +320,51 @@ struct FallbackABIInfo {
 
 struct JITPointers {
 
-  struct {
-    // Process specific
+  // Process specific
+  uint64_t PrintValue {};
+  uint64_t PrintVectorValue {};
+  uint64_t ThreadRemoveCodeEntryFromJIT {};
+  uint64_t CPUIDObj {};
+  uint64_t CPUIDFunction {};
+  uint64_t XCRFunction {};
+  uint64_t SyscallHandlerObj {};
+  uint64_t SyscallHandlerFunc {};
+  uint64_t ExitFunctionLink {};
+  uint64_t MonoBackpatcherWrite {};
+  uint64_t LUDIV {};
+  uint64_t LDIV {};
+  uint64_t ThunkCallbackRet {};
 
-    uint64_t PrintValue {};
-    uint64_t PrintVectorValue {};
-    uint64_t ThreadRemoveCodeEntryFromJIT {};
-    uint64_t CPUIDObj {};
-    uint64_t CPUIDFunction {};
-    uint64_t XCRFunction {};
-    uint64_t SyscallHandlerObj {};
-    uint64_t SyscallHandlerFunc {};
-    uint64_t ExitFunctionLink {};
-    uint64_t MonoBackpatcherWrite {};
+  // Handles returning/calling ARM64EC code from the JIT, expects the target PC in TMP3
+  uint64_t ExitFunctionEC {};
 
-    // Handles returning/calling ARM64EC code from the JIT, expects the target PC in TMP3
-    uint64_t ExitFunctionEC {};
+  FallbackABIInfo FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
+  uint64_t NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX];
+  uint64_t IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_MAX];
+  uint64_t TelemetryValueAddresses[FEXCore::Telemetry::TYPE_LAST];
 
-    FallbackABIInfo FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
-    uint64_t NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX];
-    uint64_t IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_MAX];
-    uint64_t TelemetryValueAddresses[FEXCore::Telemetry::TYPE_LAST];
+  /**
+   * @name Dispatcher pointers
+   * @{ */
+  uint64_t DispatcherLoopTop {};
+  uint64_t DispatcherLoopTopFillSRA {};
+  uint64_t DispatcherLoopTopEnterEC {};
+  uint64_t DispatcherLoopTopEnterECFillSRA {};
+  uint64_t ExitFunctionLinker {};
+  uint64_t ThreadStopHandlerSpillSRA {};
+  uint64_t ThreadPauseHandlerSpillSRA {};
+  uint64_t GuestSignal_SIGILL {};
+  uint64_t GuestSignal_SIGTRAP {};
+  uint64_t GuestSignal_SIGSEGV {};
+  uint64_t SignalReturnHandler {};
+  uint64_t SignalReturnHandlerRT {};
+  uint64_t L2Pointer {};
+  uint64_t LUDIVHandler {};
+  uint64_t LDIVHandler {};
+  /**  @} */
 
-    // Thread Specific
-    /**
-     * @name Dispatcher pointers
-     * @{ */
-    uint64_t DispatcherLoopTop {};
-    uint64_t DispatcherLoopTopFillSRA {};
-    uint64_t DispatcherLoopTopEnterEC {};
-    uint64_t DispatcherLoopTopEnterECFillSRA {};
-    uint64_t ExitFunctionLinker {};
-    uint64_t ThreadStopHandlerSpillSRA {};
-    uint64_t ThreadPauseHandlerSpillSRA {};
-    uint64_t GuestSignal_SIGILL {};
-    uint64_t GuestSignal_SIGTRAP {};
-    uint64_t GuestSignal_SIGSEGV {};
-    uint64_t SignalReturnHandler {};
-    uint64_t SignalReturnHandlerRT {};
-    uint64_t L2Pointer {};
-    /**  @} */
-
-    // Copy of process-wide named vector constants data.
-    alignas(16) uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX][2];
-  } Common;
-
-  union {
-    struct {
-      // Process specific
-      uint64_t LUDIV {};
-      uint64_t LDIV {};
-      uint64_t ThunkCallbackRet {};
-
-      // Thread Specific
-
-      /**
-       * @name Dispatcher pointers
-       * @{ */
-      uint64_t LUDIVHandler {};
-      uint64_t LDIVHandler {};
-      /**  @} */
-    } AArch64;
-
-    struct {
-      // None so far
-    } X86;
-  };
+  // Copy of process-wide named vector constants data.
+  alignas(16) uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX][2];
 };
 
 // Each guest JIT frame has one of these

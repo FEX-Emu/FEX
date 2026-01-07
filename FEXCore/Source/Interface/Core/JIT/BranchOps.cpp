@@ -61,7 +61,7 @@ DEF_OP(ExitFunction) {
       str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
       InsertGuestRIPMove(EC_CALL_CHECKER_PC_REG, NewRIP);
-      ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
+      ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.ExitFunctionEC));
       br(TMP2);
     } else {
 #endif
@@ -152,7 +152,7 @@ DEF_OP(ExitFunction) {
         (void)cbz(ARMEmitter::Size::i32Bit, TMP1, &TFUnset);
         InsertGuestRIPMove(TMP1, NewRIP);
         str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
-        ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+        ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.DispatcherLoopTop));
         blr(TMP2);
         (void)Bind(&TFUnset);
       }
@@ -186,7 +186,7 @@ DEF_OP(ExitFunction) {
     // Note: sub+cbnz used over cmp+br to preserve flags.
     sub(TMP1, TMP1, RipReg.X());
     (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &SkipFullLookup);
-    ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+    ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.DispatcherLoopTop));
     str(RipReg.X(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
 
     (void)Bind(&SkipFullLookup);
@@ -283,8 +283,8 @@ DEF_OP(Syscall) {
     str(GetReg(Op->Header.Args[i]).X(), ARMEmitter::Reg::rsp, i * 8);
   }
 
-  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerObj));
-  ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerFunc));
+  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.SyscallHandlerObj));
+  ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.SyscallHandlerFunc));
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, STATE.R());
 
   // SP supporting move
@@ -400,7 +400,7 @@ DEF_OP(ThreadRemoveCodeEntry) {
   // TODO: Relocations don't seem to be wired up to this...?
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry, CPU::Arm64Emitter::PadType::AUTOPAD);
 
-  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT));
+  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.ThreadRemoveCodeEntryFromJIT));
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
   } else {
@@ -425,8 +425,8 @@ DEF_OP(CPUID) {
   // x0 = CPUID Handler
   // x1 = CPUID Function
   // x2 = CPUID Leaf
-  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj));
-  ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDFunction));
+  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.CPUIDObj));
+  ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.CPUIDFunction));
 
   if (!TMP_ABIARGS) {
     mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, TMP2);
@@ -466,8 +466,8 @@ DEF_OP(XGetBV) {
 
   // x0 = CPUID Handler
   // x1 = XCR Function
-  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj));
-  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.XCRFunction));
+  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.CPUIDObj));
+  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.XCRFunction));
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<uint64_t, void*, uint32_t>(ARMEmitter::Reg::r2);
   } else {

@@ -277,37 +277,37 @@ namespace CPU {
     : ThreadState(ThreadState)
     , CodeBuffers(CodeBuffers) {
 
-    auto& Common = ThreadState->CurrentFrame->Pointers.Common;
+    auto& Ptrs = ThreadState->CurrentFrame->Pointers;
 
     // Initialize named vector constants.
     for (size_t i = 0; i < FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX; ++i) {
-      Common.NamedVectorConstantPointers[i] = reinterpret_cast<uint64_t>(NamedVectorConstants[i]);
+      Ptrs.NamedVectorConstantPointers[i] = reinterpret_cast<uint64_t>(NamedVectorConstants[i]);
     }
 
     // Copy named vector constants.
-    memcpy(Common.NamedVectorConstants, NamedVectorConstants, sizeof(NamedVectorConstants));
+    memcpy(Ptrs.NamedVectorConstants, NamedVectorConstants, sizeof(NamedVectorConstants));
 
     // Initialize Indexed named vector constants.
-    Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW] =
+    Ptrs.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW] =
       reinterpret_cast<uint64_t>(PSHUFLW_LUT.data());
-    Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW] =
+    Ptrs.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW] =
       reinterpret_cast<uint64_t>(PSHUFHW_LUT.data());
-    Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD] =
+    Ptrs.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD] =
       reinterpret_cast<uint64_t>(PSHUFD_LUT.data());
-    Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS] =
+    Ptrs.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS] =
       reinterpret_cast<uint64_t>(SHUFPS_LUT.data());
-    Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPS_MASK] =
+    Ptrs.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPS_MASK] =
       reinterpret_cast<uint64_t>(DPPS_MASK.data());
-    Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPD_MASK] =
+    Ptrs.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPD_MASK] =
       reinterpret_cast<uint64_t>(DPPD_MASK.data());
-    Common.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW] =
+    Ptrs.IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW] =
       reinterpret_cast<uint64_t>(PBLENDW_LUT.data());
 
 #ifndef FEX_DISABLE_TELEMETRY
     // Fill in telemetry values
     for (size_t i = 0; i < FEXCore::Telemetry::TYPE_LAST; ++i) {
       auto& Telem = FEXCore::Telemetry::GetTelemetryValue(static_cast<FEXCore::Telemetry::TelemetryType>(i));
-      Common.TelemetryValueAddresses[i] = reinterpret_cast<uint64_t>(&Telem);
+      Ptrs.TelemetryValueAddresses[i] = reinterpret_cast<uint64_t>(&Telem);
     }
 #endif
   }

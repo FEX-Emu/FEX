@@ -937,13 +937,13 @@ NTSTATUS ThreadInit() {
   Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(GDT);
 
   FEX::Windows::CallRetStack::InitializeThread(Thread);
-  Thread->CurrentFrame->Pointers.Common.ExitFunctionEC = reinterpret_cast<uintptr_t>(&ExitFunctionEC);
+  Thread->CurrentFrame->Pointers.ExitFunctionEC = reinterpret_cast<uintptr_t>(&ExitFunctionEC);
   CPUArea.StateFrame() = Thread->CurrentFrame;
 
-  uint64_t EnterEC = Thread->CurrentFrame->Pointers.Common.DispatcherLoopTopEnterEC;
+  uint64_t EnterEC = Thread->CurrentFrame->Pointers.DispatcherLoopTopEnterEC;
   CPUArea.DispatcherLoopTopEnterEC() = EnterEC;
 
-  uint64_t EnterECFillSRA = Thread->CurrentFrame->Pointers.Common.DispatcherLoopTopEnterECFillSRA;
+  uint64_t EnterECFillSRA = Thread->CurrentFrame->Pointers.DispatcherLoopTopEnterECFillSRA;
   CPUArea.DispatcherLoopTopEnterECFillSRA() = EnterECFillSRA;
 
   CPUArea.ContextAmd64() = {.ContextFlags = CONTEXT_CONTROL | CONTEXT_SEGMENTS | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,

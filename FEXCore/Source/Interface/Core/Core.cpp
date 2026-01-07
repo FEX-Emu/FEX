@@ -364,7 +364,7 @@ void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState* Thread, uin
 
 void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
   // Update the thread pointer for Thunk return to the latest.
-  Thread->CurrentFrame->Pointers.AArch64.ThunkCallbackRet = SignalDelegation->GetThunkCallbackRET();
+  Thread->CurrentFrame->Pointers.ThunkCallbackRet = SignalDelegation->GetThunkCallbackRET();
 
   Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 
@@ -382,7 +382,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   Thread->CurrentFrame->State.L1Pointer = Thread->LookupCache->GetL1Pointer();
   Thread->CurrentFrame->State.L1Mask = Thread->LookupCache->GetScaledL1PointerMask();
 
-  Thread->CurrentFrame->Pointers.Common.L2Pointer = Thread->LookupCache->GetPagePointer();
+  Thread->CurrentFrame->Pointers.L2Pointer = Thread->LookupCache->GetPagePointer();
 
   Dispatcher->InitThreadPointers(Thread);
 

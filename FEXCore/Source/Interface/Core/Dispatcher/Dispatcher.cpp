@@ -165,7 +165,7 @@ void Dispatcher::EmitDispatcher() {
 
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
   mov(EC_CALL_CHECKER_PC_REG, RipReg);
-  ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
+  ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.ExitFunctionEC));
   br(TMP2);
 
   (void)Bind(&l_NotECCode);
@@ -181,7 +181,7 @@ void Dispatcher::EmitDispatcher() {
   } else {
     // This is the block cache lookup routine
     // It matches what is going on it LookupCache.h::FindBlock
-    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.L2Pointer));
 
     // Mask the address by the virtual address size so we can check for aliases
     uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
@@ -291,7 +291,7 @@ void Dispatcher::EmitDispatcher() {
       mov(ARMEmitter::XReg::x0, STATE);
       mov(ARMEmitter::XReg::x1, ARMEmitter::XReg::lr);
 
-      ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
+      ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.ExitFunctionLink));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
         GenerateIndirectRuntimeCall<uintptr_t, void*, void*>(ARMEmitter::Reg::r2);
       } else {
@@ -488,7 +488,7 @@ void Dispatcher::EmitDispatcher() {
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
-    ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.AArch64.ThunkCallbackRet));
+    ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.ThunkCallbackRet));
 
     ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
     sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r2, CTX->Config.Is64BitMode ? 16 : 12);
@@ -544,8 +544,8 @@ void Dispatcher::EmitDispatcher() {
     return Address;
   };
 
-  LUDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
-  LDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
+  LUDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.LUDIV));
+  LDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.LDIV));
 
   // Interpreter fallbacks
   {
@@ -1086,27 +1086,25 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
 void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) {
   // Setup dispatcher specific pointers that need to be accessed from JIT code
   {
-    auto& Common = Thread->CurrentFrame->Pointers.Common;
+    auto& Ptrs = Thread->CurrentFrame->Pointers;
 
-    Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
-    Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
-    Common.DispatcherLoopTopEnterEC = AbsoluteLoopTopAddressEnterEC;
-    Common.DispatcherLoopTopEnterECFillSRA = AbsoluteLoopTopAddressEnterECFillSRA;
-    Common.ExitFunctionLinker = ExitFunctionLinkerAddress;
-    Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
-    Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
-    Common.GuestSignal_SIGILL = GuestSignal_SIGILL;
-    Common.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
-    Common.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
-    Common.SignalReturnHandler = SignalHandlerReturnAddress;
-    Common.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;
-
-    auto& AArch64 = Thread->CurrentFrame->Pointers.AArch64;
-    AArch64.LUDIVHandler = LUDIVHandlerAddress;
-    AArch64.LDIVHandler = LDIVHandlerAddress;
+    Ptrs.DispatcherLoopTop = AbsoluteLoopTopAddress;
+    Ptrs.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Ptrs.DispatcherLoopTopEnterEC = AbsoluteLoopTopAddressEnterEC;
+    Ptrs.DispatcherLoopTopEnterECFillSRA = AbsoluteLoopTopAddressEnterECFillSRA;
+    Ptrs.ExitFunctionLinker = ExitFunctionLinkerAddress;
+    Ptrs.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
+    Ptrs.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
+    Ptrs.GuestSignal_SIGILL = GuestSignal_SIGILL;
+    Ptrs.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
+    Ptrs.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
+    Ptrs.SignalReturnHandler = SignalHandlerReturnAddress;
+    Ptrs.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;
+    Ptrs.LUDIVHandler = LUDIVHandlerAddress;
+    Ptrs.LDIVHandler = LDIVHandlerAddress;
 
     // Fill in the fallback handlers
-    InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers, &ABIPointers[0]);
+    InterpreterOps::FillFallbackIndexPointers(Ptrs.FallbackHandlerPointers, &ABIPointers[0]);
   }
 }
 
