@@ -370,6 +370,7 @@ struct JITPointers {
       // Process specific
       uint64_t LUDIV {};
       uint64_t LDIV {};
+      uint64_t ThunkCallbackRet {};
 
       // Thread Specific
 

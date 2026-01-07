@@ -488,7 +488,7 @@ void Dispatcher::EmitDispatcher() {
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
-    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, CTX->SignalDelegation->GetThunkCallbackRET());
+    ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.AArch64.ThunkCallbackRet));
 
     ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
     sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r2, CTX->Config.Is64BitMode ? 16 : 12);
