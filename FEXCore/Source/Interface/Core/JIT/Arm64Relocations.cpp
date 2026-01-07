@@ -94,7 +94,10 @@ void Arm64JITCore::InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constan
   MoveABI.GuestRIP.RegisterIndex = Reg.Idx();
 
   // Pointers are required to fit within 48-bit VA space.
-  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Constant, FEXCore::CPU::Arm64Emitter::PadType::AUTOPAD, 6);
+  // TODO: Force 6-byte `MaxSize`, with sign extension to 64-bit. Current code not smart enough to handle negatives.
+  // 48-bit sign extension works because x86-64 guests only receive 47-bit VA space, with 48-bit being reserved for kernel.
+  // Additional quirk, "canonical" 48-bit pointers on x86-64, sign extend the 48-bit as well (Which is why kernel pointers are negative).
+  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Constant, FEXCore::CPU::Arm64Emitter::PadType::AUTOPAD);
   Relocations.emplace_back(MoveABI);
 }
 
