@@ -72,26 +72,6 @@ NFA NFA::createForChar(char c) {
   return nfa;
 }
 
-// Dragon book 2nd edition, figure 3.40: NFA for the union of two regular
-// expressions
-NFA NFA::createForUnion(NFA &nfa1, NFA &nfa2) {
-  NFA newNFA;
-  nfa1.acceptingState->isAccepting = false;
-  nfa2.acceptingState->isAccepting = false;
-  newNFA.startState->addEpsilonTransition(nfa1.startState);
-  newNFA.startState->addEpsilonTransition(nfa2.startState);
-  nfa1.acceptingState->addEpsilonTransition(newNFA.acceptingState);
-  nfa2.acceptingState->addEpsilonTransition(newNFA.acceptingState);
-
-  // NOTE: we acquire state here because the use case was that we were gonna
-  // leave nfa1 and nfa2 out of scope. Probably need to measure the performance
-  // first but it'd be great to move away from making up unique ptr everytime
-  // inside a loop
-  newNFA.acquireStatesFrom(nfa1);
-  newNFA.acquireStatesFrom(nfa2);
-  return newNFA;
-}
-
 // Dragon book 2nd edition, figure 3.41: NFA for the concat of two regular
 // expressions
 NFA NFA::createForConcatenation(NFA &nfa1, NFA &nfa2) {
@@ -102,25 +82,6 @@ NFA NFA::createForConcatenation(NFA &nfa1, NFA &nfa2) {
   newNFA.acceptingState = nfa2.acceptingState;
   newNFA.acquireStatesFrom(nfa1);
   newNFA.acquireStatesFrom(nfa2);
-  return newNFA;
-}
-
-// loop back the nfa to itself to enable accepting 1 more time, do not disable accepting state
-NFA NFA::createForPlus(NFA &originalNFA) {
-  NFA newNFA;
-  newNFA.startState = originalNFA.startState;
-  newNFA.acceptingState = originalNFA.acceptingState;
-  newNFA.acceptingState->addEpsilonTransition(newNFA.startState);
-  newNFA.acquireStatesFrom(originalNFA);
-  return newNFA;
-}
-
-NFA NFA::createForQuestion(NFA &originalNFA) {
-  NFA newNFA;
-  newNFA.startState = originalNFA.startState;
-  newNFA.acceptingState = originalNFA.acceptingState;
-  newNFA.startState->addEpsilonTransition(newNFA.acceptingState);
-  newNFA.acquireStatesFrom(originalNFA);
   return newNFA;
 }
 
@@ -181,40 +142,25 @@ Regex::Regex(const fextl::string &s) : Pattern(s), Pos(0) {
   Nfa = parseExpression();
 }
 
-NFA Regex::parseExpression() { return parseUnion(); }
-
-NFA Regex::parseUnion() {
-  NFA result = parseConcatenation();
-  while (Pos < Pattern.size() && Pattern[Pos] == '|') {
-    Pos++;
-    NFA nfaToMakeUnion = parseConcatenation();
-    result = NFA::createForUnion(result, nfaToMakeUnion);
-  }
-  return result;
-}
+NFA Regex::parseExpression() { return parseConcatenation(); }
 
 NFA Regex::parseConcatenation() {
-  NFA result = parseStarPlusHuhhhh();
-  while (Pos < Pattern.size() && Pattern[Pos] != '|' && Pattern[Pos] != ')') {
-    NFA nfaToConcat = parseStarPlusHuhhhh();
+  NFA result = parseStarOrAtom();
+  while (Pos < Pattern.size() && Pattern[Pos] != '|') {
+    NFA nfaToConcat = parseStarOrAtom();
     result = NFA::createForConcatenation(result, nfaToConcat);
   }
   return result;
 }
 
-NFA Regex::parseStarPlusHuhhhh() {
-  NFA result = parseAtom();
-  while (Pos < Pattern.size()) {
-    if (Pattern[Pos] == '*') {
-      result = NFA::createForKleeneStar(result);
-    } else if (Pattern[Pos] == '+') {
-      result = NFA::createForPlus(result);
-    } else if (Pattern[Pos] == '?') {
-      result = NFA::createForQuestion(result);
-    } else {
-      break;
-    }
+NFA Regex::parseStarOrAtom() {
+  NFA result;
+  if (Pattern[Pos] == '*') {
+    result = NFA::createForDot();
+    result = NFA::createForKleeneStar(result);
     Pos++;
+  } else {
+    result = parseAtom();
   }
   return result;
 }
@@ -226,45 +172,6 @@ NFA Regex::parseAtom() {
   }
   char curChar = Pattern[Pos++];
 
-  if (Escaped) {
-    Escaped = false;
-    if (AcceptableEscapable.find(curChar) == fextl::string::npos) {
-      fprintf(stderr, "Expected an acceptable escapable character which "
-                      "consists of \"%s\", but found '%c' "
-                      "while parsing regex for NFA creation\n",
-              AcceptableEscapable.c_str(), curChar);
-      std::exit(1);
-    }
-    return NFA::createForChar(curChar);
-  }
-  // Move past the opening brace and get the NFA for the expression till a
-  // closing brace is found.
-  if (curChar == '(') {
-    NFA result = parseExpression();
-    if (Pos < Pattern.size() && Pattern[Pos] == ')') {
-      Pos++;
-    } else if (Pos >= Pattern.size()) {
-      // TODO: Add error prop here somewhere
-      fprintf(stderr, "Expected ')', but has no more character to parse from "
-                      "regex for NFA creation\n");
-      std::exit(1);
-    } else {
-      fprintf(stderr, "Expected ')', but encountered character '%c' while parsing "
-                      "regex for NFA creation\n",
-              Pattern[Pos]);
-      std::exit(1);
-    }
-    return result;
-  }
-
-  if (curChar == '\\') {
-    assert(Escaped == false && "Cannot have escaped = true here");
-    Escaped = true;
-    return parseAtom();
-  }
-
-  if (curChar == '.')
-    return NFA::createForDot();
   return NFA::createForChar(curChar);
 }
 
