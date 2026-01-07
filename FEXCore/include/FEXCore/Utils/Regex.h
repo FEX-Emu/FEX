@@ -36,11 +36,8 @@ public:
   static NFA createForEpsilon();
   static NFA createForChar(char c);
   static NFA createForDot();
-  static NFA createForUnion(NFA &nfa1, NFA &nfa2);
   static NFA createForConcatenation(NFA &nfa1, NFA &nfa2);
   static NFA createForKleeneStar(NFA &originalNFA);
-  static NFA createForPlus(NFA &originalNFA);
-  static NFA createForQuestion(NFA &originalNFA);
   static fextl::set<State *> epsilonClosure(const fextl::set<State *> &states);
   static fextl::set<State *> move(const fextl::set<State *> &states, char c);
 };
@@ -53,26 +50,20 @@ class Regex {
   fextl::string Pattern;
   int Pos;
   NFA Nfa;
-  bool Escaped = false;
 
   // Top level parser, calls parseUnion
   NFA parseExpression();
 
-  // INFO: "a|b"
-  NFA parseUnion();
-
   // INFO: "ab"
   NFA parseConcatenation();
 
-  // INFO: "a*", ".*"
-  NFA parseStarPlusHuhhhh();
+  NFA parseStarOrAtom();
 
   // INFO: "(abc)" or a
   NFA parseAtom();
 
 public:
   static inline fextl::string Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;':\"[]\\{}|1234567890!@#$%^&*()-=_+";
-  static inline fextl::string AcceptableEscapable = ".?[]\\|";
   Regex(const fextl::string &s);
   bool matches(const fextl::string &s);
 };
