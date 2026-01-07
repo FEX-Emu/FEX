@@ -977,7 +977,7 @@ DEF_OP(LoadNamedVectorConstant) {
   }
   // Load the pointer.
   auto GenerateMemOperand = [this](IR::OpSize OpSize, uint32_t NamedConstant, ARMEmitter::Register Base) {
-    const auto ConstantOffset = offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.NamedVectorConstants[NamedConstant]);
+    const auto ConstantOffset = offsetof(FEXCore::Core::CpuStateFrame, Pointers.NamedVectorConstants[NamedConstant]);
 
     if (ConstantOffset <= 255 || // Unscaled 9-bit signed
         ((ConstantOffset & (IR::OpSizeToSize(OpSize) - 1)) == 0 &&
@@ -985,13 +985,13 @@ DEF_OP(LoadNamedVectorConstant) {
       return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, ConstantOffset);
     }
 
-    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[NamedConstant]));
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.NamedVectorConstantPointers[NamedConstant]));
     return ARMEmitter::ExtendedMemOperand(TMP1, ARMEmitter::IndexType::OFFSET, 0);
   };
 
   if (OpSize == IR::OpSize::i256Bit) {
     // Handle SVE 32-byte variant upfront.
-    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.NamedVectorConstantPointers[Op->Constant]));
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.NamedVectorConstantPointers[Op->Constant]));
     ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, 0);
     return;
   }
@@ -1013,7 +1013,7 @@ DEF_OP(LoadNamedVectorIndexedConstant) {
   const auto Dst = GetVReg(Node);
 
   // Load the pointer.
-  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.IndexedNamedVectorConstantPointers[Op->Constant]));
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.IndexedNamedVectorConstantPointers[Op->Constant]));
 
   switch (OpSize) {
   case IR::OpSize::i8Bit: ldrb(Dst, TMP1, Op->Index); break;

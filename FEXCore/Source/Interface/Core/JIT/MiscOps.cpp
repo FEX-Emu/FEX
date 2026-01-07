@@ -78,19 +78,19 @@ DEF_OP(Break) {
 
   switch (Op->Reason.Signal) {
   case Core::FAULT_SIGILL:
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGILL));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGILL));
     br(TMP1);
     break;
   case Core::FAULT_SIGTRAP:
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
     br(TMP1);
     break;
   case Core::FAULT_SIGSEGV:
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGSEGV));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGSEGV));
     br(TMP1);
     break;
   default:
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
     br(TMP1);
     break;
   }
@@ -189,11 +189,11 @@ DEF_OP(Print) {
 
   if (IsGPR(Op->Value)) {
     mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->Value));
-    ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue));
+    ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.PrintValue));
   } else {
     fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetVReg(Op->Value), false);
     fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetVReg(Op->Value), true);
-    ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue));
+    ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.PrintVectorValue));
   }
 
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
@@ -311,7 +311,7 @@ DEF_OP(MonoBackpatcherWrite) {
   strb(TMP1.W(), TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 
-  ldr(ARMEmitter::XReg::x4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.MonoBackpatcherWrite));
+  ldr(ARMEmitter::XReg::x4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.MonoBackpatcherWrite));
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<void, void*, uint8_t, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
   } else {

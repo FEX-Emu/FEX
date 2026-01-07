@@ -329,7 +329,7 @@ DEF_OP(TelemetrySetValue) {
   auto Op = IROp->C<IR::IROp_TelemetrySetValue>();
   auto Src = GetReg(Op->Value);
 
-  ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.TelemetryValueAddresses[Op->TelemetryValueIndex]));
+  ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.TelemetryValueAddresses[Op->TelemetryValueIndex]));
 
   // Cortex fuses cmp+cset.
   cmp(ARMEmitter::Size::i32Bit, Src, 0);

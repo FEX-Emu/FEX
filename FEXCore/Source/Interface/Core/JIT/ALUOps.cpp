@@ -924,7 +924,7 @@ DEF_OP(Div) {
       mov(EmitSize, TMP2, Lower);
       mov(EmitSize, TMP3, Divisor);
 
-      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIVHandler));
+      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.LDIVHandler));
 
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
       blr(TMP4);
@@ -1007,7 +1007,7 @@ DEF_OP(UDiv) {
       mov(EmitSize, TMP2, Lower);
       mov(EmitSize, TMP3, Divisor);
 
-      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIVHandler));
+      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.LUDIVHandler));
 
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
       blr(TMP4);
