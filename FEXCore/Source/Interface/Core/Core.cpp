@@ -363,6 +363,9 @@ void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState* Thread, uin
 }
 
 void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
+  // Update the thread pointer for Thunk return to the latest.
+  Thread->CurrentFrame->Pointers.AArch64.ThunkCallbackRet = SignalDelegation->GetThunkCallbackRET();
+
   Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 
   // If it is the parent thread that died then just leave
