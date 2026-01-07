@@ -60,13 +60,14 @@ uint32_t ioctl_32(FEXCore::Core::CpuStateFrame*, int fd, uint32_t cmd, uint32_t 
   return Result;
 }
 #endif
+// These are redefined to be their non-64bit tagged value on x86-64
+constexpr int OP_GETLK64_32 = 12;
+constexpr int OP_SETLK64_32 = 13;
+constexpr int OP_SETLKW64_32 = 14;
+
 auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uint64_t arg) -> uint64_t {
   // fcntl64 struct directly matches the 64bit fcntl op
   // cmd just needs to be fixed up
-  // These are redefined to be their non-64bit tagged value on x86-64
-  constexpr int OP_GETLK64_32 = 12;
-  constexpr int OP_SETLK64_32 = 13;
-  constexpr int OP_SETLKW64_32 = 14;
 
   void* lock_arg = (void*)arg;
   struct flock tmp {};
@@ -112,16 +113,8 @@ auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uin
   }
 
   case F_SETFL: lock_arg = reinterpret_cast<void*>(FEX::HLE::RemapFromX86Flags(arg)); break;
-  // Maps directly
-  case F_DUPFD:
-  case F_DUPFD_CLOEXEC:
-  case F_GETFD:
-  case F_SETFD:
-  case F_GETFL:
-  case F_ADD_SEALS:
-  case F_GET_SEALS: break;
-
-  default: LOGMAN_MSG_A_FMT("Unhandled fcntl64: 0x{:x}", cmd); break;
+  // Everything else maps directly. Check `COMPAT_SYSCALL_DEFINE3(fcntl64, ...)` entrypoint in the kernel if this changes.
+  default: break;
   }
 
   uint64_t Result = ::fcntl(fd, cmd, lock_arg);
@@ -153,6 +146,21 @@ auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uin
     }
   }
   SYSCALL_ERRNO();
+};
+
+auto fcntl32Handler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uint64_t arg) -> uint64_t {
+  // fcntl32 handler explicitly blocks these commands.
+  switch (cmd) {
+  case OP_GETLK64_32:
+  case OP_SETLK64_32:
+  case OP_SETLKW64_32:
+  case F_OFD_GETLK:
+  case F_OFD_SETLK:
+  case F_OFD_SETLKW: return -EINVAL;
+  default: break;
+  }
+
+  return fcntlHandler(Frame, fd, cmd, arg);
 };
 
 auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32* readfds, fd_set32* writefds, fd_set32* exceptfds,
@@ -495,7 +503,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   // - F_OFD_SETLK
   // - F_OFD_SETLKW
 
-  REGISTER_SYSCALL_IMPL_X32(fcntl, fcntlHandler);
+  REGISTER_SYSCALL_IMPL_X32(fcntl, fcntl32Handler);
   REGISTER_SYSCALL_IMPL_X32(fcntl64, fcntlHandler);
 
   REGISTER_SYSCALL_IMPL_X32(dup, [](FEXCore::Core::CpuStateFrame* Frame, int oldfd) -> uint64_t {
