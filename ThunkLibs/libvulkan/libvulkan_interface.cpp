@@ -1692,16 +1692,6 @@ template<>
 struct fex_gen_config<vkDestroySemaphore> {};
 #ifndef IS_32BIT_THUNK
 template<>
-struct fex_gen_config<vkCreateEvent> {};
-template<>
-struct fex_gen_config<vkDestroyEvent> {};
-template<>
-struct fex_gen_config<vkGetEventStatus> {};
-template<>
-struct fex_gen_config<vkSetEvent> {};
-template<>
-struct fex_gen_config<vkResetEvent> {};
-template<>
 struct fex_gen_config<vkCreateQueryPool> {};
 template<>
 struct fex_gen_config<vkDestroyQueryPool> {};
@@ -1715,10 +1705,6 @@ struct fex_gen_config<vkCreateBuffer> {};
 template<>
 struct fex_gen_config<vkDestroyBuffer> {};
 template<>
-struct fex_gen_config<vkCreateBufferView> {};
-template<>
-struct fex_gen_config<vkDestroyBufferView> {};
-template<>
 struct fex_gen_config<vkCreateImage> {};
 template<>
 struct fex_gen_config<vkDestroyImage> {};
@@ -1728,6 +1714,84 @@ template<>
 struct fex_gen_config<vkCreateImageView> {};
 template<>
 struct fex_gen_config<vkDestroyImageView> {};
+template<>
+struct fex_gen_config<vkCreateCommandPool> {};
+template<>
+struct fex_gen_config<vkDestroyCommandPool> {};
+template<>
+struct fex_gen_config<vkResetCommandPool> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkAllocateCommandBuffers> {};
+#else
+template<>
+struct fex_gen_config<vkAllocateCommandBuffers> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<vkAllocateCommandBuffers, 2, VkCommandBuffer*> : fexgen::ptr_passthrough {};
+#endif
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkFreeCommandBuffers> {};
+#else
+template<>
+struct fex_gen_config<vkFreeCommandBuffers> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<vkFreeCommandBuffers, 3, const VkCommandBuffer*> : fexgen::ptr_passthrough {};
+#endif
+template<>
+struct fex_gen_config<vkBeginCommandBuffer> {};
+template<>
+struct fex_gen_config<vkEndCommandBuffer> {};
+template<>
+struct fex_gen_config<vkResetCommandBuffer> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdCopyBuffer> {};
+template<>
+struct fex_gen_config<vkCmdCopyImage> {};
+#endif
+template<>
+struct fex_gen_config<vkCmdCopyBufferToImage> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdCopyImageToBuffer> {};
+template<>
+struct fex_gen_config<vkCmdUpdateBuffer> {};
+template<>
+struct fex_gen_param<vkCmdUpdateBuffer, 4, const void*> : fexgen::assume_compatible_data_layout {};
+template<>
+struct fex_gen_config<vkCmdFillBuffer> {};
+#endif
+template<>
+struct fex_gen_config<vkCmdPipelineBarrier> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdBeginQuery> {};
+template<>
+struct fex_gen_config<vkCmdEndQuery> {};
+template<>
+struct fex_gen_config<vkCmdResetQueryPool> {};
+template<>
+struct fex_gen_config<vkCmdWriteTimestamp> {};
+template<>
+struct fex_gen_config<vkCmdCopyQueryPoolResults> {};
+template<>
+struct fex_gen_config<vkCmdExecuteCommands> {};
+template<>
+struct fex_gen_config<vkCreateEvent> {};
+template<>
+struct fex_gen_config<vkDestroyEvent> {};
+template<>
+struct fex_gen_config<vkGetEventStatus> {};
+template<>
+struct fex_gen_config<vkSetEvent> {};
+template<>
+struct fex_gen_config<vkResetEvent> {};
+#endif
+template<>
+struct fex_gen_config<vkCreateBufferView> {};
+template<>
+struct fex_gen_config<vkDestroyBufferView> {};
 template<>
 struct fex_gen_config<vkCreateShaderModule> : fexgen::custom_host_impl {};
 template<>
@@ -1750,11 +1814,6 @@ struct fex_gen_param<vkGetPipelineCacheData, 3, void*> : fexgen::assume_compatib
 #ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkMergePipelineCaches> {};
-#endif
-// TODO: Should be custom_host_impl since there may be more than one VkGraphicsPipelineCreateInfo and more than one output pipeline
-template<>
-struct fex_gen_config<vkCreateGraphicsPipelines> {};
-#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCreateComputePipelines> {};
 #endif
@@ -1794,6 +1853,32 @@ template<>
 struct fex_gen_param<vkUpdateDescriptorSets, 4, const VkCopyDescriptorSet*> : fexgen::ptr_passthrough {};
 #endif
 template<>
+struct fex_gen_config<vkCmdBindPipeline> {};
+template<>
+struct fex_gen_config<vkCmdBindDescriptorSets> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdClearColorImage> {};
+template<>
+struct fex_gen_config<vkCmdDispatch> {};
+template<>
+struct fex_gen_config<vkCmdDispatchIndirect> {};
+template<>
+struct fex_gen_config<vkCmdSetEvent> {};
+template<>
+struct fex_gen_config<vkCmdResetEvent> {};
+template<>
+struct fex_gen_config<vkCmdWaitEvents> {};
+template<>
+struct fex_gen_config<vkCmdPushConstants> {};
+template<>
+struct fex_gen_param<vkCmdPushConstants, 5, const void*> : fexgen::assume_compatible_data_layout {};
+#endif
+
+// TODO: Should be custom_host_impl since there may be more than one VkGraphicsPipelineCreateInfo and more than one output pipeline
+template<>
+struct fex_gen_config<vkCreateGraphicsPipelines> {};
+template<>
 struct fex_gen_config<vkCreateFramebuffer> {};
 template<>
 struct fex_gen_config<vkDestroyFramebuffer> {};
@@ -1803,39 +1888,6 @@ template<>
 struct fex_gen_config<vkDestroyRenderPass> {};
 template<>
 struct fex_gen_config<vkGetRenderAreaGranularity> {};
-template<>
-struct fex_gen_config<vkCreateCommandPool> {};
-template<>
-struct fex_gen_config<vkDestroyCommandPool> {};
-template<>
-struct fex_gen_config<vkResetCommandPool> {};
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkAllocateCommandBuffers> {};
-#else
-template<>
-struct fex_gen_config<vkAllocateCommandBuffers> : fexgen::custom_host_impl {};
-template<>
-struct fex_gen_param<vkAllocateCommandBuffers, 2, VkCommandBuffer*> : fexgen::ptr_passthrough {};
-#endif
-
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkFreeCommandBuffers> {};
-#else
-template<>
-struct fex_gen_config<vkFreeCommandBuffers> : fexgen::custom_host_impl {};
-template<>
-struct fex_gen_param<vkFreeCommandBuffers, 3, const VkCommandBuffer*> : fexgen::ptr_passthrough {};
-#endif
-template<>
-struct fex_gen_config<vkBeginCommandBuffer> {};
-template<>
-struct fex_gen_config<vkEndCommandBuffer> {};
-template<>
-struct fex_gen_config<vkResetCommandBuffer> {};
-template<>
-struct fex_gen_config<vkCmdBindPipeline> {};
 template<>
 struct fex_gen_config<vkCmdSetViewport> {};
 template<>
@@ -1855,8 +1907,6 @@ struct fex_gen_config<vkCmdSetStencilWriteMask> {};
 template<>
 struct fex_gen_config<vkCmdSetStencilReference> {};
 template<>
-struct fex_gen_config<vkCmdBindDescriptorSets> {};
-template<>
 struct fex_gen_config<vkCmdBindIndexBuffer> {};
 template<>
 struct fex_gen_config<vkCmdBindVertexBuffers> {};
@@ -1870,29 +1920,7 @@ struct fex_gen_config<vkCmdDrawIndirect> {};
 template<>
 struct fex_gen_config<vkCmdDrawIndexedIndirect> {};
 template<>
-struct fex_gen_config<vkCmdDispatch> {};
-template<>
-struct fex_gen_config<vkCmdDispatchIndirect> {};
-template<>
-struct fex_gen_config<vkCmdCopyBuffer> {};
-template<>
-struct fex_gen_config<vkCmdCopyImage> {};
-template<>
 struct fex_gen_config<vkCmdBlitImage> {};
-#endif
-template<>
-struct fex_gen_config<vkCmdCopyBufferToImage> {};
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkCmdCopyImageToBuffer> {};
-template<>
-struct fex_gen_config<vkCmdUpdateBuffer> {};
-template<>
-struct fex_gen_param<vkCmdUpdateBuffer, 4, const void*> : fexgen::assume_compatible_data_layout {};
-template<>
-struct fex_gen_config<vkCmdFillBuffer> {};
-template<>
-struct fex_gen_config<vkCmdClearColorImage> {};
 template<>
 struct fex_gen_config<vkCmdClearDepthStencilImage> {};
 #endif
@@ -1901,30 +1929,6 @@ struct fex_gen_config<vkCmdClearAttachments> {};
 #ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCmdResolveImage> {};
-template<>
-struct fex_gen_config<vkCmdSetEvent> {};
-template<>
-struct fex_gen_config<vkCmdResetEvent> {};
-template<>
-struct fex_gen_config<vkCmdWaitEvents> {};
-#endif
-template<>
-struct fex_gen_config<vkCmdPipelineBarrier> {};
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkCmdBeginQuery> {};
-template<>
-struct fex_gen_config<vkCmdEndQuery> {};
-template<>
-struct fex_gen_config<vkCmdResetQueryPool> {};
-template<>
-struct fex_gen_config<vkCmdWriteTimestamp> {};
-template<>
-struct fex_gen_config<vkCmdCopyQueryPoolResults> {};
-template<>
-struct fex_gen_config<vkCmdPushConstants> {};
-template<>
-struct fex_gen_param<vkCmdPushConstants, 5, const void*> : fexgen::assume_compatible_data_layout {};
 #endif
 template<>
 struct fex_gen_config<vkCmdBeginRenderPass> {};
@@ -1934,10 +1938,6 @@ struct fex_gen_config<vkCmdNextSubpass> {};
 #endif
 template<>
 struct fex_gen_config<vkCmdEndRenderPass> {};
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkCmdExecuteCommands> {};
-#endif
 template<>
 struct fex_gen_config<vkEnumerateInstanceVersion> {};
 #ifndef IS_32BIT_THUNK
@@ -1949,8 +1949,6 @@ template<>
 struct fex_gen_config<vkGetDeviceGroupPeerMemoryFeatures> {};
 template<>
 struct fex_gen_config<vkCmdSetDeviceMask> {};
-template<>
-struct fex_gen_config<vkCmdDispatchBase> {};
 template<>
 struct fex_gen_config<vkEnumeratePhysicalDeviceGroups> {};
 #endif
@@ -1982,9 +1980,13 @@ struct fex_gen_config<vkTrimCommandPool> {};
 template<>
 struct fex_gen_config<vkGetDeviceQueue2> {};
 template<>
-struct fex_gen_config<vkCreateSamplerYcbcrConversion> {};
+struct fex_gen_config<vkGetPhysicalDeviceExternalBufferProperties> {};
 template<>
-struct fex_gen_config<vkDestroySamplerYcbcrConversion> {};
+struct fex_gen_config<vkGetPhysicalDeviceExternalFenceProperties> {};
+template<>
+struct fex_gen_config<vkGetPhysicalDeviceExternalSemaphoreProperties> {};
+template<>
+struct fex_gen_config<vkCmdDispatchBase> {};
 #endif
 template<>
 struct fex_gen_config<vkCreateDescriptorUpdateTemplate> {};
@@ -1994,31 +1996,13 @@ template<>
 struct fex_gen_config<vkUpdateDescriptorSetWithTemplate> {};
 template<>
 struct fex_gen_param<vkUpdateDescriptorSetWithTemplate, 3, const void*> : fexgen::assume_compatible_data_layout {};
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkGetPhysicalDeviceExternalBufferProperties> {};
-template<>
-struct fex_gen_config<vkGetPhysicalDeviceExternalFenceProperties> {};
-template<>
-struct fex_gen_config<vkGetPhysicalDeviceExternalSemaphoreProperties> {};
-#endif
 template<>
 struct fex_gen_config<vkGetDescriptorSetLayoutSupport> {};
 #ifndef IS_32BIT_THUNK
 template<>
-struct fex_gen_config<vkCmdDrawIndirectCount> {};
+struct fex_gen_config<vkCreateSamplerYcbcrConversion> {};
 template<>
-struct fex_gen_config<vkCmdDrawIndexedIndirectCount> {};
-#endif
-template<>
-struct fex_gen_config<vkCreateRenderPass2> {};
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkCmdBeginRenderPass2> {};
-template<>
-struct fex_gen_config<vkCmdNextSubpass2> {};
-template<>
-struct fex_gen_config<vkCmdEndRenderPass2> {};
+struct fex_gen_config<vkDestroySamplerYcbcrConversion> {};
 template<>
 struct fex_gen_config<vkResetQueryPool> {};
 template<>
@@ -2038,6 +2022,20 @@ struct fex_gen_config<vkGetBufferOpaqueCaptureAddress> {};
 template<>
 struct fex_gen_config<vkGetDeviceMemoryOpaqueCaptureAddress> {};
 template<>
+struct fex_gen_config<vkCmdDrawIndirectCount> {};
+template<>
+struct fex_gen_config<vkCmdDrawIndexedIndirectCount> {};
+#endif
+template<>
+struct fex_gen_config<vkCreateRenderPass2> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdBeginRenderPass2> {};
+template<>
+struct fex_gen_config<vkCmdNextSubpass2> {};
+template<>
+struct fex_gen_config<vkCmdEndRenderPass2> {};
+template<>
 struct fex_gen_config<vkGetPhysicalDeviceToolProperties> {};
 template<>
 struct fex_gen_config<vkCreatePrivateDataSlot> {};
@@ -2047,12 +2045,6 @@ template<>
 struct fex_gen_config<vkSetPrivateData> {};
 template<>
 struct fex_gen_config<vkGetPrivateData> {};
-template<>
-struct fex_gen_config<vkCmdSetEvent2> {};
-template<>
-struct fex_gen_config<vkCmdResetEvent2> {};
-template<>
-struct fex_gen_config<vkCmdWaitEvents2> {};
 #endif
 template<>
 struct fex_gen_config<vkCmdPipelineBarrier2> {};
@@ -2069,6 +2061,18 @@ template<>
 struct fex_gen_config<vkCmdCopyBufferToImage2> {};
 template<>
 struct fex_gen_config<vkCmdCopyImageToBuffer2> {};
+template<>
+struct fex_gen_config<vkGetDeviceBufferMemoryRequirements> {};
+template<>
+struct fex_gen_config<vkGetDeviceImageMemoryRequirements> {};
+template<>
+struct fex_gen_config<vkGetDeviceImageSparseMemoryRequirements> {};
+template<>
+struct fex_gen_config<vkCmdSetEvent2> {};
+template<>
+struct fex_gen_config<vkCmdResetEvent2> {};
+template<>
+struct fex_gen_config<vkCmdWaitEvents2> {};
 template<>
 struct fex_gen_config<vkCmdBlitImage2> {};
 template<>
@@ -2110,52 +2114,16 @@ template<>
 struct fex_gen_config<vkCmdSetPrimitiveRestartEnable> {};
 #ifndef IS_32BIT_THUNK
 template<>
-struct fex_gen_config<vkGetDeviceBufferMemoryRequirements> {};
-template<>
-struct fex_gen_config<vkGetDeviceImageMemoryRequirements> {};
-template<>
-struct fex_gen_config<vkGetDeviceImageSparseMemoryRequirements> {};
-#endif
-template<>
-struct fex_gen_config<vkCmdSetLineStipple> {};
-#ifndef IS_32BIT_THUNK
-template<>
 struct fex_gen_config<vkMapMemory2> {};
 #endif
 template<>
 struct fex_gen_config<vkUnmapMemory2> {};
-template<>
-struct fex_gen_config<vkCmdBindIndexBuffer2> {};
-template<>
-struct fex_gen_config<vkGetRenderingAreaGranularity> {};
 #ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkGetDeviceImageSubresourceLayout> {};
 #endif
 template<>
 struct fex_gen_config<vkGetImageSubresourceLayout2> {};
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkCmdPushDescriptorSet> {};
-#endif
-template<>
-struct fex_gen_config<vkCmdPushDescriptorSetWithTemplate> {};
-template<>
-struct fex_gen_param<vkCmdPushDescriptorSetWithTemplate, 4, const void*> : fexgen::assume_compatible_data_layout {};
-#ifndef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<vkCmdSetRenderingAttachmentLocations> {};
-template<>
-struct fex_gen_config<vkCmdSetRenderingInputAttachmentIndices> {};
-template<>
-struct fex_gen_config<vkCmdBindDescriptorSets2> {};
-template<>
-struct fex_gen_config<vkCmdPushConstants2> {};
-template<>
-struct fex_gen_config<vkCmdPushDescriptorSet2> {};
-template<>
-struct fex_gen_config<vkCmdPushDescriptorSetWithTemplate2> {};
-#endif
 template<>
 struct fex_gen_config<vkCopyMemoryToImage> {};
 #ifndef IS_32BIT_THUNK
@@ -2166,6 +2134,36 @@ struct fex_gen_config<vkCopyImageToImage> {};
 #endif
 template<>
 struct fex_gen_config<vkTransitionImageLayout> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdPushDescriptorSet> {};
+#endif
+template<>
+struct fex_gen_config<vkCmdPushDescriptorSetWithTemplate> {};
+template<>
+struct fex_gen_param<vkCmdPushDescriptorSetWithTemplate, 4, const void*> : fexgen::assume_compatible_data_layout {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdBindDescriptorSets2> {};
+template<>
+struct fex_gen_config<vkCmdPushConstants2> {};
+template<>
+struct fex_gen_config<vkCmdPushDescriptorSet2> {};
+template<>
+struct fex_gen_config<vkCmdPushDescriptorSetWithTemplate2> {};
+#endif
+template<>
+struct fex_gen_config<vkCmdSetLineStipple> {};
+template<>
+struct fex_gen_config<vkCmdBindIndexBuffer2> {};
+template<>
+struct fex_gen_config<vkGetRenderingAreaGranularity> {};
+#ifndef IS_32BIT_THUNK
+template<>
+struct fex_gen_config<vkCmdSetRenderingAttachmentLocations> {};
+template<>
+struct fex_gen_config<vkCmdSetRenderingInputAttachmentIndices> {};
+#endif
 template<>
 struct fex_gen_config<vkDestroySurfaceKHR> {};
 template<>
@@ -2789,19 +2787,6 @@ template<>
 struct fex_gen_config<vkSetPrivateDataEXT> {};
 template<>
 struct fex_gen_config<vkGetPrivateDataEXT> {};
-// These CUDA functions conflict with another extension.
-// template<>
-// struct fex_gen_config<vkCreateCudaModuleNV> {};
-// template<>
-// struct fex_gen_config<vkGetCudaModuleCacheNV> {};
-// template<>
-// struct fex_gen_config<vkCreateCudaFunctionNV> {};
-// template<>
-// struct fex_gen_config<vkDestroyCudaModuleNV> {};
-// template<>
-// struct fex_gen_config<vkDestroyCudaFunctionNV> {};
-// template<>
-// struct fex_gen_config<vkCmdCudaLaunchKernelNV> {};
 template<>
 struct fex_gen_config<vkCmdDispatchTileQCOM> {};
 template<>
