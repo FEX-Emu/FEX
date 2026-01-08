@@ -1,70 +1,11 @@
-/*
- * Copyright (c) 2025 Rakshit Awasthi
- * SPDX-License-Identifier: MIT
- */
+// SPDX-License-Identifier: MIT
+
 #pragma once
-#include "FEXCore/fextl/memory.h"
-#include "FEXCore/fextl/string.h"
-#include <FEXCore/fextl/map.h>
-#include <FEXCore/fextl/stack.h>
-#include <FEXCore/fextl/set.h>
-#include <FEXCore/fextl/vector.h>
+#include <string_view>
 
 namespace FEXCore::Utils {
-
-class State {
-public:
-  fextl::vector<State *> epsilonTransitions;
-  fextl::map<char, fextl::vector<State *>> transitions;
-  bool isAccepting;
-  State(bool accepting = false) : isAccepting(accepting) {}
-  void addEpsilonTransition(State *nextState);
-  void addTransition(char c, State *nextState);
-};
-class NFA {
-public:
-  State *startState;
-  State *acceptingState;
-  fextl::vector<fextl::unique_ptr<State>> states;
-
-  NFA();
-  // Transfers the ownership of the states (unique_ptr) of other NFA to the
-  // current NFA.
-  void acquireStatesFrom(NFA &other);
-
-  // Functions for creating NFA using the McNaughton-Yamada-Thompson algorithm
-  static NFA createForEpsilon();
-  static NFA createForChar(char c);
-  static NFA createForDot();
-  static NFA createForConcatenation(NFA &nfa1, NFA &nfa2);
-  static NFA createForKleeneStar(NFA &originalNFA);
-  static fextl::set<State *> epsilonClosure(const fextl::set<State *> &states);
-  static fextl::set<State *> move(const fextl::set<State *> &states, char c);
-};
-
-// TODO: probably an NFA vector would be better instead of State vector inside
-// each NFA
-
-// TODO: Better error reporting?
 class Regex {
-  fextl::string Pattern;
-  int Pos;
-  NFA Nfa;
-
-  // Top level parser, calls parseUnion
-  NFA parseExpression();
-
-  // INFO: "ab"
-  NFA parseConcatenation();
-
-  NFA parseStarOrAtom();
-
-  // INFO: "(abc)" or a
-  NFA parseAtom();
-
 public:
-  static inline fextl::string Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,./<>?;':\"[]\\{}|1234567890!@#$%^&*()-=_+";
-  Regex(const fextl::string &s);
-  bool matches(const fextl::string &s);
+  static bool matches(std::string_view pattern, std::string_view text);
 };
 } // namespace FEXCore::Utils

@@ -88,7 +88,7 @@ namespace JSON {
 
       // Matches the first and then get out
       // Needs PR review on this
-      if (Regex(RegexName).matches(Config)) {
+      if (Regex::matches(RegexName, Config)) {
         // Safe to assume its just pairs of strings at this point?
         ListApplier(RegexNamedList);
         break;
