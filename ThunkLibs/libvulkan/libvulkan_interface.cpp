@@ -18,6 +18,7 @@ struct fex_gen_config {
 #define VK_USE_PLATFORM_XLIB_KHR
 #define VK_USE_PLATFORM_XCB_KHR
 #define VK_USE_PLATFORM_WAYLAND_KHR
+#define VK_ENABLE_BETA_EXTENSIONS
 #include <vulkan/vulkan.h>
 
 template<>
@@ -2789,19 +2790,18 @@ template<>
 struct fex_gen_config<vkSetPrivateDataEXT> {};
 template<>
 struct fex_gen_config<vkGetPrivateDataEXT> {};
-// These CUDA functions conflict with another extension.
-// template<>
-// struct fex_gen_config<vkCreateCudaModuleNV> {};
-// template<>
-// struct fex_gen_config<vkGetCudaModuleCacheNV> {};
-// template<>
-// struct fex_gen_config<vkCreateCudaFunctionNV> {};
-// template<>
-// struct fex_gen_config<vkDestroyCudaModuleNV> {};
-// template<>
-// struct fex_gen_config<vkDestroyCudaFunctionNV> {};
-// template<>
-// struct fex_gen_config<vkCmdCudaLaunchKernelNV> {};
+template<>
+struct fex_gen_config<vkCreateCudaModuleNV> {};
+template<>
+struct fex_gen_config<vkGetCudaModuleCacheNV> {};
+template<>
+struct fex_gen_config<vkCreateCudaFunctionNV> {};
+template<>
+struct fex_gen_config<vkDestroyCudaModuleNV> {};
+template<>
+struct fex_gen_config<vkDestroyCudaFunctionNV> {};
+template<>
+struct fex_gen_config<vkCmdCudaLaunchKernelNV> {};
 template<>
 struct fex_gen_config<vkCmdDispatchTileQCOM> {};
 template<>
