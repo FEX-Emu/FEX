@@ -43,7 +43,7 @@ using GLIBC_MALLOC_Hook = void* (*)(size_t, const void* caller);
 using GLIBC_REALLOC_Hook = void* (*)(void*, size_t, const void* caller);
 using GLIBC_FREE_Hook = void (*)(void*, const void* caller);
 
-fextl::unique_ptr<Alloc::HostAllocator> Alloc64 {};
+Alloc::HostAllocator* Alloc64 {};
 
 void* FEX_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
   void* Result = Alloc64->Mmap(addr, length, prot, flags, fd, offset);
@@ -99,7 +99,7 @@ void ClearHooks() {
   FEXCore::Allocator::mmap = ::mmap;
   FEXCore::Allocator::munmap = ::munmap;
 
-  Alloc::OSAllocator::ReleaseAllocatorWorkaround(std::move(Alloc64));
+  Alloc::OSAllocator::ReleaseAllocatorWorkaround(Alloc64);
 }
 #pragma GCC diagnostic pop
 
