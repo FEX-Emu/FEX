@@ -411,11 +411,7 @@ public:
 
     // Set the process personality here
     // Also, what about ADDR_LIMIT_3GB & co ?
-    uint32_t HostKernel = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-    // In kernel 5.8+, executable stack doesn't mean that all memory is executable
-    if (-1 == personality(
-                PER_LINUX |
-                ((ExecutableStack && HostKernel < FEX::HLE::SyscallHandler::KernelVersion(5, 8, 0)) || ExecuteAll ? READ_IMPLIES_EXEC : 0))) {
+    if (-1 == personality(PER_LINUX | (ExecuteAll ? READ_IMPLIES_EXEC : 0))) {
       LogMan::Msg::EFmt("Setting personality failed");
       return false;
     }

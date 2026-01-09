@@ -2,7 +2,6 @@
 #include <signal.h>
 #include <ucontext.h>
 #include <sys/mman.h>
-#include <sys/utsname.h>
 
 bool got_signal = false;
 
@@ -43,16 +42,7 @@ TEST_CASE("smc-exec-stack: mmap other memory") {
   *mem_code = 0xC3; // ret
   ((void (*)())(mem_code))();
 
-  struct utsname buf;
-  int major, minor, patch = 0;
-  REQUIRE(uname(&buf) == 0);
-  sscanf(buf.release, "%d.%d.%d", &major, &minor, &patch);
-
-  if (major > 5 || (major == 5 && minor >= 8)) {
-    CHECK(got_signal == true);
-  } else {
-    CHECK(got_signal == false);
-  }
+  CHECK(got_signal == true);
   got_signal = false;
 
   REQUIRE(munmap(mem_code, page_size) == 0);
