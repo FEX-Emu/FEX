@@ -572,32 +572,23 @@ OSAllocator_64Bit::~OSAllocator_64Bit() {
   }
 }
 
-fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator() {
-  return fextl::make_unique<OSAllocator_64Bit>();
+Alloc::HostAllocator* Create64BitAllocator() {
+  const auto size = sizeof(OSAllocator_64Bit);
+  const auto MinPage = FEXCore::AlignUp(size, FEXCore::Utils::FEX_PAGE_SIZE);
+
+  auto ptr = ::mmap(nullptr, MinPage, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (ptr == MAP_FAILED) {
+    ERROR_AND_DIE_FMT("Couldn't allocate memory region");
+  }
+
+  FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(ptr), MinPage);
+
+  return ::new (ptr) OSAllocator_64Bit();
 }
-
-template<class T>
-struct alloc_delete : public std::default_delete<T> {
-  void operator()(T* ptr) const {
-    if (ptr) {
-      const auto size = sizeof(T);
-      const auto MinPage = FEXCore::AlignUp(size, FEXCore::Utils::FEX_PAGE_SIZE);
-
-      std::destroy_at(ptr);
-      ::munmap(ptr, MinPage);
-    }
-  }
-
-  template<typename U>
-  requires (std::is_base_of_v<U, T>)
-  operator fextl::default_delete<U>() {
-    return fextl::default_delete<U>();
-  }
-};
 
 template<class T, class... Args>
 requires (!std::is_array_v<T>)
-fextl::unique_ptr<T> make_alloc_unique(FEXCore::Allocator::MemoryRegion& Base, Args&&... args) {
+T* make_alloc(FEXCore::Allocator::MemoryRegion& Base, Args&&... args) {
   const auto size = sizeof(T);
   const auto MinPage = FEXCore::AlignUp(size, FEXCore::Utils::FEX_PAGE_SIZE);
   if (Base.Size < size || MinPage != FEXCore::Utils::FEX_PAGE_SIZE) {
@@ -616,11 +607,10 @@ fextl::unique_ptr<T> make_alloc_unique(FEXCore::Allocator::MemoryRegion& Base, A
   Base.Size -= MinPage;
   Base.Ptr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Base.Ptr) + MinPage);
 
-  auto Result = ::new (ptr) T(std::forward<Args>(args)...);
-  return fextl::unique_ptr<T, alloc_delete<T>>(Result);
+  return ::new (ptr) T(std::forward<Args>(args)...);
 }
 
-fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocatorWithRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions) {
+Alloc::HostAllocator* Create64BitAllocatorWithRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions) {
   // This is a bit tricky as we can't allocate memory safely except from the Regions provided. Otherwise we might overwrite memory pages we
   // don't own. Scan the memory regions and find the smallest one.
   FEXCore::Allocator::MemoryRegion& Smallest = Regions[0];
@@ -630,7 +620,7 @@ fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocatorWithRegions(fextl::v
     }
   }
 
-  return make_alloc_unique<OSAllocator_64Bit>(Smallest, Regions);
+  return make_alloc<OSAllocator_64Bit>(Smallest, Regions);
 }
 
 } // namespace Alloc::OSAllocator
