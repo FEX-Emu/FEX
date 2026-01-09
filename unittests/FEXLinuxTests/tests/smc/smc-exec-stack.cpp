@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <ucontext.h>
 #include <sys/mman.h>
+#include <sys/utsname.h>
 
 bool got_signal = false;
 
@@ -24,8 +25,10 @@ TEST_CASE("smc-exec-stack: PT_GNU_STACK == RWX") {
   register_signal_handler();
 
   // Try executing from stack
-  uint8_t stack_code = 0xC3; // ret
-  ((void (*)())(&stack_code))();
+  char stack[16384];
+  auto stack_code = (char*)(((uintptr_t)stack + 4095) & ~4095);
+  *stack_code = 0xC3; // ret
+  ((void (*)())(stack_code))();
   CHECK(got_signal == false);
   got_signal = false;
 }
@@ -39,7 +42,17 @@ TEST_CASE("smc-exec-stack: mmap other memory") {
   REQUIRE(mem_code != nullptr);
   *mem_code = 0xC3; // ret
   ((void (*)())(mem_code))();
-  CHECK(got_signal == true);
+
+  struct utsname buf;
+  int major, minor, patch = 0;
+  REQUIRE(uname(&buf) == 0);
+  sscanf(buf.release, "%d.%d.%d", &major, &minor, &patch);
+
+  if (major > 5 || (major == 5 && minor >= 8)) {
+    CHECK(got_signal == true);
+  } else {
+    CHECK(got_signal == false);
+  }
   got_signal = false;
 
   REQUIRE(munmap(mem_code, page_size) == 0);
