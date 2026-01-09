@@ -44,6 +44,8 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
   bool ElfValid {false};
   bool ExecutableStack {false};
+  bool ExecuteAll {false};
+  bool HasStackHeader {false};
   uintptr_t MainElfBase {};
   uintptr_t InterpeterElfBase {};
   uintptr_t MainElfEntrypoint {};
@@ -402,16 +404,20 @@ public:
     }
 
     if (!HasStackHeader && !Is64BitMode()) {
-      // 32 bit behavior
+      // 32-bit behavior
       ExecutableStack = true;
-      // Set the process personality here
-      // This needs some more investigation
-      // READ_IMPLIES_EXEC might be default for 32-bit elfs
-      // Also, what about ADDR_LIMIT_3GB & co ?
-      if (-1 == personality(PER_LINUX | static_cast<unsigned>(READ_IMPLIES_EXEC))) {
-        LogMan::Msg::EFmt("Setting personality failed");
-        return false;
-      }
+      ExecuteAll = true;
+    }
+
+    // Set the process personality here
+    // Also, what about ADDR_LIMIT_3GB & co ?
+    uint32_t HostKernel = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
+    // In kernel 5.8+, executable stack doesn't mean that all memory is executable
+    if (-1 == personality(
+                PER_LINUX |
+                ((ExecutableStack && HostKernel < FEX::HLE::SyscallHandler::KernelVersion(5, 8, 0)) || ExecuteAll ? READ_IMPLIES_EXEC : 0))) {
+      LogMan::Msg::EFmt("Setting personality failed");
+      return false;
     }
 
     if (Thread) {
@@ -464,9 +470,9 @@ public:
     }
 
     // Allocate with permissions the 8MB of regular stack size.
-    StackPointer = reinterpret_cast<uintptr_t>(
-      Handler->GuestMmap(Thread, reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
-                         StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
+    StackPointer = reinterpret_cast<uintptr_t>(Handler->GuestMmap(
+      Thread, reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()), StackSize(),
+      PROT_READ | PROT_WRITE | (ExecutableStack ? PROT_EXEC : 0), MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
     if (FEX::HLE::HasSyscallError(StackPointer)) {
       LogMan::Msg::EFmt("Allocating stack failed");
