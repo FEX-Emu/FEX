@@ -49,22 +49,24 @@ enum Paths {
   PATH_CONFIG_TELEMETRY_FOLDER,
   PATH_LAST,
 };
-static std::array<fextl::string, Paths::PATH_LAST> Paths;
+using PathsType = std::array<fextl::string, Paths::PATH_LAST>;
+static PathsType* Paths {};
+alignas(alignof(PathsType)) static char PathsPlacement[sizeof(PathsType)];
 
 void SetDataDirectory(const std::string_view Path, bool Global) {
-  Paths[PATH_DATA_DIR_LOCAL + Global] = Path;
+  (*Paths)[PATH_DATA_DIR_LOCAL + Global] = Path;
 }
 
 void SetConfigDirectory(const std::string_view Path, bool Global) {
-  Paths[PATH_CONFIG_DIR_LOCAL + Global] = Path;
+  (*Paths)[PATH_CONFIG_DIR_LOCAL + Global] = Path;
 }
 
 void SetConfigFileLocation(const std::string_view Path, bool Global) {
-  Paths[PATH_CONFIG_FILE_LOCAL + Global] = Path;
+  (*Paths)[PATH_CONFIG_FILE_LOCAL + Global] = Path;
 }
 
 const fextl::string& GetTelemetryDirectory() {
-  auto& Path = Paths[PATH_CONFIG_TELEMETRY_FOLDER];
+  auto& Path = (*Paths)[PATH_CONFIG_TELEMETRY_FOLDER];
   if (Path.empty()) {
     FEX_CONFIG_OPT(TelemetryDirectory, TELEMETRYDIRECTORY);
     if (!TelemetryDirectory().empty()) {
@@ -79,15 +81,15 @@ const fextl::string& GetTelemetryDirectory() {
 }
 
 const fextl::string& GetDataDirectory(bool Global) {
-  return Paths[PATH_DATA_DIR_LOCAL + Global];
+  return (*Paths)[PATH_DATA_DIR_LOCAL + Global];
 }
 
 const fextl::string& GetConfigDirectory(bool Global) {
-  return Paths[PATH_CONFIG_DIR_LOCAL + Global];
+  return (*Paths)[PATH_CONFIG_DIR_LOCAL + Global];
 }
 
 const fextl::string& GetConfigFileLocation(bool Global) {
-  return Paths[PATH_CONFIG_FILE_LOCAL + Global];
+  return (*Paths)[PATH_CONFIG_FILE_LOCAL + Global];
 }
 
 fextl::string GetApplicationConfig(const std::string_view Program, bool Global) {
@@ -110,7 +112,9 @@ fextl::string GetApplicationConfig(const std::string_view Program, bool Global) 
   return fextl::fmt::format("{}{}.json", ConfigFile, Program);
 }
 
-static fextl::map<FEXCore::Config::LayerType, fextl::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
+using ConfigLayerType = fextl::map<FEXCore::Config::LayerType, fextl::unique_ptr<FEXCore::Config::Layer>>;
+static ConfigLayerType* ConfigLayers;
+alignas(alignof(ConfigLayerType)) static char ConfigLayersPlacement[sizeof(ConfigLayerType)];
 class MetaLayer;
 static FEXCore::Config::MetaLayer* Meta {};
 
@@ -172,8 +176,8 @@ void MetaLayer::Load() {
   OptionMap.clear();
 
   for (auto CurrentLayer = LoadOrder.begin(); CurrentLayer != LoadOrder.end(); ++CurrentLayer) {
-    auto it = ConfigLayers.find(*CurrentLayer);
-    if (it != ConfigLayers.end() && *CurrentLayer != Type) {
+    auto it = ConfigLayers->find(*CurrentLayer);
+    if (it != ConfigLayers->end() && *CurrentLayer != Type) {
       // Merge this layer's options to this layer
       MergeConfigMap(it->second->GetOptionMap());
     }
@@ -234,19 +238,21 @@ void MetaLayer::MergeConfigMap(const LayerOptions& Options) {
 }
 
 void Initialize() {
+  Paths = new (PathsPlacement) PathsType {};
+  ConfigLayers = new (ConfigLayersPlacement) ConfigLayerType {};
   AddLayer(fextl::make_unique<MetaLayer>(FEXCore::Config::LayerType::LAYER_TOP));
-  Meta = dynamic_cast<MetaLayer*>(ConfigLayers.begin()->second.get());
+  Meta = dynamic_cast<MetaLayer*>(ConfigLayers->begin()->second.get());
 }
 
 void Shutdown() {
-  ConfigLayers.clear();
+  ConfigLayers->clear();
   Meta = nullptr;
 }
 
 void Load() {
   for (auto CurrentLayer = LoadOrder.begin(); CurrentLayer != LoadOrder.end(); ++CurrentLayer) {
-    auto it = ConfigLayers.find(*CurrentLayer);
-    if (it != ConfigLayers.end()) {
+    auto it = ConfigLayers->find(*CurrentLayer);
+    if (it != ConfigLayers->end()) {
       it->second->Load();
     }
   }
@@ -412,7 +418,7 @@ void ReloadMetaLayer() {
 }
 
 void AddLayer(fextl::unique_ptr<FEXCore::Config::Layer> _Layer) {
-  ConfigLayers.emplace(_Layer->GetLayerType(), std::move(_Layer));
+  ConfigLayers->emplace(_Layer->GetLayerType(), std::move(_Layer));
 }
 
 bool Exists(ConfigOption Option) {
