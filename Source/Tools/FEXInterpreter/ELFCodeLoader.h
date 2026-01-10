@@ -411,7 +411,9 @@ public:
 
     // Set the process personality here
     // Also, what about ADDR_LIMIT_3GB & co ?
-    if (-1 == personality(PER_LINUX | (ExecuteAll ? READ_IMPLIES_EXEC : 0))) {
+    uint32_t Personality = personality(~0ULL);
+    Personality |= ExecuteAll ? READ_IMPLIES_EXEC : 0;
+    if (-1 == personality(Personality)) {
       LogMan::Msg::EFmt("Setting personality failed");
       return false;
     }
@@ -419,7 +421,7 @@ public:
     if (Thread) {
       // Update the thread persona.
       auto ThreadObject = static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
-      ThreadObject->persona = ::personality(0xffffffff);
+      ThreadObject->persona = Personality;
     }
 
     // What about ASLR and such ?
@@ -545,7 +547,6 @@ public:
 #define ASLR_LOAD
 #ifdef ASLR_LOAD
       // Only enable ASLR randomization if the personality has it enabled.
-      uint32_t Personality = personality(~0ULL);
       bool NoRandomize = (Personality & ADDR_NO_RANDOMIZE) == ADDR_NO_RANDOMIZE;
 
       if (!NoRandomize) {
