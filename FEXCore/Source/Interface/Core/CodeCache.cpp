@@ -351,8 +351,8 @@ bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCac
     return false;
   }
 
-  char ExpectedVersion[8] = GIT_SHORT_HASH;
-  ranges::fill(ranges::find(ExpectedVersion, 0), std::end(ExpectedVersion), 0);
+  constexpr std::string_view ExpectedVersion = GIT_SHORT_HASH;
+  static_assert(ExpectedVersion.size() <= sizeof(header.FEXVersion));
   if (!ranges::equal(header.FEXVersion, ExpectedVersion)) {
     LogMan::Msg::IFmt("Cache generated from old FEX version {}, current is {}; skipping", fmt::join(header.FEXVersion, ""),
                       fmt::join(ExpectedVersion, ""));
