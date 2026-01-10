@@ -142,40 +142,44 @@ void Init() {
 } // namespace FEX::Logging
 
 namespace FEX::Allocator {
-static fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-static fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
-static fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
 
-void Init(bool Is64Bit) {
+fextl::vector<FEXCore::Allocator::MemoryRegion> InitMemoryRegions(bool Is64Bit) {
   if (Is64Bit) {
     // Destroy the 48th bit if it exists
-    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
-  } else {
-    // Reserve [0x1_0000_0000, 0x2_0000_0000).
-    // Safety net if 32-bit address calculation overflows in to 64-bit range.
-    constexpr uint64_t First64BitAddr = 0x1'0000'0000ULL;
-    Low4GB = FEXCore::Allocator::StealMemoryRegion(First64BitAddr, First64BitAddr + First64BitAddr);
-
-    // Setup our userspace allocator
-    FEXCore::Allocator::SetupHooks();
-    Allocator = FEX::HLE::CreatePassthroughAllocator();
-
-    // Now that the upper 32-bit address space is blocked for future allocations,
-    // exhaust all of jemalloc's remaining internal allocations that it reserved before.
-    // TODO: It's unclear how reliably this exhausts those reserves
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-    void* data;
-    do {
-      data = malloc(0x1);
-    } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
-    free(data);
+    return FEXCore::Allocator::Setup48BitAllocatorIfExists();
   }
+
+  // Reserve [0x1_0000_0000, 0x2_0000_0000).
+  // Safety net if 32-bit address calculation overflows in to 64-bit range.
+  constexpr uint64_t First64BitAddr = 0x1'0000'0000ULL;
+  return FEXCore::Allocator::StealMemoryRegion(First64BitAddr, First64BitAddr + First64BitAddr);
 }
 
-void Shutdown() {
+fextl::unique_ptr<FEX::HLE::MemAllocator> InitAllocator(bool Is64Bit) {
+  if (Is64Bit) {
+    return {};
+  }
+
+  // Setup our userspace allocator
+  FEXCore::Allocator::SetupHooks();
+  auto Allocator = FEX::HLE::CreatePassthroughAllocator();
+
+  // Now that the upper 32-bit address space is blocked for future allocations,
+  // exhaust all of jemalloc's remaining internal allocations that it reserved before.
+  // TODO: It's unclear how reliably this exhausts those reserves
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+  void* data;
+  do {
+    data = malloc(0x1);
+  } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
+  free(data);
+
+  return Allocator;
+}
+
+void Shutdown(fextl::vector<FEXCore::Allocator::MemoryRegion>&& MemoryRegions) {
   FEXCore::Allocator::ClearHooks();
-  FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
-  FEXCore::Allocator::ReclaimMemoryRegion(Low4GB);
+  FEXCore::Allocator::ReclaimMemoryRegion(MemoryRegions);
 }
 } // namespace FEX::Allocator
 
@@ -503,7 +507,8 @@ int main(int argc, char** argv, char** const envp) {
   // Setup Thread handlers, so FEXCore can create threads.
   auto StackTracker = FEX::LinuxEmulation::Threads::SetupThreadHandlers();
 
-  FEX::Allocator::Init(Loader.Is64BitMode());
+  auto MemoryRegions = FEX::Allocator::InitMemoryRegions(Loader.Is64BitMode());
+  auto Allocator = FEX::Allocator::InitAllocator(Loader.Is64BitMode());
 
   FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
 
@@ -520,9 +525,9 @@ int main(int argc, char** argv, char** const envp) {
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName, SupportsAVX);
   auto ThunkHandler = FEX::HLE::CreateThunkHandler();
 
-  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
-                                               FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(),
-                                                                            std::move(FEX::Allocator::Allocator));
+  auto SyscallHandler = Loader.Is64BitMode() ?
+                          FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get()) :
+                          FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), ThunkHandler.get(), std::move(Allocator));
   SyscallHandler->SetCodeLoader(&Loader);
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
@@ -618,7 +623,7 @@ int main(int argc, char** argv, char** const envp) {
   LogMan::Throw::UnInstallHandler();
   LogMan::Msg::UnInstallHandler();
 
-  FEX::Allocator::Shutdown();
+  FEX::Allocator::Shutdown(std::move(MemoryRegions));
 
   // Allocator is now original system allocator
   FEXCore::Telemetry::Shutdown(Program.ProgramName);
