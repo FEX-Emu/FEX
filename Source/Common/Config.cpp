@@ -456,8 +456,8 @@ ApplicationNames GetApplicationNames(const fextl::vector<fextl::string>& Args, b
 
 void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInformation& PortableInfo) {
   const bool IsPortable = PortableInfo.IsPortable;
-  FEX::Config::InitializeConfigs(PortableInfo);
   FEXCore::Config::Initialize();
+  FEX::Config::InitializeConfigs(PortableInfo);
   if (!IsPortable) {
     FEXCore::Config::AddLayer(CreateGlobalMainLayer());
   }
