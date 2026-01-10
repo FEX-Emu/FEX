@@ -63,13 +63,6 @@ public:
 };
 #endif
 
-// Disable allocations through glibc's sbrk allocation method.
-// Returns a pointer at the end of the sbrk region.
-FEX_DEFAULT_VISIBILITY void* DisableSBRKAllocations();
-
-// Allow sbrk again. Pass in the pointer returned by `DisableSBRKAllocations`
-FEX_DEFAULT_VISIBILITY void ReenableSBRKAllocations(void* Ptr);
-
 struct MemoryRegion {
   void* Ptr;
   size_t Size;
