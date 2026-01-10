@@ -95,8 +95,8 @@ TSOEmulationFacts GetTSOEmulationFacts() {
 } // namespace
 
 int main(int argc, char** argv, char** envp) {
-  FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
   FEXCore::Config::Initialize();
+  FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
   // No FEX arguments passed through command line
