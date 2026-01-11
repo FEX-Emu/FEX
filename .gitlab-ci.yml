@@ -1,0 +1,30 @@
+variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+    CC: clang
+    CXX: clang++
+
+aarch64:
+  image: registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20251117.183306
+  tags:
+    - docker
+    - linux
+    - arm64
+    - aarch64
+  script:
+    - apt-get -y update
+    - apt-get install -y
+        git cmake ninja-build ccache
+        lld clang
+        libclang-dev llvm-dev
+        libstdc++-14-dev-i386-cross libgcc-14-dev-i386-cross
+        libstdc++-14-dev-amd64-cross libgcc-14-dev-amd64-cross
+    - cmake -E make_directory build/
+    - cmake -DCMAKE_BUILD_TYPE=Release -G Ninja -DBUILD_STEAM_SUPPORT=True -DENABLE_LTO=True -DENABLE_ASSERTIONS=False -DBUILD_THUNKS=True -DBUILD_FEXCONFIG=False -DBUILD_TESTING=False -DENABLE_CLANG_THUNKS=True -DUSE_LINKER=lld -DCMAKE_INSTALL_PREFIX=/usr . -B build/
+    - cmake --build build/ --config Release
+    - DESTDIR=$(pwd)/install/ cmake --build build/ --config Release -t install
+
+  artifacts:
+    name: "steamrt artifacts"
+    untracked: false
+    paths:
+      - install/
