@@ -19,7 +19,7 @@ aarch64:
         libstdc++-14-dev-i386-cross libgcc-14-dev-i386-cross
         libstdc++-14-dev-amd64-cross libgcc-14-dev-amd64-cross
     - cmake -E make_directory build/
-    - cmake -DCMAKE_BUILD_TYPE=Release -G Ninja -DBUILD_STEAM_SUPPORT=True -DENABLE_LTO=True -DENABLE_ASSERTIONS=False -DBUILD_THUNKS=True -DBUILD_FEXCONFIG=False -DBUILD_TESTING=False -DENABLE_CLANG_THUNKS=True -DUSE_LINKER=lld -DCMAKE_INSTALL_PREFIX=/usr . -B build/
+    - cmake -DCMAKE_BUILD_TYPE=Release -G Ninja -DBUILD_STEAM_SUPPORT=True -DENABLE_LTO=True -DENABLE_ASSERTIONS=False -DBUILD_THUNKS=True -DBUILD_FEXCONFIG=False -DBUILD_TESTING=False -DENABLE_CLANG_THUNKS=True -DUSE_LINKER=lld -DCMAKE_INSTALL_PREFIX=/usr -DTUNE_ARCH=armv8.2-a -DTUNE_CPU=none . -B build/
     - cmake --build build/ --config Release
     - DESTDIR=$(pwd)/install/ cmake --build build/ --config Release -t install
 
