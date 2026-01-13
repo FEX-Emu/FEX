@@ -95,7 +95,7 @@ namespace ProductNames {
   static const char ARM_Ampere_1[] = "AmpereOne";
   static const char ARM_Ampere_1A[] = "AmpereOneA";
   static const char ARM_Ampere_1B[] = "AmpereOneB";
-#else
+  static const char ARM_Ampere_1C[] = "AmpereOneC";
 #endif
 } // namespace ProductNames
 
@@ -180,7 +180,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
   // CPU priority order
   // This is mostly arbitrary but will sort by some sort of CPU priority by performance
   // Relative list so things they will commonly end up in big.little configurations sort of relate
-  static constexpr std::array<CPUMIDR, 66> CPUMIDRs = {{
+  static constexpr std::array<CPUMIDR, 67> CPUMIDRs = {{
     // Typically big CPU cores
     {0x51, 0x001, 1, ProductNames::ARM_ORYON_1}, // Qualcomm Oryon-1
 
@@ -229,6 +229,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
     {0xc0, 0xac3, 1, ProductNames::ARM_Ampere_1},  // AmpereOne
     {0xc0, 0xac4, 1, ProductNames::ARM_Ampere_1A}, // AmpereOneA
     {0xc0, 0xac5, 1, ProductNames::ARM_Ampere_1B}, // AmpereOneB
+    {0xc0, 0xac7, 1, ProductNames::ARM_Ampere_1C}, // AmpereOneC
 
     {0x4e, 0x010, 1, ProductNames::ARM_Olympus}, // Olympus
     {0x4e, 0x004, 1, ProductNames::ARM_Carmel},  // Carmel
