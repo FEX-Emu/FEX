@@ -35,7 +35,8 @@ namespace x86_64 {
    * context area.
    */
   struct FEX_PACKED fpx_sw_bytes {
-    static constexpr uint32_t FP_XSTATE_MAGIC = 0x46505853;
+    static constexpr uint32_t FP_XSTATE_MAGIC_1 = 0x46505853;
+    static constexpr uint32_t FP_XSTATE_MAGIC_2 = 0x46505845;
 
     enum FeatureFlag : uint32_t {
       FEATURE_FP = 1U << 0,
@@ -60,20 +61,20 @@ namespace x86_64 {
     };
 
     bool HasExtendedContext() const {
-      return magic1 == FP_XSTATE_MAGIC;
+      return magic1 == FP_XSTATE_MAGIC_1;
     }
 
     bool HasYMMH() const {
       return (xfeatures & FEATURE_YMM) != 0;
     }
 
-    // If magic1 is set to FP_XSTATE_MAGIC, then the encompassing
+    // If magic1 is set to FP_XSTATE_MAGIC_1, then the encompassing
     // frame is an xstate frame. If 0, then it's a legacy frame.
     uint32_t magic1;
 
     // Total size of the fpstate area
-    // - magic1 = 0               -> sizeof(fpstate)
-    // - magic1 = FP_XSTATE_MAGIC -> sizeof(xstate) + extensions (if any)
+    // - magic1 = 0                 -> sizeof(fpstate)
+    // - magic1 = FP_XSTATE_MAGIC_1 -> sizeof(xstate) + extensions (if any)
     uint32_t extended_size;
 
     // Feature bitmask describing supported features.
@@ -119,6 +120,12 @@ namespace x86_64 {
   };
   static_assert(sizeof(ymmh_state) == 256);
 
+  struct FEX_PACKED magic2 {
+    uint32_t pad;
+    uint32_t magic;
+  };
+  static_assert(sizeof(magic2) == sizeof(uint64_t));
+
   /**
    * Extended state that includes both the main fpstate
    * and the extended state.
@@ -127,8 +134,9 @@ namespace x86_64 {
     _libc_fpstate fpstate;
     xstate_header xstate_hdr;
     ymmh_state ymmh;
+    magic2 magic2 {};
   };
-  static_assert(sizeof(xstate) == 832);
+  static_assert(sizeof(xstate) == 840);
 
   ///< The order of these must match the GNU ordering
   enum ContextRegs {
@@ -386,8 +394,9 @@ namespace x86 {
     _libc_fpstate fpstate;
     xstate_header xstate_hdr;
     ymmh_state ymmh;
+    x86_64::magic2 magic2 {};
   };
-  static_assert(sizeof(xstate) == 944);
+  static_assert(sizeof(xstate) == 952);
 
   struct FEX_PACKED ucontext_t {
     uint32_t uc_flags;

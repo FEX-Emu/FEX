@@ -106,7 +106,7 @@ template<typename T>
 static void SetXStateInfo(T* xstate, bool is_avx_enabled) {
   auto* fpstate = &xstate->fpstate;
 
-  fpstate->sw_reserved.magic1 = is_avx_enabled ? FEXCore::x86_64::fpx_sw_bytes::FP_XSTATE_MAGIC : 0;
+  fpstate->sw_reserved.magic1 = is_avx_enabled ? FEXCore::x86_64::fpx_sw_bytes::FP_XSTATE_MAGIC_1 : 0;
   fpstate->sw_reserved.extended_size = is_avx_enabled ? sizeof(T) : 0;
 
   fpstate->sw_reserved.xfeatures |= FEXCore::x86_64::fpx_sw_bytes::FEATURE_FP | FEXCore::x86_64::fpx_sw_bytes::FEATURE_SSE;
@@ -118,6 +118,7 @@ static void SetXStateInfo(T* xstate, bool is_avx_enabled) {
 
   if (is_avx_enabled) {
     xstate->xstate_hdr.xfeatures = 0;
+    xstate->magic2.magic = FEXCore::x86_64::fpx_sw_bytes::FP_XSTATE_MAGIC_2;
   }
 }
 
