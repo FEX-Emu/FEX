@@ -13,7 +13,8 @@ set(SRCS
 if (NOT MINGW)
   list(APPEND SRCS
     FEXServerClient.cpp
-    FileFormatCheck.cpp)
+    FileFormatCheck.cpp
+    Linux/SBRKAllocations.cpp)
 endif()
 
 add_library(${NAME} STATIC ${SRCS})

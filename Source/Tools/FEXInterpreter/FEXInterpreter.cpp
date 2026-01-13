@@ -10,6 +10,7 @@ $end_info$
 #include "Common/FEXServerClient.h"
 #include "Common/Config.h"
 #include "Common/HostFeatures.h"
+#include "Common/Linux/SBRKAllocations.h"
 #include "PortabilityInfo.h"
 #include "ELFCodeLoader.h"
 #include "VDSO_Emulation.h"
@@ -360,7 +361,7 @@ static int StealFEXFDFromEnv(const char* Env) {
 }
 
 int main(int argc, char** argv, char** const envp) {
-  auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
+  auto SBRKPointer = FEX::SBRKAllocations::DisableSBRKAllocations();
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
 
   const bool ExecutedWithFD = getauxval(AT_EXECFD) != 0;
@@ -624,7 +625,7 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Telemetry::Shutdown(Program.ProgramName);
   FEXCore::Profiler::Shutdown();
 
-  FEXCore::Allocator::ReenableSBRKAllocations(SBRKPointer);
+  FEX::SBRKAllocations::ReenableSBRKAllocations(SBRKPointer);
 
   return ProgramStatus;
 }

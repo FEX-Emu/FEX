@@ -18,6 +18,7 @@ $end_info$
 #endif
 
 #include "Common/HostFeatures.h"
+#include "Common/Linux/SBRKAllocations.h"
 #include "HarnessHelpers.h"
 #include "TestHarnessRunner/HostRunner.h"
 
@@ -189,7 +190,7 @@ void RegisterLongJumpHandler(FEX::DummyHandlers::DummySignalDelegator* Handler) 
 
 int main(int argc, char** argv, char** const envp) {
 #ifndef _WIN32
-  auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
+  auto SBRKPointer = FEX::SBRKAllocations::DisableSBRKAllocations();
 #endif
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
@@ -416,7 +417,7 @@ int main(int argc, char** argv, char** const envp) {
 #ifndef _WIN32
   FEXCore::Allocator::ClearHooks();
 
-  FEXCore::Allocator::ReenableSBRKAllocations(SBRKPointer);
+  FEX::SBRKAllocations::ReenableSBRKAllocations(SBRKPointer);
 #endif
 
   return Passed ? 0 : -1;
