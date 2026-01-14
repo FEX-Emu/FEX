@@ -52,5 +52,11 @@ struct HostFeatures {
   // MIDR information
   // Also used for determining number of CPU cores for CPUID
   fextl::vector<uint32_t> CPUMIDRs;
+
+  // Host virtual memory size.
+  uint8_t HostVA {};
+
+  // Host physical memory size.
+  uint8_t HostPA {};
 };
 } // namespace FEXCore

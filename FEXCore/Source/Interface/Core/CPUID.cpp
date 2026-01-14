@@ -1089,9 +1089,9 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h(uint32_t Leaf) con
 // Virtual and physical address sizes
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res {};
-  Res.eax = (48 << 0) | // PhysAddrSize = 48-bit
-            (48 << 8) | // LinAddrSize = 48-bit
-            (0 << 16);  // GuestPhysAddrSize == PhysAddrSize
+  Res.eax = (HostPA << 0) | // PhysAddrSize
+            (HostVA << 8) | // LinAddrSize
+            (0 << 16);      // GuestPhysAddrSize == PhysAddrSize
 
   Res.ebx = (0 << 2) |                               // XSaveErPtr: Saving and restoring error pointers
             (0 << 1) |                               // IRPerf: Instructions retired count support
@@ -1220,7 +1220,7 @@ FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() const {
   return Res;
 }
 
-CPUIDEmu::CPUIDEmu(const FEXCore::Context::ContextImpl* ctx)
+CPUIDEmu::CPUIDEmu(const FEXCore::Context::ContextImpl* ctx, const FEXCore::HostFeatures& Features)
   : CTX {ctx}
   , SupportsCPUIndexInTPIDRRO {CTX->HostFeatures.SupportsCPUIndexInTPIDRRO}
   , GetCPUID {GetCPUID_Syscall} {
@@ -1236,5 +1236,9 @@ CPUIDEmu::CPUIDEmu(const FEXCore::Context::ContextImpl* ctx)
     GetCPUID = GetCPUID_TPIDRRO;
   }
 #endif
+  // Claim 48-bit VA if not set.
+  HostVA = Features.HostVA ?: 48;
+  // Claim 40-bit PA if not set.
+  HostPA = Features.HostPA ?: 40;
 }
 } // namespace FEXCore

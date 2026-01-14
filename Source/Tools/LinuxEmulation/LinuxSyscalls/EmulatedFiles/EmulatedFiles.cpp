@@ -459,6 +459,9 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
   const auto FrequencyString = fextl::fmt::format("{:.3f}", FrequencyMhz);
   const auto BogomipsString = fextl::fmt::format("{:.2f}", Bogomips);
 
+  const auto MemoryString =
+    fextl::fmt::format("address sizes\t: {} bits physical, {} bits virtual", res_8000_0008.eax & 0xFF, (res_8000_0008.eax >> 8) & 0xFF);
+
   for (int i = 0; i < CPUCores; ++i) {
     cpu_stream << "processor\t: " << i << std::endl; // Logical id
     cpu_stream << "vendor_id\t: " << vendorid.Str << std::endl;
@@ -496,11 +499,10 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     // These next four aren't necessarily correct
     cpu_stream << "TLB size\t: 2560 4K pages" << std::endl;
     cpu_stream << "clflush size\t: 64" << std::endl;
-    cpu_stream << "cache_alignment\t : 64" << std::endl;
+    cpu_stream << "cache_alignment\t: 64" << std::endl;
 
-    // Cortex-A is 40 or 44 bits physical, and 48/52 virtual
-    // Choose the lesser configuration
-    cpu_stream << "address sizes\t: 40 bits physical, 48 bits virtual" << std::endl;
+    // Virtual and Physical memory size calculated by CPUID.
+    cpu_stream << MemoryString << std::endl;
 
     // No power management but required to report
     cpu_stream << "power management: " << std::endl;

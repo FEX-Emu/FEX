@@ -147,10 +147,12 @@ static fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
 static fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
 static fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
 
-void Init(bool Is64Bit) {
+void Init(bool Is64Bit, uint64_t VASize) {
   if (Is64Bit) {
-    // Destroy the 48th bit if it exists
-    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
+    if (VASize >= 48) {
+      // Destroy the 48th bit if it exists
+      Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
+    }
   } else {
     // Reserve [0x1_0000_0000, 0x2_0000_0000).
     // Safety net if 32-bit address calculation overflows in to 64-bit range.
@@ -504,7 +506,8 @@ int main(int argc, char** argv, char** const envp) {
   // Setup Thread handlers, so FEXCore can create threads.
   auto StackTracker = FEX::LinuxEmulation::Threads::SetupThreadHandlers();
 
-  FEX::Allocator::Init(Loader.Is64BitMode());
+  auto VASize = FEXCore::Allocator::DetermineVASize();
+  FEX::Allocator::Init(Loader.Is64BitMode(), VASize);
 
   FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
 
@@ -512,6 +515,10 @@ int main(int argc, char** argv, char** const envp) {
   fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {
     auto HostFeatures = FEX::FetchHostFeatures();
+    HostFeatures.HostVA = VASize;
+    // Impossible to determine host PA size on ARM currently.
+    // Cortex lower-end PA size is 40-bit.
+    HostFeatures.HostPA = 40;
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
     SupportsAVX = HostFeatures.SupportsAVX;
   }

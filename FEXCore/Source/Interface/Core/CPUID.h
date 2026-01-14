@@ -10,6 +10,7 @@
 #include <utility>
 
 namespace FEXCore {
+struct HostFeatures;
 namespace Context {
   class ContextImpl;
 }
@@ -30,7 +31,7 @@ private:
   constexpr static uint32_t CPUID_VENDOR_AMD3 = 0x444D4163; // "cAMD"
 
 public:
-  CPUIDEmu(const FEXCore::Context::ContextImpl* ctx);
+  CPUIDEmu(const FEXCore::Context::ContextImpl* ctx, const FEXCore::HostFeatures& Features);
 
   // X86 cacheline size effectively has to be hardcoded to 64
   // if we report anything differently then applications are likely to break
@@ -514,5 +515,7 @@ private:
 
   using GetCPUIDPtr = uint32_t (*)();
   GetCPUIDPtr GetCPUID;
+
+  uint8_t HostVA, HostPA;
 };
 } // namespace FEXCore

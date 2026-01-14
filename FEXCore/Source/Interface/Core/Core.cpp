@@ -77,7 +77,7 @@ $end_info$
 namespace FEXCore::Context {
 ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
   : HostFeatures {Features}
-  , CPUID {this}
+  , CPUID {this, Features}
   , CodeCache {*this} {
   if (!Config.Is64BitMode()) {
     // When operating in 32-bit mode, the virtual memory we care about is only the lower 32-bits.
