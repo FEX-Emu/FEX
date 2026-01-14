@@ -146,7 +146,9 @@ jobs:
 
     - name: Ensure expected atexit registrations
       shell: bash
-      run: $GITHUB_WORKSPACE/Scripts/CountInstancesOfAtExit.py ${{runner.workspace}}/build/Bin/FEX "__cxa_atexit@plt>$" 1 ; echo $?
+      run: |
+        COUNT=$(llvm-objdump -D build/Bin/FEX | grep '__cxa_atexit@plt>\\$' | wc -l)
+        [ "$COUNT" -eq 1 ] || { echo "Expected 1 atexit handlers, found $COUNT"; exit 1; }
 
     - name: Remove old SHM regions
       if: ${{ always() }}
