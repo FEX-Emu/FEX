@@ -233,6 +233,11 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
 
+    - name: Ensure expected atexit registrations
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: $GITHUB_WORKSPACE/Scripts/CountInstancesOfAtExit.py ${{runner.workspace}}/build/Bin/FEX "__cxa_atexit@plt>$" 1 ; echo $?
+
     - name: Truncate test results
       if: ${{ always() }}
       shell: bash
