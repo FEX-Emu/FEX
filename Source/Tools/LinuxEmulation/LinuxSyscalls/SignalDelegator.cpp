@@ -48,7 +48,7 @@ __attribute__((naked)) static void sigrestore() {
 }
 #endif
 
-constexpr static uint32_t X86_MINSIGSTKSZ = 0x2000U;
+constexpr static uint32_t X86_MINSIGSTKSZ = 2048;
 
 static FEX::HLE::ThreadStateObject* GetThreadFromAltStack(const stack_t& alt_stack) {
   // The thread object lives just before the alt-stack begin.
@@ -1183,7 +1183,7 @@ uint64_t SignalDelegator::RegisterGuestSigAltStack(FEX::HLE::ThreadStateObject* 
       return 0;
     }
 
-    // stack size needs to be MINSIGSTKSZ (0x2000)
+    // stack size needs to be at least X86_MINSIGSTKSZ
     if (ss->ss_size < X86_MINSIGSTKSZ) {
       return -ENOMEM;
     }
