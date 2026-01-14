@@ -236,7 +236,13 @@ jobs:
     - name: Ensure expected atexit registrations
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: $GITHUB_WORKSPACE/Scripts/CountInstancesOfAtExit.py ${{runner.workspace}}/build/Bin/FEX "__cxa_atexit@plt>$" 1 ; echo $?
+      run: |
+        COUNT=`llvm-objdump -D ${{runner.workspace}}/build/Bin/FEX | grep '__cxa_atexit@plt>\\$' | wc -l`
+        if [ $COUNT -ne 1 ]
+        then
+          echo "Expected 1 atexit handlers, found $COUNT"
+          exit 1
+        fi
 
     - name: Truncate test results
       if: ${{ always() }}
