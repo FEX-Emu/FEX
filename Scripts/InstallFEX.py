@@ -293,17 +293,21 @@ def GetRootFSPath():
         if HomeDir == None:
             HomeDir = "."
 
-        Path = HomeDir
+        Path = HomeDir + "/.local/share"
         DataXDG = os.getenv("XDG_DATA_HOME")
         if DataXDG != None:
             Path = DataXDG
 
-        Path = Path + "/.fex-emu"
+        Path = Path + "/fex-emu"
 
         DataOverride = os.getenv("FEX_APP_DATA_LOCATION")
 
         if DataOverride != None:
             Path = DataOverride
+
+        LegacyDir = HomeDir + "/.fex-emu"
+        if os.path.isdir(LegacyDir):
+            Path = LegacyDir
 
         _RootFSPath = Path + "/RootFS/"
 
@@ -420,4 +424,4 @@ def main():
     ExitWithStatus(0)
 
 if __name__ == "__main__":
-	sys.exit(main())
+    sys.exit(main())

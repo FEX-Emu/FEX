@@ -127,9 +127,9 @@
           "\teg: ~/RootFS/Debian_x86_64",
           "Or this can be a name of a rootfs",
           "If the named rootfs exists in the FEX data folder then it will use that one",
-          "\teg: $HOME/.fex-emu/RootFS/<RootFS name>/",
-          "Or if you have XDG_DATA_HOME the config will search in that directory",
-          "\teg: $XDG_DATA_HOME/.fex-emu/RootFS/<RootFS name>/"
+          "\teg: $XDG_DATA_HOME/fex-emu/RootFS/<RootFS name>/",
+          "If XDG_DATA_HOME is unset, ~/.local/share will be used in its place.",
+          "\teg: $HOME/.local/share/fex-emu/RootFS/<RootFS name>/"
         ]
       },
       "ThunkHostLibs": {
@@ -155,9 +155,9 @@
           "\teg: ~/MyThunkConfig.json",
           "Or this can be a named of a Thunk config file",
           "If the named config file exists in the FEX data folder folder the it will use that one",
-          "\teg: $HOME/.fex-emu/ThunkConfigs/<ThunkConfig name>",
-          "Or if you have XDG_DATA_HOME the config will search in that directory",
-          "\teg: $XDG_DATA_HOME/.fex-emu/ThunkConfigs/<ThunkConfig name>"
+          "\teg: $XDG_DATA_HOME/fex-emu/ThunkConfigs/<ThunkConfig name>",
+          "If XDG_DATA_HOME is unset, ~/.local/share will be used in its place.",
+          "\teg: $HOME/.local/share/fex-emu/ThunkConfigs/<ThunkConfig name>"
         ]
       },
       "Env": {
@@ -387,7 +387,7 @@
         "Default": "",
         "Desc": [
           "Redirects the telemetry folder that FEX usually writes to.",
-          "By default telemetry data is stored in {$FEX_APP_DATA_LOCATION,{$XDG_DATA_HOME,$HOME}/.fex-emu/Telemetry/}"
+          "By default telemetry data is stored in {$FEX_APP_DATA_LOCATION,{$XDG_DATA_HOME,$HOME}/fex-emu/Telemetry/}"
         ]
       },
       "ProfileStats": {

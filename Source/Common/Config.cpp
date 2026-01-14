@@ -12,6 +12,7 @@
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
+#include <fmt/format.h>
 #include <functional>
 #ifndef _WIN32
 #include <linux/limits.h>
@@ -555,20 +556,29 @@ fextl::string GetDataDirectory(bool Global, const PortableInformation& PortableI
     return fextl::fmt::format("{}/fex-emu/", PortableInfo.InterpreterPath);
   }
 
-  fextl::string DataDir {};
   if (Global) {
-    DataDir = GLOBAL_DATA_DIRECTORY;
-  } else {
-    const char* HomeDir = GetHomeDirectory();
-    const char* DataXDG = getenv("XDG_DATA_HOME");
-    if (DataOverride) {
-      // Data override will override the complete directory
-      DataDir = DataOverride;
-    } else {
-      DataDir = DataXDG ?: HomeDir;
-      DataDir += "/.fex-emu/";
-    }
+    return GLOBAL_DATA_DIRECTORY;
   }
+
+  const char* HomeDir = GetHomeDirectory();
+  const char* DataXDG = getenv("XDG_DATA_HOME");
+  const fextl::string LegacyDir = fextl::string {HomeDir} + "/.fex-emu/";
+
+  // If $HOME/.fex-emu exists, use that
+  if (FHU::Filesystem::Exists(LegacyDir)) {
+    return LegacyDir;
+  }
+
+  fextl::string DataDir {};
+  if (DataOverride) {
+    // Data override will override the complete directory
+    DataDir = DataOverride;
+  } else {
+    // use ~/.local/share if XDG_DATA_HOME is unset
+    DataDir = DataXDG ? DataXDG : fmt::format("{}/.local/share", HomeDir);
+    DataDir += "/fex-emu/";
+  }
+
   return DataDir;
 }
 
@@ -594,24 +604,28 @@ fextl::string GetConfigDirectory(bool Global, const PortableInformation& Portabl
 
   fextl::string ConfigDir;
   if (Global) {
-    ConfigDir = GLOBAL_DATA_DIRECTORY;
-  } else {
-    const char* HomeDir = GetHomeDirectory();
-    const char* ConfigXDG = getenv("XDG_CONFIG_HOME");
-    if (ConfigOverride) {
-      // Config override completely overrides the config directory
-      ConfigDir = ConfigOverride;
-    } else {
-      ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
-      ConfigDir += "/.fex-emu/";
-    }
-
-    // Ensure the folder structure is created for our configuration
-    if (!FHU::Filesystem::Exists(ConfigDir) && !FHU::Filesystem::CreateDirectories(ConfigDir)) {
-      // Let's go local in this case
-      return "./";
-    }
+    return GLOBAL_DATA_DIRECTORY;
   }
+
+  const char* HomeDir = GetHomeDirectory();
+  const char* ConfigXDG = getenv("XDG_CONFIG_HOME");
+
+  const fextl::string LegacyDir = fextl::string {HomeDir} + "/.fex-emu/";
+
+  // If $HOME/.fex-emu exists, use that
+  if (FHU::Filesystem::Exists(LegacyDir)) {
+    return LegacyDir;
+  }
+
+  if (ConfigOverride) {
+    // Config override will override the complete directory
+    ConfigDir = ConfigOverride;
+  } else {
+    // use ~/.config if XDG_CONFIG_HOME is unset
+    ConfigDir = ConfigXDG ? ConfigXDG : fmt::format("{}/.config", HomeDir);
+    ConfigDir += "/fex-emu/";
+  }
+
 
   return ConfigDir;
 }
