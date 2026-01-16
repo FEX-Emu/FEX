@@ -32,10 +32,6 @@
 [submodule "External/Catch2"]
 	path = External/Catch2
 	url = https://github.com/catchorg/Catch2.git
-[submodule "External/robin-map"]
-	shallow = true
-	path = External/robin-map
-	url = https://github.com/FEX-Emu/robin-map.git
 [submodule "External/Vulkan-Headers"]
 	shallow = true
 	path = External/Vulkan-Headers
@@ -53,3 +49,6 @@
 	shallow = true
 	path = External/zydis
 	url = https://github.com/zyantific/zydis.git
+[submodule "External/unordered_dense"]
+	path = External/unordered_dense
+	url = https://github.com/martinus/unordered_dense.git
