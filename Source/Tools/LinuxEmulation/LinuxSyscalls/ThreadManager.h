@@ -128,7 +128,7 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Core::CPUState::gdt_segment* ldt_entries {};
 
   // 32-bit FD cache for DRM handlers.
-  fextl::unique_ptr<x32::LRUCacheFDCache> DRMLRUCache {};
+  fextl::unique_ptr<x32::DRMLRUCacheFDCache> DRMLRUCache {};
 };
 
 class ThreadManager final {
