@@ -9,10 +9,11 @@ struct CpuStateFrame;
 }
 
 namespace FEX::HLE::x32 {
-class LRUCacheFDCache {
+class DRMLRUCacheFDCache final {
 public:
   using HandlerType = uint32_t (*)(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args);
-  virtual ~LRUCacheFDCache() = default;
+  DRMLRUCacheFDCache();
+  virtual ~DRMLRUCacheFDCache() = default;
   void SetFDHandler(uint32_t FD, HandlerType Handler) {
     FDToHandler[FD] = Handler;
   }
@@ -45,7 +46,7 @@ public:
     return LRUCache[LRUSize].Handler;
   }
 
-  virtual uint32_t AddAndRunMapHandler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) = 0;
+  uint32_t AddAndRunMapHandler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args);
 protected:
   constexpr static size_t LRUSize = 3;
   void AddToFront(int32_t FD, HandlerType Handler) {
