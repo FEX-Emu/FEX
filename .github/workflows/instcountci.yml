@@ -84,16 +84,10 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: cmake --build . --config $BUILD_TYPE --target instcountci_update_tests
 
-    - name: Get instcountCI diff
+    - name: Check InstCountCI diff
       if: ${{ always() }}
       working-directory: ${{github.workspace}}/
-      run: git diff --output=${{runner.workspace}}/build/InstCountCI.diff
-
-    - name: Check if InstCountCI Diff exists
-      if: ${{ always() }}
-      working-directory: ${{github.workspace}}/
-      # Check if the file is empty
-      run: sh -c "! test -s ${{runner.workspace}}/build/InstCountCI.diff"
+      run: git --no-pager diff --exit-code HEAD
 
     - name: Truncate test results
       if: ${{ always() }}
