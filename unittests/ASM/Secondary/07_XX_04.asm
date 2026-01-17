@@ -36,11 +36,16 @@ smsw cx
 smsw [rsi]
 mov rdx, [rsi]
 
-o16 smsw rdi
+; operand-size override prefix
+; Nasm complains if o16 is used
+; `warning: invalid operand size prefix o16, must be o64`
+db 0x66
+smsw rdi
 repe smsw rsp
 repne smsw rbp
 
-o16 smsw r8w
+db 0x66
+smsw r8w
 repe smsw r9w
 repne smsw r10w
 
