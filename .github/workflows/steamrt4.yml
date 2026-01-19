@@ -53,23 +53,25 @@ jobs:
       run: distrobox enter --name steamrt4 -- cmake -E make_directory ${{runner.workspace}}/build
 
     - name: Configure CMake
-      shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: distrobox enter --name steamrt4 -- cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DBUILD_STEAM_SUPPORT=True -DENABLE_LTO=True -DENABLE_ASSERTIONS=False -DBUILD_THUNKS=True -DBUILD_FEXCONFIG=False -DBUILD_TESTING=False -DENABLE_CLANG_THUNKS=True -DUSE_LINKER=lld -DCMAKE_INSTALL_PREFIX=/usr
+      run: |
+        distrobox enter --name steamrt4 -- cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -G Ninja -DBUILD_STEAM_SUPPORT=True -DENABLE_LTO=True -DENABLE_ASSERTIONS=False -DBUILD_THUNKS=True \
+          -DBUILD_FEXCONFIG=False -DBUILD_TESTING=False -DENABLE_CLANG_THUNKS=True -DUSE_LINKER=lld \
+          -DCMAKE_INSTALL_PREFIX=/usr
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
-      shell: bash
       run: distrobox enter --name steamrt4 -- cmake --build . --config $BUILD_TYPE
 
     - name: install
       working-directory: ${{runner.workspace}}/build
-      shell: bash
       env:
         DESTDIR: ${{runner.workspace}}/install
       run: distrobox enter --name steamrt4 -- cmake --build . --config $BUILD_TYPE -t install
+
     - name: Upload libraries
-      uses: 'actions/upload-artifact@v4'
+      uses: actions/upload-artifact@v4
       timeout-minutes: 1
       with:
         overwrite: true
