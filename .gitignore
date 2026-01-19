@@ -12,3 +12,4 @@ out/
 *.pyc
 .cache
 .idea/
+CMakeLists.txt.user
