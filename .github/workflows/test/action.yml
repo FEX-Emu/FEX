@@ -32,7 +32,7 @@ runs:
 
     - name: Move results
       if: ${{ always() }}
-      run: mv "$LAST_LOG".log "$LAST_LOG"_GCC32.log || true
+      run: mv "$LAST_LOG".log "$LAST_LOG"_"${{ inputs.log-name }}".log || true
       shell: bash
       env:
         LAST_LOG: build/Testing/Temporary/LastTest
