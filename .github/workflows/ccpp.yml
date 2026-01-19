@@ -139,7 +139,7 @@ jobs:
         log-name: ASM
 
     # POSIX tests
-    - name: Posix tests
+    - name: POSIX tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:

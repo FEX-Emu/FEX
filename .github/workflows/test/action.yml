@@ -1,8 +1,5 @@
 name: Run Test and Store Logs
 
-env:
-  LAST_LOG: build/Testing/Temporary/LastTest
-
 inputs:
   target:
     description: 'The test target to run'
@@ -37,3 +34,6 @@ runs:
       if: ${{ always() }}
       run: mv "$LAST_LOG".log "$LAST_LOG"_GCC32.log || true
       shell: bash
+      env:
+        LAST_LOG: build/Testing/Temporary/LastTest
+
