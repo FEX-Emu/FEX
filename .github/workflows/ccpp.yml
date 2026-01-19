@@ -11,7 +11,6 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  LAST_LOG: build/Testing/Temporary/LastTest.log
   CC: clang
   CXX: clang++
   FEX_PORTABLE: 1

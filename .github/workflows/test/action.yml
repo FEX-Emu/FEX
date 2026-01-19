@@ -28,6 +28,7 @@ runs:
   steps:
     - name: Run tests
       run: cmake --build build --config ${{ env.BUILD_TYPE }} --target ${{ inputs.target }}
+      shell: bash
       env:
         FEX_PORTABLE: ${{ inputs.portable }}
         DISPLAY: ${{ inputs.display }}
@@ -35,3 +36,4 @@ runs:
     - name: Move results
       if: ${{ always() }}
       run: mv "$LAST_LOG".log "$LAST_LOG"_GCC32.log || true
+      shell: bash
