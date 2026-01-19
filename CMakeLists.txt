@@ -345,20 +345,32 @@ if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   include_directories(SYSTEM External/vixl/src/)
 endif()
 
-find_package(PkgConfig REQUIRED)
-
 if (ENABLE_ZYDIS)
-  pkg_search_module(Zydis QUIET IMPORTED_TARGET zydis)
-  pkg_search_module(Zycore QUIET IMPORTED_TARGET zycore)
-  if (TARGET PkgConfig::Zydis AND TARGET PkgConfig::Zycore AND NOT CMAKE_CROSSCOMPILING)
-    add_library(Zydis::Zydis ALIAS PkgConfig::Zydis)
-    add_library(Zycore::Zycore ALIAS PkgConfig::Zycore)
-    message(STATUS "Using system Zydis")
-  else()
-    message(STATUS "Using bundled Zydis")
+  find_package(zycore MODULE)
+
+  # For some grand reason, the Zycore find_dependency is case-sensitive here...
+  # (usually it isn't). So to work around this we have to do this awful hack and
+  # "transfer" the case
+  if(zycore_FOUND AND NOT Zycore_FOUND)
+    set(Zycore_FOUND TRUE)
+    set(Zycore_INCLUDE_DIRS ${zycore_INCLUDE_DIRS})
+    set(Zycore_LIBRARIES ${zycore_LIBRARIES})
+  endif()
+
+  find_package(zydis MODULE)
+
+  if (NOT TARGET Zydis::Zydis)
+    if (TARGET Zycore::Zycore)
+      set(ZYAN_SYSTEM_ZYCORE ON)
+    endif()
+
     set(ZYDIS_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
     set(ZYDIS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+    message(STATUS "Using bundled Zydis")
     add_subdirectory(External/zydis/)
+  else()
+    message(STATUS "Using system Zydis")
   endif()
 endif()
 
