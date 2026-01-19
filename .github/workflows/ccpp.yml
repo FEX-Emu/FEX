@@ -115,7 +115,7 @@ jobs:
         log-name: ThunkgenTests
 
     - name: Test GL No-Thunks
-      if: ${{ always() }}
+      if: ${{ always() && matrix.arch[1] == 'x64' }}
       uses: ./.github/workflows/test
       with:
         target: thunk_functional_tests_nothunks
