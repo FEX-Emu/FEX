@@ -11,6 +11,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  LAST_LOG: build/Testing/Temporary/LastTest.log
   CC: clang
   CXX: clang++
   FEX_PORTABLE: 1
@@ -45,168 +46,132 @@ jobs:
         git submodule update --init --depth 1
 
     - name: Clean Build Environment
-      run: rm -Rf ${{runner.workspace}}/build
-
-    - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: rm -Rf build
 
     - name: Configure CMake
-      working-directory: ${{runner.workspace}}/build
       run: |
-        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True \
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True \
           -DENABLE_X86_HOST_DEBUG=True -DBUILD_FEX_LINUX_TESTS=True -DBUILD_THUNKS=True \
-          -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
+          -DCMAKE_INSTALL_PREFIX=$PWD/install
 
     - name: Build
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE
+      run: cmake --build build --config $BUILD_TYPE
 
     - name: Install
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target install
+      run: cmake --build build --config $BUILD_TYPE --target install
 
+    # gvisor tests
     - name: gcc target tests 64
-      working-directory: ${{runner.workspace}}/build
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_64
-
-    - name: GCC64 Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: gcc_target_tests_64
+        log-name: GCC64
 
     - name: gcc target tests 32
-      working-directory: ${{runner.workspace}}/build
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_32
-
-    - name: GCC32 Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC32.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: gcc_target_tests_32
+        log-name: GCC32
 
+    # API tests
     - name: APITest tests
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target api_tests
-
-    - name: APITest Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_APITests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: api_tests
+        log-name: APITests
 
     - name: FEXCore APITest tests
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target fexcore_apitests
-
-    - name: FEXCore APITest Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXCoreAPITests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: fexcore_apitests
+        log-name: FEXCoreAPITests
 
-    - name: ARMEmitter tests
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target emitter_tests
-
-    - name: ARMEmitter Test Results move
+    # ARM emission tests
+    - name: FEXCore APITest tests
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ARMEmitterTests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: emitter_tests
+        log-name: ARMEmitterTests
 
+    # linux tests
     - name: FEXLinuxTests
-      working-directory: ${{runner.workspace}}/build
-      env:
-        # These tests require non-portable install due to thunks.
-        FEX_PORTABLE: 0
-      run: cmake --build . --config $BUILD_TYPE --target fex_linux_tests_all
-
-    - name: FEXLinuxTests Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: fex_linux_tests_all
+        log-name: FEXLinuxTests
+        portable: 0
 
+    # Thunking
     - name: Thunkgen tests
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target thunkgen_tests
-
-    - name: Thunkgen Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkgenTests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: thunkgen_tests
+        log-name: ThunkgenTests
 
     - name: Test GL No-Thunks
-      if: matrix.arch[1] == 'x64'
-      working-directory: ${{runner.workspace}}/build
-      env:
-        DISPLAY: ":0"
-      run: cmake --build . --config $BUILD_TYPE --target thunk_functional_tests_nothunks
-
-    - name: No thunks Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_NoThunkResults.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: thunk_functional_tests_nothunks
+        log-name: NoThunkResults
+        display: ':0'
 
     - name: Test GL Thunks
-      if: matrix.arch[1] == 'x64'
-      working-directory: ${{runner.workspace}}/build
-      env:
-        DISPLAY: ":0"
-      run: cmake --build . --config $BUILD_TYPE --target thunk_functional_tests_thunks
+      if: ${{ always() && matrix.arch[1] == 'x64' }}
+      uses: ./.github/workflows/test
+      with:
+        target: thunk_functional_tests_thunks
+        log-name: ThunkResults
+        display: ':0'
 
-    - name: Thunks Results move
-      if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkResults.log || true
-
+    # ASM tests
     - name: ASM Tests
-      working-directory: ${{runner.workspace}}/build
-      # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
-
-    - name: ASM Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: asm_tests
+        log-name: ASM
 
-    - name: Posix Tests
-      working-directory: ${{runner.workspace}}/build
-      # Execute the posixtest
-      run: cmake --build . --config $BUILD_TYPE --target posix_tests
-
-    - name: Posix Test Results move
+    # POSIX tests
+    - name: Posix tests
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: posix_tests
+        log-name: Posix
 
-    - name: gvisor tests
-      working-directory: ${{runner.workspace}}/build
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
-
-    - name: GVisor Test Results move
+    # GVisor tests
+    - name: GVisor tests
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: gvisor_tests
+        log-name: GVisor
 
+    # Struct verifier tests
     - name: Struct verifier tests
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target struct_verifier
-
-    - name: Struct verifier Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: struct_verifier
+        log-name: StructVerifier
 
     - name: Truncate test results
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
       # Cap out the log files at 20M in case something crash spins and dumps fault text
       # ASM tests get quite close to 10MB
-      run: truncate --size="<20M" ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
+      run: truncate --size="<20M" build/Testing/Temporary/LastTest_*.log || true
 
     - name: Remove old SHM regions
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target remove_old_shm_regions
+      run: cmake --build build --config $BUILD_TYPE --target remove_old_shm_regions
 
     - name: Set runner name
       if: ${{ always() }}
@@ -218,5 +183,5 @@ jobs:
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}
-        path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+        path: build/Testing/Temporary/LastTest_*.log
         retention-days: 3
