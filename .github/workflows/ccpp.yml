@@ -196,6 +196,17 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
 
+    - name: Ensure expected atexit registrations
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
+        COUNT=`llvm-objdump -D ${{runner.workspace}}/build/Bin/FEX | grep '__cxa_atexit@plt>\\$' | wc -l`
+        if [ $COUNT -ne 1 ]
+        then
+          echo "Expected 1 atexit handlers, found $COUNT"
+          exit 1
+        fi
+
     - name: Truncate test results
       if: ${{ always() }}
       working-directory: ${{runner.workspace}}/build
