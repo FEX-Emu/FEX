@@ -20,7 +20,7 @@
   %rep 37500
     add qword [rel data], rbx
   %endrep
-  lea rax, [%%top]
+  lea rax, [rel %%top]
   jnz %%top
 %endmacro
 
