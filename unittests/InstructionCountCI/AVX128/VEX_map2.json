@@ -345,7 +345,7 @@
         "smull2 v3.4s, v17.8h, v18.8h",
         "sshr v2.4s, v2.4s, #14",
         "sshr v3.4s, v3.4s, #14",
-        "movi v4.4s, #0x1, lsl #0",
+        "movi v4.4s, #0x1",
         "add v2.4s, v2.4s, v4.4s",
         "add v3.4s, v3.4s, v4.4s",
         "shrn v2.4h, v2.4s, #1",
@@ -367,7 +367,7 @@
         "smull2 v5.4s, v17.8h, v18.8h",
         "sshr v4.4s, v4.4s, #14",
         "sshr v5.4s, v5.4s, #14",
-        "movi v6.4s, #0x1, lsl #0",
+        "movi v6.4s, #0x1",
         "add v4.4s, v4.4s, v6.4s",
         "add v5.4s, v5.4s, v6.4s",
         "shrn v4.4h, v4.4s, #1",
@@ -378,7 +378,7 @@
         "smull2 v2.4s, v2.8h, v3.8h",
         "sshr v4.4s, v4.4s, #14",
         "sshr v2.4s, v2.4s, #14",
-        "movi v3.4s, #0x1, lsl #0",
+        "movi v3.4s, #0x1",
         "add v4.4s, v4.4s, v3.4s",
         "add v2.4s, v2.4s, v3.4s",
         "shrn v4.4h, v4.4s, #1",
@@ -392,7 +392,7 @@
         "Map 2 0b01 0x0c 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.4s, #0x3, lsl #0",
+        "movi v2.4s, #0x3",
         "and v2.16b, v18.16b, v2.16b",
         "trn1 v2.16b, v2.16b, v2.16b",
         "trn1 v2.8h, v2.8h, v2.8h",
@@ -413,7 +413,7 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "movi v4.4s, #0x3, lsl #0",
+        "movi v4.4s, #0x3",
         "and v4.16b, v18.16b, v4.16b",
         "trn1 v4.16b, v4.16b, v4.16b",
         "trn1 v4.8h, v4.8h, v4.8h",
@@ -423,7 +423,7 @@
         "dup v5.4s, w20",
         "add v4.16b, v5.16b, v4.16b",
         "tbl v16.16b, {v17.16b}, v4.16b",
-        "movi v4.4s, #0x3, lsl #0",
+        "movi v4.4s, #0x3",
         "and v3.16b, v3.16b, v4.16b",
         "trn1 v3.16b, v3.16b, v3.16b",
         "trn1 v3.8h, v3.8h, v3.8h",
@@ -640,7 +640,7 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "movi v4.4s, #0x7, lsl #0",
+        "movi v4.4s, #0x7",
         "mov w20, #0x100",
         "movk w20, #0x302, lsl #16",
         "dup v5.4s, w20",
@@ -1436,7 +1436,7 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "movi v4.4s, #0x7, lsl #0",
+        "movi v4.4s, #0x7",
         "mov w20, #0x100",
         "movk w20, #0x302, lsl #16",
         "dup v5.4s, w20",
@@ -1932,7 +1932,7 @@
         "Map 2 0b01 0x45 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.4s, #0x20, lsl #0",
+        "movi v0.4s, #0x20",
         "umin v0.4s, v0.4s, v18.4s",
         "neg v0.4s, v0.4s",
         "ushl v16.4s, v17.4s, v0.4s",
@@ -1947,11 +1947,11 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "movi v0.4s, #0x20, lsl #0",
+        "movi v0.4s, #0x20",
         "umin v0.4s, v0.4s, v18.4s",
         "neg v0.4s, v0.4s",
         "ushl v16.4s, v17.4s, v0.4s",
-        "movi v0.4s, #0x20, lsl #0",
+        "movi v0.4s, #0x20",
         "umin v0.4s, v0.4s, v3.4s",
         "neg v0.4s, v0.4s",
         "ushl v2.4s, v2.4s, v0.4s",
@@ -2002,7 +2002,7 @@
         "Map 2 0b01 0x46 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.4s, #0x1f, lsl #0",
+        "movi v0.4s, #0x1f",
         "umin v0.4s, v0.4s, v18.4s",
         "neg v0.4s, v0.4s",
         "sshl v16.4s, v17.4s, v0.4s",
@@ -2017,11 +2017,11 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "movi v0.4s, #0x1f, lsl #0",
+        "movi v0.4s, #0x1f",
         "umin v0.4s, v0.4s, v18.4s",
         "neg v0.4s, v0.4s",
         "sshl v16.4s, v17.4s, v0.4s",
-        "movi v0.4s, #0x1f, lsl #0",
+        "movi v0.4s, #0x1f",
         "umin v0.4s, v0.4s, v3.4s",
         "neg v0.4s, v0.4s",
         "sshl v2.4s, v2.4s, v0.4s",
@@ -2034,7 +2034,7 @@
         "Map 2 0b01 0x47 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.4s, #0x20, lsl #0",
+        "movi v0.4s, #0x20",
         "umin v0.4s, v0.4s, v18.4s",
         "ushl v16.4s, v17.4s, v0.4s",
         "stp xzr, xzr, [x28, #32]"
@@ -2048,10 +2048,10 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #48]",
         "ldr q3, [x28, #64]",
-        "movi v0.4s, #0x20, lsl #0",
+        "movi v0.4s, #0x20",
         "umin v0.4s, v0.4s, v18.4s",
         "ushl v16.4s, v17.4s, v0.4s",
-        "movi v0.4s, #0x20, lsl #0",
+        "movi v0.4s, #0x20",
         "umin v0.4s, v0.4s, v3.4s",
         "ushl v2.4s, v2.4s, v0.4s",
         "str q2, [x28, #32]"

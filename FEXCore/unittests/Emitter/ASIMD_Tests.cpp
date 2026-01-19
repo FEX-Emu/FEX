@@ -2030,18 +2030,18 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD modified immed
   // XXX: MVNI - Shifted immediate
   // XXX: BIC
   TEST_SINGLE(movi(SubRegSize::i8Bit, QReg::q30, 0xFE), "movi v30.16b, #0xfe");
-  TEST_SINGLE(movi(SubRegSize::i16Bit, QReg::q30, 0xFE, 0), "movi v30.8h, #0xfe, lsl #0");
+  TEST_SINGLE(movi(SubRegSize::i16Bit, QReg::q30, 0xFE, 0), "movi v30.8h, #0xfe");
   TEST_SINGLE(movi(SubRegSize::i16Bit, QReg::q30, 0xFE, 8), "movi v30.8h, #0xfe, lsl #8");
-  TEST_SINGLE(movi(SubRegSize::i32Bit, QReg::q30, 0xFE, 0), "movi v30.4s, #0xfe, lsl #0");
+  TEST_SINGLE(movi(SubRegSize::i32Bit, QReg::q30, 0xFE, 0), "movi v30.4s, #0xfe");
   TEST_SINGLE(movi(SubRegSize::i32Bit, QReg::q30, 0xFE, 8), "movi v30.4s, #0xfe, lsl #8");
   TEST_SINGLE(movi(SubRegSize::i32Bit, QReg::q30, 0xFE, 16), "movi v30.4s, #0xfe, lsl #16");
   TEST_SINGLE(movi(SubRegSize::i32Bit, QReg::q30, 0xFE, 24), "movi v30.4s, #0xfe, lsl #24");
   TEST_SINGLE(movi(SubRegSize::i64Bit, QReg::q30, 0xFF00FF), "movi v30.2d, #0xff00ff");
 
   TEST_SINGLE(movi(SubRegSize::i8Bit, DReg::d30, 0xFE), "movi v30.8b, #0xfe");
-  TEST_SINGLE(movi(SubRegSize::i16Bit, DReg::d30, 0xFE, 0), "movi v30.4h, #0xfe, lsl #0");
+  TEST_SINGLE(movi(SubRegSize::i16Bit, DReg::d30, 0xFE, 0), "movi v30.4h, #0xfe");
   TEST_SINGLE(movi(SubRegSize::i16Bit, DReg::d30, 0xFE, 8), "movi v30.4h, #0xfe, lsl #8");
-  TEST_SINGLE(movi(SubRegSize::i32Bit, DReg::d30, 0xFE, 0), "movi v30.2s, #0xfe, lsl #0");
+  TEST_SINGLE(movi(SubRegSize::i32Bit, DReg::d30, 0xFE, 0), "movi v30.2s, #0xfe");
   TEST_SINGLE(movi(SubRegSize::i32Bit, DReg::d30, 0xFE, 8), "movi v30.2s, #0xfe, lsl #8");
   TEST_SINGLE(movi(SubRegSize::i32Bit, DReg::d30, 0xFE, 16), "movi v30.2s, #0xfe, lsl #16");
   TEST_SINGLE(movi(SubRegSize::i32Bit, DReg::d30, 0xFE, 24), "movi v30.2s, #0xfe, lsl #24");
