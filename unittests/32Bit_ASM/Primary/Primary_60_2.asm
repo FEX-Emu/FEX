@@ -24,7 +24,11 @@ mov ebp, 4
 mov esi, 5
 mov edi, 6
 
-o16 pusha
+; operand-size override prefix
+; Nasm complains if o16 is used
+; `warning: invalid operand size prefix o16, must be o32`
+db 0x66
+pusha
 
 ; Invert the order
 mov ax, [esp + 2 * 0]

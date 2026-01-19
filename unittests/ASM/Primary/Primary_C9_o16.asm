@@ -20,7 +20,12 @@ jmp .end
 
 .target:
 mov rax, 1
-o16 leave
+
+; operand-size override prefix
+; Nasm complains if o16 is used
+; `warning: invalid operand size prefix o16, must be o64`
+db 0x66
+leave
 
 .end:
 hlt

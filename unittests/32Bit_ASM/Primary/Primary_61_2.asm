@@ -33,6 +33,10 @@ push word 0x2
 push word 0x1
 push word 0x0
 
-o16 popa
+; operand-size override prefix
+; Nasm complains if o16 is used
+; `warning: invalid operand size prefix o16, must be o32`
+db 0x66
+popa
 
 hlt

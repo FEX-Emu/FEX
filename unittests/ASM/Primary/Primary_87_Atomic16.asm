@@ -32,27 +32,27 @@ mov [r15 + 8 * 9], rax
 
 ; Test 1 byte offset within 4byte boundary
 mov rax, 1
-lock xchg word [r15 + 8 * 0 + 1], ax
+xchg word [r15 + 8 * 0 + 1], ax
 mov r14, rax
 
 ; Test 3 byte offset across 4byte boundary
 mov rax, 1
-lock xchg word [r15 + 8 * 0 + 3], ax
+xchg word [r15 + 8 * 0 + 3], ax
 mov r13, rax
 
 ; Test 7 byte offset across 8byte boundary
 mov rax, 1
-lock xchg word [r15 + 8 * 0 + 7], ax
+xchg word [r15 + 8 * 0 + 7], ax
 mov r12, rax
 
 ; Test 15 byte offset across 16byte boundary
 mov rax, 1
-lock xchg word [r15 + 8 * 0 + 15], ax
+xchg word [r15 + 8 * 0 + 15], ax
 mov r11, rax
 
 ; Test 63 byte offset across cacheline boundary
 mov rax, 1
-lock xchg word [r15 + 8 * 0 + 63], ax
+xchg word [r15 + 8 * 0 + 63], ax
 mov r10, rax
 
 mov rax, qword [r15 + 8 * 0]

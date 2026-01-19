@@ -18,7 +18,11 @@ mov rsp, 0x6666666681828384
 ; Default: 0x48, 0x63, 0xc4
 movsxd rax, esp
 ; Default with o16 prefix: 0x66, 0x48, 0x63, 0xc4
-o16 movsxd rbx, esp
+; operand-size override prefix
+; Nasm complains if o16 is used
+; `warning: invalid operand size prefix o16, must be o64`
+db 0x66
+movsxd rbx, esp
 ; No-rex widening prefix
 db 0x63, 0xcc ; movsxd ecx, esp
 ; o16 prefix with no-rex widening
