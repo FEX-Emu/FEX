@@ -52,6 +52,6 @@ jobs:
       with:
         overwrite: true
         name: wine_dll_artifacts
-        path: install/usr/lib/wine/aarch64-windows/lib*.dll
+        path: ${{ runner.workspace }}/install/usr/lib/wine/aarch64-windows/lib*.dll
         retention-days: 60
         compression-level: 9
