@@ -63,7 +63,6 @@ jobs:
         target: asm_tests
         log-name: ASM_SVE256Bit
 
-    # TODO(crueter): do uses steps support ENV? if so move portable and display to that.
     - name: ASM Tests - SVE128
       if: ${{ always() }}
       uses: ./.github/workflows/test

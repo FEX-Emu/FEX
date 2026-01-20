@@ -7,12 +7,6 @@ inputs:
   log-name:
     description: 'The name suffix of the resulting log file'
     required: true
-  portable:
-    description: 'Whether or not to test FEX with a portable installation'
-    default: '1'
-  display:
-    description: 'X11 display to pass to the tests'
-    default: ''
 
 runs:
   using: composite
@@ -20,9 +14,6 @@ runs:
     - name: Run tests
       run: cmake --build build --config ${{ env.BUILD_TYPE }} --target ${{ inputs.target }}
       shell: bash
-      env:
-        FEX_PORTABLE: ${{ inputs.portable }}
-        DISPLAY: ${{ inputs.display }}
 
     - name: Move results
       if: ${{ always() }}

@@ -104,7 +104,8 @@ jobs:
       with:
         target: fex_linux_tests_all
         log-name: FEXLinuxTests
-        portable: 0
+      env:
+        FEX_PORTABLE: 0
 
     # Thunking
     - name: Thunkgen tests
@@ -120,7 +121,8 @@ jobs:
       with:
         target: thunk_functional_tests_nothunks
         log-name: NoThunkResults
-        display: ':0'
+      env:
+        DISPLAY: ':0'
 
     - name: Test GL Thunks
       if: ${{ always() && matrix.arch[1] == 'x64' }}
@@ -128,7 +130,8 @@ jobs:
       with:
         target: thunk_functional_tests_thunks
         log-name: ThunkResults
-        display: ':0'
+      env:
+        DISPLAY: ':0'
 
     # ASM tests
     - name: ASM Tests
