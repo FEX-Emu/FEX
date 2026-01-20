@@ -9,9 +9,11 @@ runs:
   using: composite
   steps:
     - name: Clean Build Environment
+      shell: bash
       run: rm -Rf ${{runner.workspace}}/build_${{ inputs.target }}
 
     - name: Set MinGW Triple
+      shell: bash
       run: |
         case "${{ inputs.target }}" in
           wow64) _cc=aarch64 ;;
@@ -20,6 +22,7 @@ runs:
         echo "MINGW_TRIPLE=${_cc}-w64-mingw32" >> $GITHUB_ENV
 
     - name: Configure CMake
+      shell: bash
       run: |
         cmake -S . -B build_${{ inputs.target }} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Data/CMake/toolchain_mingw.cmake \
           -DMINGW_TRIPLE=$MINGW_TRIPLE -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-windows -G Ninja \
@@ -27,9 +30,11 @@ runs:
           -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX=/usr -DTUNE_ARCH=generic -DTUNE_CPU=none
 
     - name: Build
+      shell: bash
       run: cmake --build build_${{ inputs.target }} --config $BUILD_TYPE
 
     - name: Install
+      shell: bash
       run: cmake --build build_${{ inputs.target }} --config $BUILD_TYPE -t install
       env:
         DESTDIR: ${{runner.workspace}}/install
