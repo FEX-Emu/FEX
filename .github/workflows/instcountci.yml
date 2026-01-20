@@ -44,57 +44,49 @@ jobs:
         git submodule update --init --depth 1
 
     - name: Clean Build Environment
-      run: rm -Rf ${{runner.workspace}}/build
+      run: rm -Rf build
 
     - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: cmake -E make_directory build
 
-    - name: Set vixl_sim x86
+    - name: Set VIXL_SIM_ENABLED
       if: matrix.arch[1] == 'x64'
       run: |
-        echo "VIXL_SIM_ENABLED=True" >> $GITHUB_ENV
-
-    - name: Set vixl_sim Arm64
-      if: matrix.arch[1] == 'ARM64'
-      run: |
-        echo "VIXL_SIM_ENABLED=False" >> $GITHUB_ENV
+        case "${{ matrix.arch[1] }}" in
+          x64) _vixl_sim=True ;;
+          ARM64) _vixl_sim=False ;;
+        esac
+        echo "VIXL_SIM_ENABLED=${_vixl_sim}" >> $GITHUB_ENV
 
     - name: Configure CMake
-      working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=$VIXL_SIM_ENABLED -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=$VIXL_SIM_ENABLED \
+        -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
 
     - name: Build
-      working-directory: ${{runner.workspace}}/build
+      run: cmake --build build --config $BUILD_TYPE --target CodeSizeValidation instcountci_test_files
       env:
         FEX_DISABLETELEMETRY: 1
-      run: cmake --build . --config $BUILD_TYPE --target CodeSizeValidation instcountci_test_files
 
     - name: Instruction Count Tests
-      working-directory: ${{runner.workspace}}/build
-      # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target instcountci_tests
-
-    - name: Instruction Count Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_InstCountCI.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: instcountci_tests
+        log-name: InstCountCI
 
     - name: Update local repo instcount
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target instcountci_update_tests
+      run: cmake --build build --config $BUILD_TYPE --target instcountci_update_tests
 
     - name: Check InstCountCI diff
       if: ${{ always() }}
-      working-directory: ${{github.workspace}}/
       run: git --no-pager diff --exit-code HEAD
 
     - name: Truncate test results
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
       # Cap out the log files at 20M in case something crash spins and dumps fault text
       # ASM tests get quite close to 10MB
-      run: truncate --size="<20M" ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
+      run: truncate --size="<20M" build/Testing/Temporary/LastTest_*.log || true
 
     - name: Set runner name
       if: ${{ always() }}
@@ -106,15 +98,5 @@ jobs:
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}
-        path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+        path: build/Testing/Temporary/LastTest_*.log
         retention-days: 3
-
-    - name: Upload results InstCountCI
-      if: ${{ always() }}
-      uses: actions/upload-artifact@v4
-      timeout-minutes: 1
-      with:
-        name: Results-${{ env.runner_name }}-instcountci
-        path: ${{runner.workspace}}/build/InstCountCI.diff
-        retention-days: 3
-
