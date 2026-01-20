@@ -72,17 +72,3 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
-
-    - name: Set runner name
-      if: ${{ always() }}
-      run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
-
-    - name: Upload results
-      if: ${{ always() }}
-      uses: actions/upload-artifact@v4
-      timeout-minutes: 1
-      with:
-        name: Results-${{ env.runner_name }}-${{ env.runner_label }}
-        path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
-        retention-days: 3
-
