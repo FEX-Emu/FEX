@@ -22,7 +22,7 @@ jobs:
     - name: Add MingGW to PATH
       run: echo "$HOME/llvm-mingw/build/bin/" >> $GITHUB_PATH
 
-    - name : submodule checkout
+    - name: Checkout Submodules
       # Need to update submodules
       run: |
         git submodule sync --recursive

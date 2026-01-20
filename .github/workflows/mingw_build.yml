@@ -28,20 +28,14 @@ jobs:
     - name: Add MingGW to PATH
       run: echo "$HOME/llvm-mingw/build/bin/" >> $GITHUB_PATH
 
-    - name: Set CC x86
-      if: matrix.arch[1] == 'x64'
+    - name: Set CC
       run: |
-        echo "MINGW_TRIPLE=x86_64-w64-mingw32" >> $GITHUB_ENV
-
-    - name: Set CC Arm64
-      if: matrix.arch[1] == 'ARM64'
-      run: |
-        echo "MINGW_TRIPLE=aarch64-w64-mingw32" >> $GITHUB_ENV
-
-    - name: Set CC Arm64EC
-      if: matrix.arch[1] == 'ARM64EC'
-      run: |
-        echo "MINGW_TRIPLE=arm64ec-w64-mingw32" >> $GITHUB_ENV
+        case "${{ matrix.arch[1] }}" in
+          x64) _cc=x86_64 ;;
+          ARM64) _cc=aarch64 ;;
+          ARM64EC) _cc=arm64ec ;;
+        esac
+        echo "MINGW_TRIPLE=${_cc}-w64-mingw32" >> $GITHUB_ENV
 
     - name: Set rootfs paths
       run: |
@@ -52,37 +46,24 @@ jobs:
     - name: Update RootFS cache
       run: python3 Scripts/CI_FetchRootFS.py
 
-    - name : submodule checkout
+    - name: Checkout Submodules
       # Need to update submodules
       run: |
         git submodule sync --recursive
         git submodule update --init --depth 1
 
     - name: Clean Build Environment
-      run: rm -Rf ${{runner.workspace}}/build
+      run: rm -Rf build
 
     - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: cmake -E make_directory build
 
     - name: Configure CMake
-      working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/Data/CMake/toolchain_mingw.cmake -DMINGW_TRIPLE=$MINGW_TRIPLE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/Data/CMake/toolchain_mingw.cmake \
+          -DMINGW_TRIPLE=$MINGW_TRIPLE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True \
+          -DENABLE_X86_HOST_DEBUG=True -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX="$PWD/install"
 
     - name: Build
-      working-directory: ${{runner.workspace}}/build
-      # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE
-
-    - name: Set runner name
-      if: ${{ always() }}
-      run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
-
-    - name: Upload results
-      if: ${{ always() }}
-      uses: actions/upload-artifact@v4
-      timeout-minutes: 1
-      with:
-        name: Results-${{ env.runner_name }}
-        path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
-        retention-days: 3
-
+      run: cmake --build build --config $BUILD_TYPE

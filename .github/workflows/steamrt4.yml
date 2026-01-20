@@ -27,7 +27,7 @@ jobs:
     - name: Set runner label
       run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
 
-    - name : submodule checkout
+    - name: Checkout Submodules
       run: |
         git submodule sync --recursive
         git submodule update --init --depth 1

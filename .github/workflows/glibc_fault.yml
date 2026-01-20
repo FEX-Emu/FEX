@@ -45,7 +45,7 @@ jobs:
     - name: Update RootFS cache
       run: python3 Scripts/CI_FetchRootFS.py
 
-    - name : submodule checkout
+    - name: Checkout Submodules
       # Need to update submodules
       run: |
         git submodule sync --recursive
