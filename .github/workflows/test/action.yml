@@ -12,7 +12,7 @@ runs:
   using: composite
   steps:
     - name: Run tests
-      run: cmake --build build --config ${{ env.BUILD_TYPE }} --target ${{ inputs.target }}
+      run: cmake --build build --config $BUILD_TYPE --target ${{ inputs.target }}
       shell: bash
 
     - name: Move results

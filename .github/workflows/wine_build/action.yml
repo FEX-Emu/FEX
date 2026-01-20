@@ -1,0 +1,36 @@
+name: Wine DLL Build
+
+inputs:
+  target:
+    description: 'The target (arm64ec or wow64)'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Clean Build Environment
+      run: rm -Rf ${{runner.workspace}}/build_${{ inputs.target }}
+
+    - name: Set MinGW Triple
+      run: |
+        case "${{ inputs.target }}" in
+          wow64) _cc=aarch64 ;;
+          arm64ec) _cc=arm64ec ;;
+        esac
+        echo "MINGW_TRIPLE=${_cc}-w64-mingw32" >> $GITHUB_ENV
+
+    - name: Configure CMake
+      run: |
+        cmake -S . -B build_${{ inputs.target }} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Data/CMake/toolchain_mingw.cmake \
+          -DMINGW_TRIPLE=$MINGW_TRIPLE -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-windows -G Ninja \
+          -DENABLE_LTO=False -DENABLE_ASSERTIONS=False -DENABLE_JEMALLOC_GLIBC_ALLOC=False -DCMAKE_INSTALL_PREFIX=/usr \
+          -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX=/usr -DTUNE_ARCH=generic -DTUNE_CPU=none
+
+    - name: Build
+      run: cmake --build build_${{ inputs.target }} --config $BUILD_TYPE
+
+    - name: Install
+      run: cmake --build build_${{ inputs.target }} --config $BUILD_TYPE -t install
+      env:
+        DESTDIR: ${{runner.workspace}}/install
+
