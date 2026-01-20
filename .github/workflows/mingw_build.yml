@@ -82,7 +82,7 @@ jobs:
       uses: actions/upload-artifact@v4
       timeout-minutes: 1
       with:
-        name: Results-${{ env.runner_name }}
+        name: Results-${{ env.runner_name }}-${{ env.runner_label }}
         path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
         retention-days: 3
 
