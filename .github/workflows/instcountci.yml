@@ -46,9 +46,6 @@ jobs:
     - name: Clean Build Environment
       run: rm -Rf build
 
-    - name: Create Build Environment
-      run: cmake -E make_directory build
-
     - name: Set vixl_sim x86
       if: matrix.arch[1] == 'x64'
       run: |
@@ -67,11 +64,11 @@ jobs:
     - name: Build
       env:
         FEX_DISABLETELEMETRY: 1
-      run: cmake --build build --config $BUILD_TYPE --target CodeSizeValidation instcountci_test_files
+      run: cmake --build build --target CodeSizeValidation instcountci_test_files
 
     - name: Instruction Count Tests
       # Execute the unit tests
-      run: cmake --build build --config $BUILD_TYPE --target instcountci_tests
+      run: cmake --build build --target instcountci_tests
 
     - name: Instruction Count Test Results move
       if: ${{ always() }}
@@ -79,7 +76,7 @@ jobs:
 
     - name: Update local repo instcount
       if: ${{ always() }}
-      run: cmake --build build --config $BUILD_TYPE --target instcountci_update_tests
+      run: cmake --build build --target instcountci_update_tests
 
     - name: Check InstCountCI diff
       if: ${{ always() }}
