@@ -7,7 +7,7 @@ set(FEXCORE_BASE_SRCS
   Utils/ForcedAssert.cpp
   Utils/LogManager.cpp
   Utils/SpinWaitLock.cpp
-  Utils/Regex.cpp
+  Utils/WildcardMatcher.cpp
   )
 
 if (NOT MINGW)

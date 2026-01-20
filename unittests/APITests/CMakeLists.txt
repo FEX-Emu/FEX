@@ -7,7 +7,7 @@ set(TESTS
   Filesystem
   InterruptableConditionVariable
   StringUtils
-  Regex
+  WildcardMatcher
   )
 
 list(APPEND LIBS Common FEXCore JemallocLibs)

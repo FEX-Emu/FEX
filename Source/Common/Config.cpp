@@ -2,6 +2,7 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 #include "Common/JSONPool.h"
+#include "FEXCore/fextl/vector.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/fmt.h>
@@ -10,7 +11,7 @@
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
-#include <FEXCore/Utils/Regex.h>
+#include <FEXCore/Utils/WildcardMatcher.h>
 #include <cstring>
 #include <functional>
 #ifndef _WIN32
@@ -43,8 +44,36 @@ namespace JSON {
       return;
     }
 
-    auto ListApplier = [&Config, &Func](const json_t* jsonList) {
-      for (const json_t* ConfigItem = json_getChild(jsonList); ConfigItem != nullptr; ConfigItem = json_getSibling(ConfigItem)) {
+    fextl::vector<const json_t*> ConfigBlocks;
+    ConfigBlocks.push_back(ConfigList);
+
+    const json_t* OverrideList = json_getProperty(json, "AppOverrides");
+    if (OverrideList) {
+      for (const json_t* Item = json_getChild(OverrideList); Item != nullptr; Item = json_getSibling(Item)) {
+        const char* ItemName = json_getName(Item);
+        const json_t* OverrideNamedList = json_getProperty(OverrideList, ItemName);
+
+        if (!ItemName) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
+          break;
+        }
+
+        if (!OverrideNamedList) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ItemName);
+          break;
+        }
+
+        // Matches the first and then get out
+        if (FEXCore::Utils::Wildcard::Matches(ItemName, Config)) {
+          // Safe to assume its just pairs of strings at this point?
+          ConfigBlocks.push_back(OverrideNamedList);
+          break;
+        }
+      }
+    }
+
+    for (auto ConfigBlock : ConfigBlocks) {
+      for (const json_t* ConfigItem = json_getChild(ConfigBlock); ConfigItem != nullptr; ConfigItem = json_getSibling(ConfigItem)) {
         const char* ConfigName = json_getName(ConfigItem);
         const char* ConfigString = json_getValue(ConfigItem);
 
@@ -59,43 +88,7 @@ namespace JSON {
         }
         Func(ConfigName, ConfigString);
       }
-
-    };
-
-    ListApplier(ConfigList);
-
-    const json_t* RegexList = json_getProperty(json, "RegexConfig");
-    if (!RegexList) {
-      // This is a non-error if the configuration file exists but no RegexConfigList section
-      return;
     }
-
-    using FEXCore::Utils::Regex;
-
-    for (const json_t* RegexItem = json_getChild(RegexList); RegexItem != nullptr; RegexItem = json_getSibling(RegexItem)) {
-      const char* RegexName = json_getName(RegexItem);
-      const json_t* RegexNamedList = json_getProperty(RegexList, RegexName);
-
-      if (!RegexName) {
-        LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
-        return;
-      }
-
-      if (!RegexNamedList) {
-        LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, RegexName);
-        return;
-      }
-
-      // Matches the first and then get out
-      // Needs PR review on this
-      if (Regex::matches(RegexName, Config)) {
-        // Safe to assume its just pairs of strings at this point?
-        ListApplier(RegexNamedList);
-        break;
-      }
-
-    }
-
   }
 } // namespace JSON
 
