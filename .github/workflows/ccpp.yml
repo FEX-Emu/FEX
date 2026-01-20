@@ -36,7 +36,7 @@ jobs:
         echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
 
     - name: Update RootFS cache
-      run: $GITHUB_WORKSPACE/Scripts/CI_FetchRootFS.py
+      run: python3 Scripts/CI_FetchRootFS.py
 
     - name : submodule checkout
       # Need to update submodules
@@ -51,7 +51,7 @@ jobs:
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True \
           -DENABLE_X86_HOST_DEBUG=True -DBUILD_FEX_LINUX_TESTS=True -DBUILD_THUNKS=True \
-          -DCMAKE_INSTALL_PREFIX=$PWD/install
+          -DCMAKE_INSTALL_PREFIX="$PWD"/install
 
     - name: Build
       run: cmake --build build --config $BUILD_TYPE
@@ -60,14 +60,14 @@ jobs:
       run: cmake --build build --config $BUILD_TYPE --target install
 
     # gvisor tests
-    - name: gcc target tests 64
+    - name: GCC64 Target Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
         target: gcc_target_tests_64
         log-name: GCC64
 
-    - name: gcc target tests 32
+    - name: GCC32 Target Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
@@ -75,14 +75,14 @@ jobs:
         log-name: GCC32
 
     # API tests
-    - name: APITest tests
+    - name: API Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
         target: api_tests
         log-name: APITests
 
-    - name: FEXCore APITest tests
+    - name: FEXCore API Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
@@ -90,15 +90,15 @@ jobs:
         log-name: FEXCoreAPITests
 
     # ARM emission tests
-    - name: FEXCore APITest tests
+    - name: ARM Emitter Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
         target: emitter_tests
         log-name: ARMEmitterTests
 
-    # linux tests
-    - name: FEXLinuxTests
+    # Linux  tests
+    - name: FEX Linux Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
@@ -139,7 +139,7 @@ jobs:
         log-name: ASM
 
     # POSIX tests
-    - name: POSIX tests
+    - name: POSIX Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
@@ -147,7 +147,7 @@ jobs:
         log-name: Posix
 
     # GVisor tests
-    - name: GVisor tests
+    - name: GVisor Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:

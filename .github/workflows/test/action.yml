@@ -3,21 +3,15 @@ name: Run Test and Store Logs
 inputs:
   target:
     description: 'The test target to run'
-    type: string
     required: true
   log-name:
     description: 'The name suffix of the resulting log file'
-    type: string
     required: true
   portable:
     description: 'Whether or not to test FEX with a portable installation'
-    type: string
-    required: false
     default: '1'
   display:
     description: 'X11 display to pass to the tests'
-    type: string
-    required: false
     default: ''
 
 runs:
@@ -32,7 +26,7 @@ runs:
 
     - name: Move results
       if: ${{ always() }}
-      run: mv "$LAST_LOG".log "$LAST_LOG"_"${{ inputs.log-name }}".log || true
+      run: mv "$LAST_LOG".log "${LAST_LOG}_${{ inputs.log-name }}".log || true
       shell: bash
       env:
         LAST_LOG: build/Testing/Temporary/LastTest
