@@ -37,68 +37,59 @@ jobs:
         echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
 
     - name: Update RootFS cache
-      run: $GITHUB_WORKSPACE/Scripts/CI_FetchRootFS.py
+      run: python3 Scripts/CI_FetchRootFS.py
 
-    - name : submodule checkout
+    - name: Checkout Submodules
       # Need to update submodules
       run: |
         git submodule sync --recursive
         git submodule update --init --depth 1
 
     - name: Clean Build Environment
-      run: rm -Rf ${{runner.workspace}}/build
+      run: rm -Rf build
 
     - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: cmake -E make_directory build
 
     - name: Configure CMake
-      working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=True -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=True -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
 
     - name: Build
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE
+      run: cmake --build build --config $BUILD_TYPE
 
     - name: ASM Tests - SVE256
-      working-directory: ${{runner.workspace}}/build
       # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --config $BUILD_TYPE --target asm_tests
 
     - name: ASM Test SVE256 Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM_SVE256Bit.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ASM_SVE256Bit.log || true
 
     - name: ASM Tests - SVE128
-      working-directory: ${{runner.workspace}}/build
       env:
         FEX_FORCESVEWIDTH: "128"
       # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --config $BUILD_TYPE --target asm_tests
 
     - name: ASM Test 128-bit Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM_SVE128Bit.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ASM_SVE128Bit.log || true
 
     - name: ASM Tests - ASIMD
-      working-directory: ${{runner.workspace}}/build
       env:
         FEX_HOSTFEATURES: "disablesve"
       # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --config $BUILD_TYPE --target asm_tests
 
     - name: ASM Test ASIMD Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM_ASIMD.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ASM_ASIMD.log || true
 
     - name: Truncate test results
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
       # Cap out the log files at 20M in case something crash spins and dumps fault text
       # ASM tests get quite close to 10MB
-      run: truncate --size="<20M" ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
+      run: truncate --size="<20M" build/Testing/Temporary/LastTest_*.log || true
 
     - name: Set runner name
       if: ${{ always() }}
@@ -110,6 +101,6 @@ jobs:
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}-${{ env.runner_label }}
-        path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+        path: ${{ github.workspace }}/build/Testing/Temporary/LastTest_*.log
         retention-days: 3
 

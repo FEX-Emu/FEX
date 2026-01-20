@@ -43,114 +43,95 @@ jobs:
         echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
 
     - name: Update RootFS cache
-      run: $GITHUB_WORKSPACE/Scripts/CI_FetchRootFS.py
+      run: python3 Scripts/CI_FetchRootFS.py
 
-    - name : submodule checkout
+    - name: Checkout Submodules
       # Need to update submodules
       run: |
         git submodule sync --recursive
         git submodule update --init --depth 1
 
     - name: Clean Build Environment
-      run: rm -Rf ${{runner.workspace}}/build
+      run: rm -Rf build
 
     - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: cmake -E make_directory build
 
     - name: Configure CMake
-      working-directory: ${{runner.workspace}}/build
       run: |
-        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False \
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False \
           -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DBUILD_FEX_LINUX_TESTS=True \
           -DENABLE_GLIBC_ALLOCATOR_HOOK_FAULT=True -DENABLE_JEMALLOC_GLIBC_ALLOC=False \
-          -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
+          -DCMAKE_INSTALL_PREFIX="$PWD"/build/install
 
     - name: Build
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE
+      run: cmake --build build --config $BUILD_TYPE
 
     - name: Install
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target install
+      run: cmake --build build --config $BUILD_TYPE --target install
 
     - name: gcc target tests 64
-      working-directory: ${{runner.workspace}}/build
       # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_64
+      run: cmake --build build --config $BUILD_TYPE --target gcc_target_tests_64
 
     - name: GCC64 Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_GCC64.log || true
 
     - name: gcc target tests 32
-      working-directory: ${{runner.workspace}}/build
       # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_32
+      run: cmake --build build --config $BUILD_TYPE --target gcc_target_tests_32
 
     - name: GCC32 Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC32.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_GCC32.log || true
 
     - name: APITest tests
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target api_tests
+      run: cmake --build build --config $BUILD_TYPE --target api_tests
 
     - name: APITest Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_APITests.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_APITests.log || true
 
     - name: FEXCore APITest tests
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target fexcore_apitests
+      run: cmake --build build --config $BUILD_TYPE --target fexcore_apitests
 
     - name: FEXCore APITest Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXCoreAPITests.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_FEXCoreAPITests.log || true
 
     - name: FEXLinuxTests
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target fex_linux_tests_all
+      run: cmake --build build --config $BUILD_TYPE --target fex_linux_tests_all
 
     - name: FEXLinuxTests Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
 
     - name: ASM Tests
-      working-directory: ${{runner.workspace}}/build
       # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --config $BUILD_TYPE --target asm_tests
 
     - name: ASM Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ASM.log || true
 
     - name: Posix Tests
-      working-directory: ${{runner.workspace}}/build
       # Execute the posixtest
-      run: cmake --build . --config $BUILD_TYPE --target posix_tests
+      run: cmake --build build --config $BUILD_TYPE --target posix_tests
 
     - name: Posix Test Results move
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
+      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_Posix.log || true
 
     - name: Truncate test results
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
       # Cap out the log files at 20M in case something crash spins and dumps fault text
       # ASM tests get quite close to 10MB
-      run: truncate --size="<20M" ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
+      run: truncate --size="<20M" build/Testing/Temporary/LastTest_*.log || true
 
     - name: Remove old SHM regions
       if: ${{ always() }}
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE --target remove_old_shm_regions
+      run: cmake --build build --config $BUILD_TYPE --target remove_old_shm_regions
 
     - name: Set runner name
       if: ${{ always() }}
@@ -162,6 +143,6 @@ jobs:
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}-${{ env.runner_label }}
-        path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+        path: ${{ github.workspace }}/build/Testing/Temporary/LastTest_*.log
         retention-days: 3
 

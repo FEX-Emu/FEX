@@ -27,15 +27,15 @@ jobs:
     - name: Set runner label
       run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
 
-    - name : submodule checkout
+    - name: Checkout Submodules
       run: |
         git submodule sync --recursive
         git submodule update --init --depth 1
 
     - name: Clean Build Environment
       run: |
-        rm -Rf ${{runner.workspace}}/build
-        cmake -E make_directory ${{runner.workspace}}/build
+        rm -Rf build
+        cmake -E make_directory build
 
     # Setup everything required.
     - name : distrobox setup
@@ -50,25 +50,20 @@ jobs:
           libstdc++-14-dev-amd64-cross libgcc-14-dev-amd64-cross
 
     - name: Create Build Environment
-      run: distrobox enter --name steamrt4 -- cmake -E make_directory ${{runner.workspace}}/build
+      run: distrobox enter --name steamrt4 -- cmake -E make_directory build
 
     - name: Configure CMake
-      working-directory: ${{runner.workspace}}/build
       run: |
-        distrobox enter --name steamrt4 -- cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+        distrobox enter --name steamrt4 -- cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -G Ninja -DBUILD_STEAM_SUPPORT=True -DENABLE_LTO=True -DENABLE_ASSERTIONS=False -DBUILD_THUNKS=True \
           -DBUILD_FEXCONFIG=False -DBUILD_TESTING=False -DENABLE_CLANG_THUNKS=True -DUSE_LINKER=lld \
           -DCMAKE_INSTALL_PREFIX=/usr
 
     - name: Build
-      working-directory: ${{runner.workspace}}/build
-      run: distrobox enter --name steamrt4 -- cmake --build . --config $BUILD_TYPE
+      run: distrobox enter --name steamrt4 -- cmake --build build --config $BUILD_TYPE
 
     - name: install
-      working-directory: ${{runner.workspace}}/build
-      env:
-        DESTDIR: ${{runner.workspace}}/install
-      run: distrobox enter --name steamrt4 -- cmake --build . --config $BUILD_TYPE -t install
+      run: DESTDIR="$PWD"/install distrobox enter --name steamrt4 -- cmake --build build --config $BUILD_TYPE -t install
 
     - name: Upload libraries
       uses: actions/upload-artifact@v4
@@ -76,6 +71,6 @@ jobs:
       with:
         overwrite: true
         name: steamrt4_steampipe_depot
-        path: ${{runner.workspace}}/install/*
+        path: ${{ github.workspace }}/install/*
         retention-days: 60
         compression-level: 9
