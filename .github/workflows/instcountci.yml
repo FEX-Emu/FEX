@@ -59,8 +59,9 @@ jobs:
         echo "VIXL_SIM_ENABLED=${_vixl_sim}" >> $GITHUB_ENV
 
     - name: Configure CMake
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=$VIXL_SIM_ENABLED \
-        -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=$VIXL_SIM_ENABLED \
+          -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
 
     - name: Build
       run: cmake --build build --config $BUILD_TYPE --target CodeSizeValidation instcountci_test_files
