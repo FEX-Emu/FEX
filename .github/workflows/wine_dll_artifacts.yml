@@ -64,7 +64,6 @@ jobs:
       run: cmake --build build_wow64 --config $BUILD_TYPE
 
     - name: Install (wow64)
-      working-directory: ${{runner.workspace}}/build_wow64
       run: cmake --build build_wow64 --config $BUILD_TYPE -t install
       env:
         DESTDIR: ${{runner.workspace}}/install
