@@ -50,7 +50,6 @@ jobs:
       run: cmake -E make_directory build
 
     - name: Set VIXL_SIM_ENABLED
-      if: matrix.arch[1] == 'x64'
       run: |
         case "${{ matrix.arch[1] }}" in
           x64) _vixl_sim=True ;;
