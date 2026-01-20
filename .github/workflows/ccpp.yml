@@ -59,7 +59,7 @@ jobs:
     - name: Install
       run: cmake --build build --config $BUILD_TYPE --target install
 
-    # gvisor tests
+    # GCC tests
     - name: GCC64 Target Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test

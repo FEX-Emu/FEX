@@ -50,7 +50,7 @@ jobs:
         echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
 
     - name: Update RootFS cache
-      run: $GITHUB_WORKSPACE/Scripts/CI_FetchRootFS.py
+      run: python3 Scripts/CI_FetchRootFS.py
 
     - name : submodule checkout
       # Need to update submodules
