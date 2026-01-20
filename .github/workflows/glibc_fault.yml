@@ -33,8 +33,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set runner label
-      run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+    - name: Set runner info
+      run: |
+        echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+        echo "runner_name=$(hostname)" >> $GITHUB_ENV
 
     - name: Set rootfs paths
       run: |
@@ -67,72 +69,63 @@ jobs:
     - name: Install
       run: cmake --build build --target install
 
-    - name: gcc target tests 64
-      # Execute the gvisor tests
-      run: cmake --build build --target gcc_target_tests_64
-
-    - name: GCC64 Test Results move
+    # GCC tests
+    - name: GCC64 Target Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_GCC64.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: gcc_target_tests_64
+        log-name: GCC64
 
-    - name: gcc target tests 32
-      # Execute the gvisor tests
-      run: cmake --build build --target gcc_target_tests_32
-
-    - name: GCC32 Test Results move
+    - name: GCC32 Target Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_GCC32.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: gcc_target_tests_32
+        log-name: GCC32
 
-    - name: APITest tests
-      run: cmake --build build --target api_tests
-
-    - name: APITest Test Results move
+    # API Tests
+    - name: API Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_APITests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: api_tests
+        log-name: APITests
 
-    - name: FEXCore APITest tests
-      run: cmake --build build --target fexcore_apitests
-
-    - name: FEXCore APITest Test Results move
+    - name: FEXCore API Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_FEXCoreAPITests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: fexcore_apitests
+        log-name: FEXCoreAPITests
 
-    - name: FEXLinuxTests
-      run: cmake --build build --target fex_linux_tests_all
-
-    - name: FEXLinuxTests Results move
+    # Linux tests
+    - name: FEX Linux Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: fex_linux_tests_all
+        log-name: FEXLinuxTests
 
+    # ASM Tests
     - name: ASM Tests
-      # Execute the unit tests
-      run: cmake --build build --target asm_tests
-
-    - name: ASM Test Results move
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ASM.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: asm_tests
+        log-name: ASM
 
-    - name: Posix Tests
-      # Execute the posixtest
-      run: cmake --build build --target posix_tests
-
-    - name: Posix Test Results move
+    # POSIX Tests
+    - name: POSIX Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_Posix.log || true
-
-    - name: Truncate test results
-      if: ${{ always() }}
-      # Cap out the log files at 20M in case something crash spins and dumps fault text
-      # ASM tests get quite close to 10MB
-      run: truncate --size="<20M" build/Testing/Temporary/LastTest_*.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: posix_tests
+        log-name: Posix
 
     - name: Remove old SHM regions
       if: ${{ always() }}
       run: cmake --build build --target remove_old_shm_regions
-
-    - name: Set runner name
-      if: ${{ always() }}
-      run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
 
     - name: Upload results
       if: ${{ always() }}
