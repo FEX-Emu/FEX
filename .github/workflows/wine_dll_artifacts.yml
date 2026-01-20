@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-  # TODO(CRUETER): REMOVE
-  pull_request:
-    branches:
-      - main
 
 env:
   BUILD_TYPE: Release
