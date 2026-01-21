@@ -33,9 +33,7 @@ jobs:
         git submodule update --init --depth 1
 
     - name: Clean Build Environment
-      run: |
-        rm -Rf build
-        cmake -E make_directory build
+      run: rm -Rf build
 
     # Setup everything required.
     - name : distrobox setup
@@ -49,9 +47,6 @@ jobs:
           libstdc++-14-dev-i386-cross libgcc-14-dev-i386-cross \
           libstdc++-14-dev-amd64-cross libgcc-14-dev-amd64-cross
 
-    - name: Create Build Environment
-      run: distrobox enter --name steamrt4 -- cmake -E make_directory build
-
     - name: Configure CMake
       run: |
         distrobox enter --name steamrt4 -- cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
@@ -60,10 +55,10 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=/usr
 
     - name: Build
-      run: distrobox enter --name steamrt4 -- cmake --build build --config $BUILD_TYPE
+      run: distrobox enter --name steamrt4 -- cmake --build build
 
     - name: install
-      run: DESTDIR="$PWD"/install distrobox enter --name steamrt4 -- cmake --build build --config $BUILD_TYPE -t install
+      run: DESTDIR="$PWD"/install distrobox enter --name steamrt4 -- cmake --build build -t install
 
     - name: Upload libraries
       uses: actions/upload-artifact@v4

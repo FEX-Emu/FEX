@@ -54,9 +54,6 @@ jobs:
     - name: Clean Build Environment
       run: rm -Rf build
 
-    - name: Create Build Environment
-      run: cmake -E make_directory build
-
     - name: Configure CMake
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False \
@@ -65,14 +62,14 @@ jobs:
           -DCMAKE_INSTALL_PREFIX="$PWD"/build/install
 
     - name: Build
-      run: cmake --build build --config $BUILD_TYPE
+      run: cmake --build build
 
     - name: Install
-      run: cmake --build build --config $BUILD_TYPE --target install
+      run: cmake --build build --target install
 
     - name: gcc target tests 64
       # Execute the gvisor tests
-      run: cmake --build build --config $BUILD_TYPE --target gcc_target_tests_64
+      run: cmake --build build --target gcc_target_tests_64
 
     - name: GCC64 Test Results move
       if: ${{ always() }}
@@ -80,28 +77,28 @@ jobs:
 
     - name: gcc target tests 32
       # Execute the gvisor tests
-      run: cmake --build build --config $BUILD_TYPE --target gcc_target_tests_32
+      run: cmake --build build --target gcc_target_tests_32
 
     - name: GCC32 Test Results move
       if: ${{ always() }}
       run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_GCC32.log || true
 
     - name: APITest tests
-      run: cmake --build build --config $BUILD_TYPE --target api_tests
+      run: cmake --build build --target api_tests
 
     - name: APITest Test Results move
       if: ${{ always() }}
       run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_APITests.log || true
 
     - name: FEXCore APITest tests
-      run: cmake --build build --config $BUILD_TYPE --target fexcore_apitests
+      run: cmake --build build --target fexcore_apitests
 
     - name: FEXCore APITest Test Results move
       if: ${{ always() }}
       run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_FEXCoreAPITests.log || true
 
     - name: FEXLinuxTests
-      run: cmake --build build --config $BUILD_TYPE --target fex_linux_tests_all
+      run: cmake --build build --target fex_linux_tests_all
 
     - name: FEXLinuxTests Results move
       if: ${{ always() }}
@@ -109,7 +106,7 @@ jobs:
 
     - name: ASM Tests
       # Execute the unit tests
-      run: cmake --build build --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --target asm_tests
 
     - name: ASM Test Results move
       if: ${{ always() }}
@@ -117,7 +114,7 @@ jobs:
 
     - name: Posix Tests
       # Execute the posixtest
-      run: cmake --build build --config $BUILD_TYPE --target posix_tests
+      run: cmake --build build --target posix_tests
 
     - name: Posix Test Results move
       if: ${{ always() }}
@@ -131,7 +128,7 @@ jobs:
 
     - name: Remove old SHM regions
       if: ${{ always() }}
-      run: cmake --build build --config $BUILD_TYPE --target remove_old_shm_regions
+      run: cmake --build build --target remove_old_shm_regions
 
     - name: Set runner name
       if: ${{ always() }}

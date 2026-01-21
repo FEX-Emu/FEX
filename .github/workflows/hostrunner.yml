@@ -47,20 +47,17 @@ jobs:
     - name: Clean Build Environment
       run: rm -Rf build
 
-    - name: Create Build Environment
-      run: cmake -E make_directory build
-
     - name: Configure CMake
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False \
           -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
 
     - name: Build
-      run: cmake --build build --config $BUILD_TYPE
+      run: cmake --build build
 
     - name: ASM Tests
       # Execute the unit tests
-      run: cmake --build build --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --target asm_tests
 
     - name: ASM Test Results move
       if: ${{ always() }}

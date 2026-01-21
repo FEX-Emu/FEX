@@ -61,9 +61,6 @@ jobs:
     - name: Clean Build Environment
       run: rm -Rf build
 
-    - name: Create Build Environment
-      run: cmake -E make_directory build
-
     - name: Configure CMake
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/Data/CMake/toolchain_mingw.cmake \
@@ -71,4 +68,4 @@ jobs:
         -DCMAKE_INSTALL_PREFIX="$PWD"/build/install
 
     - name: Build
-      run: cmake --build build --config $BUILD_TYPE
+      run: cmake --build build

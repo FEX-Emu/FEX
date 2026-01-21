@@ -48,18 +48,15 @@ jobs:
     - name: Clean Build Environment
       run: rm -Rf build
 
-    - name: Create Build Environment
-      run: cmake -E make_directory build
-
     - name: Configure CMake
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_VIXL_SIMULATOR=True -DENABLE_VIXL_DISASSEMBLER=True -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
 
     - name: Build
-      run: cmake --build build --config $BUILD_TYPE
+      run: cmake --build build
 
     - name: ASM Tests - SVE256
       # Execute the unit tests
-      run: cmake --build build --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --target asm_tests
 
     - name: ASM Test SVE256 Results move
       if: ${{ always() }}
@@ -69,7 +66,7 @@ jobs:
       env:
         FEX_FORCESVEWIDTH: "128"
       # Execute the unit tests
-      run: cmake --build build --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --target asm_tests
 
     - name: ASM Test 128-bit Results move
       if: ${{ always() }}
@@ -79,7 +76,7 @@ jobs:
       env:
         FEX_HOSTFEATURES: "disablesve"
       # Execute the unit tests
-      run: cmake --build build --config $BUILD_TYPE --target asm_tests
+      run: cmake --build build --target asm_tests
 
     - name: ASM Test ASIMD Results move
       if: ${{ always() }}
