@@ -15,6 +15,7 @@ set(CPM_SOURCE_CACHE ${PROJECT_SOURCE_DIR}/.cache/cpm)
 option(FEX_FORCE_BUNDLED OFF "Force the usage of bundled dependencies")
 
 include(CPM)
+include(Propagate)
 
 function(FEXAddPackage)
     set(oneValueArgs
