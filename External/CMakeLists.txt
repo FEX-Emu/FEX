@@ -7,6 +7,11 @@ if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
         REPO FEX-Emu/vixl
         COMMIT da1ad9fb02
         BUNDLED ON)
+
+    if (NOT TARGET vixl::vixl)
+        add_library(vixl::vixl ALIAS vixl)
+        target_include_directories(vixl PUBLIC ${vixl_SOURCE_DIR}/src)
+    endif()
 endif()
 
 # tracy
