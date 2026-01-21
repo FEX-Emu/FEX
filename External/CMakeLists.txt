@@ -36,7 +36,8 @@ if (BUILD_TESTING)
         NAME Catch2
         REPO catchorg/Catch2
         VERSION 3
-        TAG v3.11.0)
+        TAG v3.11.0
+        BUNDLED ON)
 
     if (Catch2_ADDED)
         list(APPEND CMAKE_MODULE_PATH "${Catch2_SOURCE_DIR}/extras/")

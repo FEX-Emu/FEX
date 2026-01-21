@@ -31,7 +31,7 @@ FEXAddPackage(
     REPO catchorg/Catch2
     VERSION 3
     TAG v3.11.0
-    BUNDLED)
+    BUNDLED ON)
 
 foreach(TEST ${TESTS})
   get_filename_component(TEST_NAME ${TEST} NAME_WE)
