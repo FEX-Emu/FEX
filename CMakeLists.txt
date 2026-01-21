@@ -313,6 +313,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Data/CMake/)
 include(LinkerGC)
 include(Propagate)
 include(FEXCPMWrapper)
+include(CTest)
 
 ## Externals ##
 set(BUILD_SHARED_LIBS OFF)
