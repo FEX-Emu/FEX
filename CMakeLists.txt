@@ -296,30 +296,6 @@ if (ENABLE_COVERAGE)
   link_libraries(-fprofile-instr-generate -fcoverage-mapping)
 endif()
 
-if (ENABLE_JEMALLOC_GLIBC_ALLOC)
-  # The glibc jemalloc subproject which hooks the glibc allocator.
-  # Required for thunks to work.
-  # All host native libraries will use this allocator, while *most* other FEX internal allocations will use the other jemalloc allocator.
-  add_subdirectory(External/jemalloc_glibc/)
-elseif (NOT MINGW)
-  message(STATUS
-    " jemalloc glibc allocator disabled!\n"
-    " This is not a recommended configuration!\n"
-    " This will very explicitly break thunk execution!\n"
-    " Use at your own risk!")
-endif()
-
-if (ENABLE_JEMALLOC)
-  # The jemalloc subproject that all FEXCore fextl objects allocate through.
-  add_subdirectory(External/jemalloc/)
-elseif (NOT MINGW)
-  message(STATUS
-    " jemalloc disabled!\n"
-    " This is not a recommended configuration!\n"
-    " This will very explicitly break 32-bit application execution!\n"
-    " Use at your own risk!")
-endif()
-
 if (USE_PDB_DEBUGINFO)
   add_compile_options(-g -gcodeview)
   add_link_options(-g -Wl,--pdb=)
@@ -335,81 +311,34 @@ set(CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-point
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Data/CMake/)
 
 include(LinkerGC)
+include(Propagate)
 include(FEXCPMWrapper)
 
 ## Externals ##
-add_subdirectory(External)
-include_directories(External/unordered_dense/include/)
-
-include(CTest)
-if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
-  add_subdirectory(External/vixl/)
-  include_directories(SYSTEM External/vixl/src/)
-endif()
-
-if (ENABLE_ZYDIS)
-  find_package(Zycore 1.5 MODULE QUIET)
-  find_package(Zydis 4.0 MODULE QUIET)
-
-  if (TARGET Zydis::Zydis AND TARGET Zycore::Zycore)
-    message(STATUS "Using system Zydis")
-  else()
-    set(ZYDIS_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
-    set(ZYDIS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-    message(STATUS "Using bundled Zydis")
-    add_subdirectory(External/zydis/)
-  endif()
-endif()
-
-if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
-  add_subdirectory(External/tracy)
-endif()
-
-find_package(Python 3.9 REQUIRED COMPONENTS Interpreter)
-
 set(BUILD_SHARED_LIBS OFF)
+add_subdirectory(External)
 
-if (NOT CMAKE_CROSSCOMPILING)
-  find_package(xxhash MODULE QUIET)
+# Propagate targets. CPM overrides find_package calls.
+if (ENABLE_ZYDIS)
+  find_package(Zydis)
 endif()
-
-if (NOT TARGET xxHash::xxhash)
-  set(XXHASH_BUNDLED_MODE TRUE)
-  set(XXHASH_BUILD_XXHSUM FALSE)
-  add_subdirectory(External/xxhash/cmake_unofficial/)
-endif()
-
-add_definitions(-Wno-trigraphs)
-add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
 
 if (BUILD_TESTING)
-  find_package(Catch2 3 QUIET)
-  if (NOT Catch2_FOUND)
-    add_subdirectory(External/Catch2/)
-
-    # Pull in catch_discover_tests definition
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/External/Catch2/contrib/")
-  endif()
-
+  find_package(Catch2)
   include(Catch)
 else ()
   # Override any previously generated test list to avoid running stale test binaries
   file(GENERATE OUTPUT CTestTestfile.cmake CONTENT "# No tests since BUILD_TESTING is disabled")
 endif()
 
-find_package(fmt QUIET)
-if (NOT fmt_FOUND)
-  # Disable fmt install
-  set(FMT_INSTALL OFF)
-  add_subdirectory(External/fmt/)
-endif()
+find_package(unordered_dense)
+find_package(xxhash)
+find_package(fmt)
 
-find_package(range-v3 QUIET)
-if (NOT range-v3_FOUND)
-  add_subdirectory(External/range-v3/)
-  target_compile_definitions(range-v3 INTERFACE RANGES_DISABLE_DEPRECATED_WARNINGS)
-endif()
+find_package(Python 3.9 REQUIRED COMPONENTS Interpreter)
+
+add_definitions(-Wno-trigraphs)
+add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
 
 add_subdirectory(External/tiny-json/)
 include_directories(External/tiny-json/)
@@ -609,6 +538,7 @@ if (BUILD_THUNKS)
       "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
       "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
       "-DX86_DEV_ROOTFS=${X86_DEV_ROOTFS}"
+      "-DVulkanHeaders_SOURCE_DIR=${VulkanHeaders_SOURCE_DIR}"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
     DEPENDS thunkgen)
@@ -627,6 +557,7 @@ if (BUILD_THUNKS)
       "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
       "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
       "-DX86_DEV_ROOTFS=${X86_DEV_ROOTFS}"
+      "-DVulkanHeaders_SOURCE_DIR=${VulkanHeaders_SOURCE_DIR}"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
     DEPENDS thunkgen)

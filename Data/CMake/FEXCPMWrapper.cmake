@@ -11,7 +11,6 @@
 ]]
 
 set(CPM_SOURCE_CACHE ${PROJECT_SOURCE_DIR}/.cache/cpm)
-set(CPM_USE_LOCAL_PACKAGES ON)
 
 option(FEX_FORCE_BUNDLED OFF "Force the usage of bundled dependencies")
 
@@ -25,11 +24,14 @@ function(FEXAddPackage)
         VERSION
         COMMIT
         TAG
-        SOURCE_SUBDIR)
+        SOURCE_SUBDIR
+        BUNDLED)
 
     set(multiValueArgs OPTIONS)
 
-    cmake_parse_arguments(PKG "" "${oneValueArgs}" "${multiValueArgs}"
+    set(options )
+
+    cmake_parse_arguments(PKG "${options}" "${oneValueArgs}" "${multiValueArgs}"
         "${ARGN}")
 
     if (NOT DEFINED PKG_NAME)
@@ -38,6 +40,12 @@ function(FEXAddPackage)
 
     if (NOT DEFINED PKG_REPO)
         message(FATAL_ERROR "[FEXAddPackage] REPO is required")
+    endif()
+
+    if (DEFINED PKG_VERSION)
+        set(_version ${PKG_VERSION})
+    else()
+        set(_version 0)
     endif()
 
     set(${PKG_NAME}_CUSTOM_DIR "" CACHE STRING
@@ -67,15 +75,23 @@ function(FEXAddPackage)
 
     set(url ${git_url}/)
 
+    if ((DEFINED PKG_BUNDLED AND PKG_BUNDLED) OR FEX_FORCE_BUNDLED)
+        set(CPM_USE_LOCAL_PACKAGES OFF)
+    else()
+        set(CPM_USE_LOCAL_PACKAGES ON)
+    endif()
+
     CPMAddPackage(
         NAME ${PKG_NAME}
         URL ${pkg_url}
         URL_HASH ${PKG_HASH}
-        VERSION ${PKG_VERSION}
+        VERSION ${_version}
         CUSTOM_CACHE_KEY ${key}
 
         OPTIONS ${PKG_OPTIONS}
         PATCHES ${PKG_PATCHES}
         EXCLUDE_FROM_ALL ON # TODO: Is this desired?
         SOURCE_SUBDIR ${PKG_SOURCE_SUBDIR})
+
+    Propagate(${PKG_NAME}_ADDED)
 endfunction()
