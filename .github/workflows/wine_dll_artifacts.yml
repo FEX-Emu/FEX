@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Add MingGW to PATH
       run: echo "$HOME/llvm-mingw/build/bin/" >> $GITHUB_PATH
@@ -61,7 +61,7 @@ jobs:
       run: DESTDIR="$PWD"/build_install cmake --build build_wow64 -t install
 
     - name: Upload libraries
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       timeout-minutes: 1
       with:
         overwrite: true

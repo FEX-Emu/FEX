@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set runner label
       run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
@@ -61,7 +61,7 @@ jobs:
       run: DESTDIR="$PWD"/install distrobox enter --name steamrt4 -- cmake --build build -t install
 
     - name: Upload libraries
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       timeout-minutes: 1
       with:
         overwrite: true
