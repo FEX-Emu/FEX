@@ -47,7 +47,10 @@ jobs:
         git submodule update --init --depth 1
 
     - name: Clean Build Environment
-      run: rm -Rf build
+      run: |
+        rm -Rf build
+        # TODO(crueter)
+        rm -rf .cache unittests/FEXLinuxTests/tests/.cache
 
     - name: Configure CMake
       run: |

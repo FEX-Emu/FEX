@@ -74,7 +74,7 @@ function(FEXAddPackage)
         message(FATAL_ERROR "[FEXAddPackage] One of TAG or COMMIT is required")
     endif()
 
-    set(url ${git_url}/)
+    message(STATUS "${pkg_url}")
 
     if ((DEFINED PKG_BUNDLED AND PKG_BUNDLED) OR FEX_FORCE_BUNDLED)
         set(CPM_USE_LOCAL_PACKAGES OFF)
