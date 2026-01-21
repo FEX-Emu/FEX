@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Add MingGW to PATH
       run: echo "$HOME/llvm-mingw/build/bin/" >> $GITHUB_PATH
@@ -43,7 +43,7 @@ jobs:
         target: arm64ec
 
     - name: Upload libraries
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       timeout-minutes: 1
       with:
         overwrite: true
