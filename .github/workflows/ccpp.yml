@@ -26,8 +26,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set runner label
-      run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+    - name: Set runner info
+      run: |
+        echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+        echo "runner_name=$(hostname)" >> $GITHUB_ENV
 
     - name: Set rootfs paths
       run: |
@@ -59,124 +61,115 @@ jobs:
     - name: Install
       run: cmake --build build --target install
 
-    - name: gcc target tests 64
-      # Execute the gvisor tests
-      run: cmake --build build --target gcc_target_tests_64
-
-    - name: GCC64 Test Results move
+    # GCC tests
+    - name: GCC64 Target Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_GCC64.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: gcc_target_tests_64
+        log-name: GCC64
 
-    - name: gcc target tests 32
-      # Execute the gvisor tests
-      run: cmake --build build --target gcc_target_tests_32
-
-    - name: GCC32 Test Results move
+    - name: GCC32 Target Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_GCC32.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: gcc_target_tests_32
+        log-name: GCC32
 
-    - name: APITest tests
-      run: cmake --build build --target api_tests
-
-    - name: APITest Test Results move
+    # API tests
+    - name: API Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_APITests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: api_tests
+        log-name: APITests
 
-    - name: FEXCore APITest tests
-      run: cmake --build build --target fexcore_apitests
-
-    - name: FEXCore APITest Test Results move
+    - name: FEXCore API Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_FEXCoreAPITests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: fexcore_apitests
+        log-name: FEXCoreAPITests
 
-    - name: ARMEmitter tests
-      run: cmake --build build --target emitter_tests
-
-    - name: ARMEmitter Test Results move
+    # ARM emission tests
+    - name: ARM Emitter Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ARMEmitterTests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: emitter_tests
+        log-name: ARMEmitterTests
 
-    - name: FEXLinuxTests
+    # Linux  tests
+    - name: FEX Linux Tests
+      if: ${{ always() }}
+      uses: ./.github/workflows/test
+      with:
+        target: fex_linux_tests_all
+        log-name: FEXLinuxTests
       env:
-        # These tests require non-portable install due to thunks.
         FEX_PORTABLE: 0
-      run: cmake --build build --target fex_linux_tests_all
 
-    - name: FEXLinuxTests Results move
-      if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
-
+    # Thunking
     - name: Thunkgen tests
-      run: cmake --build build --target thunkgen_tests
-
-    - name: Thunkgen Results move
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ThunkgenTests.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: thunkgen_tests
+        log-name: ThunkgenTests
 
     - name: Test GL No-Thunks
-      if: matrix.arch[1] == 'x64'
+      if: ${{ always() && matrix.arch[1] == 'x64' }}
+      uses: ./.github/workflows/test
+      with:
+        target: thunk_functional_tests_nothunks
+        log-name: NoThunkResults
       env:
-        DISPLAY: ":0"
-      run: cmake --build build --target thunk_functional_tests_nothunks
-
-    - name: No thunks Results move
-      if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_NoThunkResults.log || true
+        DISPLAY: ':0'
 
     - name: Test GL Thunks
-      if: matrix.arch[1] == 'x64'
+      if: ${{ always() && matrix.arch[1] == 'x64' }}
+      uses: ./.github/workflows/test
+      with:
+        target: thunk_functional_tests_thunks
+        log-name: ThunkResults
       env:
-        DISPLAY: ":0"
-      run: cmake --build build --target thunk_functional_tests_thunks
+        DISPLAY: ':0'
 
-    - name: Thunks Results move
-      if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ThunkResults.log || true
-
+    # ASM tests
     - name: ASM Tests
-      # Execute the unit tests
-      run: cmake --build build --target asm_tests
-
-    - name: ASM Test Results move
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_ASM.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: asm_tests
+        log-name: ASM
 
-    - name: Posix Tests
-      # Execute the posixtest
-      run: cmake --build build --target posix_tests
-
-    - name: Posix Test Results move
+    # POSIX tests
+    - name: POSIX Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_Posix.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: posix_tests
+        log-name: Posix
 
-    - name: gvisor tests
-      # Execute the gvisor tests
-      run: cmake --build build --target gvisor_tests
-
-    - name: GVisor Test Results move
+    # GVisor tests
+    - name: GVisor Tests
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_GVisor.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: gvisor_tests
+        log-name: GVisor
 
+    # Struct verifier tests
     - name: Struct verifier tests
-      run: cmake --build build --target struct_verifier
-
-    - name: Struct verifier Test Results move
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_StructVerifier.log || true
-
-    - name: Truncate test results
-      if: ${{ always() }}
-      # Cap out the log files at 20M in case something crash spins and dumps fault text
-      # ASM tests get quite close to 10MB
-      run: truncate --size="<20M" build/Testing/Temporary/LastTest_*.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: struct_verifier
+        log-name: StructVerifier
 
     - name: Remove old SHM regions
       if: ${{ always() }}
       run: cmake --build build --target remove_old_shm_regions
-
-    - name: Set runner name
-      if: ${{ always() }}
-      run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
 
     - name: Upload results
       if: ${{ always() }}

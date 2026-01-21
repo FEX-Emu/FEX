@@ -25,8 +25,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set runner label
-      run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+    - name: Set runner info
+      run: |
+        echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+        echo "runner_name=$(hostname)" >> $GITHUB_ENV
 
     - name: Set rootfs paths
       run: |
@@ -67,12 +69,11 @@ jobs:
       run: cmake --build build --target CodeSizeValidation instcountci_test_files
 
     - name: Instruction Count Tests
-      # Execute the unit tests
-      run: cmake --build build --target instcountci_tests
-
-    - name: Instruction Count Test Results move
       if: ${{ always() }}
-      run: mv build/Testing/Temporary/LastTest.log build/Testing/Temporary/LastTest_InstCountCI.log || true
+      uses: ./.github/workflows/test
+      with:
+        target: instcountci_tests
+        log-name: InstCountCI
 
     - name: Update local repo instcount
       if: ${{ always() }}
@@ -81,16 +82,6 @@ jobs:
     - name: Check InstCountCI diff
       if: ${{ always() }}
       run: git --no-pager diff --exit-code HEAD
-
-    - name: Truncate test results
-      if: ${{ always() }}
-      # Cap out the log files at 20M in case something crash spins and dumps fault text
-      # ASM tests get quite close to 10MB
-      run: truncate --size="<20M" build/Testing/Temporary/LastTest_*.log || true
-
-    - name: Set runner name
-      if: ${{ always() }}
-      run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
 
     - name: Upload results
       if: ${{ always() }}
