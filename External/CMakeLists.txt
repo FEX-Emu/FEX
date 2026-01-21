@@ -115,13 +115,15 @@ if (range-v3_ADDED)
 endif()
 
 # Vulkan Headers
-FEXAddPackage(
-    NAME VulkanHeaders
-    REPO KhronosGroup/Vulkan-Headers
-    TAG v1.4.337
-    BUNDLED ON)
+if (BUILD_THUNKS)
+    FEXAddPackage(
+        NAME VulkanHeaders
+        REPO KhronosGroup/Vulkan-Headers
+        TAG v1.4.337
+        BUNDLED ON)
 
-Propagate(VulkanHeaders_SOURCE_DIR)
+    Propagate(VulkanHeaders_SOURCE_DIR)
+endif()
 
 # propagate any modules to root cmakelists
 Propagate(CMAKE_MODULE_PATH)

@@ -94,4 +94,5 @@ function(FEXAddPackage)
         SOURCE_SUBDIR ${PKG_SOURCE_SUBDIR})
 
     Propagate(${PKG_NAME}_ADDED)
+    Propagate(${PKG_NAME}_SOURCE_DIR)
 endfunction()
