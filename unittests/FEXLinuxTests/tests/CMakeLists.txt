@@ -27,8 +27,7 @@ set(CATCH_BUILD_TESTING OFF)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../../../Data/CMake)
 include(FEXCPMWrapper)
 
-# TODO(crueter): AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
-set(Catch2_CUSTOM_DIR ${CMAKE_SOURCE_DIR}/../../../.cache/cpm/catch2/v3.11.0)
+set(Catch2_CUSTOM_DIR ${ROOT_CATCH2_DIR})
 FEXAddPackage(
     NAME Catch2
     REPO catchorg/Catch2

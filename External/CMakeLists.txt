@@ -42,6 +42,8 @@ if (BUILD_TESTING)
     if (Catch2_ADDED)
         list(APPEND CMAKE_MODULE_PATH "${Catch2_SOURCE_DIR}/extras/")
     endif()
+
+    Propagate(Catch2_SOURCE_DIR)
 endif()
 
 # jemalloc

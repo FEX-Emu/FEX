@@ -50,7 +50,7 @@ jobs:
       run: |
         rm -Rf build
         # TODO(crueter)
-        rm -rf .cache unittests/FEXLinuxTests/tests/.cache
+        find . -type d -name ".cache" -exec rm -rf {} \;
 
     - name: Configure CMake
       run: |

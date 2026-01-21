@@ -57,6 +57,7 @@ function(FEXAddPackage)
     # to prefetching submodules.
     if (DEFINED ${PKG_NAME}_CUSTOM_DIR AND
         NOT ${PKG_NAME}_CUSTOM_DIR STREQUAL "")
+    message(STATUS "[FEXAddPackage] ${PKG_NAME}: Using custom directory ${${PKG_NAME}_CUSTOM_DIR}")
         set(CPM_${PKG_NAME}_SOURCE ${${PKG_NAME}_CUSTOM_DIR})
     endif()
 
