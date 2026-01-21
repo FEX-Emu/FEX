@@ -21,17 +21,22 @@ endif()
 
 option(CATCH_BUILD_STATIC_LIBRARY "" ON)
 set(CATCH_BUILD_STATIC_LIBRARY ON)
+set(CATCH_BUILD_TESTING OFF)
 
 # TODO(crueter): Find a better solution for this.
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../../../Data/CMake)
 include(FEXCPMWrapper)
 
+# TODO(crueter): AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+set(Catch2_CUSTOM_DIR ${CMAKE_SOURCE_DIR}/../../../.cache/cpm/catch2/v3.11.0)
 FEXAddPackage(
     NAME Catch2
     REPO catchorg/Catch2
     VERSION 3
     TAG v3.11.0
     BUNDLED ON)
+
+  message(STATUS "FEX CATCHDIR: ${Catch2_SOURCE_DIR}")
 
 foreach(TEST ${TESTS})
   get_filename_component(TEST_NAME ${TEST} NAME_WE)
