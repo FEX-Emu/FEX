@@ -335,8 +335,10 @@ set(CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-point
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Data/CMake/)
 
 include(LinkerGC)
+include(FEXCPMWrapper)
 
 ## Externals ##
+add_subdirectory(External)
 include_directories(External/unordered_dense/include/)
 
 include(CTest)
