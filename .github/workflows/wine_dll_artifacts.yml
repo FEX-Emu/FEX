@@ -29,36 +29,18 @@ jobs:
         git submodule update --init --depth 1
 
     - name: Clean install directory
-      run: rm -Rf build_install
-
-    - name: Clean Build Environment
-      run: rm -Rf build_wow64 build_arm64ec
-
-    - name: Configure CMake (arm64ec)
       run: |
-        cmake -S . -B build_arm64ec -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Data/CMake/toolchain_mingw.cmake \
-          -DMINGW_TRIPLE=arm64ec-w64-mingw32 -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-windows -G Ninja \
-          -DENABLE_LTO=False -DENABLE_ASSERTIONS=False -DENABLE_JEMALLOC_GLIBC_ALLOC=False \
-          -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX=/usr -DTUNE_ARCH=generic -DTUNE_CPU=none
-
-    - name: Configure CMake (wow64)
-      run: |
-        cmake -S . -B build_wow64 -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Data/CMake/toolchain_mingw.cmake \
-          -DMINGW_TRIPLE=aarch64-w64-mingw32 -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-windows -G Ninja \
-          -DENABLE_LTO=False -DENABLE_ASSERTIONS=False -DENABLE_JEMALLOC_GLIBC_ALLOC=False \
-          -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX=/usr -DTUNE_ARCH=generic -DTUNE_CPU=none
-
-    - name: Build (arm64ec)
-      run: cmake --build build_arm64ec
-
-    - name: Install (arm64ec)
-      run: DESTDIR="$PWD"/build_install cmake --build build_arm64ec -t install
+        rm -Rf install
 
     - name: Build (wow64)
-      run: cmake --build build_wow64
+      uses: ./.github/workflows/wine_build
+      with:
+        target: wow64
 
-    - name: Install (wow64)
-      run: DESTDIR="$PWD"/build_install cmake --build build_wow64 -t install
+    - name: Build (arm64ec)
+      uses: ./.github/workflows/wine_build
+      with:
+        target: arm64ec
 
     - name: Upload libraries
       uses: actions/upload-artifact@v4
@@ -66,6 +48,6 @@ jobs:
       with:
         overwrite: true
         name: wine_dll_artifacts
-        path: ${{ github.workspace }}/build_install/usr/lib/wine/aarch64-windows/lib*.dll
+        path: ${{ github.workspace }}/install/usr/lib/wine/aarch64-windows/lib*.dll
         retention-days: 60
         compression-level: 9
