@@ -307,7 +307,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   }
 
   // Dump the host code (relocated for position-independent serialization)
-  std::vector CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->Ptr), reinterpret_cast<std::byte*>(CodeBuffer->Ptr) + CTX.LatestOffset);
+  std::span CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->Ptr), reinterpret_cast<std::byte*>(CodeBuffer->Ptr) + CTX.LatestOffset);
   if (!ApplyCodeRelocations(SerializedBaseAddress, CodeBufferData, Relocations, true)) {
     LOGMAN_THROW_A_FMT(false, "Failed to apply code relocations");
     return false;
