@@ -2,7 +2,7 @@
 Source/Common/cpp-optparse/*
 
 # Files with human-indented tables for readability - don't mess with these
-FEXCore/Source/Interface/Core/X86Tables/*
+FEXCore/Source/Interface/Core/X86Tables/*.cpp
 
 # Inline headers with list-like content that can't be processed individually
 Source/Tools/LinuxEmulation/LinuxSyscalls/x*/SyscallsNames.inl
