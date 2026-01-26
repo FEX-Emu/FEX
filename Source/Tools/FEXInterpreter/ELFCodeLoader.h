@@ -455,12 +455,31 @@ public:
     // On the upside, this more accurately emulates how the kernel allocates stack space for the application when hinting at the location.
     //
     void* StackPointerBase {};
-    uint64_t StackHint = Is64BitMode() ? STACK_HINT_64 : STACK_HINT_32;
+    auto VASize = FEXCore::Allocator::DetermineVASize();
+    uint64_t StackHint {};
+    if (Is64BitMode()) {
+      if (VASize > 47) {
+        // If VA size is at least as large as minimum x86 specification, then set to max.
+        VASize = 47;
+      }
 
-    // Allocate the base of the full 128MB stack range.
-    StackPointerBase = Handler->GuestMmap(Thread, reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE,
-                                          MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
+      // Calculate the highest point the stack could go.
+      StackHint = (1ULL << VASize) - FULL_STACK_SIZE;
+    } else {
+      // Needs to be under the 4GB VA space.
+      StackHint = 0x1'0000'0000ULL - FULL_STACK_SIZE;
+    }
 
+    auto PageSize = sysconf(_SC_PAGESIZE);
+    PageSize = PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE;
+
+    do {
+      // Allocate the base of the full 128MB stack range.
+      StackPointerBase = Handler->GuestMmap(Thread, reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE,
+                                            MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE | MAP_FIXED_NOREPLACE, -1, 0);
+      // Scan-downward until we fit.
+      StackHint -= PageSize;
+    } while (FEX::HLE::HasSyscallError(StackPointerBase) && static_cast<int64_t>(StackHint) > 0);
 
     if (FEX::HLE::HasSyscallError(StackPointerBase)) {
       LogMan::Msg::EFmt("Allocating stack failed");
@@ -994,8 +1013,6 @@ public:
   constexpr static uint64_t BRK_SIZE = 8 * 1024 * 1024;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
   constexpr static uint64_t FULL_STACK_SIZE = 128 * 1024 * 1024;
-  constexpr static uint64_t STACK_HINT_32 = 0xFFFFE000 - FULL_STACK_SIZE;
-  constexpr static uint64_t STACK_HINT_64 = 0x7FFFFFFFF000 - FULL_STACK_SIZE;
 
   fextl::vector<fextl::string> EnvironmentVariables;
   fextl::vector<const char*> LoaderArgs;

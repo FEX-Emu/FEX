@@ -7,6 +7,7 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
@@ -800,8 +801,39 @@ VDSOMapping LoadVDSOThunks(FEXCore::Core::InternalThreadState* Thread, bool Is64
       lseek(VDSOFD, 0, SEEK_SET);
       Mapping.VDSOSize = FEXCore::AlignUp(Mapping.VDSOSize, FEXCore::Utils::FEX_PAGE_SIZE);
 
-      // Map the VDSO file to memory
-      Mapping.VDSOBase = Handler->GuestMmap(Thread, nullptr, Mapping.VDSOSize, PROT_READ | PROT_EXEC, MAP_SHARED, VDSOFD, 0);
+      auto VASize = FEXCore::Allocator::DetermineVASize();
+      uint64_t VDSOHint {};
+      if (Is64Bit) {
+        if (VASize > 47) {
+          // If VA size is at least as large as minimum x86 specification, then set to max.
+          VASize = 47;
+        }
+
+        // Calculate the highest point the vdso could go.
+        VDSOHint = (1ULL << VASize) - Mapping.VDSOSize;
+      } else {
+        VDSOHint = 0x1'0000'0000ULL - Mapping.VDSOSize;
+      }
+
+      auto PageSize = sysconf(_SC_PAGESIZE);
+      PageSize = PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE;
+
+      // Scan top down and try to allocate a location
+      void* VDSOPointerBase {};
+      do {
+        VDSOPointerBase = Handler->GuestMmap(Is64Bit, Thread, reinterpret_cast<void*>(VDSOHint), Mapping.VDSOSize, PROT_READ | PROT_EXEC,
+                                             MAP_FIXED_NOREPLACE | MAP_SHARED, VDSOFD, 0);
+        // Scan-downward until we fit.
+        VDSOHint -= PageSize;
+      } while (FEX::HLE::HasSyscallError(VDSOPointerBase) && static_cast<int64_t>(VDSOHint) > 0);
+
+      if (FEX::HLE::HasSyscallError(VDSOPointerBase)) {
+        LogMan::Msg::EFmt("Couldn't Map VDSO");
+        close(VDSOFD);
+        return {};
+      }
+
+      Mapping.VDSOBase = VDSOPointerBase;
 
       // Since we found our VDSO thunk library, find our host VDSO function implementations.
       LoadHostVDSO();
