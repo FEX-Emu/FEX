@@ -11,6 +11,7 @@ $end_info$
 #include "Common/SHMStats.h"
 
 #include "LinuxSyscalls/Types.h"
+#include "LinuxSyscalls/x32/IoctlEmulation.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -125,6 +126,9 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Core::CPUState::gdt_segment gdt[32] {};
   size_t ldt_entry_count {};
   FEXCore::Core::CPUState::gdt_segment* ldt_entries {};
+
+  // 32-bit FD cache for DRM handlers.
+  fextl::unique_ptr<x32::DRMLRUCacheFDCache> DRMLRUCache {};
 };
 
 class ThreadManager final {

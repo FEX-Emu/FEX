@@ -137,7 +137,7 @@ auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uin
       break;
     } break;
     case F_DUPFD:
-    case F_DUPFD_CLOEXEC: FEX::HLE::x32::CheckAndAddFDDuplication(fd, Result); break;
+    case F_DUPFD_CLOEXEC: FEX::HLE::x32::CheckAndAddFDDuplication(Frame, fd, Result); break;
     case F_GETFL: {
       Result = FEX::HLE::RemapToX86Flags(Result);
       break;
@@ -509,7 +509,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(dup, [](FEXCore::Core::CpuStateFrame* Frame, int oldfd) -> uint64_t {
     uint64_t Result = ::dup(oldfd);
     if (Result != -1) {
-      CheckAndAddFDDuplication(oldfd, Result);
+      CheckAndAddFDDuplication(Frame, oldfd, Result);
     }
     SYSCALL_ERRNO();
   });
@@ -517,7 +517,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(dup2, [](FEXCore::Core::CpuStateFrame* Frame, int oldfd, int newfd) -> uint64_t {
     uint64_t Result = ::dup2(oldfd, newfd);
     if (Result != -1) {
-      CheckAndAddFDDuplication(oldfd, newfd);
+      CheckAndAddFDDuplication(Frame, oldfd, newfd);
     }
     SYSCALL_ERRNO();
   });
