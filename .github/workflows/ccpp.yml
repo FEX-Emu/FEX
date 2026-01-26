@@ -144,6 +144,10 @@ jobs:
       with:
         target: struct_verifier
 
+    - name: Ensure expected atexit registrations
+      shell: bash
+      run: $GITHUB_WORKSPACE/Scripts/CountInstancesOfAtExit.py ${{runner.workspace}}/build/Bin/FEX "__cxa_atexit@plt>$" 1 ; echo $?
+
     - name: Remove old SHM regions
       if: ${{ always() }}
       run: cmake --build build --target remove_old_shm_regions
