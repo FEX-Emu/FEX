@@ -7,6 +7,7 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
@@ -495,6 +496,9 @@ void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInfo
 
 #ifndef _WIN32
 const char* FindUserHomeThroughUID() {
+  // `getpwuid` allocates memory.
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+
   auto passwd = getpwuid(geteuid());
   if (passwd) {
     return passwd->pw_dir;
