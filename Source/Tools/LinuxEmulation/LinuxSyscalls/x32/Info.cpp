@@ -162,10 +162,12 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(getrusage, [](FEXCore::Core::CpuStateFrame* Frame, int who, rusage_32* usage) -> uint64_t {
-    struct rusage usage64 = *usage;
-    uint64_t Result = ::getrusage(who, &usage64);
-    FaultSafeUserMemAccess::VerifyIsWritable(usage, sizeof(*usage));
-    *usage = usage64;
+    struct rusage usage64 {};
+    uint64_t Result = ::syscall(SYSCALL_DEF(getrusage), who, &usage64);
+    if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(usage, sizeof(*usage));
+      *usage = usage64;
+    }
     SYSCALL_ERRNO();
   });
 
