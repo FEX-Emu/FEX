@@ -55,6 +55,11 @@ jobs:
           -DENABLE_X86_HOST_DEBUG=True -DBUILD_FEX_LINUX_TESTS=True -DBUILD_THUNKS=True \
           -DCMAKE_INSTALL_PREFIX="$PWD"/build/install
 
+    # These steps make a lot of noise but rarely fail.
+    # Put them in a separate step to make normal build logs easier to parse
+    - name: Noisy Build Targets
+      run: cmake --build build --target asm_files 32bit_asm_files JemallocLibs Catch2 vixl cephes_128bit
+
     - name: Build
       run: cmake --build build
 
