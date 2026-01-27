@@ -106,7 +106,7 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
       return;
     }
 
-    std::string_view HomeDirectory = FEX::Config::GetHomeDirectory();
+    auto HomeDirectory = FEX::Config::GetHomeDirectory();
 
     for (const json_t* Library = json_getChild(DB); Library != nullptr; Library = json_getSibling(Library)) {
       // Get the user defined name for the library
