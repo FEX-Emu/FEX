@@ -20,8 +20,27 @@ else()
 endif()
 
 option(CATCH_BUILD_STATIC_LIBRARY "" ON)
+# TODO(crueter)
 set(CATCH_BUILD_STATIC_LIBRARY ON)
-add_subdirectory(../../../External/Catch2/ Catch2)
+set(CATCH_INSTALL_DOCS OFF)
+set(CATCH_INSTALL_EXTRAS OFF)
+set(CATCH_DEVELOPMENT_BUILD OFF)
+set(CATCH_BUILD_TESTING OFF)
+set(CATCH_BUILD_EXTRA_TESTS OFF)
+
+# TODO(crueter): Find a better solution for this.
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../../../Data/CMake)
+include(FEXCPMWrapper)
+
+set(Catch2_CUSTOM_DIR ${ROOT_CATCH2_DIR})
+FEXAddPackage(
+    NAME Catch2
+    REPO catchorg/Catch2
+    VERSION 3
+    TAG v3.11.0
+    BUNDLED ON)
+
+  message(STATUS "FEX CATCHDIR: ${Catch2_SOURCE_DIR}")
 
 foreach(TEST ${TESTS})
   get_filename_component(TEST_NAME ${TEST} NAME_WE)
