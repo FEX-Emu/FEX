@@ -290,10 +290,31 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
   // If the user ran FEX through FEXLoader then we must go down the emulated path
   uint64_t Result {};
 
+  // In some cases the FD passed in to execveat needs to be copied.
+  const bool NeedsFDCopy = [&]() {
+    // No need for FD copy when not using FD.
+    if (!IsFDExec) {
+      return false;
+    }
+
+    if (SyscallHandler->IsHostKernelVersionAtLeast(999, 0, 0)) {
+      // Older kernel versions have a bug with the combination of binfmt_misc and anonymous file FDs that set CLOEXEC.
+      return false;
+    }
+
+    int Flags = fcntl(Args.dirfd, F_GETFD);
+    if (!(Flags & FD_CLOEXEC)) {
+      // No need for FD copy if FD_CLOEXEC isn't set.
+      return false;
+    }
+
+    return true;
+  }();
+
   // If the FEX interpreter is installed then just execve the ELF file
   // This will stay inside of our emulated environment since binfmt_misc will capture it
-  const bool IsBinfmtCompatible = SyscallHandler->IsInterpreterInstalled() && (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 ||
-                                                                               Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64);
+  const bool IsBinfmtCompatible = SyscallHandler->IsInterpreterInstalled() && !NeedsFDCopy &&
+                                  (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 || Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64);
 
   // We are trying to execute an ELF of a different architecture
   // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
@@ -302,10 +323,11 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
 
   // Need to copy over envp variables if we are appending data.
   // Only situation in which an envp copy needs to occur is if we are doing an FD execveat and binfmt_misc can't handle it.
-  // TODO: Additional future tasks that require envp copying in the future:
+  // Additional tasks that require envp copying in the future:
   // - seccomp inheritance
   // - FEXServer FD inheritance (unshare(CLONE_NEWNET))
-  const bool NeedsEnvpCopy = (IsFDExec && !(IsBinfmtCompatible || IsOtherELF)) || HasSeccomp;
+  // - FD_CLOEXEC set on FD on anonymous file FD.
+  const bool NeedsEnvpCopy = (IsFDExec && !(IsBinfmtCompatible || IsOtherELF)) || HasSeccomp || NeedsFDCopy;
 
   // We are trying to execute a shebang handled by a different architecture interpreter (e.g. /usr/bin/python from the host FS).
   // In this case we just defer to the kernel.
@@ -321,11 +343,10 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
       }
     }
 
-    if (IsFDExec && !IsBinfmtCompatible) {
-      int Flags = fcntl(Args.dirfd, F_GETFD);
-      if (Flags & FD_CLOEXEC) {
+    if (!IsBinfmtCompatible || NeedsFDCopy) {
+      if (NeedsFDCopy) {
         // FEX needs the FD to live past execve when binfmt_misc isn't used,
-        // so duplicate the FD if FD_CLOEXEC is set
+        // so duplicate the FD if FD_CLOEXEC is set, which removes the FD_CLOEXEC flag.
         Args.dirfd = dup(Args.dirfd);
         FDExecCopy = true;
       }
