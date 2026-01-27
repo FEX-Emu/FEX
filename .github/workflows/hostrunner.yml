@@ -54,6 +54,11 @@ jobs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False \
           -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True
 
+    # These steps make a lot of noise but rarely fail.
+    # Put them in a separate step to make normal build logs easier to parse
+    - name: Noisy Build Targets
+      run: cmake --build build --target asm_files 32bit_asm_files JemallocLibs Catch2 vixl cephes_128bit
+
     - name: Build
       run: cmake --build build
 
