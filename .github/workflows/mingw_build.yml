@@ -43,23 +43,8 @@ jobs:
       run: |
         echo "MINGW_TRIPLE=arm64ec-w64-mingw32" >> $GITHUB_ENV
 
-    - name: Set rootfs paths
-      run: |
-        echo "FEX_ROOTFS_MOUNT=/mnt/AutoNFS/rootfs/" >> $GITHUB_ENV
-        echo "FEX_ROOTFS_PATH=$HOME/Rootfs/" >> $GITHUB_ENV
-        echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
-
-    - name: Update RootFS cache
-      run: python3 Scripts/CI_FetchRootFS.py
-
-    - name: Checkout Submodules
-      # Need to update submodules
-      run: |
-        git submodule sync --recursive
-        git submodule update --init --depth 1
-
-    - name: Clean Build Environment
-      run: rm -Rf build
+    - name: Setup Build Environment
+      uses: ./.github/workflows/setup-env
 
     - name: Configure CMake
       run: |
