@@ -160,6 +160,15 @@ void ThreadManager::StatAlloc::UnlockAfterFork(FEXCore::Core::InternalThreadStat
   ThreadObject->Thread->ThreadStats = AllocateSlot(ThreadObject->ThreadInfo.TID);
 }
 
+uint64_t ThreadManager::SetSignalMask(uint64_t Mask) {
+  ::syscall(SYSCALL_DEF(rt_sigprocmask), SIG_SETMASK, &Mask, &Mask, 8);
+  return Mask;
+}
+
+void ThreadManager::SetThreadName(const char* name) {
+  pthread_setname_np(pthread_self(), name);
+}
+
 constexpr size_t CALLRET_STACK_ALLOC_SIZE = FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + 2 * FEXCore::Utils::FEX_PAGE_SIZE;
 
 FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState,

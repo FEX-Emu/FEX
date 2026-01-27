@@ -2,7 +2,6 @@
 #pragma once
 
 #include <FEXCore/fextl/memory.h>
-#include <cstdint>
 
 namespace FEXCore::Threads {
 using ThreadFunc = void* (*)(void* user_ptr);
@@ -38,15 +37,4 @@ public:
   // Set API functions
   static void SetInternalPointers(const Pointers& _Ptrs);
 };
-
-/**
- * @brief Sets the calling thread's signal mask to the one provided
- *
- * @param Mask The new 64-bit signal mask to set
- *
- * @return The previous signal mask
- */
-uint64_t SetSignalMask(uint64_t Mask);
-
-void SetThreadName(const char* name);
 } // namespace FEXCore::Threads

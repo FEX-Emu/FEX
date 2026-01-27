@@ -167,6 +167,16 @@ public:
     Stat.CleanupForExit();
   }
 
+  /**
+   * @brief Sets the calling thread's signal mask to the one provided
+   *
+   * @param Mask The new 64-bit signal mask to set
+   *
+   * @return The previous signal mask
+   */
+  static uint64_t SetSignalMask(uint64_t Mask);
+  static void SetThreadName(const char* name);
+
   ///< Returns the ThreadStateObject from a CpuStateFrame object.
   static inline FEX::HLE::ThreadStateObject* GetStateObjectFromCPUState(FEXCore::Core::CpuStateFrame* Frame) {
     return static_cast<FEX::HLE::ThreadStateObject*>(Frame->Thread->FrontendPtr);

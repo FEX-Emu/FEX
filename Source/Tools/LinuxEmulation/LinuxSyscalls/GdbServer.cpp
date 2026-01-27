@@ -1472,16 +1472,16 @@ void GdbServer::GdbServerLoop() {
   CloseListenSocket();
 }
 static void* ThreadHandler(void* Arg) {
-  FEXCore::Threads::SetThreadName("FEX:gdbserver");
+  HLE::ThreadManager::SetThreadName("FEX:gdbserver");
   auto This = reinterpret_cast<FEX::GdbServer*>(Arg);
   This->GdbServerLoop();
   return nullptr;
 }
 
 void GdbServer::StartThread() {
-  uint64_t OldMask = FEXCore::Threads::SetSignalMask(~0ULL);
+  uint64_t OldMask = HLE::ThreadManager::SetSignalMask(~0ULL);
   gdbServerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
-  FEXCore::Threads::SetSignalMask(OldMask);
+  HLE::ThreadManager::SetSignalMask(OldMask);
 }
 
 void GdbServer::OpenListenSocket() {
