@@ -400,6 +400,11 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");
 #endif
 
+  if (FEXSeccompFD != -1) {
+    // seccomp inheritance happens unconditionally.
+    FEXCore::Config::Set(FEXCore::Config::CONFIG_NEEDSSECCOMP, "1");
+  }
+
   // Early check for process stall
   // Doesn't use CONFIG_ROOTFS and we don't want it to spin up a squashfs instance
   FEX_CONFIG_OPT(StallProcess, STALLPROCESS);
