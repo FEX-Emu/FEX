@@ -1,0 +1,32 @@
+name: Setup Build Environment
+
+inputs:
+  setup-rootfs:
+    description: 'Whether or not to set up the rootfs'
+    default: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set rootfs paths
+      if: ${{ inputs.setup-rootfs == 'true' }}
+      shell: bash
+      run: |
+        echo "FEX_ROOTFS_MOUNT=/mnt/AutoNFS/rootfs/" >> $GITHUB_ENV
+        echo "FEX_ROOTFS_PATH=$HOME/Rootfs/" >> $GITHUB_ENV
+        echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
+
+    - name: Update RootFS cache
+      if: ${{ inputs.setup-rootfs == 'true' }}
+      shell: bash
+      run: python3 Scripts/CI_FetchRootFS.py
+
+    - name: Checkout Submodules
+      shell: bash
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --depth 1
+
+    - name: Clean Build Environment
+      shell: bash
+      run: rm -Rf build

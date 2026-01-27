@@ -27,13 +27,10 @@ jobs:
     - name: Set runner label
       run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
 
-    - name: Checkout Submodules
-      run: |
-        git submodule sync --recursive
-        git submodule update --init --depth 1
-
-    - name: Clean Build Environment
-      run: rm -Rf build
+    - name: Setup Build Environment
+      uses: ./.github/workflows/setup-env
+      with:
+        setup-rootfs: false
 
     # Setup everything required.
     - name : distrobox setup
