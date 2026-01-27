@@ -48,15 +48,13 @@ jobs:
     - name: Clean Build Environment
       run: rm -Rf build
 
-    - name: Set vixl_sim x86
-      if: matrix.arch[1] == 'x64'
+    - name: Set VIXL_SIM_ENABLED
       run: |
-        echo "VIXL_SIM_ENABLED=True" >> $GITHUB_ENV
-
-    - name: Set vixl_sim Arm64
-      if: matrix.arch[1] == 'ARM64'
-      run: |
-        echo "VIXL_SIM_ENABLED=False" >> $GITHUB_ENV
+        case '${{ matrix.arch[1] }}' in
+          x64) _sim=True ;;
+          ARM64) _sim=False ;;
+        esac
+        echo "VIXL_SIM_ENABLED=$_sim" >> $GITHUB_ENV
 
     - name: Configure CMake
       run: |
