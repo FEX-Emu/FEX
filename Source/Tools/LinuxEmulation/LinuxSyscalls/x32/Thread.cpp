@@ -101,267 +101,278 @@ void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame* Frame) {
   Frame->State.rip += 2;
 }
 
-void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL_X32(sigreturn, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-    FEX::HLE::_SyscallHandler->GetSignalDelegator()->HandleSignalHandlerReturn(false);
-    FEX_UNREACHABLE;
-  });
+auto sigreturn(FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+  FEX::HLE::_SyscallHandler->GetSignalDelegator()->HandleSignalHandlerReturn(false);
+  FEX_UNREACHABLE;
+}
 
-  REGISTER_SYSCALL_IMPL_X32(
-    clone, ([](FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack, pid_t* parent_tid, void* tls, pid_t* child_tid) -> uint64_t {
-      // This is slightly different EFAULT behaviour, if child_tid or parent_tid is invalid then the kernel just doesn't write to the
-      // pointer. Still need to be EFAULT safe although.
-      if ((flags & (CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID)) && child_tid) {
-        FaultSafeUserMemAccess::VerifyIsWritable(child_tid, sizeof(*child_tid));
-      }
+auto clone(FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack, pid_t* parent_tid, void* tls, pid_t* child_tid) -> uint64_t {
+  // This is slightly different EFAULT behaviour, if child_tid or parent_tid is invalid then the kernel just doesn't write to the
+  // pointer. Still need to be EFAULT safe although.
+  if ((flags & (CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID)) && child_tid) {
+    FaultSafeUserMemAccess::VerifyIsWritable(child_tid, sizeof(*child_tid));
+  }
 
-      if ((flags & CLONE_PARENT_SETTID) && parent_tid) {
-        FaultSafeUserMemAccess::VerifyIsWritable(parent_tid, sizeof(*parent_tid));
-      }
+  if ((flags & CLONE_PARENT_SETTID) && parent_tid) {
+    FaultSafeUserMemAccess::VerifyIsWritable(parent_tid, sizeof(*parent_tid));
+  }
 
 
-      FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
-                                  .args = {
-                                    .flags = flags & ~CSIGNAL,                       // This no longer contains CSIGNAL
-                                    .pidfd = reinterpret_cast<uint64_t>(parent_tid), // For clone, pidfd is duplicated here
-                                    .child_tid = reinterpret_cast<uint64_t>(child_tid),
-                                    .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
-                                    .exit_signal = flags & CSIGNAL,
-                                    .stack = reinterpret_cast<uint64_t>(stack),
-                                    .stack_size = 0, // This syscall isn't able to see the stack size
-                                    .tls = reinterpret_cast<uint64_t>(tls),
-                                    .set_tid = 0, // This syscall isn't able to select TIDs
-                                    .set_tid_size = 0,
-                                    .cgroup = 0, // This syscall can't select cgroups
-                                  }};
-      return CloneHandler(Frame, &args);
-    }));
+  FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
+                              .args = {
+                                .flags = flags & ~CSIGNAL,                       // This no longer contains CSIGNAL
+                                .pidfd = reinterpret_cast<uint64_t>(parent_tid), // For clone, pidfd is duplicated here
+                                .child_tid = reinterpret_cast<uint64_t>(child_tid),
+                                .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
+                                .exit_signal = flags & CSIGNAL,
+                                .stack = reinterpret_cast<uint64_t>(stack),
+                                .stack_size = 0, // This syscall isn't able to see the stack size
+                                .tls = reinterpret_cast<uint64_t>(tls),
+                                .set_tid = 0, // This syscall isn't able to select TIDs
+                                .set_tid_size = 0,
+                                .cgroup = 0, // This syscall can't select cgroups
+                              }};
+  return CloneHandler(Frame, &args);
+}
 
-  REGISTER_SYSCALL_IMPL_X32(waitpid, [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int32_t* status, int32_t options) -> uint64_t {
-    uint64_t Result = ::waitpid(pid, status, options);
-    FaultSafeUserMemAccess::VerifyIsWritableOrNull(status, sizeof(*status));
-    SYSCALL_ERRNO();
-  });
+auto waitpid(FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int32_t* status, int32_t options) -> uint64_t {
+  uint64_t Result = ::waitpid(pid, status, options);
+  FaultSafeUserMemAccess::VerifyIsWritableOrNull(status, sizeof(*status));
+  SYSCALL_ERRNO();
+}
 
-  REGISTER_SYSCALL_IMPL_X32(nice, [](FEXCore::Core::CpuStateFrame* Frame, int inc) -> uint64_t {
-    uint64_t Result = ::nice(inc);
-    SYSCALL_ERRNO();
-  });
+auto nice(FEXCore::Core::CpuStateFrame* Frame, int inc) -> uint64_t {
+  uint64_t Result = ::nice(inc);
+  SYSCALL_ERRNO();
+}
 
-  REGISTER_SYSCALL_IMPL_X32(
-    set_thread_area, [](FEXCore::Core::CpuStateFrame* Frame, struct user_desc* u_info) -> uint64_t { return SetThreadArea(Frame, u_info); });
+auto set_thread_area(FEXCore::Core::CpuStateFrame* Frame, struct user_desc* u_info) -> uint64_t {
+  return SetThreadArea(Frame, u_info);
+}
 
-  REGISTER_SYSCALL_IMPL_X32(get_thread_area, [](FEXCore::Core::CpuStateFrame* Frame, struct user_desc* u_info) -> uint64_t {
-    // Index to fetch comes from the user_desc
-    uint32_t Entry = u_info->entry_number;
-    if (Entry < TLS_NextEntry || Entry > TLS_MaxEntry) {
-      return -EINVAL;
+auto get_thread_area(FEXCore::Core::CpuStateFrame* Frame, struct user_desc* u_info) -> uint64_t {
+  // Index to fetch comes from the user_desc
+  uint32_t Entry = u_info->entry_number;
+  if (Entry < TLS_NextEntry || Entry > TLS_MaxEntry) {
+    return -EINVAL;
+  }
+
+  FaultSafeUserMemAccess::VerifyIsWritable(u_info, sizeof(*u_info));
+
+  const auto& GDT = &Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT][Entry];
+
+  memset(u_info, 0, sizeof(*u_info));
+
+  // FEX only stores base instead of the full GDT
+  u_info->base_addr = Frame->State.CalculateGDTBase(*GDT);
+
+  // Fill the rest of the structure with expected data (even if wrong at the moment)
+  if (u_info->base_addr) {
+    u_info->limit = 0xF'FFFF;
+    u_info->seg_32bit = 1;
+    u_info->limit_in_pages = 1;
+    u_info->useable = 1;
+  } else {
+    u_info->read_exec_only = 1;
+    u_info->seg_not_present = 1;
+  }
+  return 0;
+}
+
+auto set_robust_list(FEXCore::Core::CpuStateFrame* Frame, struct robust_list_head* head, size_t len) -> uint64_t {
+  if (len != 12) {
+    // Return invalid if the passed in length doesn't match what's expected.
+    return -EINVAL;
+  }
+
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+  // Retain the robust list head but don't give it to the kernel
+  // The kernel would break if it tried parsing a 32bit robust list from a 64bit process
+  ThreadObject->ThreadInfo.robust_list_head = reinterpret_cast<uint64_t>(head);
+  return 0;
+}
+
+auto get_robust_list(FEXCore::Core::CpuStateFrame* Frame, int pid, struct robust_list_head** head, uint32_t* len_ptr) -> uint64_t {
+  FaultSafeUserMemAccess::VerifyIsWritable(head, sizeof(uint32_t));
+  FaultSafeUserMemAccess::VerifyIsWritable(len_ptr, sizeof(*len_ptr));
+
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+  // Give the robust list back to the application
+  // Steam specifically checks to make sure the robust list is set
+  *(uint32_t*)head = (uint32_t)ThreadObject->ThreadInfo.robust_list_head;
+  *len_ptr = 12;
+  return 0;
+}
+
+auto futex(FEXCore::Core::CpuStateFrame* Frame, int* uaddr, int futex_op, int val, const timespec32* timeout, int* uaddr2, uint32_t val3)
+  -> uint64_t {
+  void* timeout_ptr = (void*)timeout;
+  struct timespec tp64 {};
+  int cmd = futex_op & FUTEX_CMD_MASK;
+  if (timeout && (cmd == FUTEX_WAIT || cmd == FUTEX_LOCK_PI || cmd == FUTEX_WAIT_BITSET || cmd == FUTEX_WAIT_REQUEUE_PI)) {
+    FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
+    // timeout argument is only handled as timespec in these cases
+    // Otherwise just an integer
+    tp64 = *timeout;
+    timeout_ptr = &tp64;
+  }
+
+  uint64_t Result = syscall(SYSCALL_DEF(futex), uaddr, futex_op, val, timeout_ptr, uaddr2, val3);
+  SYSCALL_ERRNO();
+}
+
+auto sigaltstack(FEXCore::Core::CpuStateFrame* Frame, const compat_ptr<stack_t32> ss, compat_ptr<stack_t32> old_ss) -> uint64_t {
+  stack_t ss64 {};
+  stack_t old64 {};
+
+  stack_t* ss64_ptr {};
+  stack_t* old64_ptr {};
+
+  if (ss) {
+    FaultSafeUserMemAccess::VerifyIsReadable(ss, sizeof(*ss));
+    ss64 = *ss;
+    ss64_ptr = &ss64;
+  }
+
+  if (old_ss) {
+    FaultSafeUserMemAccess::VerifyIsReadable(old_ss, sizeof(*old_ss));
+    old64 = *old_ss;
+    old64_ptr = &old64;
+  }
+  uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(
+    FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), ss64_ptr, old64_ptr);
+
+  if (Result == 0 && old_ss) {
+    FaultSafeUserMemAccess::VerifyIsWritable(old_ss, sizeof(*old_ss));
+    *old_ss = old64;
+  }
+  return Result;
+}
+
+// launch a new process under fex
+// currently does not propagate argv[0] correctly
+auto execve(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, uint32_t* argv, uint32_t* envp) -> uint64_t {
+  fextl::vector<const char*> Args;
+  fextl::vector<const char*> Envp;
+
+  if (argv) {
+    for (int i = 0; argv[i]; i++) {
+      Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
     }
 
-    FaultSafeUserMemAccess::VerifyIsWritable(u_info, sizeof(*u_info));
+    Args.push_back(nullptr);
+  }
 
-    const auto& GDT = &Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT][Entry];
-
-    memset(u_info, 0, sizeof(*u_info));
-
-    // FEX only stores base instead of the full GDT
-    u_info->base_addr = Frame->State.CalculateGDTBase(*GDT);
-
-    // Fill the rest of the structure with expected data (even if wrong at the moment)
-    if (u_info->base_addr) {
-      u_info->limit = 0xF'FFFF;
-      u_info->seg_32bit = 1;
-      u_info->limit_in_pages = 1;
-      u_info->useable = 1;
-    } else {
-      u_info->read_exec_only = 1;
-      u_info->seg_not_present = 1;
+  if (envp) {
+    for (int i = 0; envp[i]; i++) {
+      Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
     }
-    return 0;
-  });
+    Envp.push_back(nullptr);
+  }
 
-  REGISTER_SYSCALL_IMPL_X32(set_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, struct robust_list_head* head, size_t len) -> uint64_t {
-    if (len != 12) {
-      // Return invalid if the passed in length doesn't match what's expected.
-      return -EINVAL;
-    }
+  auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
+  auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
 
-    auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
-    // Retain the robust list head but don't give it to the kernel
-    // The kernel would break if it tried parsing a 32bit robust list from a 64bit process
-    ThreadObject->ThreadInfo.robust_list_head = reinterpret_cast<uint64_t>(head);
-    return 0;
-  });
+  FEX::HLE::ExecveAtArgs AtArgs = FEX::HLE::ExecveAtArgs::Empty();
 
-  REGISTER_SYSCALL_IMPL_X32(
-    get_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, int pid, struct robust_list_head** head, uint32_t* len_ptr) -> uint64_t {
-      FaultSafeUserMemAccess::VerifyIsWritable(head, sizeof(uint32_t));
-      FaultSafeUserMemAccess::VerifyIsWritable(len_ptr, sizeof(*len_ptr));
+  return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
+}
 
-      auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
-      // Give the robust list back to the application
-      // Steam specifically checks to make sure the robust list is set
-      *(uint32_t*)head = (uint32_t)ThreadObject->ThreadInfo.robust_list_head;
-      *len_ptr = 12;
-      return 0;
-    });
+auto execveat(FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, uint32_t* argv, uint32_t* envp, int flags) -> uint64_t {
+  fextl::vector<const char*> Args;
+  fextl::vector<const char*> Envp;
 
-  REGISTER_SYSCALL_IMPL_X32(
-    futex, [](FEXCore::Core::CpuStateFrame* Frame, int* uaddr, int futex_op, int val, const timespec32* timeout, int* uaddr2, uint32_t val3) -> uint64_t {
-      void* timeout_ptr = (void*)timeout;
-      struct timespec tp64 {};
-      int cmd = futex_op & FUTEX_CMD_MASK;
-      if (timeout && (cmd == FUTEX_WAIT || cmd == FUTEX_LOCK_PI || cmd == FUTEX_WAIT_BITSET || cmd == FUTEX_WAIT_REQUEUE_PI)) {
-        FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
-        // timeout argument is only handled as timespec in these cases
-        // Otherwise just an integer
-        tp64 = *timeout;
-        timeout_ptr = &tp64;
-      }
-
-      uint64_t Result = syscall(SYSCALL_DEF(futex), uaddr, futex_op, val, timeout_ptr, uaddr2, val3);
-      SYSCALL_ERRNO();
-    });
-
-  REGISTER_SYSCALL_IMPL_X32(
-    sigaltstack, [](FEXCore::Core::CpuStateFrame* Frame, const compat_ptr<stack_t32> ss, compat_ptr<stack_t32> old_ss) -> uint64_t {
-      stack_t ss64 {};
-      stack_t old64 {};
-
-      stack_t* ss64_ptr {};
-      stack_t* old64_ptr {};
-
-      if (ss) {
-        FaultSafeUserMemAccess::VerifyIsReadable(ss, sizeof(*ss));
-        ss64 = *ss;
-        ss64_ptr = &ss64;
-      }
-
-      if (old_ss) {
-        FaultSafeUserMemAccess::VerifyIsReadable(old_ss, sizeof(*old_ss));
-        old64 = *old_ss;
-        old64_ptr = &old64;
-      }
-      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(
-        FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), ss64_ptr, old64_ptr);
-
-      if (Result == 0 && old_ss) {
-        FaultSafeUserMemAccess::VerifyIsWritable(old_ss, sizeof(*old_ss));
-        *old_ss = old64;
-      }
-      return Result;
-    });
-
-  // launch a new process under fex
-  // currently does not propagate argv[0] correctly
-  REGISTER_SYSCALL_IMPL_X32(execve, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, uint32_t* argv, uint32_t* envp) -> uint64_t {
-    fextl::vector<const char*> Args;
-    fextl::vector<const char*> Envp;
-
-    if (argv) {
-      for (int i = 0; argv[i]; i++) {
-        Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
-      }
-
-      Args.push_back(nullptr);
+  if (argv) {
+    for (int i = 0; argv[i]; i++) {
+      Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
     }
 
-    if (envp) {
-      for (int i = 0; envp[i]; i++) {
-        Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
-      }
-      Envp.push_back(nullptr);
+    Args.push_back(nullptr);
+  }
+
+  if (envp) {
+    for (int i = 0; envp[i]; i++) {
+      Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
     }
+    Envp.push_back(nullptr);
+  }
 
-    auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
-    auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
+  FEX::HLE::ExecveAtArgs AtArgs {
+    .dirfd = dirfd,
+    .flags = flags,
+  };
 
-    FEX::HLE::ExecveAtArgs AtArgs = FEX::HLE::ExecveAtArgs::Empty();
+  auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
+  auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
+  return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
+}
 
-    return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
-  });
+auto wait4(FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int* wstatus, int options, struct rusage_32* rusage) -> uint64_t {
+  struct rusage usage64 {};
+  struct rusage* usage64_p {};
 
-  REGISTER_SYSCALL_IMPL_X32(
-    execveat, ([](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, uint32_t* argv, uint32_t* envp, int flags) -> uint64_t {
-      fextl::vector<const char*> Args;
-      fextl::vector<const char*> Envp;
+  if (rusage) {
+    FaultSafeUserMemAccess::VerifyIsReadable(rusage, sizeof(*rusage));
+    usage64 = *rusage;
+    usage64_p = &usage64;
+  }
+  uint64_t Result = ::wait4(pid, wstatus, options, usage64_p);
+  if (rusage) {
+    FaultSafeUserMemAccess::VerifyIsWritable(rusage, sizeof(*rusage));
+    *rusage = usage64;
+  }
+  SYSCALL_ERRNO();
+}
 
-      if (argv) {
-        for (int i = 0; argv[i]; i++) {
-          Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
-        }
+auto waitid(FEXCore::Core::CpuStateFrame* Frame, int which, pid_t upid, compat_ptr<FEXCore::x86::siginfo_t> info, int options,
+            struct rusage_32* rusage) -> uint64_t {
+  struct rusage usage64 {};
+  struct rusage* usage64_p {};
 
-        Args.push_back(nullptr);
-      }
+  siginfo_t info64 {};
+  siginfo_t* info64_p {};
 
-      if (envp) {
-        for (int i = 0; envp[i]; i++) {
-          Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
-        }
-        Envp.push_back(nullptr);
-      }
+  if (rusage) {
+    FaultSafeUserMemAccess::VerifyIsReadable(rusage, sizeof(*rusage));
+    usage64 = *rusage;
+    usage64_p = &usage64;
+  }
 
-      FEX::HLE::ExecveAtArgs AtArgs {
-        .dirfd = dirfd,
-        .flags = flags,
-      };
+  if (info) {
+    info64_p = &info64;
+  }
 
-      auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
-      auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
-      return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
-    }));
+  uint64_t Result = ::syscall(SYSCALL_DEF(waitid), which, upid, info64_p, options, usage64_p);
 
-  REGISTER_SYSCALL_IMPL_X32(wait4, [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int* wstatus, int options, struct rusage_32* rusage) -> uint64_t {
-    struct rusage usage64 {};
-    struct rusage* usage64_p {};
-
-    if (rusage) {
-      FaultSafeUserMemAccess::VerifyIsReadable(rusage, sizeof(*rusage));
-      usage64 = *rusage;
-      usage64_p = &usage64;
-    }
-    uint64_t Result = ::wait4(pid, wstatus, options, usage64_p);
+  if (Result != -1) {
     if (rusage) {
       FaultSafeUserMemAccess::VerifyIsWritable(rusage, sizeof(*rusage));
       *rusage = usage64;
     }
-    SYSCALL_ERRNO();
-  });
 
-  REGISTER_SYSCALL_IMPL_X32(waitid,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int which, pid_t upid, compat_ptr<FEXCore::x86::siginfo_t> info,
-                               int options, struct rusage_32* rusage) -> uint64_t {
-                              struct rusage usage64 {};
-                              struct rusage* usage64_p {};
+    if (info) {
+      FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
+      *info = info64;
+    }
+  }
 
-                              siginfo_t info64 {};
-                              siginfo_t* info64_p {};
+  SYSCALL_ERRNO();
+}
 
-                              if (rusage) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(rusage, sizeof(*rusage));
-                                usage64 = *rusage;
-                                usage64_p = &usage64;
-                              }
-
-                              if (info) {
-                                info64_p = &info64;
-                              }
-
-                              uint64_t Result = ::syscall(SYSCALL_DEF(waitid), which, upid, info64_p, options, usage64_p);
-
-                              if (Result != -1) {
-                                if (rusage) {
-                                  FaultSafeUserMemAccess::VerifyIsWritable(rusage, sizeof(*rusage));
-                                  *rusage = usage64;
-                                }
-
-                                if (info) {
-                                  FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
-                                  *info = info64;
-                                }
-                              }
-
-                              SYSCALL_ERRNO();
-                            });
+void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
+  REGISTER_SYSCALL_IMPL_X32(sigreturn, sigreturn);
+  REGISTER_SYSCALL_IMPL_X32(clone, clone);
+  REGISTER_SYSCALL_IMPL_X32(waitpid, waitpid);
+  REGISTER_SYSCALL_IMPL_X32(nice, nice);
+  REGISTER_SYSCALL_IMPL_X32(set_thread_area, set_thread_area);
+  REGISTER_SYSCALL_IMPL_X32(get_thread_area, get_thread_area);
+  REGISTER_SYSCALL_IMPL_X32(set_robust_list, set_robust_list);
+  REGISTER_SYSCALL_IMPL_X32(get_robust_list, get_robust_list);
+  REGISTER_SYSCALL_IMPL_X32(futex, futex);
+  REGISTER_SYSCALL_IMPL_X32(sigaltstack, sigaltstack);
+  REGISTER_SYSCALL_IMPL_X32(execve, execve);
+  REGISTER_SYSCALL_IMPL_X32(execveat, execveat);
+  REGISTER_SYSCALL_IMPL_X32(wait4, wait4);
+  REGISTER_SYSCALL_IMPL_X32(waitid, waitid);
 }
 } // namespace FEX::HLE::x32
