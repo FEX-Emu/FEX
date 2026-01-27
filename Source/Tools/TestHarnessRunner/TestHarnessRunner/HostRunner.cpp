@@ -79,8 +79,10 @@ __attribute__((naked)) void Dispatcher(uintptr_t BranchTarget, void* ReturningSt
     jnz .32_bit;
 
     .64_bit:
-      // Clear rdx and also set flags to a sane state.
-      xor rdx, rdx;
+      // Set flags to x86 reset state (0x202: IF=1, reserved bit 1=1).
+      push 0x202;
+      popfq;
+      mov rdx, 0;
       mov rsp, 0;
 
       // Tail-call
@@ -97,8 +99,10 @@ __attribute__((naked)) void Dispatcher(uintptr_t BranchTarget, void* ReturningSt
       mov [rsp], edi;
       mov [rsp+4], dx
 
-      // Clear rdx and also set flags to a sane state.
-      xor rdx, rdx;
+      // Set flags to x86 reset state (0x202: IF=1, reserved bit 1=1).
+      push 0x202;
+      popfq;
+      mov rdx, 0;
 
       GetCodeSegmentEntryLocation:
       hlt;

@@ -95,7 +95,9 @@ struct CPUState {
   // PF/AF raw values. Really only a byte of each matters, but this layout
   // (32-bits and in the first 256 bytes) is necessary to use ldp/stp to
   // spill/fill these togethers efficiently.
-  uint32_t pf_raw {};
+  // pf_raw must be initialized to 1 so that reconstructed PF = 0 (matching x86 reset state).
+  // PF reconstruction: popcount(pf_raw ^ 1) & 1, so pf_raw=1 gives PF=0.
+  uint32_t pf_raw {1};
   uint32_t af_raw {};
 
   uint64_t rip {}; ///< Current core's RIP. May not be entirely accurate while JIT is active
