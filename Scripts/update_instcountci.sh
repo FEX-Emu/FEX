@@ -1,5 +1,4 @@
-#! /bin/bash
-set -e
+#!/bin/sh -e
 
 # Make sure we actually build
 ninja

@@ -1,31 +1,33 @@
-#!/bin/bash
+#!/bin/sh
 FEX=${1:-FEXLoader}
-echo Using $FEX
+echo "Using $FEX"
+
 for fileid in ~/.fex-emu/aotir/*.path; do
-	filename=`cat "$fileid"`
+	filename=$(cat "$fileid")
 	args=""
-	if [ "${fileid: -6 : 1}" == "L" ]; then
-		args="$args --abilocalflags"
-	else
-		args="$args --no-abilocalflags"
-	fi
 
-	if [ "${fileid: -7 : 1}" == "T" ]; then
-		args="$args --tsoenabled"
-	else
-		args="$args --no-tsoenabled"
-	fi
+	# if L is 6 chars from the end, use localflags
+	case $fileid in
+		*L?????) _abi=--abilocalflags ;;
+		*)    _abi=--no-abilocalflags ;;
+	esac
 
-	if [ "${fileid: -8 : 1}" == "S" ]; then
-		args="$args --smc=full"
-	else
-		args="$args --smc=mman"
-	fi
+	# if T is 7 chars from the end, use tso
+	case $fileid in
+		*T??????) _tso=--tsoenabled ;;
+		*)     _tso=--no-tsoenabled ;;
+	esac
+
+	# if S is 8 chars from the end, use full smc
+	case $fileid in
+		*S???????) _smc=full ;;
+		*)         _smc=mman ;;
+	esac
 
 	if [ -f "${fileid%.path}.aotir" ]; then
-		echo "`basename $fileid` has already been generated"
+		echo "$(basename "$fileid") has already been generated"
 	else
-		echo "Processing `basename $fileid` ($filename) with $args"
-		$FEX --aotirgenerate $args "$filename"
+		echo "Processing $(basename "$fileid") ($filename) with $args"
+		$FEX --aotirgenerate "$_abi" "$_tso" --smc="$_smc" "$filename"
 	fi
 done
