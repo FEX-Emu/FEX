@@ -29,8 +29,7 @@ jobs:
         git submodule update --init --depth 1
 
     - name: Clean install directory
-      run: |
-        rm -Rf install
+      run: rm -Rf install
 
     - name: Build (wow64)
       uses: ./.github/workflows/wine_build

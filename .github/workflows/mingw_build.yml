@@ -28,20 +28,14 @@ jobs:
     - name: Add MingGW to PATH
       run: echo "$HOME/llvm-mingw/build/bin/" >> $GITHUB_PATH
 
-    - name: Set CC x86
-      if: matrix.arch[1] == 'x64'
+    - name: Set CC
       run: |
-        echo "MINGW_TRIPLE=x86_64-w64-mingw32" >> $GITHUB_ENV
-
-    - name: Set CC Arm64
-      if: matrix.arch[1] == 'ARM64'
-      run: |
-        echo "MINGW_TRIPLE=aarch64-w64-mingw32" >> $GITHUB_ENV
-
-    - name: Set CC Arm64EC
-      if: matrix.arch[1] == 'ARM64EC'
-      run: |
-        echo "MINGW_TRIPLE=arm64ec-w64-mingw32" >> $GITHUB_ENV
+        case '${{ matrix.arch[1] }}' in
+          x64) _cpu=x86_64 ;;
+          ARM64) _cpu=aarch64 ;;
+          ARM64EC) _cpu=arm64ec ;;
+        esac
+        echo "MINGW_TRIPLE=${_cpu}-w64-mingw32" >> $GITHUB_ENV
 
     - name: Setup Build Environment
       uses: ./.github/workflows/setup-env
