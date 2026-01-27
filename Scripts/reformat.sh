@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/sh -e
 
 # Save current directory
 DIR=$(pwd)
@@ -7,7 +7,7 @@ DIR=$(pwd)
 CHANGED_ONLY=false
 TARGET_DIR=""
 
-while [[ $# -gt 0 ]]; do
+while [ $# -gt 0 ]; do
     case $1 in
         --changed) # Only reformat changed files (staged and unstaged)
             CHANGED_ONLY=true
@@ -35,13 +35,13 @@ if [ "$CHANGED_ONLY" = true ]; then
 
     CHANGED_FILES=$(git ls-files -m '*.cpp' '*.h' '*.inl')
     if [ -n "$CHANGED_FILES" ]; then
-        echo "$CHANGED_FILES" | xargs -d '\n' -n 1 -P $(nproc) clang-format-19 -i
+        echo "$CHANGED_FILES" | xargs -d '\n' -n 1 -P "$(nproc)" clang-format-19 -i
     else
         echo "No changed files to format."
     fi
 else
     # Reformat whole tree (original behavior)
-    git ls-files -z '*.cpp' '*.h' '*.inl' | xargs -0 -n 1 -P $(nproc) clang-format-19 -i
+    git ls-files -z '*.cpp' '*.h' '*.inl' | xargs -0 -n 1 -P "$(nproc)" clang-format-19 -i
 fi
 
-cd $DIR
+cd "$DIR"
