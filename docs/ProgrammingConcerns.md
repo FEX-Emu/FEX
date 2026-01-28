@@ -110,6 +110,10 @@ These all consume a `std::string` as their first argument. Use the equivalent fu
 ### `fmt::format`
 Use `fextl::fmt::` instead
 
+### `getpwuid` and `getpwuid_r`
+Allocates memory for parsing passwd and other files. One would assume `getpwuid_r` would use the buffer passed in, but nope glibc nss_database_get
+allocates memory.
+
 ### APIs that FEX doesn't have a replacement for
 Don't use any of these APIs in FEXLoader/FEXInterpreter. Shoutout to
 [this](https://stackoverflow.com/questions/43056338/standard-library-facilities-which-allocate-but-dont-use-an-allocator) StackOverflow post for this

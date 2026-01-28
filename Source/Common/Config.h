@@ -57,7 +57,7 @@ ApplicationNames GetApplicationNames(const fextl::vector<fextl::string>& Args, b
  */
 void LoadConfig(fextl::string ProgramName = {}, char** const envp = nullptr, const PortableInformation& PortableInfo = {});
 
-const char* GetHomeDirectory();
+fextl::string GetHomeDirectory();
 
 fextl::string GetDataDirectory(const PortableInformation& PortableInfo);
 fextl::string GetConfigDirectory(bool Global, const PortableInformation& PortableInfo);

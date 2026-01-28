@@ -7,6 +7,7 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
@@ -21,6 +22,9 @@
 #include <optional>
 #include <utility>
 #include <tiny-json.h>
+
+#include <range/v3/view/split.hpp>
+#include <range/v3/view/transform.hpp>
 
 namespace FEX::Config {
 namespace JSON {
@@ -494,20 +498,66 @@ void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInfo
 }
 
 #ifndef _WIN32
-const char* FindUserHomeThroughUID() {
-  auto passwd = getpwuid(geteuid());
-  if (passwd) {
-    return passwd->pw_dir;
+fextl::string FindUserHomeThroughUID() {
+  // `getpwuid` allocates memory, parse `/etc/passwd` manually.
+  // Format is trivial: `<name>:<password hash>:<uid>:<gid>:<comment>:<home>:<shell>`
+
+  fextl::vector<char> Data;
+  if (!FEXCore::FileLoading::LoadFile(Data, "/etc/passwd")) {
+    return {};
   }
-  return nullptr;
+
+  auto to_string_view = [](auto rng) {
+    return std::string_view(&*rng.begin(), ranges::distance(rng));
+  };
+
+  const auto uid = geteuid();
+
+  for (const auto entry : ranges::views::split(Data, '\n') | ranges::views::transform(to_string_view)) {
+    const auto elements = ranges::views::split(entry, ':') | ranges::views::transform(to_string_view);
+    // Reject bad entries.
+    if (std::distance(elements.begin(), elements.end()) != 7) {
+      continue;
+    }
+
+    auto iter = elements.begin();
+    ++iter; // name
+    ++iter; // password hash
+    ++iter; // comment
+    // uid
+    const auto uid_s = *iter;
+    ++iter;
+    ++iter; // gid
+    // home
+    const auto home_s = *iter;
+    ++iter;
+    ++iter; // shell
+
+    uint64_t element_uid;
+    auto Results = std::from_chars(uid_s.begin(), uid_s.end(), element_uid, 10);
+
+    // Error parsing.
+    if (Results.ptr == uid_s.begin()) {
+      continue;
+    }
+
+    if (element_uid == uid) {
+      return fextl::string(home_s);
+    }
+  }
+
+  return {};
 }
 
-const char* GetHomeDirectory() {
+fextl::string GetHomeDirectory() {
   const char* HomeDir = getenv("HOME");
 
   // Try to get home directory from uid
   if (!HomeDir || !FHU::Filesystem::Exists(HomeDir)) {
-    HomeDir = FindUserHomeThroughUID();
+    auto UIDHome = FindUserHomeThroughUID();
+    if (!UIDHome.empty() && FHU::Filesystem::Exists(UIDHome)) {
+      return UIDHome;
+    }
   }
 
   // try the PWD
@@ -523,7 +573,7 @@ const char* GetHomeDirectory() {
   return HomeDir;
 }
 #else
-const char* GetHomeDirectory() {
+fextl::string GetHomeDirectory() {
   const char* HomeDir = getenv("WINEHOMEDIR");
   if (HomeDir) {
     // Skip over the \??\ prefix in the NT path since we want a DOS path
@@ -560,7 +610,7 @@ fextl::string GetDataDirectory(bool Global, const PortableInformation& PortableI
     return GLOBAL_DATA_DIRECTORY;
   }
 
-  const char* HomeDir = GetHomeDirectory();
+  auto HomeDir = GetHomeDirectory();
   const char* DataXDG = getenv("XDG_DATA_HOME");
   const fextl::string LegacyDir = fextl::string {HomeDir} + "/.fex-emu/";
 
@@ -607,7 +657,7 @@ fextl::string GetConfigDirectory(bool Global, const PortableInformation& Portabl
     return GLOBAL_DATA_DIRECTORY;
   }
 
-  const char* HomeDir = GetHomeDirectory();
+  auto HomeDir = GetHomeDirectory();
   const char* ConfigXDG = getenv("XDG_CONFIG_HOME");
 
   const fextl::string LegacyDir = fextl::string {HomeDir} + "/.fex-emu/";
@@ -644,7 +694,7 @@ fextl::string GetCacheDirectory() {
   }
 #endif
 
-  const char* HomeDir = GetHomeDirectory();
+  auto HomeDir = GetHomeDirectory();
   const char* CacheXDG = getenv("XDG_CACHE_HOME");
   return (CacheXDG ? fextl::string {CacheXDG} : (fextl::string {HomeDir} + "/.cache")) + "/fex-emu/";
 #else
