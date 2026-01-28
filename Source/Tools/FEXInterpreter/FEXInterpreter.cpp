@@ -168,6 +168,8 @@ fextl::unique_ptr<FEX::HLE::MemAllocator> InitAllocator(bool Is64Bit) {
   // Now that the upper 32-bit address space is blocked for future allocations,
   // exhaust all of jemalloc's remaining internal allocations that it reserved before.
   // TODO: It's unclear how reliably this exhausts those reserves
+  // TODO: This will likely consume one arena inside the 32-bit VA space.
+  //   - (HdkR): I've noticed jemalloc consuming an 8MB arena commonly.
   FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
   void* data;
   do {
