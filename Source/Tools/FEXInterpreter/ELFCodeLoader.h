@@ -886,7 +886,8 @@ public:
 
     // Setup ExecFN aux
     AuxExecFN->val = StackPointer + ExecFNLocation;
-    strncpy(reinterpret_cast<char*>(AuxExecFN->val), ApplicationArgs[0].c_str(), ApplicationArgs[0].size() + 1);
+    const auto InvocationName = reinterpret_cast<char*>(AuxExecFN->val);
+    strncpy(InvocationName, ApplicationArgs[0].c_str(), ApplicationArgs[0].size() + 1);
 
     // Stack setup
     // [0, 8):   Argument Count
@@ -911,6 +912,21 @@ public:
     }
 
     RemapArgumentData(StackPointer + ArgumentOffset, ArgumentBackingSize);
+#if defined(HAS_PROGRAM_INVOCATION_NAME) && HAS_PROGRAM_INVOCATION_NAME
+    // Set the glibc invocation names to the process name.
+    // Mesa uses this to determine application profiles.
+    // Necessary when thunking is enabled otherwise mesa would only see FEX.
+
+    std::string_view INV = std::string_view(InvocationName, ApplicationArgs[0].size());
+    auto short_name = InvocationName;
+    auto iter = INV.rfind('/');
+    if (iter != INV.npos) {
+      short_name = &InvocationName[iter + 1];
+    }
+
+    program_invocation_name = InvocationName;
+    program_invocation_short_name = short_name;
+#endif
   }
 
   fextl::vector<const char*> GetExecveArguments() const override {
