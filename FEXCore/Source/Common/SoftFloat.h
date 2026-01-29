@@ -37,22 +37,26 @@ struct FEX_PACKED X80SoftFloat {
 #error No 128bit float for this target!
 #endif
 
-  uint64_t Significand : 64;
-  uint16_t Exponent    : 15;
-  uint16_t Sign        : 1;
+  uint64_t Significand;
+  union {
+    uint16_t Raw;
+    struct {
+      uint16_t Exponent : 15;
+      uint16_t Sign     : 1;
+    };
+  } Top;
 
   X80SoftFloat() {
     memset(this, 0, sizeof(*this));
   }
   X80SoftFloat(uint16_t _Sign, uint16_t _Exponent, uint64_t _Significand)
     : Significand {_Significand}
-    , Exponent {_Exponent}
-    , Sign {_Sign} {}
+    , Top {.Raw = static_cast<uint16_t>((_Exponent & 0x7FFF) | (_Sign << 15))} {}
 
   fextl::string str() const {
     fextl::ostringstream string;
-    string << std::hex << Sign;
-    string << "_" << Exponent;
+    string << std::hex << Top.Sign;
+    string << "_" << Top.Exponent;
     string << "_" << (Significand >> 63);
     string << "_" << (Significand & ((1ULL << 63) - 1));
     return string.str();
@@ -163,18 +167,18 @@ struct FEX_PACKED X80SoftFloat {
     X80SoftFloat result = 0;
     if (HandleInfinityOp(state, lhs, result)) {
       return result;
-    } else if (lhs.Exponent == 0x7FFF && (lhs.Significand & 0x7FFFFFFFFFFFFFFFULL)) { // NaN
+    } else if (lhs.Top.Exponent == 0x7FFF && (lhs.Significand & 0x7FFFFFFFFFFFFFFFULL)) { // NaN
       // propagate NaN
       state->exceptionFlags |= softfloat_flag_invalid;
       return lhs;
     }
 
     // Check for zero divisor - fprem(x, 0) is invalid operation
-    if (rhs.Exponent == 0 && rhs.Significand == 0) {
+    if (rhs.Top.Exponent == 0 && rhs.Significand == 0) {
       state->exceptionFlags |= softfloat_flag_invalid;
       // Return QNaN
-      result.Sign = 0;
-      result.Exponent = 0x7FFF;
+      result.Top.Sign = 0;
+      result.Top.Exponent = 0x7FFF;
       result.Significand = 0xC000000000000000ULL;
       return result;
     }
@@ -253,12 +257,12 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     // Zero is a special case, the significand for +/- 0 is +/- zero.
-    if (lhs.Exponent == 0x0 && lhs.Significand == 0x0) {
+    if (lhs.Top.Exponent == 0x0 && lhs.Significand == 0x0) {
       return lhs;
     }
     X80SoftFloat Tmp = lhs;
-    Tmp.Exponent = 0x3FFF;
-    Tmp.Sign = lhs.Sign;
+    Tmp.Top.Exponent = 0x3FFF;
+    Tmp.Top.Sign = lhs.Top.Sign;
     return Tmp;
 #endif
   }
@@ -280,12 +284,12 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     // Zero is a special case, the exponent is always -inf
-    if (lhs.Exponent == 0x0 && lhs.Significand == 0x0) {
+    if (lhs.Top.Exponent == 0x0 && lhs.Significand == 0x0) {
       X80SoftFloat Result(1, 0x7FFFUL, 0x8000'0000'0000'0000UL);
       return Result;
     }
 
-    int32_t TrueExp = lhs.Exponent - ExponentBias;
+    int32_t TrueExp = lhs.Top.Exponent - ExponentBias;
     return i32_to_extF80(TrueExp);
 #endif
   }
@@ -572,8 +576,7 @@ struct FEX_PACKED X80SoftFloat {
 
   X80SoftFloat(extFloat80_t rhs) {
     Significand = rhs.signif;
-    Exponent = rhs.signExp & 0x7FFF;
-    Sign = rhs.signExp >> 15;
+    Top.Raw = rhs.signExp;
   }
 
   X80SoftFloat(softfloat_state* state, const float rhs) {
@@ -606,8 +609,7 @@ struct FEX_PACKED X80SoftFloat {
 
   void operator=(extFloat80_t rhs) {
     Significand = rhs.signif;
-    Exponent = rhs.signExp & 0x7FFF;
-    Sign = rhs.signExp >> 15;
+    Top.Raw = rhs.signExp;
   }
 
   operator FEXCore::VectorRegType() const {
@@ -617,16 +619,16 @@ struct FEX_PACKED X80SoftFloat {
   operator extFloat80_t() const {
     extFloat80_t Result {};
     Result.signif = Significand;
-    Result.signExp = Exponent | (Sign << 15);
+    Result.signExp = Top.Raw;
     return Result;
   }
 
   static bool IsNan(const X80SoftFloat& lhs) {
-    return (lhs.Exponent == 0x7FFF) && (lhs.Significand & IntegerBit) && (lhs.Significand & Bottom62Significand);
+    return (lhs.Top.Exponent == 0x7FFF) && (lhs.Significand & IntegerBit) && (lhs.Significand & Bottom62Significand);
   }
 
   static bool SignBit(const X80SoftFloat& lhs) {
-    return lhs.Sign;
+    return lhs.Top.Sign;
   }
 
 private:
@@ -637,11 +639,11 @@ private:
   // Helper function to check for infinity and set invalid operation flag.
   // Returns true if infinity is dealt with, false otherwise.
   FEXCORE_PRESERVE_ALL_ATTR static bool HandleInfinityOp(softfloat_state* state, const X80SoftFloat& arg, X80SoftFloat& result) {
-    if (arg.Exponent == 0x7FFF && arg.Significand == 0x8000000000000000ULL) {
+    if (arg.Top.Exponent == 0x7FFF && arg.Significand == 0x8000000000000000ULL) {
       state->exceptionFlags |= softfloat_flag_invalid;
       // Return QNaN.
-      result.Sign = 0;
-      result.Exponent = 0x7FFF;
+      result.Top.Sign = 0;
+      result.Top.Exponent = 0x7FFF;
       result.Significand = 0xC000000000000000ULL;
       return true;
     }
@@ -649,9 +651,4 @@ private:
   }
 };
 
-#ifndef _WIN32
 static_assert(sizeof(X80SoftFloat) == 10, "tword must be 10bytes in size");
-#else
-// Padding on this extends to 16-bytes rather than 10-bytes on WIN32.
-static_assert(sizeof(X80SoftFloat) == 16, "tword must be 16bytes in size");
-#endif
