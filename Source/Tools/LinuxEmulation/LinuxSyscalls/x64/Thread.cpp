@@ -233,117 +233,121 @@ enum Modify_ldt_func : int32_t {
   LDT_WRITE = 0x11,
 };
 
+auto modify_ldt(FEXCore::Core::CpuStateFrame* Frame, int func, void* ptr, unsigned long bytecount) -> uint64_t {
+  switch (func) {
+  case Modify_ldt_func::LDT_READ: return FEX::HLE::_SyscallHandler->read_ldt(Frame, ptr, bytecount);
+  case Modify_ldt_func::LDT_WRITE_LEGACY: return FEX::HLE::_SyscallHandler->write_ldt(Frame, ptr, bytecount, true);
+  case Modify_ldt_func::LDT_READ_DEFAULT: return read_default_ldt(Frame, ptr, bytecount);
+  case Modify_ldt_func::LDT_WRITE: return FEX::HLE::_SyscallHandler->write_ldt(Frame, ptr, bytecount, false);
+  default: return -ENOSYS;
+  }
+}
+
+auto clone(FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack, pid_t* parent_tid, pid_t* child_tid, void* tls) -> uint64_t {
+  // This is slightly different EFAULT behaviour, if child_tid or parent_tid is invalid then the kernel just doesn't write to the
+  // pointer. Still need to be EFAULT safe although.
+  if ((flags & (CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID)) && child_tid) {
+    FaultSafeUserMemAccess::VerifyIsWritable(child_tid, sizeof(*child_tid));
+  }
+
+  if ((flags & CLONE_PARENT_SETTID) && parent_tid) {
+    FaultSafeUserMemAccess::VerifyIsWritable(parent_tid, sizeof(*parent_tid));
+  }
+
+  FEX::HLE::clone3_args args {
+    .Type = TypeOfClone::TYPE_CLONE2,
+    .args =
+      {
+
+        .flags = flags & ~CSIGNAL, // This no longer contains CSIGNAL
+        .pidfd = 0,                // For clone, pidfd is duplicated here
+        .child_tid = reinterpret_cast<uint64_t>(child_tid),
+        .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
+        .exit_signal = flags & CSIGNAL,
+        .stack = reinterpret_cast<uint64_t>(stack),
+        .stack_size = 0, // This syscall isn't able to see the stack size
+        .tls = reinterpret_cast<uint64_t>(tls),
+        .set_tid = 0, // This syscall isn't able to select TIDs
+        .set_tid_size = 0,
+        .cgroup = 0, // This syscall can't select cgroups
+      },
+  };
+  return CloneHandler(Frame, &args);
+}
+
+auto sigaltstack(FEXCore::Core::CpuStateFrame* Frame, const stack_t* ss, stack_t* old_ss) -> uint64_t {
+  FaultSafeUserMemAccess::VerifyIsReadableOrNull(ss, sizeof(*ss));
+  FaultSafeUserMemAccess::VerifyIsWritableOrNull(old_ss, sizeof(*old_ss));
+  return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(
+    FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), ss, old_ss);
+}
+
+// launch a new process under fex
+// currently does not propagate argv[0] correctly
+auto execve(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const argv[], char* const envp[]) -> uint64_t {
+  fextl::vector<const char*> Args;
+  fextl::vector<const char*> Envp;
+
+  if (argv) {
+    for (int i = 0; argv[i]; i++) {
+      Args.push_back(argv[i]);
+    }
+
+    Args.push_back(nullptr);
+  }
+
+  if (envp) {
+    for (int i = 0; envp[i]; i++) {
+      Envp.push_back(envp[i]);
+    }
+
+    Envp.push_back(nullptr);
+  }
+
+  auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
+  auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
+
+  FEX::HLE::ExecveAtArgs AtArgs = FEX::HLE::ExecveAtArgs::Empty();
+
+  return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
+}
+
+auto execveat(FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, char* const argv[], char* const envp[], int flags) -> uint64_t {
+  fextl::vector<const char*> Args;
+  fextl::vector<const char*> Envp;
+
+  if (argv) {
+    for (int i = 0; argv[i]; i++) {
+      Args.push_back(argv[i]);
+    }
+
+    Args.push_back(nullptr);
+  }
+
+  if (envp) {
+    for (int i = 0; envp[i]; i++) {
+      Envp.push_back(envp[i]);
+    }
+
+    Envp.push_back(nullptr);
+  }
+
+  FEX::HLE::ExecveAtArgs AtArgs {
+    .dirfd = dirfd,
+    .flags = flags,
+  };
+
+  auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
+  auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
+  return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
+}
+
 void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
-  REGISTER_SYSCALL_IMPL_X64(modify_ldt, [](FEXCore::Core::CpuStateFrame* Frame, int func, void* ptr, unsigned long bytecount) -> uint64_t {
-    switch (func) {
-    case Modify_ldt_func::LDT_READ: return FEX::HLE::_SyscallHandler->read_ldt(Frame, ptr, bytecount);
-    case Modify_ldt_func::LDT_WRITE_LEGACY: return FEX::HLE::_SyscallHandler->write_ldt(Frame, ptr, bytecount, true);
-    case Modify_ldt_func::LDT_READ_DEFAULT: return read_default_ldt(Frame, ptr, bytecount);
-    case Modify_ldt_func::LDT_WRITE: return FEX::HLE::_SyscallHandler->write_ldt(Frame, ptr, bytecount, false);
-    default: return -ENOSYS;
-    }
-  });
-
-  REGISTER_SYSCALL_IMPL_X64(
-    clone, ([](FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack, pid_t* parent_tid, pid_t* child_tid, void* tls) -> uint64_t {
-      // This is slightly different EFAULT behaviour, if child_tid or parent_tid is invalid then the kernel just doesn't write to the
-      // pointer. Still need to be EFAULT safe although.
-      if ((flags & (CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID)) && child_tid) {
-        FaultSafeUserMemAccess::VerifyIsWritable(child_tid, sizeof(*child_tid));
-      }
-
-      if ((flags & CLONE_PARENT_SETTID) && parent_tid) {
-        FaultSafeUserMemAccess::VerifyIsWritable(parent_tid, sizeof(*parent_tid));
-      }
-
-      FEX::HLE::clone3_args args {
-        .Type = TypeOfClone::TYPE_CLONE2,
-        .args =
-          {
-
-            .flags = flags & ~CSIGNAL, // This no longer contains CSIGNAL
-            .pidfd = 0,                // For clone, pidfd is duplicated here
-            .child_tid = reinterpret_cast<uint64_t>(child_tid),
-            .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
-            .exit_signal = flags & CSIGNAL,
-            .stack = reinterpret_cast<uint64_t>(stack),
-            .stack_size = 0, // This syscall isn't able to see the stack size
-            .tls = reinterpret_cast<uint64_t>(tls),
-            .set_tid = 0, // This syscall isn't able to select TIDs
-            .set_tid_size = 0,
-            .cgroup = 0, // This syscall can't select cgroups
-          },
-      };
-      return CloneHandler(Frame, &args);
-    }));
-
-  REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::CpuStateFrame* Frame, const stack_t* ss, stack_t* old_ss) -> uint64_t {
-    FaultSafeUserMemAccess::VerifyIsReadableOrNull(ss, sizeof(*ss));
-    FaultSafeUserMemAccess::VerifyIsWritableOrNull(old_ss, sizeof(*old_ss));
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(
-      FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), ss, old_ss);
-  });
-
-  // launch a new process under fex
-  // currently does not propagate argv[0] correctly
-  REGISTER_SYSCALL_IMPL_X64(execve, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const argv[], char* const envp[]) -> uint64_t {
-    fextl::vector<const char*> Args;
-    fextl::vector<const char*> Envp;
-
-    if (argv) {
-      for (int i = 0; argv[i]; i++) {
-        Args.push_back(argv[i]);
-      }
-
-      Args.push_back(nullptr);
-    }
-
-    if (envp) {
-      for (int i = 0; envp[i]; i++) {
-        Envp.push_back(envp[i]);
-      }
-
-      Envp.push_back(nullptr);
-    }
-
-    auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
-    auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
-
-    FEX::HLE::ExecveAtArgs AtArgs = FEX::HLE::ExecveAtArgs::Empty();
-
-    return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
-  });
-
-  REGISTER_SYSCALL_IMPL_X64(execveat, ([](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, char* const argv[],
-                                          char* const envp[], int flags) -> uint64_t {
-                              fextl::vector<const char*> Args;
-                              fextl::vector<const char*> Envp;
-
-                              if (argv) {
-                                for (int i = 0; argv[i]; i++) {
-                                  Args.push_back(argv[i]);
-                                }
-
-                                Args.push_back(nullptr);
-                              }
-
-                              if (envp) {
-                                for (int i = 0; envp[i]; i++) {
-                                  Envp.push_back(envp[i]);
-                                }
-
-                                Envp.push_back(nullptr);
-                              }
-
-                              FEX::HLE::ExecveAtArgs AtArgs {
-                                .dirfd = dirfd,
-                                .flags = flags,
-                              };
-
-                              auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
-                              auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
-                              return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
-                            }));
+  REGISTER_SYSCALL_IMPL_X64(modify_ldt, modify_ldt);
+  REGISTER_SYSCALL_IMPL_X64(clone, clone);
+  REGISTER_SYSCALL_IMPL_X64(sigaltstack, sigaltstack);
+  REGISTER_SYSCALL_IMPL_X64(execve, execve);
+  REGISTER_SYSCALL_IMPL_X64(execveat, execveat);
 }
 } // namespace FEX::HLE::x64
