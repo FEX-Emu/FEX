@@ -435,12 +435,12 @@ struct OpHandlers<IR::OP_F80BCDSTORE> {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     X80SoftFloat Src1 = Src1q;
     ScopedSoftFloatState State {FCW, Frame};
-    bool Negative = Src1.Sign;
+    bool Negative = Src1.Top.Sign;
 
     Src1 = X80SoftFloat::FRNDINT(&State.State, Src1);
 
     // Clear the Sign bit
-    Src1.Sign = 0;
+    Src1.Top.Sign = 0;
 
     uint64_t Tmp = Src1.ToI64(&State.State);
     X80SoftFloat Rv;
@@ -503,7 +503,7 @@ struct OpHandlers<IR::OP_F80BCDLOAD> {
     X80SoftFloat Tmp;
 
     Tmp = BCD;
-    Tmp.Sign = Negative;
+    Tmp.Top.Sign = Negative;
     return Tmp;
   }
 };
