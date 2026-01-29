@@ -226,6 +226,16 @@ else()
   add_definitions("-DFEX_PRESERVE_ALL_ATTR=" "-DFEX_HAS_PRESERVE_ALL_ATTR=0")
 endif()
 
+check_cxx_source_compiles(
+  "
+  #define _GNU_SOURCE
+  #include <errno.h>
+  int main() {
+  return program_invocation_name == nullptr;
+  }"
+  HAS_PROGRAM_INVOCATION_NAME)
+add_definitions("-DHAS_PROGRAM_INVOCATION_NAME=${HAS_PROGRAM_INVOCATION_NAME}")
+
 if (ENABLE_VIXL_SIMULATOR)
   # We can run the simulator on both x86-64 or AArch64 hosts
   add_definitions(-DVIXL_SIMULATOR=1 -DVIXL_INCLUDE_SIMULATOR_AARCH64=1)
