@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: MIT
+
+name: Check license headers
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  license_header:
+    runs-on: [self-hosted, X64]
+    if: github.repository == 'FEX-Emu/FEX'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Checkout through merge base
+        uses: rmacklin/fetch-through-merge-base@v0
+        timeout-minutes: 3
+        with:
+          base_ref: ${{ github.event.pull_request.base.ref }}
+          head_ref: ${{ github.event.pull_request.head.sha }}
+          deepen_length: 500
+
+      - name: Check license headers
+        run: Scripts/license-header.sh
