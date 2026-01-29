@@ -1,9 +1,9 @@
-# JEMalloc usage
-FEX-Emu uses two different jemalloc heap allocators at once, each for different purposes:
-- jemalloc: The primary heap allocator (to keep FEX's internal allocations out of the 32-bit address space used by guest applications)
+# Dual allocator usage
+FEX-Emu uses two different heap allocators at once, each for different purposes:
+- rpmalloc: The primary heap allocator (to keep FEX's internal allocations out of the 32-bit address space used by guest applications)
 - jemalloc_glibc: The second heap allocator (to add allocation introspection features used by thunks)
 
-## jemalloc - primary heap allocator
+## rpmalloc - primary heap allocator
 This allocator overrides `mmap` and `munmap` by forwarding them to FEXCore's internal VMA region allocator.
 
 All of FEXCore's `fextl::` namespaced objects allocate memory with this method.
