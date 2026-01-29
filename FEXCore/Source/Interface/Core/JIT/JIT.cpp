@@ -1003,12 +1003,12 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   const auto JITBlockTailLocation = GetCursorAddress<uint8_t*>();
   CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 
-  JITCodeTail JITBlockTail {
-    .RIP = Entry,
-    .GuestSize = Size,
-    .SpinLockFutex = 0,
-    .SingleInst = SingleInst,
-  };
+  JITCodeTail JITBlockTail;
+  memset(&JITBlockTail, 0, sizeof(JITBlockTail));
+  JITBlockTail.RIP = Entry;
+  JITBlockTail.GuestSize = Size;
+  JITBlockTail.SpinLockFutex = 0;
+  JITBlockTail.SingleInst = SingleInst;
 
   // Entries that live after the JITCodeTail.
   // These entries correlate JIT code regions with guest RIP regions.
@@ -1083,7 +1083,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
       // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
       SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
-      SetCursorOffset(AlignUp(CodeBuffers.LatestOffset, 16));
+      SetCursorOffset(CodeBuffers.LatestOffset);
+      Align16B();
       if ((GetCursorOffset() + TempSize) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
         CTX->ClearCodeCache(ThreadState);
       }
