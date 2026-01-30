@@ -79,7 +79,8 @@ public:
   FEX_CONFIG_OPT(EnableCodeCacheValidation, ENABLECODECACHEVALIDATION);
 
   uint64_t ComputeCodeMapId(std::string_view Filename, int FD) override;
-  bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) override;
+  bool SaveData(Core::InternalThreadState&, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress,
+                std::function<void*(size_t)> MapFile) override;
   bool LoadData(Core::InternalThreadState*, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
 
   /**
