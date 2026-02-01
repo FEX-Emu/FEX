@@ -154,6 +154,7 @@ uint32_t GetCPUID_TPIDRRO() {
 }
 
 void CPUIDEmu::SetupHostHybridFlag() {
+  FEX_CONFIG_OPT(HideHybrid, HIDEHYBRID);
   PerCPUData.resize(Cores);
 
   uint64_t MIDR {};
@@ -168,6 +169,11 @@ void CPUIDEmu::SetupHostHybridFlag() {
     PerCPUData[i].ProductName = ProductNames::ARM_UNKNOWN;
     PerCPUData[i].MIDR = NewMIDR;
     MIDR = NewMIDR;
+  }
+
+  if (HideHybrid()) {
+    // Hide the hybrid flag.
+    Hybrid = false;
   }
 
   struct CPUMIDR {
@@ -387,7 +393,8 @@ void CPUIDEmu::SetupHostHybridFlag() {
   } else {
     // If we aren't hybrid then just claim everything is big
     for (size_t i = 0; i < Cores; ++i) {
-      uint32_t MIDR = PerCPUData[i].MIDR;
+      const auto MIDRIndex = HideHybrid() ? 0 : i;
+      uint32_t MIDR = PerCPUData[MIDRIndex].MIDR;
       auto MIDROption = FindDefinedMIDR(MIDR);
 
       PerCPUData[i].IsBig = true;
