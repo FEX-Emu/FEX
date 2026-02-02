@@ -633,9 +633,10 @@ bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> C
       if (Pointer == ~0ULL) {
         return false;
       }
-      // Pointers are required to fit within 48-bit VA space.
+      // TODO: Pointers are required to fit within 48-bit VA space.
+      // But forcing 6-byte broke relocations.
       Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.NamedThunkMove.RegisterIndex), Pointer,
-                           CPU::Arm64Emitter::PadType::DOPAD, 6);
+                           CPU::Arm64Emitter::PadType::DOPAD);
       break;
     }
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
@@ -644,9 +645,9 @@ bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> C
     }
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE: {
       uint64_t Pointer = Reloc.GuestRIP.GuestRIP + GuestEntry;
-      // Pointers are required to fit within 48-bit VA space.
-      Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.GuestRIP.RegisterIndex), Pointer,
-                           CPU::Arm64Emitter::PadType::DOPAD, 6);
+      // TODO: Pointers are required to fit within 48-bit VA space.
+      // But forcing 6-byte broke relocations.
+      Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.GuestRIP.RegisterIndex), Pointer, CPU::Arm64Emitter::PadType::DOPAD);
       break;
     }
 
