@@ -769,13 +769,23 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
 
     if (Op == 0xC5) { // Two byte VEX
       pp = Byte1 & 0b11;
-      options.vvvv = 15 - ((Byte1 & 0b01111000) >> 3);
+      const uint8_t vvvv = ((Byte1 & 0b01111000) >> 3);
+      if (!BlockInfo.Is64BitMode && vvvv <= 0b0111) {
+        // Invalid on 32-bit, can't use the high registers.
+        return false;
+      }
+      options.vvvv = 15 - vvvv;
       options.L = (Byte1 & 0b100) != 0;
     } else { // 0xC4 = Three byte VEX
       const uint8_t Byte2 = ReadByte();
       pp = Byte2 & 0b11;
       map_select = Byte1 & 0b11111;
-      options.vvvv = 15 - ((Byte2 & 0b01111000) >> 3);
+      const uint8_t vvvv = ((Byte2 & 0b01111000) >> 3);
+      if (!BlockInfo.Is64BitMode && vvvv <= 0b0111) {
+        // Invalid on 32-bit, can't use the high registers.
+        return false;
+      }
+      options.vvvv = 15 - vvvv;
       options.w = (Byte2 & 0b10000000) != 0;
       options.L = (Byte2 & 0b100) != 0;
       if ((Byte1 & 0b01000000) == 0) {
