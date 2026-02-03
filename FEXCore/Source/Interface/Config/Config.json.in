@@ -109,6 +109,13 @@
           "Scales the cycle counter on systems that have low frequencies."
         ]
       },
+      "HideHybrid": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Hides hybrid CPU core arrangement."
+        ]
+      },
       "CPUFeatureRegisters": {
         "Type": "str",
         "Default": "",
