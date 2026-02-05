@@ -39,8 +39,10 @@ static bool LoadFileImpl(T& Data, const fextl::string& Filepath, size_t FixedSiz
   if (FileSize) {
     // File size is known upfront
     Data.resize(FileSize);
-    while (CurrentOffset != FileSize && (Read = pread(FD, &Data.at(CurrentOffset), FileSize, 0)) > 0) {
+    size_t Remaining = FileSize;
+    while (CurrentOffset != FileSize && (Read = pread(FD, &Data.at(CurrentOffset), Remaining, CurrentOffset)) > 0) {
       CurrentOffset += Read;
+      Remaining -= Read;
     }
 
     LoadedFile = CurrentOffset == FileSize && Read != -1;
