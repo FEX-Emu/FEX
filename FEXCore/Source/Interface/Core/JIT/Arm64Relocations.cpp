@@ -29,7 +29,8 @@ void Arm64JITCore::InsertNamedThunkRelocation(ARMEmitter::Register Reg, const IR
   uint64_t Pointer = reinterpret_cast<uint64_t>(EmitterCTX->ThunkHandler->LookupThunk(Sum));
 
   // Pointers are required to fit within 48-bit VA space.
-  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Pointer, FEXCore::CPU::Arm64Emitter::PadType::AUTOPAD, 6);
+  // TODO: Force 6-byte `MaxSize`, with zext extension to 64-bit. Current code not smart enough to handle negatives.
+  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Pointer, FEXCore::CPU::Arm64Emitter::PadType::AUTOPAD);
   Relocations.emplace_back(MoveABI);
 }
 
