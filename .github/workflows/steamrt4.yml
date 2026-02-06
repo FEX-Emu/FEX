@@ -9,6 +9,7 @@ on:
       - main
 
 env:
+  DEBIAN_FRONTEND: noninteractive
   BUILD_TYPE: Release
   CC: clang
   CXX: clang++
