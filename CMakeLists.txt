@@ -347,7 +347,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Data/CMake/)
 include(LinkerGC)
 
 ## Externals ##
-include_directories(External/unordered_dense/include/)
+
+find_package(unordered_dense QUIET CONFIG)
+if (NOT unordered_dense_FOUND)
+  add_subdirectory(External/unordered_dense)
+endif()
 
 include(CTest)
 if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)

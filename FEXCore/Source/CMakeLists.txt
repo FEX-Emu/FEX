@@ -246,15 +246,16 @@ function(AddDefaultOptionsToTarget Name)
   endif()
 
   LinkerGC(${Name})
+  target_link_libraries(${Name} PUBLIC unordered_dense::unordered_dense)
 endfunction()
 
 # Build FEXCore_Base static library
 add_library(FEXCore_Base STATIC ${FEXCORE_BASE_SRCS})
-target_link_libraries(FEXCore_Base ${LIBS})
+target_link_libraries(FEXCore_Base PUBLIC ${LIBS})
 AddDefaultOptionsToTarget(FEXCore_Base)
 
 if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
-  target_link_libraries(FEXCore_Base TracyClient)
+  target_link_libraries(FEXCore_Base PUBLIC TracyClient)
 endif()
 
 function(AddObject Name)
@@ -272,7 +273,7 @@ function(AddLibrary Name Type)
   # During generation of the import library (dll.a), MinGW needs some extra symbols from libraries
   # such as fmt, which are propagated by FEXCore_Base. Wonderful.
   if (MINGW)
-    target_link_libraries(${Name} FEXCore_Base)
+    target_link_libraries(${Name} PRIVATE FEXCore_Base)
   endif()
   AddDefaultOptionsToTarget(${Name})
 endfunction()
@@ -307,4 +308,4 @@ if (NOT MINGW)
 endif()
 
 # The shared library should always link enabled jemalloc libraries
-target_link_libraries(${PROJECT_NAME}_shared JemallocLibs)
+target_link_libraries(${PROJECT_NAME}_shared PRIVATE JemallocLibs)
