@@ -59,7 +59,14 @@ void* FEX_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t off
 }
 
 void VirtualName(const char* Name, void* Ptr, size_t Size) {
-  prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Ptr, Size, Name);
+  static bool Supports {true};
+  if (Supports) {
+    auto Result = prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Ptr, Size, Name);
+    if (Result == -1) {
+      // Disable any additional attempts.
+      Supports = false;
+    }
+  }
 }
 
 int FEX_munmap(void* addr, size_t length) {
