@@ -20,15 +20,27 @@
 #include <cstdint>
 #include <cstdio>
 #include <fcntl.h>
+#include <mutex>
+
 #ifndef _WIN32
 #include <sys/mman.h>
 #include <sys/user.h>
 #endif
 
 namespace fextl::pmr {
-static fextl::pmr::default_resource FEXDefaultResource;
+static std::once_flag default_resource_initialized {};
+static fextl::pmr::default_resource* FEXDefaultResource {};
+alignas(alignof(fextl::pmr::default_resource)) static char FEXDefaultResourcePlacement[sizeof(fextl::pmr::default_resource)];
+
 std::pmr::memory_resource* get_default_resource() {
-  return &FEXDefaultResource;
+  // This dance is necessary to avoid an atexit allocator call.
+  if (FEXDefaultResource) {
+    return FEXDefaultResource;
+  }
+
+  std::call_once(default_resource_initialized,
+                 []() { FEXDefaultResource = new (FEXDefaultResourcePlacement) fextl::pmr::default_resource {}; });
+  return FEXDefaultResource;
 }
 } // namespace fextl::pmr
 
