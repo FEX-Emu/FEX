@@ -10,25 +10,33 @@ runs:
   steps:
     - name: Clean Build Environment
       shell: bash
-      run: rm -Rf build_${{ inputs.target }}
+      env:
+        TARGET: ${{ inputs.target }}
+      run: rm -Rf "build_$TARGET"
 
     - name: Configure CMake
       shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
       run: |
-        case "${{ inputs.target }}" in
+        case "$TARGET" in
           wow64) _cc=aarch64 ;;
           arm64ec) _cc=arm64ec ;;
         esac
 
-        cmake -S . -B build_${{ inputs.target }} -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Data/CMake/toolchain_mingw.cmake \
+        cmake -S . -B "build_$TARGET" -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Data/CMake/toolchain_mingw.cmake \
           -DMINGW_TRIPLE=${_cc}-w64-mingw32 -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-windows -G Ninja \
           -DENABLE_LTO=False -DENABLE_ASSERTIONS=False -DENABLE_JEMALLOC_GLIBC_ALLOC=False \
           -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX=/usr -DTUNE_ARCH=generic -DTUNE_CPU=none
 
     - name: Build
       shell: bash
-      run: cmake --build build_${{ inputs.target }}
+      env:
+        TARGET: ${{ inputs.target }}
+      run: cmake --build "build_$TARGET"
 
     - name: Install
       shell: bash
-      run: DESTDIR="$PWD"/install cmake --build build_${{ inputs.target }} -t install
+      env:
+        TARGET: ${{ inputs.target }}
+      run: DESTDIR="$PWD"/install cmake --build "build_$TARGET" -t install
