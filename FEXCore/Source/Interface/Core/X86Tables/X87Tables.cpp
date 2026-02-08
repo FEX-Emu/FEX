@@ -17,7 +17,7 @@ using namespace IR;
 // All OPDReg versions need it
 #define OPDReg(op, reg) ((1 << 15) | ((op - 0xD8) << 8) | (reg << 3))
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
-constexpr std::array<DispatchTableEntry, 133> X87F64OpTable = {{
+constexpr std::array<DispatchTableEntry, 135> X87F64OpTable = {{
   {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
   {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
@@ -285,7 +285,7 @@ constexpr std::array<DispatchTableEntry, 133> X87F64OpTable = {{
    &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
 }};
 
-constexpr std::array<DispatchTableEntry, 133> X87F80OpTable = {{
+constexpr std::array<DispatchTableEntry, 135> X87F80OpTable = {{
   {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
   {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
