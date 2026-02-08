@@ -124,7 +124,7 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   },
   // ENTRY_63
   {
-    {"ARPL",   TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"ARPL",   TYPE_INST, GenFlagsSameSize(SIZE_16BIT) | FLAGS_MODRM, 0, { .OpDispatch = &IR::OpDispatchBuilder::ARPLOp } },
     {"MOVSXD", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM, 0, { .OpDispatch = &IR::OpDispatchBuilder::MOVSXDOp } },
   },
   // ENTRY_9A
@@ -436,4 +436,3 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
 }();
 
 }
-

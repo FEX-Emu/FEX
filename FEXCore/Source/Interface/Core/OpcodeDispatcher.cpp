@@ -1039,6 +1039,35 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
   InvalidateAF();
 }
 
+void OpDispatchBuilder::ARPLOp(OpcodeArgs) {
+  // ARPL r/m16, r16
+  // If the RPL field in the destination selector is less privileged than the
+  // RPL field in the source selector, then adjust destination RPL to match
+  // source RPL and set ZF=1. Otherwise ZF=0 and destination is unchanged.
+  //
+  // Only ZF is modified by ARPL.
+  constexpr auto Size = OpSize::i16Bit;
+
+  Ref Dest = LoadSourceGPR_WithOpSize(Op, Op->Dest, Size, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], Size, Op->Flags, {.AllowUpperGarbage = true});
+
+  // RPL is the low two bits of the selector.
+  Ref DestRPL = _And(Size, Dest, Constant(0x3));
+  Ref SrcRPL = _And(Size, Src, Constant(0x3));
+
+  // NeedUpdate is 1 when DestRPL < SrcRPL, else 0.
+  Ref NeedUpdate = _Select(OpSize::i32Bit, Size, CondClass::ULT, DestRPL, SrcRPL, Constant(1), Constant(0));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(NeedUpdate);
+
+  // Compute adjusted destination selector: (Dest & ~3) | SrcRPL.
+  Ref Cleared = _And(Size, Dest, Constant(0xFFFC));
+  Ref NewDest = _Or(Size, Cleared, SrcRPL);
+
+  // Conditionally select updated selector based on NeedUpdate.
+  Ref FinalDest = _Select(Size, OpSize::i32Bit, CondClass::NEQ, NeedUpdate, Constant(0), NewDest, Dest);
+  StoreResultGPR_WithOpSize(Op, Op->Dest, FinalDest, Size);
+}
+
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
   // This instruction is a bit special
   // if SrcSize == 2
