@@ -194,6 +194,10 @@ constexpr std::array<DispatchTableEntry, 133> X87F64OpTable = {{
 
   {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
   {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xD0), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+  {OPD(0xDC, 0xD8), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
   {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
   {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
   {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
@@ -453,6 +457,8 @@ constexpr std::array<DispatchTableEntry, 133> X87F80OpTable = {{
 
   {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
   {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xD0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+  {OPD(0xDC, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
   {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
   {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
   {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
@@ -688,9 +694,9 @@ auto GenerateX87TableLambda = [](const auto DispatchTable) consteval {
       //  / 1
       {OPD(0xDC, 0xC8), 8, X86InstInfo{"FMUL", TYPE_X87, FLAGS_NONE, 0}},
       //  / 2
-      {OPD(0xDC, 0xD0), 8, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE, 0}},
+      {OPD(0xDC, 0xD0), 8, X86InstInfo{"FCOM", TYPE_X87, FLAGS_X87_FLAGS, 0}},
       //  / 3
-      {OPD(0xDC, 0xD8), 8, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE, 0}},
+      {OPD(0xDC, 0xD8), 8, X86InstInfo{"FCOMP", TYPE_X87, FLAGS_X87_FLAGS | FLAGS_POP, 0}},
       //  / 4
       {OPD(0xDC, 0xE0), 8, X86InstInfo{"FSUBR", TYPE_X87, FLAGS_NONE, 0}},
       //  / 5
