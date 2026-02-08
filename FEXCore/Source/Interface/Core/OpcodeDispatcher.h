@@ -356,6 +356,7 @@ public:
   void CALLFARIndirectOp(OpcodeArgs);
   void RETFARIndirectOp(OpcodeArgs);
   void TESTOp(OpcodeArgs, uint32_t SrcIndex);
+  void ARPLOp(OpcodeArgs);
   void MOVSXDOp(OpcodeArgs);
   void MOVSXOp(OpcodeArgs);
   void MOVZXOp(OpcodeArgs);
