@@ -154,8 +154,9 @@ GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintpt
   }
 
   if (!Is64Bit) {
+    const auto PageSize = sysconf(_SC_PAGESIZE);
     // Block upper address space
-    FEXCore::Allocator::SetupHooks();
+    FEXCore::Allocator::SetupHooks(PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE);
   }
 
   auto Thread = SetupCompileThread(*CTX, Is64Bit);

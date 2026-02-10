@@ -17,9 +17,6 @@
   shallow = true
 	path = External/fex-gcc-target-tests-bins
 	url = https://github.com/FEX-Emu/fex-gcc-target-tests-bins.git
-[submodule "External/jemalloc"]
-	path = External/jemalloc
-	url = https://github.com/FEX-Emu/jemalloc.git
 [submodule "External/fmt"]
 	path = External/fmt
 	url = https://github.com/fmtlib/fmt.git
@@ -52,3 +49,6 @@
 [submodule "External/unordered_dense"]
 	path = External/unordered_dense
 	url = https://github.com/martinus/unordered_dense.git
+[submodule "External/rpmalloc"]
+	path = External/rpmalloc
+	url = https://github.com/FEX-Emu/rpmalloc.git
