@@ -356,7 +356,6 @@ endif()
 include(CTest)
 if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   add_subdirectory(External/vixl/)
-  include_directories(SYSTEM External/vixl/src/)
 endif()
 
 if (ENABLE_ZYDIS)
@@ -424,7 +423,6 @@ if (NOT range-v3_FOUND)
 endif()
 
 add_subdirectory(External/tiny-json/)
-include_directories(External/tiny-json/)
 
 include_directories(Source/)
 include_directories("${CMAKE_BINARY_DIR}/Source/")
