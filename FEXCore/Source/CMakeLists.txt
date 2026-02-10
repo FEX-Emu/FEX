@@ -107,7 +107,7 @@ endif()
 set(LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
 
 if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
-  list(APPEND LIBS vixl)
+  list(APPEND LIBS vixl::vixl)
 endif()
 
 if (ENABLE_ZYDIS)
