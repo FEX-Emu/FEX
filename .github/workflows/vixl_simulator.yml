@@ -53,7 +53,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: asm_tests
-        log-name: ASM_SVE256Bit
 
     - name: ASM Tests - SVE128
       if: ${{ always() }}
@@ -62,7 +61,6 @@ jobs:
         FEX_FORCESVEWIDTH: "128"
       with:
         target: asm_tests
-        log-name: ASM_SVE128Bit
 
     - name: ASM Tests - ASIMD
       if: ${{ always() }}
@@ -71,7 +69,6 @@ jobs:
         FEX_HOSTFEATURES: "disablesve"
       with:
         target: asm_tests
-        log-name: ASM_ASIMD
 
     - name: Upload results
       if: ${{ always() }}
@@ -79,5 +76,5 @@ jobs:
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}-${{ env.runner_label }}
-        path: ${{ github.workspace }}/build/Testing/Temporary/LastTest_*.log
+        path: results/*.log
         retention-days: 3

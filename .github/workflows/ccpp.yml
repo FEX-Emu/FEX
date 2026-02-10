@@ -57,14 +57,12 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: gcc_target_tests_64
-        log-name: GCC64
 
     - name: GCC32 Target Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
         target: gcc_target_tests_32
-        log-name: GCC32
 
     # API tests
     - name: API Tests
@@ -72,14 +70,12 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: api_tests
-        log-name: APITests
 
     - name: FEXCore API Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
         target: fexcore_apitests
-        log-name: FEXCoreAPITests
 
     # ARM emission tests
     - name: ARM Emitter Tests
@@ -87,7 +83,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: emitter_tests
-        log-name: ARMEmitterTests
 
     # Linux  tests
     - name: FEX Linux Tests
@@ -95,7 +90,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: fex_linux_tests_all
-        log-name: FEXLinuxTests
       env:
         FEX_PORTABLE: 0
 
@@ -105,14 +99,12 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: thunkgen_tests
-        log-name: ThunkgenTests
 
     - name: Test GL No-Thunks
       if: ${{ always() && matrix.arch[1] == 'x64' }}
       uses: ./.github/workflows/test
       with:
         target: thunk_functional_tests_nothunks
-        log-name: NoThunkResults
       env:
         DISPLAY: ':0'
 
@@ -121,7 +113,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: thunk_functional_tests_thunks
-        log-name: ThunkResults
       env:
         DISPLAY: ':0'
 
@@ -131,7 +122,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: asm_tests
-        log-name: ASM
 
     # POSIX tests
     - name: POSIX Tests
@@ -139,7 +129,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: posix_tests
-        log-name: Posix
 
     # GVisor tests
     - name: GVisor Tests
@@ -147,7 +136,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: gvisor_tests
-        log-name: GVisor
 
     # Struct verifier tests
     - name: Struct verifier tests
@@ -155,7 +143,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: struct_verifier
-        log-name: StructVerifier
 
     - name: Remove old SHM regions
       if: ${{ always() }}
@@ -167,5 +154,5 @@ jobs:
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}-${{ env.runner_label }}
-        path: ${{ github.workspace }}/build/Testing/Temporary/LastTest_*.log
+        path: results/*.log
         retention-days: 3

@@ -65,14 +65,12 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: gcc_target_tests_64
-        log-name: GCC64
 
     - name: GCC32 Target Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
         target: gcc_target_tests_32
-        log-name: GCC32
 
     # API Tests
     - name: API Tests
@@ -80,14 +78,12 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: api_tests
-        log-name: APITests
 
     - name: FEXCore API Tests
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
         target: fexcore_apitests
-        log-name: FEXCoreAPITests
 
     # Linux tests
     - name: FEX Linux Tests
@@ -95,7 +91,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: fex_linux_tests_all
-        log-name: FEXLinuxTests
 
     # ASM Tests
     - name: ASM Tests
@@ -103,7 +98,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: asm_tests
-        log-name: ASM
 
     # POSIX Tests
     - name: POSIX Tests
@@ -111,7 +105,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: posix_tests
-        log-name: Posix
 
     - name: Remove old SHM regions
       if: ${{ always() }}
@@ -123,6 +116,6 @@ jobs:
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}-${{ env.runner_label }}
-        path: ${{ github.workspace }}/build/Testing/Temporary/LastTest_*.log
+        path: results/*.log
         retention-days: 3
 
