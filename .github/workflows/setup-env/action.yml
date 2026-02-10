@@ -1,4 +1,5 @@
 name: Setup Build Environment
+description: Setup RootFS and build environment
 
 inputs:
   setup-rootfs:

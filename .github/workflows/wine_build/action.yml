@@ -1,4 +1,5 @@
 name: Wine DLL Build
+description: Build a wow64 or arm64ec Wine DLL
 
 inputs:
   target:

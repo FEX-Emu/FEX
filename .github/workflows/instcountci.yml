@@ -56,7 +56,6 @@ jobs:
       uses: ./.github/workflows/test
       with:
         target: instcountci_tests
-        log-name: InstCountCI
 
     - name: Update local repo instcount
       if: ${{ always() }}
@@ -72,5 +71,5 @@ jobs:
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}-${{ env.runner_label }}
-        path: ${{ github.workspace }}/build/Testing/Temporary/LastTest_*.log
+        path: results/*.log
         retention-days: 3
