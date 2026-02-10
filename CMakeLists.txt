@@ -98,16 +98,16 @@ if (processor MATCHES "x86|amd64")
   endif()
 
   set(ARCHITECTURE_x86_64 1)
-  add_definitions(-DARCHITECTURE_x86_64=1)
+  add_compile_definitions(ARCHITECTURE_x86_64=1)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
 elseif (processor MATCHES "^aarch64|^arm64|^armv8\.*")
   set(ARCHITECTURE_arm64 1)
-  add_definitions(-DARCHITECTURE_arm64=1)
+  add_compile_definitions(ARCHITECTURE_arm64=1)
 
   # arm64ec needs to define both arm64 and arm64ec
   if (processor MATCHES "^arm64ec")
     set(ARCHITECTURE_arm64ec 1)
-    add_definitions(-DARCHITECTURE_arm64ec=1)
+    add_compile_definitions(ARCHITECTURE_arm64ec=1)
   endif()
 endif()
 
@@ -117,28 +117,28 @@ if (NOT (ARCHITECTURE_arm64 OR ARCHITECTURE_arm64ec OR ARCHITECTURE_x86_64))
 endif()
 
 if (BUILD_STEAM_SUPPORT)
-  add_definitions(-DFEX_STEAM_SUPPORT=1)
+  add_compile_definitions(FEX_STEAM_SUPPORT=1)
 endif()
 
 if (ENABLE_FEXCORE_PROFILER)
-  add_definitions(-DENABLE_FEXCORE_PROFILER=1)
+  add_compile_definitions(ENABLE_FEXCORE_PROFILER=1)
   string(TOUPPER "${FEXCORE_PROFILER_BACKEND}" FEXCORE_PROFILER_BACKEND)
 
   if (FEXCORE_PROFILER_BACKEND STREQUAL "GPUVIS")
-    add_definitions(-DFEXCORE_PROFILER_BACKEND=1)
+    add_compile_definitions(FEXCORE_PROFILER_BACKEND=1)
   elseif (FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
-    add_definitions(-DFEXCORE_PROFILER_BACKEND=2)
-    add_definitions(-DTRACY_ENABLE=1)
+    add_compile_definitions(FEXCORE_PROFILER_BACKEND=2)
+    add_compile_definitions(TRACY_ENABLE=1)
     # Required so that Tracy will only start in the selected guest application
-    add_definitions(-DTRACY_MANUAL_LIFETIME=1)
-    add_definitions(-DTRACY_DELAYED_INIT=1)
+    add_compile_definitions(TRACY_MANUAL_LIFETIME=1)
+    add_compile_definitions(TRACY_DELAYED_INIT=1)
     # This interferes with FEX's signal handling
-    add_definitions(-DTRACY_NO_CRASH_HANDLER=1)
+    add_compile_definitions(TRACY_NO_CRASH_HANDLER=1)
     # Tracy can gather call stack samples in regular intervals, but this
     # isn't useful for us since it would usually sample opaque JIT code
-    add_definitions(-DTRACY_NO_SAMPLING=1)
+    add_compile_definitions(TRACY_NO_SAMPLING=1)
     # This pulls in libbacktrace which allocators in global constructors (before FEX can set up its allocator hooks)
-    add_definitions(-DTRACY_NO_CALLSTACK=1)
+    add_compile_definitions(TRACY_NO_CALLSTACK=1)
     if (MINGW)
       message(FATAL_ERROR "Tracy profiler not supported on MinGW")
     endif()
@@ -152,7 +152,7 @@ if (ENABLE_JEMALLOC_GLIBC_ALLOC AND ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
 endif()
 
 if (ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
-  add_definitions(-DGLIBC_ALLOCATOR_FAULT=1)
+  add_compile_definitions(GLIBC_ALLOCATOR_FAULT=1)
 endif()
 
 # uninstall target
@@ -179,12 +179,12 @@ endif()
 
 if (ENABLE_ASSERTIONS)
   message(STATUS "Assertions enabled")
-  add_definitions(-DASSERTIONS_ENABLED=1)
+  add_compile_definitions(ASSERTIONS_ENABLED=1)
 endif()
 
 if (ENABLE_GDB_SYMBOLS)
   message(STATUS "GDBSymbols support enabled")
-  add_definitions(-DGDB_SYMBOLS_ENABLED=1)
+  add_compile_definitions(GDB_SYMBOLS_ENABLED=1)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -221,9 +221,9 @@ if (HAS_CLANG_PRESERVE_ALL)
 endif()
 
 if (ARCHITECTURE_arm64 AND HAS_CLANG_PRESERVE_ALL)
-  add_definitions("-DFEX_PRESERVE_ALL_ATTR=__attribute__((preserve_all))" "-DFEX_HAS_PRESERVE_ALL_ATTR=1")
+  add_compile_definitions("FEX_PRESERVE_ALL_ATTR=__attribute__((preserve_all))" "FEX_HAS_PRESERVE_ALL_ATTR=1")
 else()
-  add_definitions("-DFEX_PRESERVE_ALL_ATTR=" "-DFEX_HAS_PRESERVE_ALL_ATTR=0")
+  add_compile_definitions("FEX_PRESERVE_ALL_ATTR=" "FEX_HAS_PRESERVE_ALL_ATTR=0")
 endif()
 
 check_cxx_source_compiles(
@@ -234,11 +234,11 @@ check_cxx_source_compiles(
   return program_invocation_name == nullptr;
   }"
   HAS_PROGRAM_INVOCATION_NAME)
-add_definitions("-DHAS_PROGRAM_INVOCATION_NAME=${HAS_PROGRAM_INVOCATION_NAME}")
+add_compile_definitions("HAS_PROGRAM_INVOCATION_NAME=${HAS_PROGRAM_INVOCATION_NAME}")
 
 if (ENABLE_VIXL_SIMULATOR)
   # We can run the simulator on both x86-64 or AArch64 hosts
-  add_definitions(-DVIXL_SIMULATOR=1 -DVIXL_INCLUDE_SIMULATOR_AARCH64=1)
+  add_compile_definitions(VIXL_SIMULATOR=1 VIXL_INCLUDE_SIMULATOR_AARCH64=1)
 endif()
 
 if (ENABLE_CCACHE)
@@ -274,7 +274,7 @@ endif()
 
 if (NOT ENABLE_OFFLINE_TELEMETRY)
   # Disable FEX offline telemetry entirely if asked
-  add_definitions(-DFEX_DISABLE_TELEMETRY=1)
+  add_compile_definitions(FEX_DISABLE_TELEMETRY=1)
 endif()
 
 if (ENABLE_UBSAN)
@@ -285,13 +285,13 @@ if (ENABLE_UBSAN)
   # that are regularly access unaligned.
   # function: syscalls cast function pointers to void (*)(unsigned long...), causing warnings
   # related to this access.
-  add_definitions(-DENABLE_UBSAN=1)
+  add_compile_definitions(ENABLE_UBSAN=1)
   add_compile_options(-fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=function -fno-sanitize-recover=undefined)
   link_libraries(-fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=function -fno-sanitize-recover=undefined)
 endif()
 
 if (ENABLE_ASAN)
-  add_definitions(-DENABLE_ASAN=1)
+  add_compile_definitions(ENABLE_ASAN=1)
   add_compile_options(-fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope)
   link_libraries(-fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope)
 endif()
@@ -392,8 +392,8 @@ if (NOT TARGET xxHash::xxhash)
   add_subdirectory(External/xxhash/cmake_unofficial/)
 endif()
 
-add_definitions(-Wno-trigraphs)
-add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
+add_compile_options(-Wno-trigraphs)
+add_compile_definitions(GLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
 
 if (BUILD_TESTING)
   find_package(Catch2 3 QUIET)
