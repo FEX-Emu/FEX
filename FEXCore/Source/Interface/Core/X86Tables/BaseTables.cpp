@@ -124,7 +124,7 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   },
   // ENTRY_63
   {
-    {"ARPL",   TYPE_INST, GenFlagsSameSize(SIZE_16BIT) | FLAGS_MODRM, 0, { .OpDispatch = &IR::OpDispatchBuilder::ARPLOp } },
+    {"ARPL",   TYPE_INST, GenFlagsSameSize(SIZE_16BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, { .OpDispatch = &IR::OpDispatchBuilder::ARPLOp } },
     {"MOVSXD", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM, 0, { .OpDispatch = &IR::OpDispatchBuilder::MOVSXDOp } },
   },
   // ENTRY_9A
