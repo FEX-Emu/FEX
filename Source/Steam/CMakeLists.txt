@@ -26,3 +26,9 @@ install(FILES ConfigTemplate.json
 install(FILES toolmanifest.vdf
   DESTINATION /
   COMPONENT Runtime)
+
+# VERSION file installed in to root of depot
+configure_file(VERSIONS.txt.in ${CMAKE_CURRENT_BINARY_DIR}/VERSIONS.txt)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/VERSIONS.txt
+  DESTINATION /
+  COMPONENT Runtime)
