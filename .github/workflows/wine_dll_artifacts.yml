@@ -18,6 +18,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+      with:
+        fetch-depth: '0'
+        fetch-tags: 'true'
 
     - name: Add MingGW to PATH
       run: echo "$HOME/llvm-mingw/build/bin/" >> $GITHUB_PATH

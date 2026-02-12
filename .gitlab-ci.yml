@@ -1,6 +1,7 @@
 variables:
     DEBIAN_FRONTEND: noninteractive
     GIT_SUBMODULE_STRATEGY: recursive
+    GIT_DEPTH: 0
     CC: clang
     CXX: clang++
 
