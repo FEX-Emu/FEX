@@ -26,7 +26,6 @@
 
 #include <array>
 #include <bit>
-#include <csignal>
 #include <cstring>
 
 namespace FEXCore::CPU {
@@ -626,6 +625,226 @@ void Dispatcher::ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_
 
 #endif
 
+void Dispatcher::EmitI32ToExtF80() {
+  ARMEmitter::ForwardLabel ZeroCase;
+  ARMEmitter::ForwardLabel Done;
+
+  (void)cbz(ARMEmitter::Size::i32Bit, TMP2, &ZeroCase);
+
+  lsr(ARMEmitter::Size::i32Bit, TMP4, TMP2, 31);
+  tst(ARMEmitter::Size::i32Bit, TMP2, TMP2);
+  neg(ARMEmitter::Size::i32Bit, TMP3, TMP2);
+  csel(ARMEmitter::Size::i32Bit, TMP3, TMP3, TMP2, ARMEmitter::Condition::CC_MI);
+
+  clz(ARMEmitter::Size::i32Bit, TMP1, TMP3);
+
+  mov(ARMEmitter::Size::i32Bit, TMP2, 0x401E);
+  sub(ARMEmitter::Size::i32Bit, TMP2, TMP2, TMP1);
+  orr(ARMEmitter::Size::i32Bit, TMP2, TMP2, TMP4, ARMEmitter::ShiftType::LSL, 15);
+
+  lslv(ARMEmitter::Size::i32Bit, TMP3, TMP3, TMP1);
+
+  lsl(ARMEmitter::Size::i64Bit, TMP3, TMP3, 32);
+
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP3);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+
+  (void)b(&Done);
+
+  (void)Bind(&ZeroCase);
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+
+  (void)Bind(&Done);
+}
+
+void Dispatcher::EmitI16ToExtF80() {
+  sxth(ARMEmitter::Size::i32Bit, TMP2, TMP2);
+
+  ARMEmitter::ForwardLabel ZeroCase;
+  ARMEmitter::ForwardLabel Done;
+
+  (void)cbz(ARMEmitter::Size::i32Bit, TMP2, &ZeroCase);
+
+  lsr(ARMEmitter::Size::i32Bit, TMP4, TMP2, 31);
+  tst(ARMEmitter::Size::i32Bit, TMP2, TMP2);
+  neg(ARMEmitter::Size::i32Bit, TMP3, TMP2);
+  csel(ARMEmitter::Size::i32Bit, TMP3, TMP3, TMP2, ARMEmitter::Condition::CC_MI);
+
+  clz(ARMEmitter::Size::i32Bit, TMP1, TMP3);
+
+  mov(ARMEmitter::Size::i32Bit, TMP2, 0x401E);
+  sub(ARMEmitter::Size::i32Bit, TMP2, TMP2, TMP1);
+  orr(ARMEmitter::Size::i32Bit, TMP2, TMP2, TMP4, ARMEmitter::ShiftType::LSL, 15);
+
+  lslv(ARMEmitter::Size::i32Bit, TMP3, TMP3, TMP1);
+
+  lsl(ARMEmitter::Size::i64Bit, TMP3, TMP3, 32);
+
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP3);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+
+  (void)b(&Done);
+
+  (void)Bind(&ZeroCase);
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+
+  (void)Bind(&Done);
+}
+
+void Dispatcher::EmitF32ToExtF80() {
+  ARMEmitter::ForwardLabel InfNaN;
+  ARMEmitter::ForwardLabel ZeroDenormal;
+  ARMEmitter::ForwardLabel Denormal;
+  ARMEmitter::ForwardLabel NaN;
+  ARMEmitter::ForwardLabel Done;
+  ARMEmitter::BiDirectionalLabel NormalPath;
+  ARMEmitter::ForwardLabel ZeroResult;
+
+  fmov(ARMEmitter::Size::i32Bit, TMP1, VTMP1.S());
+
+  ubfx(ARMEmitter::Size::i32Bit, TMP2, TMP1, 23, 8);
+  and_(ARMEmitter::Size::i32Bit, TMP3, TMP1, 0x007FFFFF);
+  lsr(ARMEmitter::Size::i32Bit, TMP4, TMP1, 31);
+
+  cmp(ARMEmitter::Size::i32Bit, TMP2, 0xFF);
+  (void)b(ARMEmitter::Condition::CC_EQ, &InfNaN);
+
+  (void)cbz(ARMEmitter::Size::i32Bit, TMP2, &ZeroDenormal);
+
+  (void)Bind(&NormalPath);
+  // Exponent bias adjustment, where bias is 0x3F80
+  LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 0x3F80);
+  add(ARMEmitter::Size::i32Bit, TMP2, TMP2, TMP1);
+  orr(ARMEmitter::Size::i32Bit, TMP2, TMP2, TMP4, ARMEmitter::ShiftType::LSL, 15);
+
+  // Set implicit bit and shift fraction to extF80 position
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, 0x00800000ULL);
+  orr(ARMEmitter::Size::i64Bit, TMP3, TMP3, TMP1);
+  lsl(ARMEmitter::Size::i64Bit, TMP3, TMP3, 40);
+
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP3);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+  (void)b(&Done);
+
+  (void)Bind(&ZeroDenormal);
+  (void)cbz(ARMEmitter::Size::i32Bit, TMP3, &ZeroResult);
+
+  (void)Bind(&Denormal);
+  clz(ARMEmitter::Size::i32Bit, TMP1, TMP3);
+  sub(ARMEmitter::Size::i32Bit, TMP1, TMP1, 8);
+  mov(ARMEmitter::Size::i32Bit, TMP2, 1);
+  sub(ARMEmitter::Size::i32Bit, TMP2, TMP2, TMP1);
+  lslv(ARMEmitter::Size::i32Bit, TMP3, TMP3, TMP1);
+  (void)b(&NormalPath);
+
+  (void)Bind(&ZeroResult);
+  lsl(ARMEmitter::Size::i32Bit, TMP2, TMP4, 15);
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+  (void)b(&Done);
+
+  (void)Bind(&InfNaN);
+  (void)cbnz(ARMEmitter::Size::i32Bit, TMP3, &NaN);
+
+  lsl(ARMEmitter::Size::i32Bit, TMP2, TMP4, 15);
+  orr(ARMEmitter::Size::i32Bit, TMP2, TMP2, 0x7FFF);
+
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 0x8000000000000000ULL);
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP3);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+  (void)b(&Done);
+
+  (void)Bind(&NaN);
+  lsl(ARMEmitter::Size::i32Bit, TMP2, TMP4, 15);
+  orr(ARMEmitter::Size::i32Bit, TMP2, TMP2, 0x7FFF);
+
+  lsl(ARMEmitter::Size::i64Bit, TMP3, TMP3, 40);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, 0xC000000000000000ULL);
+  orr(ARMEmitter::Size::i64Bit, TMP3, TMP3, TMP1);
+
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP3);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+
+  (void)Bind(&Done);
+}
+
+void Dispatcher::EmitF64ToExtF80() {
+  ARMEmitter::ForwardLabel InfNaN;
+  ARMEmitter::ForwardLabel ZeroDenormal;
+  ARMEmitter::ForwardLabel Denormal;
+  ARMEmitter::ForwardLabel NaN;
+  ARMEmitter::ForwardLabel Done;
+  ARMEmitter::BiDirectionalLabel NormalPath;
+  ARMEmitter::ForwardLabel ZeroResult;
+
+  fmov(ARMEmitter::Size::i64Bit, TMP1, VTMP1.D());
+
+  lsr(ARMEmitter::Size::i64Bit, TMP4, TMP1, 63);
+  ubfx(ARMEmitter::Size::i64Bit, TMP2, TMP1, 52, 11);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 0x000FFFFFFFFFFFFFULL);
+  and_(ARMEmitter::Size::i64Bit, TMP3, TMP1, TMP3);
+
+  cmp(ARMEmitter::Size::i64Bit, TMP2, 0x7FF);
+  (void)b(ARMEmitter::Condition::CC_EQ, &InfNaN);
+
+  (void)cbz(ARMEmitter::Size::i64Bit, TMP2, &ZeroDenormal);
+
+  (void)Bind(&NormalPath);
+  // Exponent bias adjustment where bias difference is 0x3C00
+  add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 0x3000);
+  add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 0xC00);
+  orr(ARMEmitter::Size::i64Bit, TMP2, TMP2, TMP4, ARMEmitter::ShiftType::LSL, 15);
+
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, 0x0010000000000000ULL);
+  orr(ARMEmitter::Size::i64Bit, TMP3, TMP3, TMP1);
+  lsl(ARMEmitter::Size::i64Bit, TMP3, TMP3, 11);
+
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP3);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+  (void)b(&Done);
+
+  (void)Bind(&ZeroDenormal);
+  (void)cbz(ARMEmitter::Size::i64Bit, TMP3, &ZeroResult);
+
+  (void)Bind(&Denormal);
+  clz(ARMEmitter::Size::i64Bit, TMP1, TMP3);
+  sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 11);
+  mov(ARMEmitter::Size::i64Bit, TMP2, 1);
+  sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, TMP1);
+  lslv(ARMEmitter::Size::i64Bit, TMP3, TMP3, TMP1);
+  (void)b(&NormalPath);
+
+  (void)Bind(&ZeroResult);
+  lsl(ARMEmitter::Size::i64Bit, TMP2, TMP4, 15);
+  movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+  (void)b(&Done);
+
+  (void)Bind(&InfNaN);
+  (void)cbnz(ARMEmitter::Size::i64Bit, TMP3, &NaN);
+
+  lsl(ARMEmitter::Size::i64Bit, TMP2, TMP4, 15);
+  orr(ARMEmitter::Size::i64Bit, TMP2, TMP2, 0x7FFF);
+
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 0x8000000000000000ULL);
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP3);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+  (void)b(&Done);
+
+  (void)Bind(&NaN);
+  lsl(ARMEmitter::Size::i64Bit, TMP2, TMP4, 15);
+  orr(ARMEmitter::Size::i64Bit, TMP2, TMP2, 0x7FFF);
+
+  lsl(ARMEmitter::Size::i64Bit, TMP3, TMP3, 11);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, 0xC000000000000000ULL);
+  orr(ARMEmitter::Size::i64Bit, TMP3, TMP3, TMP1);
+
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP3);
+  ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 4, TMP2);
+
+  (void)Bind(&Done);
+}
+
 uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
   auto Address = GetCursorAddress<uint64_t>();
   constexpr static auto FallbackPointerReg = TMP4;
@@ -696,65 +915,33 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
 
   switch (ABI) {
   case FABI_F80_I16_F32_PTR: {
-    // Linux Reg/Win32 Reg:
-    // tmp4 (x4/x13): FallbackHandler
-    // x30: return
-    // vtmp1 (v0/v16): source
-    SpillForABICall(CTX->HostFeatures.SupportsPreserveAllABI, TMP3, true);
-
-    if (!TMP_ABIARGS) {
-      fmov(VABI1.S(), VTMP1.S());
-    }
-    ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-    mov(ARMEmitter::XReg::x1, STATE);
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<FEXCore::VectorRegType, uint16_t, float, uint64_t>(FallbackPointerReg);
-    } else {
-      blr(FallbackPointerReg);
-    }
-
-    FillF80Result();
+    // Save NZCV - it's a static register (guest x86 flags) and the inline code clobbers it
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+    str(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    EmitF32ToExtF80();
+    ldr(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   } break;
   case FABI_F80_I16_F64_PTR: {
-    // Linux Reg/Win32 Reg:
-    // tmp4 (x4/x13): FallbackHandler
-    // x30: return
-    // vtmp1 (v0/v16): source
-    SpillForABICall(CTX->HostFeatures.SupportsPreserveAllABI, TMP3, true);
-
-    if (!TMP_ABIARGS) {
-      fmov(VABI1.D(), VTMP1.D());
-    }
-    ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-    mov(ARMEmitter::XReg::x1, STATE);
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<FEXCore::VectorRegType, uint16_t, double, uint64_t>(FallbackPointerReg);
-    } else {
-      blr(FallbackPointerReg);
-    }
-
-    FillF80Result();
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+    str(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    EmitF64ToExtF80();
+    ldr(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   } break;
-  case FABI_F80_I16_I16_PTR:
+  case FABI_F80_I16_I16_PTR: {
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+    str(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    EmitI16ToExtF80();
+    ldr(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+  } break;
   case FABI_F80_I16_I32_PTR: {
-    // Linux Reg/Win32 Reg:
-    // tmp4 (x4/x13): FallbackHandler
-    // x30: return
-    // tmp2 (x1/x11): source
-    SpillForABICall(CTX->HostFeatures.SupportsPreserveAllABI, TMP3, true);
-
-    if (!TMP_ABIARGS) {
-      mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, TMP2);
-    }
-    ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-    mov(ARMEmitter::XReg::x2, STATE);
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<FEXCore::VectorRegType, uint16_t, uint32_t, uint64_t>(FallbackPointerReg);
-    } else {
-      blr(FallbackPointerReg);
-    }
-
-    FillF80Result();
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+    str(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    EmitI32ToExtF80();
+    ldr(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
   } break;
   case FABI_F32_I16_F80_PTR: {
     // Linux Reg/Win32 Reg:

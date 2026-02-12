@@ -98,6 +98,13 @@ private:
   void EmitDispatcher();
   uint64_t GenerateABICall(FallbackABI ABI);
 
+  // Inline softfloat conversion emitters - avoid FPCR save/restore overhead
+  // These emit ARM64 code that performs the conversion using only integer ops
+  void EmitI16ToExtF80();
+  void EmitI32ToExtF80();
+  void EmitF32ToExtF80();
+  void EmitF64ToExtF80();
+
   FEX_CONFIG_OPT(DisableL2Cache, DISABLEL2CACHE);
 };
 
