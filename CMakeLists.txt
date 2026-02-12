@@ -540,6 +540,8 @@ else()
   set(GIT_SHORT_HASH "${OVERRIDE_HASH}")
 endif()
 
+message(STATUS "FEX version strings: git describe: '${GIT_DESCRIBE_STRING}'. git short hash: '${GIT_SHORT_HASH}'")
+
 if (ENABLE_IWYU)
   find_program(IWYU_EXE "iwyu")
   if (IWYU_EXE)
