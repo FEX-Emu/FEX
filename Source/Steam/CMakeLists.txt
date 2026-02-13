@@ -16,19 +16,12 @@ install(TARGETS FEXServerManager RUNTIME
   DESTINATION bin
   COMPONENT Runtime)
 
-# Description json gets installed into root of depot
-install(FILES emulator.json
-  DESTINATION /
-  COMPONENT Runtime)
-install(FILES ConfigTemplate.json
-  DESTINATION /
-  COMPONENT Runtime)
-install(FILES toolmanifest.vdf
-  DESTINATION /
-  COMPONENT Runtime)
-
-# VERSION file installed in to root of depot
+# Description json and VERSION files are installed into the depot root
 configure_file(VERSIONS.txt.in ${CMAKE_CURRENT_BINARY_DIR}/VERSIONS.txt)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/VERSIONS.txt
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/VERSIONS.txt
+    ConfigTemplate.json
+    emulator.json
+    toolmanifest.vdf
   DESTINATION /
   COMPONENT Runtime)
