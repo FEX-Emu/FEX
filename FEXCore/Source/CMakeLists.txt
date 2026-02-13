@@ -6,7 +6,9 @@ set(FEXCORE_BASE_SRCS
   Utils/FileLoading.cpp
   Utils/ForcedAssert.cpp
   Utils/LogManager.cpp
-  Utils/SpinWaitLock.cpp)
+  Utils/SpinWaitLock.cpp
+  Utils/WildcardMatcher.cpp
+  )
 
 if (NOT MINGW)
   list(APPEND FEXCORE_BASE_SRCS
