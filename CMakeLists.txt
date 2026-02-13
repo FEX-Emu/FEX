@@ -543,7 +543,8 @@ endif()
 message(STATUS "FEX version strings: git describe: '${GIT_DESCRIBE_STRING}'. git short hash: '${GIT_SHORT_HASH}'")
 
 if (ENABLE_IWYU)
-  find_program(IWYU_EXE "iwyu")
+  find_program(IWYU_EXE
+    NAMES iwyu include-what-you-use)
   if (IWYU_EXE)
     message(STATUS "IWYU enabled")
     set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "${IWYU_EXE}")
