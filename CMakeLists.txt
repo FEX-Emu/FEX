@@ -544,9 +544,13 @@ message(STATUS "FEX Version: ${GIT_DESCRIBE_STRING}")
 message(STATUS "FEX Commit: ${GIT_HASH}")
 
 string(REGEX
-  REPLACE "(..)" "0x\\1, "
-  GIT_HASH_ARRAY
+  REPLACE "(..)" "\\1;"
+  _git_hash_array
   "${GIT_HASH}")
+
+list(REMOVE_ITEM _git_hash_array "")
+list(TRANSFORM _git_hash_array PREPEND 0x)
+list(JOIN _git_hash_array ", " GIT_HASH_ARRAY)
 
 if (ENABLE_IWYU)
   find_program(IWYU_EXE

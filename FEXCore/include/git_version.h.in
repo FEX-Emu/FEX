@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 
 static constexpr std::array<uint8_t, 20> GIT_HASH = {@GIT_HASH_ARRAY@};
 #define GIT_DESCRIBE_STRING "@GIT_DESCRIBE_STRING@"
