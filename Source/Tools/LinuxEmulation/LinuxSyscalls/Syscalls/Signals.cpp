@@ -14,7 +14,6 @@ $end_info$
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/SignalDelegator.h>
 
-#include <signal.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -23,36 +22,42 @@ struct GuestSigAction;
 }
 
 namespace FEX::HLE {
+auto rt_sigprocmask(FEXCore::Core::CpuStateFrame* Frame, int how, const uint64_t* set, uint64_t* oldset) -> uint64_t {
+  return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), how,
+                                                                           set, oldset);
+}
+
+auto rt_sigpending(FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, size_t sigsetsize) -> uint64_t {
+  return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), set,
+                                                                          sigsetsize);
+}
+
+auto rt_sigsuspend(FEXCore::Core::CpuStateFrame* Frame, uint64_t* unewset, size_t sigsetsize) -> uint64_t {
+  return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
+                                                                          unewset, sigsetsize);
+}
+
+auto userfaultfd(FEXCore::Core::CpuStateFrame* Frame, int flags) -> uint64_t {
+  // Disable userfaultfd until we can properly emulate it
+  // This is okay because the kernel configuration allows you to disable it at compile time
+  return -ENOSYS;
+  uint64_t Result = ::syscall(SYSCALL_DEF(userfaultfd), flags);
+  SYSCALL_ERRNO();
+}
+
+auto signalfd(FEXCore::Core::CpuStateFrame* Frame, int fd, const uint64_t* mask, size_t sigsetsize) -> uint64_t {
+  return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, 0);
+}
+
+auto signalfd4(FEXCore::Core::CpuStateFrame* Frame, int fd, const uint64_t* mask, size_t sigsetsize, int flags) -> uint64_t {
+  return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, flags);
+}
 void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL(rt_sigprocmask, [](FEXCore::Core::CpuStateFrame* Frame, int how, const uint64_t* set, uint64_t* oldset) -> uint64_t {
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
-                                                                             how, set, oldset);
-  });
-
-  REGISTER_SYSCALL_IMPL(rt_sigpending, [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, size_t sigsetsize) -> uint64_t {
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), set,
-                                                                            sigsetsize);
-  });
-
-  REGISTER_SYSCALL_IMPL(rt_sigsuspend, [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* unewset, size_t sigsetsize) -> uint64_t {
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
-                                                                            unewset, sigsetsize);
-  });
-
-  REGISTER_SYSCALL_IMPL(userfaultfd, [](FEXCore::Core::CpuStateFrame* Frame, int flags) -> uint64_t {
-    // Disable userfaultfd until we can properly emulate it
-    // This is okay because the kernel configuration allows you to disable it at compile time
-    return -ENOSYS;
-    uint64_t Result = ::syscall(SYSCALL_DEF(userfaultfd), flags);
-    SYSCALL_ERRNO();
-  });
-
-  REGISTER_SYSCALL_IMPL(signalfd, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const uint64_t* mask, size_t sigsetsize) -> uint64_t {
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, 0);
-  });
-
-  REGISTER_SYSCALL_IMPL(signalfd4, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const uint64_t* mask, size_t sigsetsize, int flags) -> uint64_t {
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, flags);
-  });
+  REGISTER_SYSCALL_IMPL(rt_sigprocmask, rt_sigprocmask);
+  REGISTER_SYSCALL_IMPL(rt_sigpending, rt_sigpending);
+  REGISTER_SYSCALL_IMPL(rt_sigsuspend, rt_sigsuspend);
+  REGISTER_SYSCALL_IMPL(userfaultfd, userfaultfd);
+  REGISTER_SYSCALL_IMPL(signalfd, signalfd);
+  REGISTER_SYSCALL_IMPL(signalfd4, signalfd4);
 }
 } // namespace FEX::HLE
