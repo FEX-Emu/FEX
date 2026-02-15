@@ -306,7 +306,7 @@ public:
     }
 
     // Append any additional arguments from config
-    const auto AdditionalArgs = AdditionalArguments.All();
+    const auto& AdditionalArgs = AdditionalArguments.All();
     ApplicationArgs.insert(ApplicationArgs.end(), AdditionalArgs.begin(), AdditionalArgs.end());
 
     if (!MainElf.InterpreterElf.empty() && !SkipInterpreter) {
@@ -336,7 +336,7 @@ public:
     }
 
     if (AdditionalEnvp) {
-      const auto EnvpList = AdditionalEnvp->All();
+      const auto& EnvpList = AdditionalEnvp->All();
       EnvironmentVariables.insert(EnvironmentVariables.end(), EnvpList.begin(), EnvpList.end());
     }
 
