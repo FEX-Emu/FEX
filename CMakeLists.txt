@@ -523,25 +523,35 @@ else()
   set(GIT_DESCRIBE_STRING "${OVERRIDE_VERSION}")
 endif()
 
-set(GIT_SHORT_HASH "Unknown")
+set(GIT_HASH "Unknown")
 
 if (OVERRIDE_HASH STREQUAL "detect")
   find_package(Git)
 
   if (GIT_FOUND)
     execute_process(
-      COMMAND ${GIT_EXECUTABLE} rev-parse --short=7 HEAD
+      COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
       WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-      OUTPUT_VARIABLE GIT_SHORT_HASH
+      OUTPUT_VARIABLE GIT_HASH
       ERROR_QUIET
       OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif()
 else()
-  set(GIT_SHORT_HASH "${OVERRIDE_HASH}")
+  set(GIT_HASH "${OVERRIDE_HASH}")
 endif()
 
 message(STATUS "FEX Version: ${GIT_DESCRIBE_STRING}")
-message(STATUS "FEX Commit: ${GIT_SHORT_HASH}")
+message(STATUS "FEX Commit: ${GIT_HASH}")
+
+string(REGEX
+  REPLACE "(..)" "\\1;"
+  _git_hash_array
+  "${GIT_HASH}")
+
+list(REMOVE_ITEM _git_hash_array "")
+list(TRANSFORM _git_hash_array PREPEND 0x)
+list(JOIN _git_hash_array ", " GIT_HASH_ARRAY)
+
 if (ENABLE_IWYU)
   find_program(IWYU_EXE
     NAMES iwyu include-what-you-use)

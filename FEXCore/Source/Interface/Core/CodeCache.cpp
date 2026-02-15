@@ -232,7 +232,7 @@ uint64_t CodeCache::ComputeCodeMapId(std::string_view Filename, int FD) {
 struct CodeCacheHeader {
   std::array<char, 4> Magic = ExpectedMagic;
   uint32_t FormatVersion = 1;
-  char FEXVersion[8] = {};
+  uint8_t FEXVersion[20] = {};
   uint32_t NumBlocks;
   uint32_t NumCodePages;
   uint32_t CodeBufferSize;
@@ -253,9 +253,8 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
 
   // Write file header
   CodeCacheHeader header {};
-  constexpr std::string_view git_hash = GIT_SHORT_HASH;
-  static_assert(git_hash.size() <= sizeof(header.FEXVersion));
-  std::ranges::copy(git_hash, header.FEXVersion);
+  static_assert(GIT_HASH.size() == sizeof(header.FEXVersion));
+  std::ranges::copy(GIT_HASH, header.FEXVersion);
   header.NumBlocks = LookupCache.BlockList.size();
   header.NumCodePages = LookupCache.CodePages.size();
   header.CodeBufferSize = CTX.LatestOffset;
@@ -351,11 +350,8 @@ bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCac
     return false;
   }
 
-  char ExpectedVersion[8] = GIT_SHORT_HASH;
-  ranges::fill(ranges::find(ExpectedVersion, 0), std::end(ExpectedVersion), 0);
-  if (!ranges::equal(header.FEXVersion, ExpectedVersion)) {
-    LogMan::Msg::IFmt("Cache generated from old FEX version {}, current is {}; skipping", fmt::join(header.FEXVersion, ""),
-                      fmt::join(ExpectedVersion, ""));
+  if (!ranges::equal(header.FEXVersion, GIT_HASH)) {
+    LogMan::Msg::IFmt("Cache generated from old FEX version {:02x}, current is {:02x}; skipping", header.FEXVersion, GIT_HASH);
     return false;
   }
 

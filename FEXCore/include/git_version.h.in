@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#define GIT_SHORT_HASH "@GIT_SHORT_HASH@"
+#include <array>
+#include <cstdint>
+
+static constexpr std::array<uint8_t, 20> GIT_HASH = {@GIT_HASH_ARRAY@};
 #define GIT_DESCRIBE_STRING "@GIT_DESCRIBE_STRING@"
