@@ -613,9 +613,22 @@ void LoadGuestVDSOSymbols(char* VDSOBase) {
   using ELFHeaderType = std::conditional_t<Is64Bit, Elf64_Ehdr, Elf32_Ehdr>;
   using ELFSHeaderType = std::conditional_t<Is64Bit, Elf64_Shdr, Elf32_Shdr>;
   using ELFSymbolType = std::conditional_t<Is64Bit, Elf64_Sym, Elf32_Sym>;
+  constexpr auto ELFClass = Is64Bit ? ELFCLASS64 : ELFCLASS32;
+  constexpr auto ELFMachine = Is64Bit ? EM_X86_64 : EM_386;
 
   // We need to load symbols we care about.
   auto Header = reinterpret_cast<const ELFHeaderType*>(VDSOBase);
+
+  // Check ELF magic.
+  if (Header->e_ident[EI_MAG0] != ELFMAG0 || Header->e_ident[EI_MAG1] != ELFMAG1 || Header->e_ident[EI_MAG2] != ELFMAG2 ||
+      Header->e_ident[EI_MAG3] != ELFMAG3) {
+    return;
+  }
+
+  // Check ELF class and Machine.
+  if (Header->e_ident[EI_CLASS] != ELFClass || Header->e_machine != ELFMachine) {
+    return;
+  }
 
   // First walk the section headers to find the symbol table.
   auto RawShdrs = reinterpret_cast<const ELFSHeaderType*>(VDSOBase + Header->e_shoff);
@@ -796,7 +809,7 @@ VDSOMapping LoadVDSOThunks(FEXCore::Core::InternalThreadState* Thread, bool Is64
     // Get file size
     Mapping.VDSOSize = lseek(VDSOFD, 0, SEEK_END);
 
-    if (Mapping.VDSOSize >= 4) {
+    if (Mapping.VDSOSize >= std::min(sizeof(Elf32_Ehdr), sizeof(Elf64_Ehdr))) {
       // Reset to beginning
       lseek(VDSOFD, 0, SEEK_SET);
       Mapping.VDSOSize = FEXCore::AlignUp(Mapping.VDSOSize, FEXCore::Utils::FEX_PAGE_SIZE);
@@ -839,6 +852,11 @@ VDSOMapping LoadVDSOThunks(FEXCore::Core::InternalThreadState* Thread, bool Is64
       LoadHostVDSO();
     }
     close(VDSOFD);
+
+    if (!Mapping.VDSOBase) {
+      return {};
+    }
+
     if (Is64Bit) {
       LoadGuestVDSOSymbols<true>(reinterpret_cast<char*>(Mapping.VDSOBase));
     } else {
