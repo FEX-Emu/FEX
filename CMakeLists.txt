@@ -540,17 +540,12 @@ else()
   set(GIT_HASH "${OVERRIDE_HASH}")
 endif()
 
-message(STATUS "FEX Version: ${GIT_DESCRIBE_STRING}")
-message(STATUS "FEX Commit: ${GIT_HASH}")
+message(STATUS "FEX version: ${GIT_DESCRIBE_STRING}")
+message(STATUS "FEX commit: ${GIT_HASH}")
 
 string(REGEX
-  REPLACE "(..)" "\\1;"
-  _git_hash_array
-  "${GIT_HASH}")
-
-list(REMOVE_ITEM _git_hash_array "")
-list(TRANSFORM _git_hash_array PREPEND 0x)
-list(JOIN _git_hash_array ", " GIT_HASH_ARRAY)
+  REPLACE "(..|.$)" "0x\\1, "
+  GIT_HASH_ARRAY "${GIT_HASH}")
 
 if (ENABLE_IWYU)
   find_program(IWYU_EXE
