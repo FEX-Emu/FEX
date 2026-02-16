@@ -543,10 +543,15 @@ endif()
 message(STATUS "FEX version: ${GIT_DESCRIBE_STRING}")
 message(STATUS "FEX commit: ${GIT_HASH}")
 
+# Prepends 0x to every two-character sequence in the hash,
+# OR the final character of the hash, to plumb it for C++ usage. e.g.:
+# -DOVERRIDE_HASH=123456aa => 0x12, 0x34, 0x56, 0xaa,
+# -DOVERRIDE_HASH=12345678a => 0x12, 0x34, 0x56, 0x78, 0xa,
 string(REGEX
   REPLACE "(..|.$)" "0x\\1, "
   GIT_HASH_ARRAY "${GIT_HASH}")
 
+  message(STATUS "GIT_HASH_ARRAY ${GIT_HASH_ARRAY}")
 if (ENABLE_IWYU)
   find_program(IWYU_EXE
     NAMES iwyu include-what-you-use)
