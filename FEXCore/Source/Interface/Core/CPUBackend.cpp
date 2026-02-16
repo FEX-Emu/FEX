@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#include "FEXCore/Config/Config.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/LookupCache.h"
@@ -407,7 +408,13 @@ namespace CPU {
 
   fextl::shared_ptr<CodeBuffer> CodeBufferManager::GetLatest() {
     if (!Latest) {
-      AllocateNew(INITIAL_CODE_SIZE);
+      if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
+        // Start with a larger code buffer to avoid resizes that would discard
+        // code loaded from caches
+        AllocateNew(MAX_CODE_SIZE);
+      } else {
+        AllocateNew(INITIAL_CODE_SIZE);
+      }
     }
     return Latest;
   }
