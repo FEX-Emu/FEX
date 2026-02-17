@@ -8,7 +8,6 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXCore/fextl/robin_map.h>
-#include <FEXCore/HLE/SourcecodeResolver.h>
 
 #include <atomic>
 #include <cstdint>
@@ -32,6 +31,8 @@ enum class GuestRelocationType : uint32_t { Rel32, Rel64 };
 
 // Generic information associated with an executable file.
 struct ExecutableFileInfo {
+  ~ExecutableFileInfo();
+
 #if __clang_major__ < 16
   // Workaround for broken aggregate-initialization with std::piecewise_construct
   ExecutableFileInfo(fextl::unique_ptr<HLE::SourcecodeMap>, uint64_t, fextl::string);
