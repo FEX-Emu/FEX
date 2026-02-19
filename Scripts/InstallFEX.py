@@ -161,8 +161,8 @@ def InstallPPA():
 
     DidInstall = False
     try:
-        CmdResult = subprocess.call(["sudo", "add-apt-repository", "-y", "ppa:fex-emu/fex"])
-        DidInstall = CmdResult == 0
+        CmdResult = subprocess.run(["sudo", "add-apt-repository", "-y", "ppa:fex-emu/fex"])
+        DidInstall = CmdResult.returncode == 0
     except KeyboardInterrupt:
         DidInstall = False
         pass
@@ -195,8 +195,8 @@ def UpdatePPA():
 
     DidUpdate = False
     try:
-        CmdResult = subprocess.call(["sudo", "apt-get", "update"])
-        DidUpdate = CmdResult == 0
+        CmdResult = subprocess.run(["sudo", "apt-get", "update"])
+        DidUpdate = CmdResult.returncode == 0
     except KeyboardInterrupt:
         DidUpdate = False
         pass
@@ -211,8 +211,8 @@ def UpdatePPA():
 def InstallPackages(PackagesToInstall):
     DidInstall = False
     try:
-        CmdResult = subprocess.call(["sudo", "apt-get", "-y", "install"] + PackagesToInstall)
-        DidInstall = CmdResult == 0
+        CmdResult = subprocess.run(["sudo", "apt-get", "-y", "install"] + PackagesToInstall)
+        DidInstall = CmdResult.returncode == 0
     except KeyboardInterrupt:
         print ("Keyboard interrupt")
         DidInstall = False
@@ -256,8 +256,8 @@ def CheckAndInstallPackageUpdates(PackagesToInstall, InstallIfNotFound=False):
 def CheckPackageInstallStatus():
     PackagesToInstall = GetPackagesToInstall()
     for Package in PackagesToInstall[:]:
-        CmdResult = subprocess.call(["dpkg", "-s", Package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if CmdResult == 0:
+        CmdResult = subprocess.run(["dpkg", "-s", Package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if CmdResult.returncode == 0:
             PackagesToInstall.remove(Package)
 
     return PackagesToInstall
@@ -267,8 +267,8 @@ def InstallPackages(Packages):
 
     DidInstall = False
     try:
-        CmdResult = subprocess.call(["sudo", "apt-get", "-y", "install"] + Packages)
-        DidInstall = CmdResult == 0
+        CmdResult = subprocess.run(["sudo", "apt-get", "-y", "install"] + Packages)
+        DidInstall = CmdResult.returncode == 0
     except KeyboardInterrupt:
         print ("Keyboard interrupt")
         DidInstall = False
@@ -331,20 +331,26 @@ def CheckRootFSInstallStatus():
 def TryInstallRootFS():
     DidInstall = False
     try:
-        CmdResult = subprocess.call(["FEXRootFSFetcher"])
-        DidInstall = CmdResult == 0
+        with open("/dev/tty", "r") as tty:
+            CmdResult = subprocess.run(["FEXRootFSFetcher"], stdin=tty)
+        DidInstall = CmdResult.returncode == 0
     except KeyboardInterrupt:
         print ("Keyboard interrupt")
+        DidInstall = False
+        pass
+    except OSError:
+        print ("No TTY available")
         DidInstall = False
         pass
     return DidInstall
 
 def TryBasicProgramExecution():
-    return subprocess.call(["FEX", "/usr/bin/uname", "-a"]) == 0
+    CmdResult = subprocess.run(["FEX", "/usr/bin/uname", "-a"])
+    return CmdResult.returncode == 0
 
 def ExitWithStatus(Status):
     # Remove the cached credentials
-    subprocess.call(["sudo", "-K"])
+    subprocess.run(["sudo", "-K"])
     sys.exit(Status)
 
 def GetKernelVersion():
