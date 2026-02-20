@@ -253,6 +253,12 @@ static_assert(offsetof(CPUState, gregs[15]) <= 504, "gregs maximum offset must b
 static_assert(offsetof(CPUState, DeferredSignalRefCount) % 8 == 0, "Needs to be 8-byte aligned");
 static_assert(offsetof(CPUState, L1Pointer) <= 504, "This needs to be <= 504 for ldp");
 static_assert(offsetof(CPUState, L1Mask) == (offsetof(CPUState, L1Pointer) + 8), "These two variables are paired");
+static_assert(offsetof(CPUState, pf_raw) <= 252, "pf_raw must be within ldp imm offset range");
+static_assert((offsetof(CPUState, pf_raw) + 4) == offsetof(CPUState, af_raw), "pf_raw and af_raw must be sequential");
+
+// Some CPU architectures have a penalty for alignment of ldp/stp not being 2 * <element_size>.
+static_assert(offsetof(CPUState, gregs[0]) % 16 == 0, "gregs should be 16-byte aligned");
+static_assert(offsetof(CPUState, pf_raw) % 8 == 0, "pf_raw must be 8-byte aligned.");
 
 struct InternalThreadState;
 
