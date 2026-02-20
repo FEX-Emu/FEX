@@ -322,7 +322,7 @@ DEF_OP(Thunk) {
   // X0: CTX
   // X1: Args (from guest stack)
 
-  SpillStaticRegs(TMP1); // spill to ctx before ra64 spill
+  SpillStaticRegs(TMP1, true, ~0U, ~0U, false); // spill to ctx before ra64 spill
 
   PushDynamicRegs(TMP1);
 
@@ -337,7 +337,7 @@ DEF_OP(Thunk) {
 
   PopDynamicRegs();
 
-  FillStaticRegs(); // load from ctx after ra64 refill
+  FillStaticRegs(true, ~0U, ~0U, std::nullopt, std::nullopt, false); // load from ctx after ra64 refill
 }
 
 DEF_OP(ValidateCode) {
