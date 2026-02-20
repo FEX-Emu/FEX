@@ -237,6 +237,7 @@ struct CodeCacheHeader {
   uint32_t NumCodePages;
   uint32_t CodeBufferSize;
   uint32_t NumRelocations;
+  uint32_t padding;
   uint64_t SerializedBaseAddress;
   // TODO: Consider including information from LookupCache.BlockLinks
 
