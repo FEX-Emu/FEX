@@ -677,7 +677,7 @@ void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Regi
   }
 }
 
-void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
+void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask, bool NZCV) {
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {
     // Disable AFP features when spilling registers.
@@ -698,13 +698,15 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   }
 #endif
 
-  // Regardless of what GPRs/FPRs we're spilling, we need to spill NZCV since it
-  // is always static and almost certainly clobbered by the subsequent code.
-  //
-  // TODO: Can we prove that NZCV is not used across a call in some cases and
-  // omit this? Might help x87 perf? Future idea.
-  mrs(TmpReg, ARMEmitter::SystemRegister::NZCV);
-  str(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+  if (NZCV) {
+    // Regardless of what GPRs/FPRs we're spilling, we need to spill NZCV since it
+    // is always static and almost certainly clobbered by the subsequent code.
+    //
+    // TODO: Can we prove that NZCV is not used across a call in some cases and
+    // omit this? Might help x87 perf? Future idea.
+    mrs(TmpReg, ARMEmitter::SystemRegister::NZCV);
+    str(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+  }
 
   // PF/AF are special, remove them from the mask
   uint32_t PFAFMask = ((1u << REG_PF.Idx()) | ((1u << REG_AF.Idx())));
@@ -726,7 +728,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   }
 
   // Now handle PF/AF
-  if (PFAFSpillMask) {
+  if (NZCV && PFAFSpillMask) {
     auto PFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw);
     auto AFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
     LOGMAN_THROW_A_FMT(PFAFSpillMask == PFAFMask, "PF/AF not spilled together");
@@ -776,7 +778,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
 }
 
 void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask, std::optional<ARMEmitter::Register> OptionalReg,
-                                  std::optional<ARMEmitter::Register> OptionalReg2) {
+                                  std::optional<ARMEmitter::Register> OptionalReg2, bool NZCV) {
   auto FindTempReg = [this](uint32_t* GPRFillMask) -> std::optional<ARMEmitter::Register> {
     for (auto Reg : StaticRegisters) {
       if (((1U << Reg.Idx()) & *GPRFillMask)) {
@@ -810,13 +812,15 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
   ldr(REG_CALLRET_SP, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.callret_sp));
 
-  // Regardless of what GPRs/FPRs we're filling, we need to fill NZCV since it
-  // is always static and was almost certainly clobbered.
-  //
-  // TODO: Can we prove that NZCV is not used across a call in some cases and
-  // omit this? Might help x87 perf? Future idea.
-  ldr(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
-  msr(ARMEmitter::SystemRegister::NZCV, TmpReg);
+  if (NZCV) {
+    // Regardless of what GPRs/FPRs we're filling, we need to fill NZCV since it
+    // is always static and was almost certainly clobbered.
+    //
+    // TODO: Can we prove that NZCV is not used across a call in some cases and
+    // omit this? Might help x87 perf? Future idea.
+    ldr(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+    msr(ARMEmitter::SystemRegister::NZCV, TmpReg);
+  }
 
   FillSpecialRegs(TmpReg, TmpReg2, true, FPRs);
 
@@ -877,7 +881,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   }
 
   // Now handle PF/AF
-  if (PFAFFillMask) {
+  if (NZCV && PFAFFillMask) {
     LOGMAN_THROW_A_FMT(PFAFFillMask == PFAFMask, "PF/AF not filled together");
 
     ldp<ARMEmitter::IndexType::OFFSET>(REG_PF.W(), REG_AF.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw));

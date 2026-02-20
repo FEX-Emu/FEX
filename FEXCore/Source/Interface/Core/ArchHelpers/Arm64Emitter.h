@@ -135,10 +135,10 @@ protected:
   // Returning REG_INVALID if there was no mapping.
   FEXCore::X86State::X86Reg GetX86RegRelationToARMReg(ARMEmitter::Register Reg);
 
-  void SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
+  void SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U, bool NZCV = true);
   void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U,
                       std::optional<ARMEmitter::Register> OptionalReg = std::nullopt,
-                      std::optional<ARMEmitter::Register> OptionalReg2 = std::nullopt);
+                      std::optional<ARMEmitter::Register> OptionalReg2 = std::nullopt, bool NZCV = true);
 
   // Register 0-18 + 29 + 30 are caller saved
   static constexpr uint32_t CALLER_GPR_MASK = 0b0110'0000'0000'0111'1111'1111'1111'1111U;
