@@ -429,7 +429,6 @@ bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCac
   }
 
   auto CodeBuffer = CTX.GetLatest();
-  LOGMAN_THROW_A_FMT(header.CodeBufferSize <= CodeBuffer->Size, "CodeBuffer too small to load code cache");
   LOGMAN_THROW_A_FMT(reinterpret_cast<uintptr_t>(CodeBuffer->Ptr) % 0x1000 == 0, "Expected CodeBuffer base to be page-aligned");
   const auto Delta = AlignUp(CTX.LatestOffset, 0x1000) - CTX.LatestOffset;
   CTX.LatestOffset += Delta;
