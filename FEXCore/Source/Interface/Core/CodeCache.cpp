@@ -539,6 +539,11 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   }
 
   auto NewCodeBuffer = ValidationCTX->GetLatest();
+  while (CachedCode.size_bytes() > NewCodeBuffer->UsableSize()) {
+    ValidationCTX->ClearCodeCache(ValidationThread.get());
+    NewCodeBuffer = ValidationCTX->GetLatest();
+    LogMan::Msg::IFmt("Increased cache validation code buffer size to {} MiB", NewCodeBuffer->AllocatedSize / 1024 / 1024);
+  }
 
   std::span<std::byte> CodeBufferRangeRef =
     std::as_writable_bytes(std::span {NewCodeBuffer->Ptr, NewCodeBuffer->Ptr + NewCodeBuffer->UsableSize()}).subspan(0, CachedCode.size_bytes());
