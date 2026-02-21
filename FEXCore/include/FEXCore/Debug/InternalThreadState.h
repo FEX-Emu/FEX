@@ -124,7 +124,7 @@ struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCo
   FEXCore::UncheckedLongJump::JumpBuf RestartJump;
 
   // BaseFrameState should always be at the end, directly before the interrupt fault page
-  alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState {};
+  FEXCore::Core::CpuStateFrame BaseFrameState {};
 
   // Can be reprotected as RO to trigger an interrupt at generated code block entrypoints
   alignas(FEXCore::Utils::FEX_PAGE_SIZE) uint8_t InterruptFaultPage[FEXCore::Utils::FEX_PAGE_SIZE];

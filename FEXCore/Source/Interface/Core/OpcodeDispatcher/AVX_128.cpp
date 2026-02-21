@@ -340,16 +340,12 @@ void OpDispatchBuilder::AVX128_VZERO(OpcodeArgs) {
       AVX128_StoreXMMRegister(i, ZeroVector, false);
     }
 
-    // More efficient for non-SRA upper-halves to use a cached constant and store directly.
-    for (uint32_t i = 0; i < NumRegs; i++) {
-      AVX128_StoreXMMRegister(i, ZeroVector, true);
-    }
+    InvalidateHighAVXRegisters();
+    _ContextClear(offsetof(FEXCore::Core::CPUState, avx_high), sizeof(FEXCore::Core::CPUState::avx_high[0]) * NumRegs);
   } else {
     // Likewise, VZEROUPPER will only ever zero only up to the first 16 registers
-    const auto ZeroVector = LoadZeroVector(OpSize::i128Bit);
-    for (uint32_t i = 0; i < NumRegs; i++) {
-      AVX128_StoreXMMRegister(i, ZeroVector, true);
-    }
+    InvalidateHighAVXRegisters();
+    _ContextClear(offsetof(FEXCore::Core::CPUState, avx_high), sizeof(FEXCore::Core::CPUState::avx_high[0]) * NumRegs);
   }
 }
 

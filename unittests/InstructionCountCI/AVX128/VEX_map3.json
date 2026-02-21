@@ -17,7 +17,7 @@
       "ExpectedArm64ASM": [
         "ext v16.16b, v17.16b, v17.16b, #8",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 2": {
@@ -26,10 +26,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "zip1 v16.2d, v2.2d, v17.2d",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 3": {
@@ -38,10 +38,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "ext v16.16b, v2.16b, v17.16b, #8",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 4": {
@@ -51,7 +51,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -63,7 +63,7 @@
       "ExpectedArm64ASM": [
         "dup v16.2d, v17.d[1]",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 6": {
@@ -72,11 +72,11 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "mov v16.16b, v2.16b",
         "mov v16.d[1], v17.d[1]",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 7": {
@@ -85,10 +85,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "trn2 v16.2d, v2.2d, v17.2d",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 8": {
@@ -97,10 +97,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "zip1 v16.2d, v17.2d, v2.2d",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 9": {
@@ -109,10 +109,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "ext v16.16b, v17.16b, v2.16b, #8",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 10": {
@@ -121,10 +121,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v2.d[0]",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 11": {
@@ -133,10 +133,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "ext v16.16b, v2.16b, v2.16b, #8",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 12": {
@@ -145,11 +145,11 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "mov v16.16b, v17.16b",
         "mov v16.d[1], v2.d[1]",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 13": {
@@ -158,10 +158,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "trn2 v16.2d, v17.2d, v2.2d",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 14": {
@@ -170,9 +170,9 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
+        "ldr q16, [x28, #208]",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 15": {
@@ -181,10 +181,10 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v2.d[1]",
         "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 00000000b": {
@@ -194,7 +194,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.2d, v17.d[0]",
-        "str q16, [x28, #32]"
+        "str q16, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 01010101b": {
@@ -204,7 +204,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.2d, v17.d[1]",
-        "str q16, [x28, #32]"
+        "str q16, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 10101010b": {
@@ -213,9 +213,9 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v2.d[0]",
-        "str q16, [x28, #32]"
+        "str q16, [x28, #192]"
       ]
     },
     "vpermq ymm0, ymm1, 11111111b": {
@@ -224,9 +224,9 @@
         "Map 3 0b01 0x00 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v2.d[1]",
-        "str q16, [x28, #32]"
+        "str q16, [x28, #192]"
       ]
     },
     "vpermpd ymm0, ymm1, 00000000b": {
@@ -236,7 +236,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.2d, v17.d[0]",
-        "str q16, [x28, #32]"
+        "str q16, [x28, #192]"
       ]
     },
     "vpermpd ymm0, ymm1, 01010101b": {
@@ -246,7 +246,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.2d, v17.d[1]",
-        "str q16, [x28, #32]"
+        "str q16, [x28, #192]"
       ]
     },
     "vpermpd ymm0, ymm1, 10101010b": {
@@ -255,9 +255,9 @@
         "Map 3 0b01 0x01 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v2.d[0]",
-        "str q16, [x28, #32]"
+        "str q16, [x28, #192]"
       ]
     },
     "vpermpd ymm0, ymm1, 11111111b": {
@@ -266,9 +266,9 @@
         "Map 3 0b01 0x01 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v2.d[1]",
-        "str q16, [x28, #32]"
+        "str q16, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 0000b": {
@@ -277,7 +277,7 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 0001b": {
@@ -287,7 +287,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.s[0], v17.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 0010b": {
@@ -297,7 +297,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.s[1], v17.s[1]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 0011b": {
@@ -307,7 +307,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.d[0], v17.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 0100b": {
@@ -317,7 +317,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.s[2], v17.s[2]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 0101b": {
@@ -328,7 +328,7 @@
       "ExpectedArm64ASM": [
         "rev64 v2.4s, v17.4s",
         "trn2 v16.4s, v2.4s, v16.4s",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 0110b": {
@@ -337,9 +337,9 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3152]",
+        "ldr q2, [x28, #3168]",
         "tbx v16.16b, {v17.16b}, v2.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 0111b": {
@@ -348,9 +348,9 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "tbx v16.16b, {v17.16b}, v2.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 1000b": {
@@ -360,7 +360,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.s[3], v17.s[3]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 1001b": {
@@ -369,9 +369,9 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3184]",
+        "ldr q2, [x28, #3200]",
         "tbx v16.16b, {v17.16b}, v2.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 1010b": {
@@ -382,7 +382,7 @@
       "ExpectedArm64ASM": [
         "rev64 v2.4s, v16.4s",
         "trn2 v16.4s, v2.4s, v17.4s",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 1011b": {
@@ -391,9 +391,9 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3200]",
+        "ldr q2, [x28, #3216]",
         "tbx v16.16b, {v17.16b}, v2.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 1100b": {
@@ -403,7 +403,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.d[1], v17.d[1]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 1101b": {
@@ -412,9 +412,9 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3216]",
+        "ldr q2, [x28, #3232]",
         "tbx v16.16b, {v17.16b}, v2.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 1110b": {
@@ -423,9 +423,9 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3232]",
+        "ldr q2, [x28, #3248]",
         "tbx v16.16b, {v17.16b}, v2.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendd xmm0, xmm1, 1111b": {
@@ -434,7 +434,7 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -444,8 +444,8 @@
         "Map 3 0b01 0x02 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #32]",
-        "str q2, [x28, #32]"
+        "ldr q2, [x28, #192]",
+        "str q2, [x28, #192]"
       ]
     },
     "vpblendd ymm0, ymm1, 01010101b": {
@@ -454,13 +454,13 @@
         "Map 3 0b01 0x02 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #32]",
-        "ldr q3, [x28, #48]",
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
         "rev64 v4.4s, v17.4s",
         "trn2 v16.4s, v4.4s, v16.4s",
         "rev64 v3.4s, v3.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpblendd ymm0, ymm1, 10101010b": {
@@ -469,13 +469,13 @@
         "Map 3 0b01 0x02 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #32]",
-        "ldr q3, [x28, #48]",
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
         "rev64 v4.4s, v16.4s",
         "trn2 v16.4s, v4.4s, v17.4s",
         "rev64 v2.4s, v2.4s",
         "trn2 v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpblendd ymm0, ymm1, 11111111b": {
@@ -484,8 +484,8 @@
         "Map 3 0b01 0x02 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -496,7 +496,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.4s, v17.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpermilps xmm0, xmm1, 01010101b": {
@@ -506,7 +506,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.4s, v17.s[1]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpermilps xmm0, xmm1, 10101010b": {
@@ -516,7 +516,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.4s, v17.s[2]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpermilps xmm0, xmm1, 11111111b": {
@@ -526,7 +526,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.4s, v17.s[3]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpermilps ymm0, ymm1, 00000000b": {
@@ -535,10 +535,10 @@
         "Map 3 0b01 0x03 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.4s, v17.s[0]",
         "dup v2.4s, v2.s[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilps ymm0, ymm1, 01010101b": {
@@ -547,10 +547,10 @@
         "Map 3 0b01 0x03 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.4s, v17.s[1]",
         "dup v2.4s, v2.s[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilps ymm0, ymm1, 10101010b": {
@@ -559,10 +559,10 @@
         "Map 3 0b01 0x03 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.4s, v17.s[2]",
         "dup v2.4s, v2.s[2]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilps ymm0, ymm1, 11111111b": {
@@ -571,10 +571,10 @@
         "Map 3 0b01 0x03 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.4s, v17.s[3]",
         "dup v2.4s, v2.s[3]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd xmm0, xmm1, 00b": {
@@ -584,7 +584,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.2d, v17.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpermilpd xmm0, xmm1, 01b": {
@@ -594,7 +594,7 @@
       ],
       "ExpectedArm64ASM": [
         "ext v16.16b, v17.16b, v17.16b, #8",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpermilpd xmm0, xmm1, 10b": {
@@ -603,7 +603,7 @@
         "Map 3 0b01 0x05 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -614,7 +614,7 @@
       ],
       "ExpectedArm64ASM": [
         "dup v16.2d, v17.d[1]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0000b": {
@@ -623,10 +623,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v17.d[0]",
         "dup v2.2d, v2.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0001b": {
@@ -635,10 +635,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "ext v16.16b, v17.16b, v17.16b, #8",
         "dup v2.2d, v2.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0010b": {
@@ -647,9 +647,9 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v2.2d, v2.d[0]",
-        "str q2, [x28, #32]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -659,10 +659,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v17.d[1]",
         "dup v2.2d, v2.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0100b": {
@@ -671,10 +671,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v17.d[0]",
         "ext v2.16b, v2.16b, v2.16b, #8",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0101b": {
@@ -683,10 +683,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "ext v16.16b, v17.16b, v17.16b, #8",
         "ext v2.16b, v2.16b, v2.16b, #8",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0110b": {
@@ -695,9 +695,9 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "ext v2.16b, v2.16b, v2.16b, #8",
-        "str q2, [x28, #32]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -707,10 +707,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v17.d[1]",
         "ext v2.16b, v2.16b, v2.16b, #8",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 1000b": {
@@ -719,9 +719,9 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v17.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 1001b": {
@@ -730,9 +730,9 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "ext v16.16b, v17.16b, v17.16b, #8",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 1010b": {
@@ -741,8 +741,8 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -752,9 +752,9 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v17.d[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 1100b": {
@@ -763,10 +763,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v17.d[0]",
         "dup v2.2d, v2.d[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 1101b": {
@@ -775,10 +775,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "ext v16.16b, v17.16b, v17.16b, #8",
         "dup v2.2d, v2.d[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpermilpd ymm0, ymm1, 1110b": {
@@ -787,9 +787,9 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v2.2d, v2.d[1]",
-        "str q2, [x28, #32]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -799,10 +799,10 @@
         "Map 3 0b01 0x05 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "dup v16.2d, v17.d[1]",
         "dup v2.2d, v2.d[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00000000b": {
@@ -811,7 +811,7 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q17, [x28, #32]",
+        "str q17, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -821,8 +821,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "str q17, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "str q17, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00000010b": {
@@ -831,7 +831,7 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q17, [x28, #32]",
+        "str q17, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -841,8 +841,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #64]",
-        "str q17, [x28, #32]"
+        "ldr q16, [x28, #224]",
+        "str q17, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00010000b": {
@@ -851,8 +851,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -862,8 +862,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "str q16, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "str q16, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00010010b": {
@@ -872,8 +872,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -883,9 +883,9 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q16, [x28, #64]",
-        "str q2, [x28, #32]"
+        "ldr q2, [x28, #208]",
+        "ldr q16, [x28, #224]",
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00100000b": {
@@ -894,7 +894,7 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q18, [x28, #32]",
+        "str q18, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -904,8 +904,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "str q18, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "str q18, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00100010b": {
@@ -914,7 +914,7 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q18, [x28, #32]",
+        "str q18, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -924,8 +924,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #64]",
-        "str q18, [x28, #32]"
+        "ldr q16, [x28, #224]",
+        "str q18, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00110000b": {
@@ -934,8 +934,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -945,9 +945,9 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00110010b": {
@@ -956,8 +956,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -967,8 +967,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #64]",
-        "str q16, [x28, #32]"
+        "ldr q16, [x28, #224]",
+        "str q16, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00001000b": {
@@ -978,7 +978,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "str q17, [x28, #32]"
+        "str q17, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00011000b": {
@@ -987,9 +987,9 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "movi v16.2d, #0x0",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00101000b": {
@@ -999,7 +999,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "str q18, [x28, #32]"
+        "str q18, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00111000b": {
@@ -1008,9 +1008,9 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
+        "ldr q2, [x28, #224]",
         "movi v16.2d, #0x0",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 10001000b": {
@@ -1020,7 +1020,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 10000000b": {
@@ -1029,7 +1029,7 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1039,8 +1039,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "stp xzr, xzr, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 10000010b": {
@@ -1049,7 +1049,7 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1059,8 +1059,8 @@
         "Map 3 0b01 0x06 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #64]",
-        "stp xzr, xzr, [x28, #32]"
+        "ldr q16, [x28, #224]",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundps xmm0, xmm1, 00000000b": {
@@ -1071,7 +1071,7 @@
       ],
       "ExpectedArm64ASM": [
         "frintn v16.4s, v17.4s",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundps xmm0, xmm1, 00000001b": {
@@ -1082,7 +1082,7 @@
       ],
       "ExpectedArm64ASM": [
         "frintm v16.4s, v17.4s",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundps xmm0, xmm1, 00000010b": {
@@ -1093,7 +1093,7 @@
       ],
       "ExpectedArm64ASM": [
         "frintp v16.4s, v17.4s",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundps xmm0, xmm1, 00000011b": {
@@ -1104,7 +1104,7 @@
       ],
       "ExpectedArm64ASM": [
         "frintz v16.4s, v17.4s",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundps xmm0, xmm1, 00000100b": {
@@ -1115,7 +1115,7 @@
       ],
       "ExpectedArm64ASM": [
         "frinti v16.4s, v17.4s",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundps ymm0, ymm1, 00000000b": {
@@ -1125,10 +1125,10 @@
         "Map 3 0b01 0x08 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frintn v16.4s, v17.4s",
         "frintn v2.4s, v2.4s",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundps ymm0, ymm1, 00000001b": {
@@ -1138,10 +1138,10 @@
         "Map 3 0b01 0x08 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frintm v16.4s, v17.4s",
         "frintm v2.4s, v2.4s",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundps ymm0, ymm1, 00000010b": {
@@ -1151,10 +1151,10 @@
         "Map 3 0b01 0x08 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frintp v16.4s, v17.4s",
         "frintp v2.4s, v2.4s",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundps ymm0, ymm1, 00000011b": {
@@ -1164,10 +1164,10 @@
         "Map 3 0b01 0x08 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frintz v16.4s, v17.4s",
         "frintz v2.4s, v2.4s",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundps ymm0, ymm1, 00000100b": {
@@ -1177,10 +1177,10 @@
         "Map 3 0b01 0x08 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frinti v16.4s, v17.4s",
         "frinti v2.4s, v2.4s",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundpd xmm0, xmm1, 00000000b": {
@@ -1191,7 +1191,7 @@
       ],
       "ExpectedArm64ASM": [
         "frintn v16.2d, v17.2d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundpd xmm0, xmm1, 00000001b": {
@@ -1202,7 +1202,7 @@
       ],
       "ExpectedArm64ASM": [
         "frintm v16.2d, v17.2d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundpd xmm0, xmm1, 00000010b": {
@@ -1213,7 +1213,7 @@
       ],
       "ExpectedArm64ASM": [
         "frintp v16.2d, v17.2d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundpd xmm0, xmm1, 00000011b": {
@@ -1224,7 +1224,7 @@
       ],
       "ExpectedArm64ASM": [
         "frintz v16.2d, v17.2d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundpd xmm0, xmm1, 00000100b": {
@@ -1235,7 +1235,7 @@
       ],
       "ExpectedArm64ASM": [
         "frinti v16.2d, v17.2d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000000b": {
@@ -1245,10 +1245,10 @@
         "Map 3 0b01 0x09 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frintn v16.2d, v17.2d",
         "frintn v2.2d, v2.2d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000001b": {
@@ -1258,10 +1258,10 @@
         "Map 3 0b01 0x09 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frintm v16.2d, v17.2d",
         "frintm v2.2d, v2.2d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000010b": {
@@ -1271,10 +1271,10 @@
         "Map 3 0b01 0x09 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frintp v16.2d, v17.2d",
         "frintp v2.2d, v2.2d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000011b": {
@@ -1284,10 +1284,10 @@
         "Map 3 0b01 0x09 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frintz v16.2d, v17.2d",
         "frintz v2.2d, v2.2d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000100b": {
@@ -1297,10 +1297,10 @@
         "Map 3 0b01 0x09 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "frinti v16.2d, v17.2d",
         "frinti v2.2d, v2.2d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vroundss xmm0, xmm1, 00000000b": {
@@ -1312,7 +1312,7 @@
       "ExpectedArm64ASM": [
         "frintn s0, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundss xmm0, xmm1, 00000001b": {
@@ -1324,7 +1324,7 @@
       "ExpectedArm64ASM": [
         "frintm s0, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundss xmm0, xmm1, 00000010b": {
@@ -1336,7 +1336,7 @@
       "ExpectedArm64ASM": [
         "frintp s0, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundss xmm0, xmm1, 00000011b": {
@@ -1348,7 +1348,7 @@
       "ExpectedArm64ASM": [
         "frintz s0, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundss xmm0, xmm1, 00000100b": {
@@ -1360,7 +1360,7 @@
       "ExpectedArm64ASM": [
         "frinti s0, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000000b": {
@@ -1372,7 +1372,7 @@
       "ExpectedArm64ASM": [
         "frintn d0, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000001b": {
@@ -1384,7 +1384,7 @@
       "ExpectedArm64ASM": [
         "frintm d0, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000010b": {
@@ -1396,7 +1396,7 @@
       "ExpectedArm64ASM": [
         "frintp d0, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000011b": {
@@ -1408,7 +1408,7 @@
       "ExpectedArm64ASM": [
         "frintz d0, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vroundsd xmm0, xmm1, 00000100b": {
@@ -1420,7 +1420,7 @@
       "ExpectedArm64ASM": [
         "frinti d0, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendps xmm0, xmm1, xmm2, 0000b": {
@@ -1429,7 +1429,7 @@
         "Map 3 0b01 0x0c 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1441,7 +1441,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.s[0], v18.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendps xmm0, xmm1, xmm2, 1111b": {
@@ -1450,7 +1450,7 @@
         "Map 3 0b01 0x0c 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1460,8 +1460,8 @@
         "Map 3 0b01 0x0c 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1471,12 +1471,12 @@
         "Map 3 0b01 0x0c 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v16.16b, v17.16b",
         "mov v16.s[0], v18.s[0]",
         "mov v2.s[3], v3.s[3]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendps ymm0, ymm1, ymm2, 11111111b": {
@@ -1485,8 +1485,8 @@
         "Map 3 0b01 0x0c 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1496,7 +1496,7 @@
         "Map 3 0b01 0x0d 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1508,7 +1508,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.d[0], v18.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendpd xmm0, xmm1, xmm2, 10b": {
@@ -1519,7 +1519,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.d[1], v18.d[1]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendpd xmm0, xmm1, xmm2, 11b": {
@@ -1528,7 +1528,7 @@
         "Map 3 0b01 0x0d 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1538,8 +1538,8 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1549,10 +1549,10 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "mov v16.16b, v17.16b",
         "mov v16.d[0], v18.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendpd ymm0, ymm1, ymm2, 0010b": {
@@ -1561,10 +1561,10 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "mov v16.16b, v17.16b",
         "mov v16.d[1], v18.d[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendpd ymm0, ymm1, ymm2, 0011b": {
@@ -1573,8 +1573,8 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1584,10 +1584,10 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v2.d[0], v3.d[0]",
-        "str q2, [x28, #32]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1597,12 +1597,12 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v16.16b, v17.16b",
         "mov v16.d[0], v18.d[0]",
         "mov v2.d[0], v3.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendpd ymm0, ymm1, ymm2, 0110b": {
@@ -1611,12 +1611,12 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v16.16b, v17.16b",
         "mov v16.d[1], v18.d[1]",
         "mov v2.d[0], v3.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendpd ymm0, ymm1, ymm2, 0111b": {
@@ -1625,10 +1625,10 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v2.d[0], v3.d[0]",
-        "str q2, [x28, #32]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1638,10 +1638,10 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v2.d[1], v3.d[1]",
-        "str q2, [x28, #32]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1651,12 +1651,12 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v16.16b, v17.16b",
         "mov v16.d[0], v18.d[0]",
         "mov v2.d[1], v3.d[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendpd ymm0, ymm1, ymm2, 1010b": {
@@ -1665,12 +1665,12 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v16.16b, v17.16b",
         "mov v16.d[1], v18.d[1]",
         "mov v2.d[1], v3.d[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendpd ymm0, ymm1, ymm2, 1011b": {
@@ -1679,10 +1679,10 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v2.d[1], v3.d[1]",
-        "str q2, [x28, #32]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1692,8 +1692,8 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1703,10 +1703,10 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
+        "ldr q2, [x28, #224]",
         "mov v16.16b, v17.16b",
         "mov v16.d[0], v18.d[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendpd ymm0, ymm1, ymm2, 1110b": {
@@ -1715,10 +1715,10 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
+        "ldr q2, [x28, #224]",
         "mov v16.16b, v17.16b",
         "mov v16.d[1], v18.d[1]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vblendpd ymm0, ymm1, ymm2, 1111b": {
@@ -1727,8 +1727,8 @@
         "Map 3 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1738,7 +1738,7 @@
         "Map 3 0b01 0x0e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1750,7 +1750,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.h[0], v18.h[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendw xmm0, xmm1, xmm2, 11111111b": {
@@ -1759,7 +1759,7 @@
         "Map 3 0b01 0x0e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1769,8 +1769,8 @@
         "Map 3 0b01 0x0e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1780,12 +1780,12 @@
         "Map 3 0b01 0x0e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "mov v16.16b, v17.16b",
         "mov v16.h[0], v18.h[0]",
         "mov v2.h[0], v3.h[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpblendw ymm0, ymm1, ymm2, 11111111b": {
@@ -1794,8 +1794,8 @@
         "Map 3 0b01 0x0e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1805,7 +1805,7 @@
         "Map 3 0b01 0x0f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1816,7 +1816,7 @@
       ],
       "ExpectedArm64ASM": [
         "ext v16.16b, v18.16b, v17.16b, #1",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpalignr xmm0, xmm1, xmm2, 15": {
@@ -1826,7 +1826,7 @@
       ],
       "ExpectedArm64ASM": [
         "ext v16.16b, v18.16b, v17.16b, #15",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpalignr xmm0, xmm1, xmm2, 16": {
@@ -1835,7 +1835,7 @@
         "Map 3 0b01 0x0f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1847,7 +1847,7 @@
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
         "ext v16.16b, v17.16b, v2.16b, #1",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 0": {
@@ -1856,8 +1856,8 @@
         "Map 3 0b01 0x0f 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -1867,11 +1867,11 @@
         "Map 3 0b01 0x0f 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "ext v16.16b, v18.16b, v17.16b, #1",
         "ext v3.16b, v3.16b, v2.16b, #1",
-        "str q3, [x28, #32]"
+        "str q3, [x28, #192]"
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 15": {
@@ -1880,11 +1880,11 @@
         "Map 3 0b01 0x0f 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "ext v16.16b, v18.16b, v17.16b, #15",
         "ext v3.16b, v3.16b, v2.16b, #15",
-        "str q3, [x28, #32]"
+        "str q3, [x28, #192]"
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 16": {
@@ -1893,8 +1893,8 @@
         "Map 3 0b01 0x0f 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -1904,11 +1904,11 @@
         "Map 3 0b01 0x0f 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "movi v3.2d, #0x0",
         "ext v16.16b, v17.16b, v3.16b, #1",
         "ext v2.16b, v2.16b, v3.16b, #1",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpextrb rax, xmm0, 0": {
@@ -2043,8 +2043,8 @@
         "Map 3 0b01 0x18 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -2054,7 +2054,7 @@
         "Map 3 0b01 0x18 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q18, [x28, #32]",
+        "str q18, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -2064,7 +2064,7 @@
         "Map 3 0b01 0x19 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -2074,8 +2074,8 @@
         "Map 3 0b01 0x19 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "stp xzr, xzr, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000000b": {
@@ -2153,7 +2153,7 @@
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "mrs x20, fpcr",
         "and x0, x20, #0xffffffffff3fffff",
         "msr fpcr, x0",
@@ -2162,7 +2162,7 @@
         "fcvtn2 v0.8h, v2.4s",
         "mov v16.16b, v0.16b",
         "msr fpcr, x20",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000001b": {
@@ -2172,7 +2172,7 @@
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "mrs x20, fpcr",
         "and x0, x20, #0xffffffffffbfffff",
         "orr x0, x0, #0x800000",
@@ -2182,7 +2182,7 @@
         "fcvtn2 v0.8h, v2.4s",
         "mov v16.16b, v0.16b",
         "msr fpcr, x20",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000010b": {
@@ -2192,7 +2192,7 @@
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "mrs x20, fpcr",
         "and x0, x20, #0xffffffffff7fffff",
         "orr x0, x0, #0x400000",
@@ -2202,7 +2202,7 @@
         "fcvtn2 v0.8h, v2.4s",
         "mov v16.16b, v0.16b",
         "msr fpcr, x20",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000011b": {
@@ -2212,7 +2212,7 @@
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "mrs x20, fpcr",
         "orr x0, x20, #0xc00000",
         "msr fpcr, x0",
@@ -2221,7 +2221,7 @@
         "fcvtn2 v0.8h, v2.4s",
         "mov v16.16b, v0.16b",
         "msr fpcr, x20",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000100b": {
@@ -2231,12 +2231,12 @@
         "Map 3 0b01 0x1D 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "fcvtn v3.4h, v17.4s",
         "mov v0.16b, v3.16b",
         "fcvtn2 v0.8h, v2.4s",
         "mov v16.16b, v0.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrb xmm0, xmm0, eax, 0": {
@@ -2246,7 +2246,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.b[0], w4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrb xmm0, xmm1, eax, 0": {
@@ -2257,7 +2257,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.b[0], w4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrb xmm0, xmm1, eax, 15": {
@@ -2268,7 +2268,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.b[15], w4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vinsertps xmm0, xmm1, xmm2, ((0b00 << 6) | (0b00 << 4) | (0b0000))": {
@@ -2279,7 +2279,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.s[0], v18.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vinsertps xmm0, xmm1, xmm2, ((0b00 << 6) | (0b00 << 4) | (0b1111))": {
@@ -2289,7 +2289,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vinsertps xmm0, xmm1, xmm2, ((0b11 << 6) | (0b11 << 4) | (0b0000))": {
@@ -2300,7 +2300,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.s[3], v18.s[3]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrd xmm0, xmm0, eax, 0": {
@@ -2310,7 +2310,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.s[0], w4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrd xmm0, xmm1, eax, 0": {
@@ -2321,7 +2321,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.s[0], w4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrd xmm0, xmm1, eax, 3": {
@@ -2332,7 +2332,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.s[3], w4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrq xmm0, xmm0, rax, 0": {
@@ -2342,7 +2342,7 @@
       ],
       "ExpectedArm64ASM": [
         "mov v16.d[0], x4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrq xmm0, xmm1, rax, 0": {
@@ -2353,7 +2353,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.d[0], x4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpinsrq xmm0, xmm1, rax, 1": {
@@ -2364,7 +2364,7 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "mov v16.d[1], x4",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vinserti128 ymm0, ymm1, xmm2, 0": {
@@ -2373,8 +2373,8 @@
         "Map 3 0b01 0x38 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -2384,7 +2384,7 @@
         "Map 3 0b01 0x38 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q18, [x28, #32]",
+        "str q18, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -2394,7 +2394,7 @@
         "Map 3 0b01 0x39 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -2404,8 +2404,8 @@
         "Map 3 0b01 0x39 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "stp xzr, xzr, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 00000000b": {
@@ -2415,7 +2415,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 00001111b": {
@@ -2425,7 +2425,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 11110000b": {
@@ -2435,7 +2435,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdpps xmm0, xmm1, xmm2, 11111111b": {
@@ -2448,7 +2448,7 @@
         "faddp v2.4s, v2.4s, v2.4s",
         "faddp s2, v2.2s",
         "dup v16.4s, v2.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdpps ymm0, ymm1, ymm2, 00000000b": {
@@ -2458,7 +2458,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdpps ymm0, ymm1, ymm2, 00001111b": {
@@ -2468,7 +2468,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdpps ymm0, ymm1, ymm2, 11110000b": {
@@ -2478,7 +2478,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdpps ymm0, ymm1, ymm2, 11111111b": {
@@ -2487,8 +2487,8 @@
         "Map 3 0b01 0x40 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "fmul v4.4s, v17.4s, v18.4s",
         "faddp v4.4s, v4.4s, v4.4s",
         "faddp s4, v4.2s",
@@ -2497,7 +2497,7 @@
         "faddp v2.4s, v2.4s, v2.4s",
         "faddp s2, v2.2s",
         "dup v2.4s, v2.s[0]",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 00000000b": {
@@ -2507,7 +2507,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 00001111b": {
@@ -2517,7 +2517,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 11110000b": {
@@ -2527,7 +2527,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 11111111b": {
@@ -2539,7 +2539,7 @@
         "fmul v2.2d, v17.2d, v18.2d",
         "faddp d2, v2.2d",
         "dup v16.2d, v2.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 000b": {
@@ -2562,7 +2562,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v16.8h, v4.8h, v2.8h",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 001b": {
@@ -2585,7 +2585,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v16.8h, v4.8h, v2.8h",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 010b": {
@@ -2608,7 +2608,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v16.8h, v4.8h, v2.8h",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 011b": {
@@ -2631,7 +2631,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v16.8h, v4.8h, v2.8h",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 100b": {
@@ -2654,7 +2654,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v16.8h, v4.8h, v2.8h",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 101b": {
@@ -2677,7 +2677,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v16.8h, v4.8h, v2.8h",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 110b": {
@@ -2700,7 +2700,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v16.8h, v4.8h, v2.8h",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw xmm0, xmm1, xmm2, 111b": {
@@ -2723,7 +2723,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v16.8h, v4.8h, v2.8h",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 000b": {
@@ -2732,8 +2732,8 @@
         "Map 3 0b01 0x42 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v4.4s, v18.s[0]",
         "ext v5.16b, v17.16b, v17.16b, #0",
         "ext v6.16b, v17.16b, v17.16b, #1",
@@ -2762,7 +2762,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 001b": {
@@ -2771,8 +2771,8 @@
         "Map 3 0b01 0x42 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v4.4s, v18.s[1]",
         "ext v5.16b, v17.16b, v17.16b, #0",
         "ext v6.16b, v17.16b, v17.16b, #1",
@@ -2801,7 +2801,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 010b": {
@@ -2810,8 +2810,8 @@
         "Map 3 0b01 0x42 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v4.4s, v18.s[2]",
         "ext v5.16b, v17.16b, v17.16b, #0",
         "ext v6.16b, v17.16b, v17.16b, #1",
@@ -2840,7 +2840,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 011b": {
@@ -2849,8 +2849,8 @@
         "Map 3 0b01 0x42 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v4.4s, v18.s[3]",
         "ext v5.16b, v17.16b, v17.16b, #0",
         "ext v6.16b, v17.16b, v17.16b, #1",
@@ -2879,7 +2879,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 100b": {
@@ -2888,8 +2888,8 @@
         "Map 3 0b01 0x42 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v4.4s, v18.s[0]",
         "ext v5.16b, v17.16b, v17.16b, #4",
         "ext v6.16b, v17.16b, v17.16b, #5",
@@ -2918,7 +2918,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 101b": {
@@ -2927,8 +2927,8 @@
         "Map 3 0b01 0x42 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v4.4s, v18.s[1]",
         "ext v5.16b, v17.16b, v17.16b, #4",
         "ext v6.16b, v17.16b, v17.16b, #5",
@@ -2957,7 +2957,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 110b": {
@@ -2966,8 +2966,8 @@
         "Map 3 0b01 0x42 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v4.4s, v18.s[2]",
         "ext v5.16b, v17.16b, v17.16b, #4",
         "ext v6.16b, v17.16b, v17.16b, #5",
@@ -2996,7 +2996,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 111b": {
@@ -3005,8 +3005,8 @@
         "Map 3 0b01 0x42 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v4.4s, v18.s[3]",
         "ext v5.16b, v17.16b, v17.16b, #4",
         "ext v6.16b, v17.16b, v17.16b, #5",
@@ -3035,7 +3035,7 @@
         "trn1 v4.4s, v3.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v2.4s",
         "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpclmulqdq xmm0, xmm1, xmm2, 00000b": {
@@ -3045,7 +3045,7 @@
       ],
       "ExpectedArm64ASM": [
         "pmull v16.1q, v17.1d, v18.1d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpclmulqdq xmm0, xmm1, xmm2, 00001b": {
@@ -3056,7 +3056,7 @@
       "ExpectedArm64ASM": [
         "dup v0.2d, v17.d[1]",
         "pmull v16.1q, v0.1d, v18.1d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpclmulqdq xmm0, xmm1, xmm2, 10000b": {
@@ -3067,7 +3067,7 @@
       "ExpectedArm64ASM": [
         "dup v0.2d, v18.d[1]",
         "pmull v16.1q, v0.1d, v17.1d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpclmulqdq xmm0, xmm1, xmm2, 10001b": {
@@ -3077,7 +3077,7 @@
       ],
       "ExpectedArm64ASM": [
         "pmull2 v16.1q, v17.2d, v18.2d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 00000b": {
@@ -3086,11 +3086,11 @@
         "Map 3 0b01 0x44 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "pmull v16.1q, v17.1d, v18.1d",
         "pmull v2.1q, v2.1d, v3.1d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 00001b": {
@@ -3099,13 +3099,13 @@
         "Map 3 0b01 0x44 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v0.2d, v17.d[1]",
         "pmull v16.1q, v0.1d, v18.1d",
         "dup v0.2d, v2.d[1]",
         "pmull v2.1q, v0.1d, v3.1d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 10000b": {
@@ -3114,13 +3114,13 @@
         "Map 3 0b01 0x44 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "dup v0.2d, v18.d[1]",
         "pmull v16.1q, v0.1d, v17.1d",
         "dup v0.2d, v3.d[1]",
         "pmull v2.1q, v0.1d, v2.1d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 10001b": {
@@ -3129,11 +3129,11 @@
         "Map 3 0b01 0x44 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
         "pmull2 v16.1q, v17.2d, v18.2d",
         "pmull2 v2.1q, v2.2d, v3.2d",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00000000b": {
@@ -3142,7 +3142,7 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q17, [x28, #32]",
+        "str q17, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -3152,8 +3152,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "str q17, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "str q17, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00000010b": {
@@ -3162,7 +3162,7 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q17, [x28, #32]",
+        "str q17, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -3172,8 +3172,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #64]",
-        "str q17, [x28, #32]"
+        "ldr q16, [x28, #224]",
+        "str q17, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00010000b": {
@@ -3182,8 +3182,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -3193,8 +3193,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "str q16, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "str q16, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00010010b": {
@@ -3203,8 +3203,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #208]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -3214,9 +3214,9 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q16, [x28, #64]",
-        "str q2, [x28, #32]"
+        "ldr q2, [x28, #208]",
+        "ldr q16, [x28, #224]",
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00100000b": {
@@ -3225,7 +3225,7 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q18, [x28, #32]",
+        "str q18, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -3235,8 +3235,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "str q18, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "str q18, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00100010b": {
@@ -3245,7 +3245,7 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "str q18, [x28, #32]",
+        "str q18, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -3255,8 +3255,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #64]",
-        "str q18, [x28, #32]"
+        "ldr q16, [x28, #224]",
+        "str q18, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00110000b": {
@@ -3265,8 +3265,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -3276,9 +3276,9 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00110010b": {
@@ -3287,8 +3287,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
-        "str q2, [x28, #32]",
+        "ldr q2, [x28, #224]",
+        "str q2, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -3298,8 +3298,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #64]",
-        "str q16, [x28, #32]"
+        "ldr q16, [x28, #224]",
+        "str q16, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00001000b": {
@@ -3309,7 +3309,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "str q17, [x28, #32]"
+        "str q17, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00011000b": {
@@ -3318,9 +3318,9 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "movi v16.2d, #0x0",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00101000b": {
@@ -3330,7 +3330,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "str q18, [x28, #32]"
+        "str q18, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00111000b": {
@@ -3339,9 +3339,9 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #64]",
+        "ldr q2, [x28, #224]",
         "movi v16.2d, #0x0",
-        "str q2, [x28, #32]"
+        "str q2, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 10001000b": {
@@ -3351,7 +3351,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v16.2d, #0x0",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 10000000b": {
@@ -3360,7 +3360,7 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -3370,8 +3370,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #48]",
-        "stp xzr, xzr, [x28, #32]"
+        "ldr q16, [x28, #208]",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 10000010b": {
@@ -3380,7 +3380,7 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "stp xzr, xzr, [x28, #32]",
+        "stp xzr, xzr, [x28, #192]",
         "mov v16.16b, v18.16b"
       ]
     },
@@ -3390,8 +3390,8 @@
         "Map 3 0b01 0x46 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x28, #64]",
-        "stp xzr, xzr, [x28, #32]"
+        "ldr q16, [x28, #224]",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendvps xmm0, xmm1, xmm2, xmm3": {
@@ -3403,7 +3403,7 @@
         "sshr v2.4s, v19.4s, #31",
         "mov v16.16b, v2.16b",
         "bsl v16.16b, v18.16b, v17.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendvps ymm0, ymm1, ymm2, ymm3": {
@@ -3412,15 +3412,15 @@
         "Map 3 0b01 0x4a 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
-        "ldr q4, [x28, #80]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
+        "ldr q4, [x28, #240]",
         "sshr v5.4s, v19.4s, #31",
         "mov v16.16b, v5.16b",
         "bsl v16.16b, v18.16b, v17.16b",
         "sshr v4.4s, v4.4s, #31",
         "bsl v4.16b, v3.16b, v2.16b",
-        "str q4, [x28, #32]"
+        "str q4, [x28, #192]"
       ]
     },
     "vblendvpd xmm0, xmm1, xmm2, xmm3": {
@@ -3432,7 +3432,7 @@
         "sshr v2.2d, v19.2d, #63",
         "mov v16.16b, v2.16b",
         "bsl v16.16b, v18.16b, v17.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendvpd ymm0, ymm1, ymm2, ymm3": {
@@ -3441,15 +3441,15 @@
         "Map 3 0b01 0x4b 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
-        "ldr q4, [x28, #80]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
+        "ldr q4, [x28, #240]",
         "sshr v5.2d, v19.2d, #63",
         "mov v16.16b, v5.16b",
         "bsl v16.16b, v18.16b, v17.16b",
         "sshr v4.2d, v4.2d, #63",
         "bsl v4.16b, v3.16b, v2.16b",
-        "str q4, [x28, #32]"
+        "str q4, [x28, #192]"
       ]
     },
     "vpblendvb xmm0, xmm1, xmm2, xmm3": {
@@ -3461,7 +3461,7 @@
         "sshr v2.16b, v19.16b, #7",
         "mov v16.16b, v2.16b",
         "bsl v16.16b, v18.16b, v17.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendvb ymm0, ymm1, ymm2, ymm3": {
@@ -3470,15 +3470,15 @@
         "Map 3 0b01 0x4c 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
-        "ldr q4, [x28, #80]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
+        "ldr q4, [x28, #240]",
         "sshr v5.16b, v19.16b, #7",
         "mov v16.16b, v5.16b",
         "bsl v16.16b, v18.16b, v17.16b",
         "sshr v4.16b, v4.16b, #7",
         "bsl v4.16b, v3.16b, v2.16b",
-        "str q4, [x28, #32]"
+        "str q4, [x28, #192]"
       ]
     },
     "vaeskeygenassist xmm0, xmm1, 0": {
@@ -3488,11 +3488,11 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "ldr q3, [x28, #3136]",
+        "ldr q3, [x28, #3152]",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v2.16b",
         "tbl v16.16b, {v16.16b}, v3.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vaeskeygenassist xmm0, xmm1, 0xFF": {
@@ -3502,14 +3502,14 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "ldr q3, [x28, #3136]",
+        "ldr q3, [x28, #3152]",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v2.16b",
         "tbl v16.16b, {v16.16b}, v3.16b",
         "mov x0, #0xff00000000",
         "dup v1.2d, x0",
         "eor v16.16b, v16.16b, v1.16b",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     }
   }

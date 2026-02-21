@@ -55,7 +55,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v3.16b",
@@ -68,7 +68,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v3.16b",
@@ -84,9 +84,9 @@
         "0x66 0x0f 0x3a 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3520]",
+        "ldr q2, [x28, #3536]",
         "movi v3.2d, #0x0",
-        "ldr x0, [x28, #2664]",
+        "ldr x0, [x28, #2680]",
         "ldr q4, [x0, #432]",
         "tbl v5.16b, {v16.16b}, v4.16b",
         "tbl v6.16b, {v17.16b}, v4.16b",
@@ -101,9 +101,9 @@
         "0x66 0x0f 0x3a 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3536]",
+        "ldr q2, [x28, #3552]",
         "movi v3.2d, #0x0",
-        "ldr x0, [x28, #2664]",
+        "ldr x0, [x28, #2680]",
         "ldr q4, [x0, #432]",
         "tbl v5.16b, {v16.16b}, v4.16b",
         "tbl v6.16b, {v17.16b}, v4.16b",
@@ -118,9 +118,9 @@
         "0x66 0x0f 0x3a 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3552]",
+        "ldr q2, [x28, #3568]",
         "movi v3.2d, #0x0",
-        "ldr x0, [x28, #2664]",
+        "ldr x0, [x28, #2680]",
         "ldr q4, [x0, #432]",
         "tbl v5.16b, {v16.16b}, v4.16b",
         "tbl v6.16b, {v17.16b}, v4.16b",
@@ -135,9 +135,9 @@
         "0x66 0x0f 0x3a 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3568]",
+        "ldr q2, [x28, #3584]",
         "movi v3.2d, #0x0",
-        "ldr x0, [x28, #2664]",
+        "ldr x0, [x28, #2680]",
         "ldr q4, [x0, #432]",
         "tbl v5.16b, {v16.16b}, v4.16b",
         "tbl v6.16b, {v17.16b}, v4.16b",

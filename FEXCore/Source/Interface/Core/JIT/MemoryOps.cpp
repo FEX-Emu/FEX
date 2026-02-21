@@ -566,6 +566,24 @@ DEF_OP(LoadDF) {
   ldrsb(Dst.X(), STATE, offsetof(FEXCore::Core::CPUState, flags[Flag]));
 }
 
+DEF_OP(ContextClear) {
+  auto Op = IROp->C<IR::IROp_ContextClear>();
+  if (CTX->HostFeatures.SupportsCLZERO) {
+    // We can use CLZero directly when hardware supports it.
+    // Provides a fairly generous speed-up on Ampere1A hardware.
+    // TODO: When FEAT_MOPS hardware ships, test memset using MOPS.
+    for (size_t i = 0; i < Op->Size; i += 64) {
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE.R(), Op->Offset + i);
+      dc(ARMEmitter::DataCacheOperation::ZVA, TMP1);
+    }
+  } else {
+    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+    for (size_t i = 0; i < Op->Size; i += 32) {
+      stp<ARMEmitter::IndexType::OFFSET>(VTMP1.Q(), VTMP1.Q(), STATE.R(), Op->Offset + i);
+    }
+  }
+}
+
 ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
   IR::OpSize AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
