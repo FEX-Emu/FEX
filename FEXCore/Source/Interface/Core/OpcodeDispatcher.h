@@ -2070,6 +2070,12 @@ private:
     RegCache.Written |= Bit;
   }
 
+  void InvalidateHighAVXRegisters() {
+    for (size_t i = 0; i < 16; ++i) {
+      InvalidateReg(AVXHigh0Index + i);
+    }
+  }
+
   void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {
     StoreContext(Reg + (FPR ? FPR0Index : GPR0Index), Value);
   }
