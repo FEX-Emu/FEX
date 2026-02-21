@@ -777,6 +777,17 @@
           "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
           "Offset % IR::OpSizeToSize(RegisterSize) == 0"
         ]
+      },
+      "ContextClear u32:$Offset, u32:$Size": {
+        "Desc": [
+          "Clears a region of the context by CLZero size",
+          "Both the offset and size alignment need to be by CLZero size"
+        ],
+        "HasSideEffects": true,
+        "EmitValidation": [
+          "Offset % 64 == 0",
+          "Size % 64 == 0"
+        ]
       }
     },
     "Atomic": {
