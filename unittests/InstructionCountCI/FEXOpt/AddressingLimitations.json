@@ -1058,28 +1058,28 @@
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
         "ldp q23, q2, [x10, #96]",
-        "str q2, [x28, #144]"
+        "str q2, [x28, #304]"
       ]
     },
     "vmovdqu ymm7,yword [rsi+0x120]": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
         "ldp q23, q2, [x10, #288]",
-        "str q2, [x28, #144]"
+        "str q2, [x28, #304]"
       ]
     },
     "vmovdqu ymm7,yword [rsi-0x60]": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
         "ldp q23, q2, [x10, #-96]",
-        "str q2, [x28, #144]"
+        "str q2, [x28, #304]"
       ]
     },
     "vmovdqu ymm7,yword [rsi-0x400]": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
         "ldp q23, q2, [x10, #-1024]",
-        "str q2, [x28, #144]"
+        "str q2, [x28, #304]"
       ]
     },
     "vmovdqu ymm7,yword [rsi-0x420]": {
@@ -1087,14 +1087,14 @@
       "ExpectedArm64ASM": [
         "sub x20, x10, #0x420 (1056)",
         "ldp q23, q2, [x20]",
-        "str q2, [x28, #144]"
+        "str q2, [x28, #304]"
       ]
     },
     "vmovdqu ymm7,yword [rsi+0x3d0]": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
         "ldp q23, q2, [x10, #976]",
-        "str q2, [x28, #144]"
+        "str q2, [x28, #304]"
       ]
     },
     "vmovdqu ymm7,yword [rsi+0x400]": {
@@ -1102,34 +1102,34 @@
       "ExpectedArm64ASM": [
         "add x20, x10, #0x400 (1024)",
         "ldp q23, q2, [x20]",
-        "str q2, [x28, #144]"
+        "str q2, [x28, #304]"
       ]
     },
     "vmovdqa yword [rcx+0x60],ymm1": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "stp q17, q2, [x7, #96]"
       ]
     },
     "vmovdqa yword [rcx+0x3d0],ymm1": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "stp q17, q2, [x7, #976]"
       ]
     },
     "vmovdqa yword [rcx-0x3d0],ymm1": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "stp q17, q2, [x7, #-976]"
       ]
     },
     "vmovdqa yword [rcx+rsi-0x3d0],ymm1": {
       "ExpectedInstructionCount": 3,
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
+        "ldr q2, [x28, #208]",
         "add x20, x7, x10",
         "stp q17, q2, [x20, #-976]"
       ]

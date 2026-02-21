@@ -19,7 +19,7 @@
         "sshr v2.4s, v19.4s, #31",
         "movprfx z16, z18",
         "bsl z16.d, z16.d, z17.d, z2.d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendvps ymm0, ymm1, ymm2, ymm3": {
@@ -28,15 +28,15 @@
         "Map 3 0b01 0x4a 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
-        "ldr q4, [x28, #80]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
+        "ldr q4, [x28, #240]",
         "sshr v5.4s, v19.4s, #31",
         "movprfx z16, z18",
         "bsl z16.d, z16.d, z17.d, z5.d",
         "sshr v4.4s, v4.4s, #31",
         "bsl v4.16b, v3.16b, v2.16b",
-        "str q4, [x28, #32]"
+        "str q4, [x28, #192]"
       ]
     },
     "vblendvpd xmm0, xmm1, xmm2, xmm3": {
@@ -48,7 +48,7 @@
         "sshr v2.2d, v19.2d, #63",
         "movprfx z16, z18",
         "bsl z16.d, z16.d, z17.d, z2.d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vblendvpd ymm0, ymm1, ymm2, ymm3": {
@@ -57,15 +57,15 @@
         "Map 3 0b01 0x4b 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
-        "ldr q4, [x28, #80]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
+        "ldr q4, [x28, #240]",
         "sshr v5.2d, v19.2d, #63",
         "movprfx z16, z18",
         "bsl z16.d, z16.d, z17.d, z5.d",
         "sshr v4.2d, v4.2d, #63",
         "bsl v4.16b, v3.16b, v2.16b",
-        "str q4, [x28, #32]"
+        "str q4, [x28, #192]"
       ]
     },
     "vpblendvb xmm0, xmm1, xmm2, xmm3": {
@@ -77,7 +77,7 @@
         "sshr v2.16b, v19.16b, #7",
         "movprfx z16, z18",
         "bsl z16.d, z16.d, z17.d, z2.d",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vpblendvb ymm0, ymm1, ymm2, ymm3": {
@@ -86,15 +86,15 @@
         "Map 3 0b01 0x4c 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #48]",
-        "ldr q3, [x28, #64]",
-        "ldr q4, [x28, #80]",
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
+        "ldr q4, [x28, #240]",
         "sshr v5.16b, v19.16b, #7",
         "movprfx z16, z18",
         "bsl z16.d, z16.d, z17.d, z5.d",
         "sshr v4.16b, v4.16b, #7",
         "bsl v4.16b, v3.16b, v2.16b",
-        "str q4, [x28, #32]"
+        "str q4, [x28, #192]"
       ]
     }
   }

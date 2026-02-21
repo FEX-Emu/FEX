@@ -2788,7 +2788,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2672]",
+        "ldr x0, [x28, #2688]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -2857,7 +2857,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2672]",
+        "ldr x0, [x28, #2688]",
         "ldr q2, [x0, #32]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -2926,7 +2926,7 @@
         "Map 1 0b00 0xC6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2672]",
+        "ldr x0, [x28, #2688]",
         "ldr q2, [x0, #48]",
         "tbl v16.16b, {v17.16b, v18.16b}, v2.16b"
       ]
@@ -3271,7 +3271,7 @@
       "ExpectedArm64ASM": [
         "fcvtzs w20, s16",
         "mov w21, #0x80000000",
-        "ldr s2, [x28, #3376]",
+        "ldr s2, [x28, #3392]",
         "mrs x22, nzcv",
         "fcmp s2, s16",
         "csel w4, w20, w21, gt",
@@ -3286,7 +3286,7 @@
       "ExpectedArm64ASM": [
         "fcvtzs x20, s16",
         "mov x21, #0x8000000000000000",
-        "ldr s2, [x28, #3408]",
+        "ldr s2, [x28, #3424]",
         "mrs x22, nzcv",
         "fcmp s2, s16",
         "csel x4, x20, x21, gt",
@@ -3301,7 +3301,7 @@
       "ExpectedArm64ASM": [
         "fcvtzs w20, d16",
         "mov w21, #0x80000000",
-        "ldr d2, [x28, #3424]",
+        "ldr d2, [x28, #3440]",
         "mrs x22, nzcv",
         "fcmp d2, d16",
         "csel w4, w20, w21, gt",
@@ -3316,7 +3316,7 @@
       "ExpectedArm64ASM": [
         "fcvtzs x20, d16",
         "mov x21, #0x8000000000000000",
-        "ldr d2, [x28, #3456]",
+        "ldr d2, [x28, #3472]",
         "mrs x22, nzcv",
         "fcmp d2, d16",
         "csel x4, x20, x21, gt",
@@ -3332,7 +3332,7 @@
         "frinti s2, s16",
         "fcvtzs w20, s2",
         "mov w21, #0x80000000",
-        "ldr s3, [x28, #3376]",
+        "ldr s3, [x28, #3392]",
         "mrs x22, nzcv",
         "fcmp s3, s2",
         "csel w4, w20, w21, gt",
@@ -3348,7 +3348,7 @@
         "frinti s2, s16",
         "fcvtzs x20, s2",
         "mov x21, #0x8000000000000000",
-        "ldr s3, [x28, #3408]",
+        "ldr s3, [x28, #3424]",
         "mrs x22, nzcv",
         "fcmp s3, s2",
         "csel x4, x20, x21, gt",
@@ -3364,7 +3364,7 @@
         "frinti d2, d16",
         "fcvtzs w20, d2",
         "mov w21, #0x80000000",
-        "ldr d3, [x28, #3424]",
+        "ldr d3, [x28, #3440]",
         "mrs x22, nzcv",
         "fcmp d3, d2",
         "csel w4, w20, w21, gt",
@@ -3380,7 +3380,7 @@
         "frinti d2, d16",
         "fcvtzs x20, d2",
         "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #3456]",
+        "ldr d3, [x28, #3472]",
         "mrs x22, nzcv",
         "fcmp d3, d2",
         "csel x4, x20, x21, gt",
@@ -3643,8 +3643,8 @@
       ],
       "ExpectedArm64ASM": [
         "frinti v2.4s, v17.4s",
-        "ldr q3, [x28, #3472]",
-        "ldr q4, [x28, #3376]",
+        "ldr q3, [x28, #3488]",
+        "ldr q4, [x28, #3392]",
         "fcvtzs v5.4s, v2.4s",
         "fcmgt v2.4s, v4.4s, v2.4s",
         "mov v16.16b, v2.16b",
@@ -3658,9 +3658,9 @@
       ],
       "ExpectedArm64ASM": [
         "frinti z2.s, p7/m, z17.s",
-        "ldr x0, [x28, #2592]",
+        "ldr x0, [x28, #2608]",
         "ld1b {z3.b}, p7/z, [x0]",
-        "ldr x0, [x28, #2544]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z4.b}, p7/z, [x0]",
         "fcvtzs z5.s, p7/m, z2.s",
         "fcmgt p0.s, p7/z, z4.s, z2.s",
@@ -3678,8 +3678,8 @@
         "Map 1 0b10 0x5b 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3472]",
-        "ldr q3, [x28, #3376]",
+        "ldr q2, [x28, #3488]",
+        "ldr q3, [x28, #3392]",
         "fcvtzs v4.4s, v17.4s",
         "fcmgt v3.4s, v3.4s, v17.4s",
         "mov v16.16b, v3.16b",
@@ -3692,9 +3692,9 @@
         "Map 1 0b10 0x5b 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2592]",
+        "ldr x0, [x28, #2608]",
         "ld1b {z2.b}, p7/z, [x0]",
-        "ldr x0, [x28, #2544]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z3.b}, p7/z, [x0]",
         "fcvtzs z4.s, p7/m, z17.s",
         "fcmgt p0.s, p7/z, z3.s, z17.s",
@@ -4427,7 +4427,7 @@
         "Map 1 0b01 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3024]",
+        "ldr q2, [x28, #3040]",
         "eor v2.16b, v18.16b, v2.16b",
         "fadd v16.2d, v17.2d, v2.2d"
       ]
@@ -4438,7 +4438,7 @@
         "Map 1 0b01 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2368]",
+        "ldr x0, [x28, #2384]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "fadd z16.d, z17.d, z2.d"
@@ -4450,7 +4450,7 @@
         "Map 1 0b11 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2992]",
+        "ldr q2, [x28, #3008]",
         "eor v2.16b, v18.16b, v2.16b",
         "fadd v16.4s, v17.4s, v2.4s"
       ]
@@ -4461,7 +4461,7 @@
         "Map 1 0b11 0xd0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2352]",
+        "ldr x0, [x28, #2368]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "fadd z16.s, z17.s, z2.s"
@@ -4587,7 +4587,7 @@
         "Map 1 0b01 0xd7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3248]",
+        "ldr q2, [x28, #3264]",
         "cmlt v3.16b, v16.16b, #0",
         "and v2.16b, v3.16b, v2.16b",
         "addp v2.16b, v2.16b, v2.16b",
@@ -4602,7 +4602,7 @@
         "Map 1 0b01 0xd7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2480]",
+        "ldr x0, [x28, #2496]",
         "ld1b {z2.b}, p7/z, [x0]",
         "mrs x0, nzcv",
         "mov z0.d, #0",
@@ -4979,8 +4979,8 @@
         "Map 1 0b01 0xe6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #3472]",
-        "ldr q3, [x28, #3424]",
+        "ldr d2, [x28, #3488]",
+        "ldr q3, [x28, #3440]",
         "fcvtzs z4.s, p6/m, z17.d",
         "uzp1 z4.s, z4.s, z4.s",
         "mov v4.8b, v4.8b",
@@ -4996,8 +4996,8 @@
         "Map 1 0b01 0xe6 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3472]",
-        "ldr x0, [x28, #2568]",
+        "ldr q2, [x28, #3488]",
+        "ldr x0, [x28, #2584]",
         "ld1b {z3.b}, p7/z, [x0]",
         "fcvtzs z4.s, p7/m, z17.d",
         "uzp1 z4.s, z4.s, z4.s",
@@ -5040,8 +5040,8 @@
       ],
       "ExpectedArm64ASM": [
         "frinti v2.2d, v17.2d",
-        "ldr d3, [x28, #3472]",
-        "ldr q4, [x28, #3424]",
+        "ldr d3, [x28, #3488]",
+        "ldr q4, [x28, #3440]",
         "fcvtzs z5.s, p6/m, z2.d",
         "uzp1 z5.s, z5.s, z5.s",
         "mov v5.8b, v5.8b",
@@ -5058,8 +5058,8 @@
       ],
       "ExpectedArm64ASM": [
         "frinti z2.d, p7/m, z17.d",
-        "ldr q3, [x28, #3472]",
-        "ldr x0, [x28, #2568]",
+        "ldr q3, [x28, #3488]",
+        "ldr x0, [x28, #2584]",
         "ld1b {z4.b}, p7/z, [x0]",
         "fcvtzs z5.s, p7/m, z2.d",
         "uzp1 z5.s, z5.s, z5.s",

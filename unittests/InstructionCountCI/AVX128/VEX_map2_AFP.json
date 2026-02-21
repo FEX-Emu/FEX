@@ -18,7 +18,7 @@
       "ExpectedArm64ASM": [
         "fmadd s0, s16, s18, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmadd132sd xmm0, xmm1, xmm2": {
@@ -29,7 +29,7 @@
       "ExpectedArm64ASM": [
         "fmadd d0, d16, d18, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmsub132ss xmm0, xmm1, xmm2": {
@@ -40,7 +40,7 @@
       "ExpectedArm64ASM": [
         "fnmsub s0, s16, s18, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmsub132sd xmm0, xmm1, xmm2": {
@@ -51,7 +51,7 @@
       "ExpectedArm64ASM": [
         "fnmsub d0, d16, d18, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmadd132ss xmm0, xmm1, xmm2": {
@@ -62,7 +62,7 @@
       "ExpectedArm64ASM": [
         "fmsub s0, s16, s18, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmadd132sd xmm0, xmm1, xmm2": {
@@ -73,7 +73,7 @@
       "ExpectedArm64ASM": [
         "fmsub d0, d16, d18, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmsub132ss xmm0, xmm1, xmm2": {
@@ -84,7 +84,7 @@
       "ExpectedArm64ASM": [
         "fnmadd s0, s16, s18, s17",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmsub132sd xmm0, xmm1, xmm2": {
@@ -95,7 +95,7 @@
       "ExpectedArm64ASM": [
         "fnmadd d0, d16, d18, d17",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmadd213ss xmm0, xmm1, xmm2": {
@@ -106,7 +106,7 @@
       "ExpectedArm64ASM": [
         "fmadd s0, s17, s16, s18",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmadd213sd xmm0, xmm1, xmm2": {
@@ -117,7 +117,7 @@
       "ExpectedArm64ASM": [
         "fmadd d0, d17, d16, d18",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmsub213ss xmm0, xmm1, xmm2": {
@@ -128,7 +128,7 @@
       "ExpectedArm64ASM": [
         "fnmsub s0, s17, s16, s18",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmsub213sd xmm0, xmm1, xmm2": {
@@ -139,7 +139,7 @@
       "ExpectedArm64ASM": [
         "fnmsub d0, d17, d16, d18",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmadd213ss xmm0, xmm1, xmm2": {
@@ -150,7 +150,7 @@
       "ExpectedArm64ASM": [
         "fmsub s0, s17, s16, s18",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmadd213sd xmm0, xmm1, xmm2": {
@@ -161,7 +161,7 @@
       "ExpectedArm64ASM": [
         "fmsub d0, d17, d16, d18",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmsub213ss xmm0, xmm1, xmm2": {
@@ -172,7 +172,7 @@
       "ExpectedArm64ASM": [
         "fnmadd s0, s17, s16, s18",
         "mov v16.s[0], v0.s[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmsub213sd xmm0, xmm1, xmm2": {
@@ -183,7 +183,7 @@
       "ExpectedArm64ASM": [
         "fnmadd d0, d17, d16, d18",
         "mov v16.d[0], v0.d[0]",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmadd231ss xmm0, xmm1, xmm2": {
@@ -193,7 +193,7 @@
       ],
       "ExpectedArm64ASM": [
         "fmadd s16, s17, s18, s16",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmadd231sd xmm0, xmm1, xmm2": {
@@ -203,7 +203,7 @@
       ],
       "ExpectedArm64ASM": [
         "fmadd d16, d17, d18, d16",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmsub231ss xmm0, xmm1, xmm2": {
@@ -213,7 +213,7 @@
       ],
       "ExpectedArm64ASM": [
         "fnmsub s16, s17, s18, s16",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfmsub231sd xmm0, xmm1, xmm2": {
@@ -223,7 +223,7 @@
       ],
       "ExpectedArm64ASM": [
         "fnmsub d16, d17, d18, d16",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmadd231ss xmm0, xmm1, xmm2": {
@@ -233,7 +233,7 @@
       ],
       "ExpectedArm64ASM": [
         "fmsub s16, s17, s18, s16",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmadd231sd xmm0, xmm1, xmm2": {
@@ -243,7 +243,7 @@
       ],
       "ExpectedArm64ASM": [
         "fmsub d16, d17, d18, d16",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmsub231ss xmm0, xmm1, xmm2": {
@@ -253,7 +253,7 @@
       ],
       "ExpectedArm64ASM": [
         "fnmadd s16, s17, s18, s16",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vfnmsub231sd xmm0, xmm1, xmm2": {
@@ -263,7 +263,7 @@
       ],
       "ExpectedArm64ASM": [
         "fnmadd d16, d17, d18, d16",
-        "stp xzr, xzr, [x28, #32]"
+        "stp xzr, xzr, [x28, #192]"
       ]
     }
   }

@@ -27,7 +27,7 @@
         "Map 1 0b00 0x2B 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #32]",
+        "ldr q2, [x28, #192]",
         "stnp q16, q2, [x4]"
       ]
     },
@@ -46,7 +46,7 @@
         "Map 1 0b01 0x2B 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #32]",
+        "ldr q2, [x28, #192]",
         "stnp q16, q2, [x4]"
       ]
     },
@@ -65,7 +65,7 @@
         "Map 1 0b01 0xe7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #32]",
+        "ldr q2, [x28, #192]",
         "stnp q16, q2, [x4]"
       ]
     }
