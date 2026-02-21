@@ -71,7 +71,7 @@ static_assert(std::is_standard_layout_v<NonAtomicRefCounter<uint64_t>>, "Needs t
 static_assert(std::is_trivially_copyable_v<NonAtomicRefCounter<uint64_t>>, "needs to be trivially copyable");
 static_assert(sizeof(NonAtomicRefCounter<uint64_t>) == sizeof(uint64_t), "Needs to be correct size");
 
-struct CPUState {
+struct alignas(64) CPUState {
   // Allows more efficient handling of the register
   // file in the event AVX is not supported.
   union XMMRegs {
@@ -87,6 +87,7 @@ struct CPUState {
     SSE sse;
   };
 
+  // Cacheline: 0
   uint64_t InlineJITBlockHeader {};
   // Reference counter for FEX's per-thread deferred signals.
   // Counts the nesting depth of program sections that cause signals to be deferred.
@@ -102,16 +103,20 @@ struct CPUState {
 
   uint64_t rip {}; ///< Current core's RIP. May not be entirely accurate while JIT is active
 
-  // The high 128-bits of AVX registers when not being emulated by SVE256.
-  uint64_t avx_high[16][2];
-
   uint64_t gregs[16] {};
   uint64_t L1Pointer {};
   uint64_t L1Mask {};
   uint64_t callret_sp {};
   uint64_t _pad1 {};
+
+  // Cacheline: 1,2,3,4
+  // The high 128-bits of AVX registers when not being emulated by SVE256.
+  uint64_t avx_high[16][2];
+
+  // Cacheline: 5-12
   XMMRegs xmm {};
 
+  // Cacheline: 13 and onwards.
   // Raw segment register indexes
   uint16_t es_idx {}, cs_idx {}, ss_idx {}, ds_idx {};
   uint16_t gs_idx {}, fs_idx {};
@@ -246,7 +251,8 @@ struct CPUState {
 };
 static_assert(std::is_trivially_copyable_v<CPUState>, "Needs to be trivial");
 static_assert(std::is_standard_layout_v<CPUState>, "This needs to be standard layout");
-static_assert(offsetof(CPUState, avx_high) % 16 == 0, "avx_high needs to be 128-bit aligned!");
+static_assert(alignof(CPUState) == 64, "CPUState needs to be 64-byte aligned!");
+static_assert(offsetof(CPUState, avx_high) % 64 == 0, "avx_high needs to be 64-byte aligned!");
 static_assert(offsetof(CPUState, xmm) % 32 == 0, "xmm needs to be 256-bit aligned!");
 static_assert(offsetof(CPUState, mm) % 16 == 0, "mm needs to be 128-bit aligned!");
 static_assert(offsetof(CPUState, gregs[15]) <= 504, "gregs maximum offset must be <= 504 for ldp/stp to work");
