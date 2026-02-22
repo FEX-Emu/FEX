@@ -676,7 +676,7 @@ void Arm64JITCore::ClearCache() {
   auto lk = PrevCodeBuffer->LookupCache->AcquireWriteLock();
 
   auto CodeBuffer = GetEmptyCodeBuffer();
-  SetBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
+  SetBuffer(CodeBuffer->Ptr, CodeBuffer->AllocatedSize);
   EmitDetectionString();
 
   ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache, lk);
@@ -1082,9 +1082,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       }
 
       // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
-      SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
+      SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->AllocatedSize);
       SetCursorOffset(AlignUp(CodeBuffers.LatestOffset, 16));
-      if ((GetCursorOffset() + TempSize) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
+      if ((GetCursorOffset() + TempSize) > CurrentCodeBuffer->UsableSize()) {
         CTX->ClearCodeCache(ThreadState);
       }
 

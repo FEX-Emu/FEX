@@ -429,16 +429,15 @@ bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCac
   }
 
   auto CodeBuffer = CTX.GetLatest();
-  LOGMAN_THROW_A_FMT(header.CodeBufferSize <= CodeBuffer->Size, "CodeBuffer too small to load code cache");
   LOGMAN_THROW_A_FMT(reinterpret_cast<uintptr_t>(CodeBuffer->Ptr) % 0x1000 == 0, "Expected CodeBuffer base to be page-aligned");
   const auto Delta = AlignUp(CTX.LatestOffset, 0x1000) - CTX.LatestOffset;
   CTX.LatestOffset += Delta;
 
-  while (CTX.LatestOffset + header.CodeBufferSize > CodeBuffer->Size - Utils::FEX_PAGE_SIZE) {
+  while (CTX.LatestOffset + header.CodeBufferSize > CodeBuffer->UsableSize()) {
     if (Thread) {
       CTX.ClearCodeCache(Thread);
       CodeBuffer = CTX.GetLatest();
-      LogMan::Msg::IFmt("Increased code buffer size to {} MiB for cache load", CodeBuffer->Size / 1024 / 1024);
+      LogMan::Msg::IFmt("Increased code buffer size to {} MiB for cache load", CodeBuffer->AllocatedSize / 1024 / 1024);
     } else {
       ERROR_AND_DIE_FMT("Cannot extend codebuffer without thread!");
     }
@@ -446,7 +445,8 @@ bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCac
 
   // Read CodeBuffer data from file. Make sure the destination is page-aligned.
   // TODO: Only load the data needed for the selected section
-  auto CodeBufferRange = std::as_writable_bytes(std::span {CodeBuffer->Ptr, CodeBuffer->Size}).subspan(CTX.LatestOffset, header.CodeBufferSize);
+  auto CodeBufferRange =
+    std::as_writable_bytes(std::span {CodeBuffer->Ptr, CodeBuffer->UsableSize()}).subspan(CTX.LatestOffset, header.CodeBufferSize);
   ::memcpy(CodeBufferRange.data(), MappedCacheFile, header.CodeBufferSize);
   MappedCacheFile += header.CodeBufferSize;
   CTX.LatestOffset += header.CodeBufferSize;
@@ -539,9 +539,14 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   }
 
   auto NewCodeBuffer = ValidationCTX->GetLatest();
+  while (CachedCode.size_bytes() > NewCodeBuffer->UsableSize()) {
+    ValidationCTX->ClearCodeCache(ValidationThread.get());
+    NewCodeBuffer = ValidationCTX->GetLatest();
+    LogMan::Msg::IFmt("Increased cache validation code buffer size to {} MiB", NewCodeBuffer->AllocatedSize / 1024 / 1024);
+  }
 
   std::span<std::byte> CodeBufferRangeRef =
-    std::as_writable_bytes(std::span {NewCodeBuffer->Ptr, NewCodeBuffer->Ptr + NewCodeBuffer->Size}).subspan(0, CachedCode.size_bytes());
+    std::as_writable_bytes(std::span {NewCodeBuffer->Ptr, NewCodeBuffer->Ptr + NewCodeBuffer->UsableSize()}).subspan(0, CachedCode.size_bytes());
 
   while (!GuestBlocks.empty()) {
     auto [CompiledBlocks, _, _2, _3, _4] = ValidationCTX->CompileCode(ValidationThread.get(), *GuestBlocks.begin(), 0 /* TODO: Set MaxInst? */);

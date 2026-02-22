@@ -349,7 +349,7 @@ namespace CPU {
   }
 
   CodeBuffer::CodeBuffer(size_t Size)
-    : Size(Size) {
+    : AllocatedSize(Size) {
     Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Size, true));
     LOGMAN_THROW_A_FMT(!!Ptr, "Couldn't allocate code buffer");
 
@@ -366,7 +366,7 @@ namespace CPU {
   }
 
   CodeBuffer::~CodeBuffer() {
-    FEXCore::Allocator::VirtualFree(Ptr, Size);
+    FEXCore::Allocator::VirtualFree(Ptr, AllocatedSize);
   }
 
   auto CodeBufferManager::AllocateNew(size_t Size) -> fextl::shared_ptr<CodeBuffer> {
@@ -418,7 +418,7 @@ namespace CPU {
       return GetLatest();
     }
 
-    auto NewCodeBufferSize = GetLatest()->Size;
+    auto NewCodeBufferSize = GetLatest()->AllocatedSize;
     NewCodeBufferSize = std::min<size_t>(NewCodeBufferSize * 2, MAX_CODE_SIZE);
     return AllocateNew(NewCodeBufferSize);
   }
@@ -428,7 +428,7 @@ namespace CPU {
     auto CheckCodeBuffer = [](CodeBuffer& Buffer, uintptr_t Address) {
       // The last page of the code buffer is protected, so we need to exclude it from the valid range
       // when checking if the address is in the code buffer.
-      uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+      uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.AllocatedSize - 1, FEXCore::Utils::FEX_PAGE_SIZE);
       return (Address >= reinterpret_cast<uintptr_t>(Buffer.Ptr) && Address < LastPageAddr);
     };
 

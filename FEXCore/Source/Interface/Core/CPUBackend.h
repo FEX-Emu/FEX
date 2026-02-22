@@ -43,7 +43,7 @@ struct GuestToHostMap;
 namespace CPU {
   struct CodeBuffer {
     uint8_t* Ptr;
-    size_t Size;
+    size_t AllocatedSize; // including guard page; see UsableSize()
 
     fextl::unique_ptr<GuestToHostMap> LookupCache;
 
@@ -54,6 +54,11 @@ namespace CPU {
     CodeBuffer& operator=(CodeBuffer&&) = delete;
 
     ~CodeBuffer();
+
+    /// Returns the number of bytes available for storing code
+    size_t UsableSize() const {
+      return AllocatedSize - FEXCore::Utils::FEX_PAGE_SIZE;
+    }
   };
 
   /**
