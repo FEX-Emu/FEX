@@ -3,6 +3,7 @@
 #include "diagnostics.h"
 #include "interface.h"
 #include <clang/Frontend/CompilerInstance.h>
+#include <clang/Basic/DiagnosticOptions.h>
 
 #include <fstream>
 #include <numeric>
@@ -816,7 +817,10 @@ bool GenerateThunkLibsActionFactory::runInvocation(std::shared_ptr<clang::Compil
 
   GenerateThunkLibsAction Action(libname, output_filenames, abi);
 
-#if LLVM_VERSION_MAJOR >= 20
+#if LLVM_VERSION_MAJOR >= 22
+  auto Diags = clang::CompilerInstance::createDiagnostics(Compiler.getVirtualFileSystem(), Compiler.getDiagnosticOpts(), DiagConsumer, false);
+  Compiler.setDiagnostics(std::move(Diags));
+#elif LLVM_VERSION_MAJOR >= 20
   Compiler.createDiagnostics(Compiler.getVirtualFileSystem(), DiagConsumer, false);
 #else
   Compiler.createDiagnostics(DiagConsumer, false);
@@ -825,7 +829,11 @@ bool GenerateThunkLibsActionFactory::runInvocation(std::shared_ptr<clang::Compil
     return false;
   }
 
+#if LLVM_VERSION_MAJOR >= 22
+  Compiler.createSourceManager();
+#else
   Compiler.createSourceManager(*Files);
+#endif
 
   const bool Success = Compiler.ExecuteAction(Action);
 
