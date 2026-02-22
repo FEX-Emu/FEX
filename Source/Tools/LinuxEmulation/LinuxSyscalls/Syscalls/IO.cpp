@@ -16,17 +16,16 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
+auto noperm(FEXCore::Core::CpuStateFrame* Frame, int level) -> uint64_t {
+  // Just claim we don't have permission
+  return -EPERM;
+};
+
+
 void RegisterIO(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
 
-  REGISTER_SYSCALL_IMPL(iopl, [](FEXCore::Core::CpuStateFrame* Frame, int level) -> uint64_t {
-    // Just claim we don't have permission
-    return -EPERM;
-  });
-
-  REGISTER_SYSCALL_IMPL(ioperm, [](FEXCore::Core::CpuStateFrame* Frame, unsigned long from, unsigned long num, int turn_on) -> uint64_t {
-    // ioperm not available on our architecture
-    return -EPERM;
-  });
+  REGISTER_SYSCALL_IMPL(iopl, noperm);
+  REGISTER_SYSCALL_IMPL(ioperm, noperm);
 }
 } // namespace FEX::HLE
