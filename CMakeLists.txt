@@ -523,25 +523,35 @@ else()
   set(GIT_DESCRIBE_STRING "${OVERRIDE_VERSION}")
 endif()
 
-set(GIT_SHORT_HASH "Unknown")
+set(GIT_HASH "Unknown")
 
 if (OVERRIDE_HASH STREQUAL "detect")
   find_package(Git)
 
   if (GIT_FOUND)
     execute_process(
-      COMMAND ${GIT_EXECUTABLE} rev-parse --short=7 HEAD
+      COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
       WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-      OUTPUT_VARIABLE GIT_SHORT_HASH
+      OUTPUT_VARIABLE GIT_HASH
       ERROR_QUIET
       OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif()
 else()
-  set(GIT_SHORT_HASH "${OVERRIDE_HASH}")
+  set(GIT_HASH "${OVERRIDE_HASH}")
 endif()
 
-message(STATUS "FEX Version: ${GIT_DESCRIBE_STRING}")
-message(STATUS "FEX Commit: ${GIT_SHORT_HASH}")
+message(STATUS "FEX version: ${GIT_DESCRIBE_STRING}")
+message(STATUS "FEX commit: ${GIT_HASH}")
+
+# Prepends 0x to every two-character sequence in the hash,
+# OR the final character of the hash, to plumb it for C++ usage. e.g.:
+# -DOVERRIDE_HASH=123456aa => 0x12, 0x34, 0x56, 0xaa,
+# -DOVERRIDE_HASH=12345678a => 0x12, 0x34, 0x56, 0x78, 0xa,
+string(REGEX
+  REPLACE "(..|.$)" "0x\\1, "
+  GIT_HASH_ARRAY "${GIT_HASH}")
+
+  message(STATUS "GIT_HASH_ARRAY ${GIT_HASH_ARRAY}")
 if (ENABLE_IWYU)
   find_program(IWYU_EXE
     NAMES iwyu include-what-you-use)
