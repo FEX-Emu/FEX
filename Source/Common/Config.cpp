@@ -2,6 +2,7 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 #include "Common/JSONPool.h"
+#include "FEXCore/fextl/vector.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/fmt.h>
@@ -11,7 +12,7 @@
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
-
+#include <FEXCore/Utils/WildcardMatcher.h>
 #include <cstring>
 #include <fmt/format.h>
 #include <functional>
@@ -48,21 +49,50 @@ namespace JSON {
       return;
     }
 
-    for (const json_t* ConfigItem = json_getChild(ConfigList); ConfigItem != nullptr; ConfigItem = json_getSibling(ConfigItem)) {
-      const char* ConfigName = json_getName(ConfigItem);
-      const char* ConfigString = json_getValue(ConfigItem);
+    fextl::vector<const json_t*> ConfigBlocks;
+    ConfigBlocks.push_back(ConfigList);
 
-      if (!ConfigName) {
-        LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
-        return;
+    const json_t* OverrideList = json_getProperty(json, "AppOverrides");
+    if (OverrideList) {
+      for (const json_t* Item = json_getChild(OverrideList); Item != nullptr; Item = json_getSibling(Item)) {
+        const char* ItemName = json_getName(Item);
+        const json_t* OverrideNamedList = json_getProperty(OverrideList, ItemName);
+
+        if (!ItemName) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
+          break;
+        }
+
+        if (!OverrideNamedList) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ItemName);
+          break;
+        }
+
+        // Matches the first and then get out
+        if (FEXCore::Utils::Wildcard::Matches(ItemName, Config)) {
+          // Safe to assume its just pairs of strings at this point?
+          ConfigBlocks.push_back(OverrideNamedList);
+          break;
+        }
       }
+    }
 
-      if (!ConfigString) {
-        LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ConfigName);
-        return;
+    for (auto ConfigBlock : ConfigBlocks) {
+      for (const json_t* ConfigItem = json_getChild(ConfigBlock); ConfigItem != nullptr; ConfigItem = json_getSibling(ConfigItem)) {
+        const char* ConfigName = json_getName(ConfigItem);
+        const char* ConfigString = json_getValue(ConfigItem);
+
+        if (!ConfigName) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
+          return;
+        }
+
+        if (!ConfigString) {
+          LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ConfigName);
+          return;
+        }
+        Func(ConfigName, ConfigString);
       }
-
-      Func(ConfigName, ConfigString);
     }
   }
 } // namespace JSON
