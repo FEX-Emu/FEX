@@ -448,8 +448,10 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     return;
   }
 
-  if ((Constant >> 32) == 0) {
+  if ((Constant >> 32) == 0 && !NOPPad) {
     // If the upper 32-bits is all zero, we can now switch to a 32-bit move.
+    // NOTE: The NOP padding code does not appropriately adjust to this yet,
+    //       so we skip this optimization in that case
     s = ARMEmitter::Size::i32Bit;
     Is64Bit = false;
     Segments = std::min(Segments, 2);
