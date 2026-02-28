@@ -71,7 +71,7 @@ constexpr std::array<DispatchTableEntry, 140> X87F64OpTable = {{
   {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
   {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
   // D1 = Invalid
-  // D8 = Invalid
+  {OPD(0xD9, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>}, // FSTPNCE
   {OPD(0xD9, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKCHANGESIGN, false>},
   {OPD(0xD9, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKABS, false>},
   // E2 = Invalid
@@ -343,7 +343,7 @@ constexpr std::array<DispatchTableEntry, 140> X87F80OpTable = {{
   {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
   {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
   // D1 = Invalid
-  // D8 = Invalid
+  {OPD(0xD9, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>}, // FSTPNCE
   {OPD(0xD9, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKCHANGESIGN, false>},
   {OPD(0xD9, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKABS, false>},
   // E2 = Invalid
@@ -601,7 +601,7 @@ auto GenerateX87TableLambda = [](const auto DispatchTable) consteval {
       {OPD(0xD9, 0xD0), 1, X86InstInfo{"FNOP",  TYPE_X87, FLAGS_NONE, 0}},
       {OPD(0xD9, 0xD1), 7, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE, 0}},
       //  / 3
-      {OPD(0xD9, 0xD8), 8, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE, 0}},
+      {OPD(0xD9, 0xD8), 8, X86InstInfo{"FSTPNCE", TYPE_X87, FLAGS_SF_MOD_DST | FLAGS_POP, 0}},
       //  / 4
       {OPD(0xD9, 0xE0), 1, X86InstInfo{"FCHS", TYPE_X87, FLAGS_NONE, 0}},
       {OPD(0xD9, 0xE1), 1, X86InstInfo{"FABS", TYPE_X87, FLAGS_NONE, 0}},
