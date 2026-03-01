@@ -841,6 +841,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CallReturnTargets.clear();
   PendingJumpThunks.clear();
   JumpTargets.resize(IR->GetHeader()->BlockCount, {});
+  Relocations.resize(PrevNumAllocations, FEXCore::CPU::Relocation::Default()); // Discard any relocations generated from a previous attempt
 
   CodeData.EntryPoints.clear();
 
