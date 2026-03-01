@@ -578,7 +578,7 @@ bool SignalDelegator::HandleFrontendSIGSEGV(FEXCore::Core::InternalThreadState* 
   auto SigInfo = *static_cast<siginfo_t*>(Info);
 
   if (FaultSafeUserMemAccess::TryHandleSafeFault(Signal, SigInfo, UContext)) {
-    ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
+    return true;
   }
 
 #ifdef ARCHITECTURE_arm64
