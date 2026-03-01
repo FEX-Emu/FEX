@@ -8,6 +8,7 @@ $end_info$
 
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
+#include "Unwind/Unwind_x86_64.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -372,6 +373,20 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
       NewGuestSP = SetupRTFrame_ia32(Thread, ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);
     } else {
       NewGuestSP = SetupFrame_ia32(Thread, ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);
+    }
+  }
+
+  if ((Signal == SIGABRT || Signal == SIGTRAP) && Is64BitMode) {
+    auto SigInfo = (siginfo_t*)Frame->State.gregs[FEXCore::X86State::REG_RSI];
+    auto Context = (FEXCore::x86_64::ucontext_t*)Frame->State.gregs[FEXCore::X86State::REG_RDX];
+    static FEXCore::ForkableSharedMutex Mutex {};
+
+    // Block all signals except SIGSEGV.
+    //auto lk = FEXCore::MaskSignalsAndLockMutex(Mutex, ~(1ULL << (SIGSEGV - 1)));
+
+    auto Unwinder = Unwind::x86_64::Unwind(SigInfo, Context);
+    if (Unwinder) {
+      Unwinder->Backtrace();
     }
   }
 

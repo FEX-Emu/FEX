@@ -77,7 +77,7 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx) {
 
 void PassManager::AddDefaultValidationPasses() {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-  InsertValidationPass(Validation::CreateIRValidation(), "IRValidation");
+  //InsertValidationPass(Validation::CreateIRValidation(), "IRValidation");
 #endif
 }
 

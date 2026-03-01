@@ -8,7 +8,10 @@ target_link_libraries(FEXOfflineCompiler PRIVATE
   JemallocLibs
   LinuxEmulation
   ${PTHREAD_LIB}
-  fmt::fmt)
+  fmt::fmt
+  fex_unwind_x86_64 unwind)
+
+target_link_directories(FEXOfflineCompiler PRIVATE ${CMAKE_BINARY_DIR}/unwind_x86_64/src/)
 
 LinkerGC(FEXOfflineCompiler)
 

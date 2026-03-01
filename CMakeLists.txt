@@ -585,6 +585,7 @@ ExternalProject_Add(unwind_x86_64
   CMAKE_ARGS
     "-DTARGET=x86_64-linux-gnu"
     "-DUNW_CMAKE_TARGET_LINUX=1"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   INSTALL_COMMAND ""
   BUILD_ALWAYS ON)
 
@@ -595,6 +596,7 @@ ExternalProject_Add(unwind_x86
   CMAKE_ARGS
     "-DTARGET=i686-linux-gnu"
     "-DUNW_CMAKE_TARGET_LINUX=1"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   INSTALL_COMMAND ""
   BUILD_ALWAYS ON)
 

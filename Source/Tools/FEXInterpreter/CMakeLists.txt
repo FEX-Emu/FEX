@@ -1,5 +1,5 @@
 list(APPEND LIBS FEXCore Common JemallocLibs LinuxEmulation
-  CommonTools ${PTHREAD_LIB} fmt::fmt)
+  CommonTools ${PTHREAD_LIB} fmt::fmt fex_unwind_x86_64 unwind)
 
 set(DEFINES)
 if (ENABLE_VIXL_SIMULATOR)
@@ -9,7 +9,7 @@ endif()
 add_executable(FEX
   FEXInterpreter.cpp
   AOT/AOTGenerator.cpp)
-
+target_link_directories(FEX PRIVATE ${CMAKE_BINARY_DIR}/unwind_x86_64/src/)
 target_compile_definitions(FEX PRIVATE ${DEFINES})
 
 # Enable FEX APIs to be used by targets that use target_link_libraries on FEX
