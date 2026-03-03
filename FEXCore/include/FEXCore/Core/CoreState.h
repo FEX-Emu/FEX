@@ -375,6 +375,9 @@ struct JITPointers {
   uint64_t L2Pointer {};
   uint64_t LUDIVHandler {};
   uint64_t LDIVHandler {};
+  uint64_t F64SinHandler {};
+  uint64_t F64CosHandler {};
+  uint64_t F64TanHandler {};
   /**  @} */
 
   // Copy of process-wide named vector constants data.
