@@ -44,10 +44,12 @@ namespace CPU {
   struct CodeBuffer {
     uint8_t* Ptr;
     size_t AllocatedSize; // including guard page; see UsableSize()
+    const uint32_t PageSize;
 
     fextl::unique_ptr<GuestToHostMap> LookupCache;
 
-    CodeBuffer(size_t Size);
+    CodeBuffer(size_t Size, uint32_t PageSize);
+
     CodeBuffer(const CodeBuffer&) = delete;
     CodeBuffer& operator=(const CodeBuffer&) = delete;
     CodeBuffer(CodeBuffer&& oth) = delete;
@@ -57,7 +59,7 @@ namespace CPU {
 
     /// Returns the number of bytes available for storing code
     size_t UsableSize() const {
-      return AllocatedSize - FEXCore::Utils::FEX_PAGE_SIZE;
+      return AllocatedSize - PageSize;
     }
   };
 
@@ -72,6 +74,8 @@ namespace CPU {
    */
   class CodeBufferManager {
   public:
+    CodeBufferManager();
+
     // Get the CodeBuffer that was most recently allocated.
     // This is the only CodeBuffer that data may be written to.
     fextl::shared_ptr<CodeBuffer> GetLatest();
@@ -92,6 +96,8 @@ namespace CPU {
     fextl::shared_ptr<CodeBuffer> Latest;
 
     fextl::shared_ptr<CodeBuffer> AllocateNew(size_t Size);
+    uint32_t FindLargestPageSizeForAllocation(size_t Size);
+    uint32_t SupportedLargePages {};
   };
 
   class CPUBackend {

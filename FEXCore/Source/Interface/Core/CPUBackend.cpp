@@ -349,15 +349,20 @@ namespace CPU {
     return *Buffer.LookupCache;
   }
 
-  CodeBuffer::CodeBuffer(size_t Size)
-    : AllocatedSize(Size) {
-    Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Size, true));
-    LOGMAN_THROW_A_FMT(!!Ptr, "Couldn't allocate code buffer");
+  CodeBuffer::CodeBuffer(size_t Size, uint32_t PageSize)
+    : AllocatedSize(Size)
+    , PageSize {PageSize} {
+    Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAllocWithLargePageSupport(Size, PageSize, true));
+    LOGMAN_THROW_A_FMT(Ptr != MAP_FAILED, "Couldn't allocate code buffer");
+
+    if (PageSize == FEXCore::Utils::FEX_PAGE_SIZE) {
+      // Try and use THP when set to minimum page size.
+      FEXCore::Allocator::VirtualTHP(Ptr, Size);
+    }
 
     // Protect the last page of the allocated buffer to trigger SIGSEGV on write access
-    uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Ptr) + Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
-    if (!FEXCore::Allocator::VirtualProtect(reinterpret_cast<void*>(LastPageAddr), FEXCore::Utils::FEX_PAGE_SIZE,
-                                            FEXCore::Allocator::ProtectOptions::None)) {
+    uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Ptr) + Size - 1, PageSize);
+    if (!FEXCore::Allocator::VirtualProtect(reinterpret_cast<void*>(LastPageAddr), PageSize, FEXCore::Allocator::ProtectOptions::None)) {
       LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
     }
 
@@ -368,6 +373,64 @@ namespace CPU {
 
   CodeBuffer::~CodeBuffer() {
     FEXCore::Allocator::VirtualFree(Ptr, AllocatedSize);
+  }
+
+  CodeBufferManager::CodeBufferManager() {
+#ifndef _WIN32
+    // Check for supported large-page sizes
+    constexpr std::array<uint32_t, 4> testing_sizes = {
+      14, // 16KB
+      16, // 64KB
+      21, // 2MB
+      25, // 32MB
+    };
+
+    for (auto size : testing_sizes) {
+      uint32_t map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB;
+      map_flags |= size << MAP_HUGE_SHIFT;
+      const size_t page_size = 1ULL << size;
+      auto Ptr = ::mmap(nullptr, page_size, PROT_NONE, map_flags, -1, 0);
+      if (Ptr != MAP_FAILED) {
+        // huge page size is supported.
+        SupportedLargePages |= (1U << size);
+        munmap(Ptr, page_size);
+      }
+    }
+#endif
+  }
+
+  uint32_t CodeBufferManager::FindLargestPageSizeForAllocation(size_t AllocationSize) {
+    // TODO: Enable once FEX's allocator support huge-pages.
+#if 0
+    // Scan from largest page size to smallest.
+    uint32_t TestingLargePages = SupportedLargePages;
+    for (uint32_t i = std::countl_zero(TestingLargePages); i < 32; ++i) {
+      if (!TestingLargePages) {
+        // Nothing remaining.
+        break;
+      }
+
+      const uint32_t TestBit = (0x8000'0000U >> i);
+
+      if ((TestingLargePages & TestBit) == 0) {
+        // Not supported.
+        continue;
+      }
+
+      const uint32_t log2_enc = (31 - i);
+      const uint32_t page_size = 1U << log2_enc;
+      if (page_size <= AllocationSize) {
+        // Page size fits within the allocation size requested.
+        return page_size;
+      }
+
+      // Clear the bit.
+      TestingLargePages &= ~TestBit;
+    }
+#endif
+
+    // 4kb page size always supported.
+    return FEXCore::Utils::FEX_PAGE_SIZE;
   }
 
   auto CodeBufferManager::AllocateNew(size_t Size) -> fextl::shared_ptr<CodeBuffer> {
@@ -396,7 +459,9 @@ namespace CPU {
     }
 #endif
 
-    auto Buffer = fextl::make_shared<CodeBuffer>(Size);
+    const auto page_size = FindLargestPageSizeForAllocation(Size);
+    Size += page_size;
+    auto Buffer = fextl::make_shared<CodeBuffer>(Size, page_size);
 
     Latest = Buffer;
     LatestOffset = 0;
@@ -435,7 +500,7 @@ namespace CPU {
     auto CheckCodeBuffer = [](CodeBuffer& Buffer, uintptr_t Address) {
       // The last page of the code buffer is protected, so we need to exclude it from the valid range
       // when checking if the address is in the code buffer.
-      uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.AllocatedSize - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+      uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.AllocatedSize - 1, Buffer.PageSize);
       return (Address >= reinterpret_cast<uintptr_t>(Buffer.Ptr) && Address < LastPageAddr);
     };
 

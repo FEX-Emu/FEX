@@ -2,7 +2,9 @@
 #pragma once
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumOperators.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/TypeDefines.h>
 
 #ifndef _WIN32
 #include <stdlib.h>
@@ -28,6 +30,7 @@ enum class ProtectOptions : uint32_t {
 FEX_DEF_NUM_OPS(ProtectOptions)
 
 #ifdef _WIN32
+#define MAP_FAILED ((void*)-1)
 inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Commit = true) {
   // Allocate top-down to avoid polluting the lower VA space, as even on 64-bit some programs (i.e. LuaJIT) require allocations below 4GB.
   DWORD Flags = (Commit ? MEM_COMMIT : 0) | MEM_RESERVE | MEM_TOP_DOWN;
@@ -37,15 +40,24 @@ inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Co
     Parameter.Type = MemExtendedParameterAttributeFlags;
     Parameter.ULong64 = MEM_EXTENDED_PARAMETER_EC_CODE;
   };
-  return ::VirtualAlloc2(nullptr, Base, Size, Flags, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE, Execute ? &Parameter : nullptr,
-                         Execute ? 1 : 0);
+  auto Ptr = ::VirtualAlloc2(nullptr, Base, Size, Flags, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE, Execute ? &Parameter : nullptr,
+                             Execute ? 1 : 0);
 #else
-  return ::VirtualAlloc(Base, Size, Flags, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  auto Ptr = ::VirtualAlloc(Base, Size, Flags, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 #endif
+  if (Ptr == nullptr) {
+    return MAP_FAILED;
+  }
+  return Ptr;
 }
 
 inline void* VirtualAlloc(size_t Size, bool Execute = false, bool Commit = true) {
   return VirtualAlloc(nullptr, Size, Execute, Commit);
+}
+
+inline void* VirtualAllocWithLargePageSupport(size_t Size, size_t huge_page_size, bool Execute = false, bool Commit = true) {
+  // Win32 doesn't support selecting huge-page size.
+  return VirtualAlloc(Size, Execute, Commit);
 }
 
 inline void VirtualFree(void* Ptr, size_t Size) {
@@ -83,6 +95,7 @@ inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
 }
 
 inline void VirtualName(const char*, void*, size_t) {}
+inline void VirtualTHP(void* Ptr, size_t Size) {}
 
 #else
 using MMAP_Hook = void* (*)(void*, size_t, int, int, int, off_t);
@@ -102,11 +115,24 @@ inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Co
   return FEXCore::Allocator::mmap(Base, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 
+inline void* VirtualAllocWithLargePageSupport(size_t Size, size_t huge_page_size, bool Execute = false, bool Commit = true) {
+  uint32_t map_flags = MAP_PRIVATE | MAP_ANONYMOUS;
+  if (huge_page_size != FEXCore::Utils::FEX_PAGE_SIZE) {
+    // Allocate with huge page support only if requested.
+    map_flags |= MAP_HUGETLB | (FEXCore::ilog2(huge_page_size) << MAP_HUGE_SHIFT);
+  }
+  return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), map_flags, -1, 0);
+}
+
 inline void VirtualFree(void* Ptr, size_t Size) {
   FEXCore::Allocator::munmap(Ptr, Size);
 }
 inline void VirtualDontNeed(void* Ptr, size_t Size, bool Recommit = true) {
   ::madvise(reinterpret_cast<void*>(Ptr), Size, MADV_DONTNEED);
+}
+
+inline void VirtualTHP(void* Ptr, size_t Size) {
+  ::madvise(reinterpret_cast<void*>(Ptr), Size, MADV_HUGEPAGE);
 }
 inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
   int prot {PROT_NONE};
