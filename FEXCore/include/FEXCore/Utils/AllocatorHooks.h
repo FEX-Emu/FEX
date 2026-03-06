@@ -83,6 +83,7 @@ inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
 }
 
 inline void VirtualName(const char*, void*, size_t) {}
+inline void VirtualTHP(void* Ptr, size_t Size) {}
 
 #else
 using MMAP_Hook = void* (*)(void*, size_t, int, int, int, off_t);
@@ -121,6 +122,10 @@ inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
   }
 
   return ::mprotect(Ptr, Size, prot) == 0;
+}
+
+inline void VirtualTHP(void* Ptr, size_t Size) {
+  ::madvise(Ptr, Size, MADV_HUGEPAGE);
 }
 
 #endif
