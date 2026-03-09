@@ -627,12 +627,48 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsSVE128 = ForceSVEWidth() ? ForceSVEWidth() >= 128 : true;
   HostFeatures.SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
   HostFeatures.SupportsMOPS = true;
+
+  // Simulator has a hardcoded ZVA size of 64-bytes.
+  HostFeatures.SupportsCLZERO = true;
+  HostFeatures.SupportsAES = true;
+  HostFeatures.SupportsCRC = true;
+  HostFeatures.SupportsAVX = true;
+  HostFeatures.SupportsSHA = true;
+  HostFeatures.SupportsPMULL_128Bit = true;
+  HostFeatures.SupportsAES256 = true;
+
+  // Simulator doesn't support these
+  HostFeatures.SupportsRPRES = false;
+  HostFeatures.SupportsAFP = false;
 #else
   HostFeatures.SupportsSVE128 = Features.Supports(CPUFeatures::Feature::SVE2);
   HostFeatures.SupportsSVE256 = Features.Supports(CPUFeatures::Feature::SVE2) && Features.GetSVEVectorLengthInBits() >= 256;
   HostFeatures.SupportsMOPS = Features.Supports(CPUFeatures::Feature::MOPS);
+
+  // Check if we can support cacheline clears
+  if (Features.GetDCZID().SupportsDCZVA()) {
+    // If the DC ZVA size matches the emulated cache line size
+    // This means we can use the instruction
+    constexpr static uint64_t CACHELINE_SIZE = 64;
+    HostFeatures.SupportsCLZERO = Features.GetDCZID().BlockSizeInBytes() == CACHELINE_SIZE;
+  }
 #endif
+
   HostFeatures.SupportsAVX = true;
+  HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX && HostFeatures.SupportsAES;
+  HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
+
+  if (CTR) {
+    HostFeatures.DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
+    HostFeatures.ICacheLineSize = 4 << (CTR & 0xF);
+  } else {
+    HostFeatures.DCacheLineSize = 64;
+    HostFeatures.ICacheLineSize = 64;
+  }
+
+  if (!HostFeatures.SupportsAtomics) {
+    WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
+  }
 
 #ifdef _WIN32
   // Disable 3DNow! by default to better match the set of extensions exposed on modern CPUs.
@@ -642,12 +678,6 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
 #else
   HostFeatures.Supports3DNow = true;
 #endif
-
-  HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX && HostFeatures.SupportsAES;
-
-  if (!HostFeatures.SupportsAtomics) {
-    WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
-  }
 
 #ifdef ARCHITECTURE_arm64
   // Test if this CPU supports float exception trapping by attempting to enable
@@ -669,36 +699,6 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   SetFPCR(OriginalFPCR);
 #endif
 
-#ifdef VIXL_SIMULATOR
-  // simulator has a hardcoded ZVA size of 64-bytes.
-  HostFeatures.SupportsCLZERO = true;
-  HostFeatures.SupportsAES = true;
-  HostFeatures.SupportsCRC = true;
-  HostFeatures.SupportsAVX = true;
-  HostFeatures.SupportsSHA = true;
-  HostFeatures.SupportsPMULL_128Bit = true;
-  HostFeatures.SupportsAES256 = true;
-
-  // Simulator doesn't support these
-  HostFeatures.SupportsRPRES = false;
-  HostFeatures.SupportsAFP = false;
-#else
-  // Check if we can support cacheline clears
-  if (Features.GetDCZID().SupportsDCZVA()) {
-    // If the DC ZVA size matches the emulated cache line size
-    // This means we can use the instruction
-    constexpr static uint64_t CACHELINE_SIZE = 64;
-    HostFeatures.SupportsCLZERO = Features.GetDCZID().BlockSizeInBytes() == CACHELINE_SIZE;
-  }
-#endif
-
-  if (CTR) {
-    HostFeatures.DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
-    HostFeatures.ICacheLineSize = 4 << (CTR & 0xF);
-  } else {
-    HostFeatures.DCacheLineSize = HostFeatures.ICacheLineSize = 64;
-  }
-
 #if defined(ARCHITECTURE_x86_64) && !defined(VIXL_SIMULATOR)
   FEX::X86::Features Feature {};
   HostFeatures.SupportsAES = Feature.Feat_aes;
@@ -715,7 +715,6 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsAFP = true;
   HostFeatures.SupportsFloatExceptions = true;
 #endif
-  HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
 
   HandleErrata(&HostFeatures, MIDR);
   OverrideFeatures(&HostFeatures, ForceSVEWidth());
