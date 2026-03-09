@@ -1,3 +1,17 @@
+spec:
+  inputs:
+    PROMOTE_BRANCH:
+      description: "Branch to promote the build to. Empty means no promotion."
+      default: "bleeding-edge"
+
+---
+
+workflow:
+  rules:
+    - when: always
+      variables:
+        PROMOTE_BRANCH: $[[ inputs.PROMOTE_BRANCH ]]
+
 variables:
     DEBIAN_FRONTEND: noninteractive
     GIT_SUBMODULE_STRATEGY: recursive
@@ -5,7 +19,8 @@ variables:
     CC: clang
     CXX: clang++
 
-aarch64:
+build:
+  stage: build
   image: registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20251117.183306
   tags:
     - docker
@@ -30,3 +45,27 @@ aarch64:
     untracked: false
     paths:
       - install/
+
+promote:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  image: registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20251117.183306
+  tags:
+    - docker
+    - linux
+    - arm64
+    - aarch64
+  rules:
+    - if: '$PROMOTE_BRANCH'
+  before_script:
+    - apt-get -y update
+    - apt-get install -y tmux curl
+  script:
+    # comment out to debug: SSH in via GCP, go down the container and attach to the session (with `tmux attach -t debug`)
+#    - tmux new-session -d -s debug
+#    - while tmux has-session -t debug 2>/dev/null; do sleep 1; done
+
+    # ref controls which fex-depot code runs the pipeline, while VERSION_PARAM controls which fex branch's artifacts that pipeline downloads.
+    - >
+      curl --fail --location --request POST --form token=${FEX_DEPOT_TRIGGER_TOKEN} --form ref=master --form "variables[PROMOTE_BRANCH]=${PROMOTE_BRANCH}" --form "variables[VERSION_PARAM]=${CI_COMMIT_REF_NAME}" "${CI_API_V4_URL}/projects/fex%2Ffex-depot/trigger/pipeline"
