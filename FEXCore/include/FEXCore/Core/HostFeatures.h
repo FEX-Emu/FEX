@@ -41,6 +41,7 @@ struct HostFeatures {
   bool SupportsWFXT {};
   bool Supports3DNow {};
   bool SupportsSSE4a {};
+  bool SupportsMOPS {};
 
   // Float exception behaviour
   bool SupportsAFP {};
