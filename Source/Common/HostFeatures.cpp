@@ -502,6 +502,7 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   ENABLE_DISABLE_OPTION(SupportsWFXT, WFXT, WFXT);
   ENABLE_DISABLE_OPTION(Supports3DNow, 3DNOW, 3DNOW);
   ENABLE_DISABLE_OPTION(SupportsSSE4a, SSE4A, SSE4A);
+  ENABLE_DISABLE_OPTION(SupportsMOPS, MOPS, MOPS);
   GET_SINGLE_OPTION(Crypto, CRYPTO);
 
 #undef ENABLE_DISABLE_OPTION
@@ -625,9 +626,11 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   // Hardcode enable SVE with 256-bit wide registers.
   HostFeatures.SupportsSVE128 = ForceSVEWidth() ? ForceSVEWidth() >= 128 : true;
   HostFeatures.SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
+  HostFeatures.SupportsMOPS = true;
 #else
   HostFeatures.SupportsSVE128 = Features.Supports(CPUFeatures::Feature::SVE2);
   HostFeatures.SupportsSVE256 = Features.Supports(CPUFeatures::Feature::SVE2) && Features.GetSVEVectorLengthInBits() >= 256;
+  HostFeatures.SupportsMOPS = Features.Supports(CPUFeatures::Feature::MOPS);
 #endif
   HostFeatures.SupportsAVX = true;
 
