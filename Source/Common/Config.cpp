@@ -633,17 +633,10 @@ fextl::string GetDataDirectory(bool Global, const PortableInformation& PortableI
 }
 
 fextl::string GetConfigDirectory(bool Global, const PortableInformation& PortableInfo) {
-#ifdef FEX_STEAM_SUPPORT
-  const char* SteamDataPath = getenv("STEAM_COMPAT_DATA_PATH");
-  if (SteamDataPath) {
-    return fextl::fmt::format("{}/fex-emu/", SteamDataPath);
-  }
-#endif
-
   const char* ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
   if (PortableInfo.IsPortable && (Global || !ConfigOverride)) {
     return fextl::fmt::format("{}/fex-emu/", PortableInfo.InterpreterPath);
-  } else if (PortableInfo.IsPortable && ConfigOverride && !Global) {
+  } else if (ConfigOverride && !Global) {
     fextl::string AppConfigStr = ConfigOverride;
     if (FHU::Filesystem::IsRelative(AppConfigStr)) {
       AppConfigStr = PortableInfo.InterpreterPath + AppConfigStr;
@@ -651,6 +644,13 @@ fextl::string GetConfigDirectory(bool Global, const PortableInformation& Portabl
 
     return AppConfigStr;
   }
+
+#ifdef FEX_STEAM_SUPPORT
+  const char* SteamDataPath = getenv("STEAM_COMPAT_DATA_PATH");
+  if (SteamDataPath) {
+    return fextl::fmt::format("{}/fex-emu/", SteamDataPath);
+  }
+#endif
 
   fextl::string ConfigDir;
   if (Global) {
