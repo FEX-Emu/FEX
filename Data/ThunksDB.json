@@ -46,6 +46,13 @@
         "@PREFIX_LIB@/libwayland-client.so.0",
         "@PREFIX_LIB@/libwayland-client.so.0.20.0"
       ]
+    },
+    "cuda": {
+      "Library" : "libcuda-guest.so",
+      "Overlay": [
+        "@PREFIX_LIB@/libcuda.so",
+        "@PREFIX_LIB@/libcuda.so.1"
+      ]
     }
   }
 }

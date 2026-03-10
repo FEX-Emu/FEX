@@ -167,6 +167,9 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
 
   find_package(OpenGL REQUIRED)
   target_link_libraries(GL-host-${GUEST_BITNESS} PRIVATE OpenGL::GL)
+
+  generate(libcuda ${CMAKE_CURRENT_SOURCE_DIR}/../libcuda/libcuda_interface.cpp ${GUEST_BITNESS})
+  add_host_lib(cuda ${GUEST_BITNESS})
 endforeach()
 
 if (BUILD_FEX_LINUX_TESTS)

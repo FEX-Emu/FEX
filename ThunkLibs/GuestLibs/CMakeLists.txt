@@ -266,3 +266,6 @@ add_library(PlaceholderX11 SHARED ../libX11/libX11_NativeGuest.cpp)
 target_link_options(PlaceholderX11 PRIVATE "LINKER:-soname,libX11.so.6")
 set_target_properties(PlaceholderX11 PROPERTIES NO_SONAME ON)
 target_link_libraries(GL-guest PRIVATE PlaceholderX11)
+
+generate(libcuda ${CMAKE_CURRENT_SOURCE_DIR}/../libcuda/libcuda_interface.cpp)
+add_guest_lib(cuda "libcuda.so.1")
