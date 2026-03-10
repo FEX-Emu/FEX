@@ -281,6 +281,11 @@ void VMATracking::DeleteVMARange(FEXCore::Context::Context* CTX, uintptr_t Base,
 void VMATracking::ChangeProtectionFlags(uintptr_t Base, uintptr_t Length, VMAProt NewProt) {
   Mutex.check_lock_owned_by_self_as_write();
 
+  // Handle 0 size as no-op like the kernel
+  if (Length == 0) {
+    return;
+  }
+
   // This needs to handle multiple split-merge strategies:
   // 1) Exact overlap - No Split, no Merge. Only protection tracking changes.
   // 2) Exact base overlap - Single insert, can never fail.
