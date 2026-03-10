@@ -681,6 +681,6 @@ if (BUILD_THUNKS)
   add_dependencies(uninstall uninstall_guest-libs-32)
 endif()
 
-if (BUILD_STEAM_SUPPORT)
+if (NOT MINGW AND BUILD_STEAM_SUPPORT)
   add_subdirectory(Source/Steam/)
 endif()
