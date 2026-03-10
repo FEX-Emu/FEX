@@ -1935,6 +1935,7 @@ DEF_OP(MemSet) {
   auto EmitMemset = [&](int32_t Direction) {
     const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
+    const bool IsBackwards = Direction == -1;
 
     ARMEmitter::BiDirectionalLabel AgainInternal {};
     ARMEmitter::ForwardLabel DoneInternal {};
@@ -1943,12 +1944,37 @@ DEF_OP(MemSet) {
     (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
     if (!IsAtomic) {
+      if (CTX->HostFeatures.SupportsMOPS) {
+        if (SubRegSize == ARMEmitter::SubRegSize::i8Bit) {
+          // If backwards, then we need to adjust the starting address because
+          // set{p, m, e} memset forwards, so we need to slide this bad boy
+          // back like: address - (count + 1).
+          if (IsBackwards) {
+            sub(TMP2, TMP2, TMP1);
+            add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1);
+          }
+
+          setp(TMP2, TMP1, Value.X());
+          setm(TMP2, TMP1, Value.X());
+          sete(TMP2, TMP1, Value.X());
+
+          if (IsBackwards) {
+            sub(Dst.X(), MemReg.X(), Length.X());
+          } else {
+            add(Dst.X(), MemReg.X(), Length.X());
+          }
+
+          (void)Bind(&DoneInternal);
+          return;
+        }
+      }
+
       ARMEmitter::ForwardLabel AgainInternal256Exit {};
       ARMEmitter::BackwardLabel AgainInternal256 {};
       ARMEmitter::ForwardLabel AgainInternal128Exit {};
       ARMEmitter::BackwardLabel AgainInternal128 {};
 
-      if (Direction == -1) {
+      if (IsBackwards) {
         sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
       }
 
@@ -1986,7 +2012,7 @@ DEF_OP(MemSet) {
       add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
       (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
-      if (Direction == -1) {
+      if (IsBackwards) {
         add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
       }
     }
