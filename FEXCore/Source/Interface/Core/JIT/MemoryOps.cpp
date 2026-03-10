@@ -1849,13 +1849,6 @@ DEF_OP(StoreMemTSO) {
 }
 
 DEF_OP(MemSet) {
-  // TODO: A future looking task would be to support this with ARM's MOPS instructions.
-  // The 8-bit non-atomic forward path directly matches ARM's SETP/SETM/SETE instruction,
-  // while the backward version needs some fixup to convert it to a forward direction.
-  //
-  // Assuming non-atomicity and non-faulting behaviour, this can accelerate this implementation.
-  // Additionally: This is commonly used as a memset to zero. If we know up-front with an inline constant
-  // that the value is zero, we can optimize any operation larger than 8-bit down to 8-bit to use the MOPS implementation.
   const auto Op = IROp->C<IR::IROp_MemSet>();
 
   const bool IsAtomic = CTX->IsMemcpyAtomicTSOEnabled();
@@ -1937,6 +1930,28 @@ DEF_OP(MemSet) {
     const int32_t SizeDirection = Size * Direction;
     const bool IsBackwards = Direction == -1;
 
+    // Sets the result to the final address written depending on
+    // whether or not the memset is forwards or backwards.
+    const auto MakeFinalAddress = [&] {
+      if (IsBackwards) {
+        switch (OpSize) {
+        case 1: sub(Dst.X(), MemReg.X(), Length.X()); break;
+        case 2: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1); break;
+        case 4: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2); break;
+        case 8: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3); break;
+        default: LOGMAN_MSG_A_FMT("Unhandled MemSet size: {}", OpSize); break;
+        }
+      } else {
+        switch (OpSize) {
+        case 1: add(Dst.X(), MemReg.X(), Length.X()); break;
+        case 2: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1); break;
+        case 4: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2); break;
+        case 8: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3); break;
+        default: LOGMAN_MSG_A_FMT("Unhandled MemSet size: {}", OpSize); break;
+        }
+      }
+    };
+
     ARMEmitter::BiDirectionalLabel AgainInternal {};
     ARMEmitter::ForwardLabel DoneInternal {};
 
@@ -1945,24 +1960,44 @@ DEF_OP(MemSet) {
 
     if (!IsAtomic) {
       if (CTX->HostFeatures.SupportsMOPS) {
-        if (SubRegSize == ARMEmitter::SubRegSize::i8Bit) {
+        const bool Is8Bit = SubRegSize == ARMEmitter::SubRegSize::i8Bit;
+
+        // We can handle 8-bit memsets and any other size that happens
+        // to be using an inlined zero value (resulting in the use of ZR).
+        //
+        // NOTE:
+        // Strictly speaking, this can also be trivially expanded to handle other sizes
+        // that happen to use any value that could fit inside a byte if the need
+        // arises. This does increase branching and code generation, however, since
+        // we'd still need to emit the fallback in the event a value for a larger size
+        // falls outside the range of a byte instead of only generating the MOPS code.
+        if (Is8Bit || Value == ARMEmitter::Reg::zr) {
+          // If we're performing a non-byte-sized zeroing operation then we need to
+          // scale the counter accordingly. (e.g. a 64-bit memset of size 2 needs to
+          // be turned into an 8-bit memset of size 16)
+          if (!Is8Bit) {
+            lsl(ARMEmitter::Size::i64Bit, TMP1, TMP1, FEXCore::ToUnderlying(SubRegSize));
+          }
+
           // If backwards, then we need to adjust the starting address because
           // set{p, m, e} memset forwards, so we need to slide this bad boy
-          // back like: address - (count + 1).
+          // back like: (address - count) + 1.
+          //
+          // This lets us offset the address such that we can treat a backwards
+          // memset as if it were a forwards one.
           if (IsBackwards) {
             sub(TMP2, TMP2, TMP1);
             add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1);
           }
 
+          // Unfortunately set operations fiddle with NZCV, so we need to preserve it.
+          mrs(TMP3, ARMEmitter::SystemRegister::NZCV);
           setp(TMP2, TMP1, Value.X());
           setm(TMP2, TMP1, Value.X());
           sete(TMP2, TMP1, Value.X());
+          msr(ARMEmitter::SystemRegister::NZCV, TMP3);
 
-          if (IsBackwards) {
-            sub(Dst.X(), MemReg.X(), Length.X());
-          } else {
-            add(Dst.X(), MemReg.X(), Length.X());
-          }
+          MakeFinalAddress();
 
           (void)Bind(&DoneInternal);
           return;
@@ -2028,23 +2063,7 @@ DEF_OP(MemSet) {
 
     (void)Bind(&DoneInternal);
 
-    if (SizeDirection >= 0) {
-      switch (OpSize) {
-      case 1: add(Dst.X(), MemReg.X(), Length.X()); break;
-      case 2: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1); break;
-      case 4: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2); break;
-      case 8: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3); break;
-      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
-      }
-    } else {
-      switch (OpSize) {
-      case 1: sub(Dst.X(), MemReg.X(), Length.X()); break;
-      case 2: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1); break;
-      case 4: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2); break;
-      case 8: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3); break;
-      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
-      }
-    }
+    MakeFinalAddress();
   };
 
   if (DirectionIsInline) {
