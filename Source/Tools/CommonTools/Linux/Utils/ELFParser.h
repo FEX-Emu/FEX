@@ -304,6 +304,56 @@ struct ELFParser {
     return Relocations;
   }
 
+  /**
+   * Returns underlying 32-bit relocation entries.
+   * SHT_REL entries are implicitly converted to Elf32_Rela.
+   */
+  fextl::vector<Elf32_Rela> ReadRawRelocations32() {
+    if (fd == -1 || type != ::ELFLoader::ELFContainer::TYPE_X86_32 || !EnsureSectionHeadersLoaded()) {
+      return {};
+    }
+
+    // Load dynamic symbol table (find SHT_DYNSYM section)
+    fextl::vector<Elf32_Sym> DynSyms;
+    auto DynsymHeader = std::ranges::find_if(*shdrs, [](auto& shdr) { return shdr.sh_type == SHT_DYNSYM; });
+    if (DynsymHeader != shdrs->end()) {
+      size_t SymCount = DynsymHeader->sh_size / sizeof(Elf32_Sym);
+      DynSyms.resize(SymCount);
+      if (pread(fd, DynSyms.data(), DynsymHeader->sh_size, DynsymHeader->sh_offset) == -1) {
+        LOGMAN_MSG_A_FMT("Could not load DYNSYM section");
+      }
+    }
+
+    fextl::vector<Elf32_Rela> Result;
+    for (const auto& shdr : *shdrs) {
+      if (shdr.sh_entsize == 0) {
+        continue;
+      }
+
+      const size_t EntryCount = shdr.sh_size / shdr.sh_entsize;
+
+      if (shdr.sh_type == SHT_REL) {
+        fextl::vector<Elf32_Rel> Entries(EntryCount);
+        if (pread(fd, Entries.data(), shdr.sh_size, shdr.sh_offset) == -1) {
+          LOGMAN_MSG_A_FMT("Could not load REL section");
+        }
+        for (auto& Entry : Entries) {
+          auto Sym = ELF32_R_SYM(Entry.r_info);
+          int32_t Addend = (Sym < DynSyms.size()) ? static_cast<int32_t>(DynSyms[Sym].st_value) : 0;
+          Result.push_back(Elf32_Rela {Entry.r_offset, Entry.r_info, Addend});
+        }
+      } else if (shdr.sh_type == SHT_RELA) {
+        fextl::vector<Elf32_Rela> Entries(EntryCount);
+        if (pread(fd, Entries.data(), shdr.sh_size, shdr.sh_offset) == -1) {
+          LOGMAN_MSG_A_FMT("Could not load RELA section");
+        }
+        Result.insert(Result.end(), Entries.begin(), Entries.end());
+      }
+    }
+
+    return Result;
+  }
+
   void Closefd() {
     if (fd != -1) {
       close(fd);

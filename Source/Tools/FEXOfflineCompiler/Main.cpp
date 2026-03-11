@@ -50,7 +50,8 @@ public:
   }
 
   void* GuestMmap(FEXCore::Core::InternalThreadState*, void* addr, size_t Size, int prot, int Flags, int fd, off_t offset) override {
-    auto Ret = mmap(addr, Size, prot, Flags, fd, offset);
+    // Force writeable to allow applying relocations
+    auto Ret = mmap(addr, Size, prot | PROT_WRITE, Flags, fd, offset);
     if (Ret != MAP_FAILED && VAFileStart == 0) {
       VAFileStart = reinterpret_cast<uintptr_t>(Ret);
     }
@@ -113,8 +114,7 @@ static FEXCore::Core::InternalThreadState* SetupCompileThread(FEXCore::Context::
 }
 
 // Returns filename of generated cache on success
-static std::optional<std::string>
-GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintptr_t> BlockList, std::string_view OutDir) {
+static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInfo& Binary, fextl::set<uintptr_t> BlockList, std::string_view OutDir) {
   uint64_t CodeCacheConfigId = 0; // TODO: Make unique to active configuration
 
   ELFCodeLoader Loader(Binary.Filename.c_str(), -1, "", fextl::vector<fextl::string> {Binary.Filename.c_str()},
@@ -123,7 +123,19 @@ GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintpt
     fmt::print("Invalid or unsupported ELF file.\n");
     return std::nullopt;
   }
+
   const bool Is64Bit = Loader.Is64BitMode();
+  auto SyscallOSABI = Is64Bit ? FEXCore::HLE::SyscallOSABI::OS_LINUX64 : FEXCore::HLE::SyscallOSABI::OS_LINUX32;
+  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(SyscallOSABI);
+
+  // Populate relocations from ELF file
+  {
+    ELFParser RelocParser;
+    RelocParser.ReadElf(Binary.Filename);
+    Binary.Relocations = RelocParser.PopulateRelocations();
+    SyscallHandler->FileInfo.Relocations = Binary.Relocations;
+  }
+
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Is64Bit ? "1" : "0");
 
   // Load HostFeatures
@@ -137,13 +149,9 @@ GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintpt
 
   auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
 
-  auto SignalDelegation = std::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
-
-  auto SyscallOSABI = Is64Bit ? FEXCore::HLE::SyscallOSABI::OS_LINUX64 : FEXCore::HLE::SyscallOSABI::OS_LINUX32;
-  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(SyscallOSABI);
-
   Loader.CalculateHWCaps(CTX.get());
 
+  auto SignalDelegation = std::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   auto ThunkHandler = FEX::HLE::CreateThunkHandler();
@@ -165,6 +173,25 @@ GenerateSingleCache(const FEXCore::ExecutableFileInfo& Binary, fextl::set<uintpt
     auto ElfBase = Loader.LoadMainElfFile(nullptr, SyscallHandler.get(), Thread);
     if (!ElfBase.has_value()) {
       ERROR_AND_DIE_FMT("Failed to load ELF file {} ({})", Binary.Filename, Binary.FileId);
+    }
+
+    {
+      ELFParser RelocParser;
+      RelocParser.ReadElf(Binary.Filename);
+      auto relocs32 = RelocParser.ReadRawRelocations32();
+
+      for (auto& reloc : relocs32) {
+        if (ELF32_R_TYPE(reloc.r_info) == R_386_RELATIVE) {
+          // The FEX-relocation is applied on top of this during cache serialization, so this must be countered
+          uint32_t val = *reinterpret_cast<uint32_t*>(SyscallHandler->VAFileStart + reloc.r_offset) + SyscallHandler->VAFileStart;
+          memcpy(reinterpret_cast<uint32_t*>(SyscallHandler->VAFileStart + reloc.r_offset), &val, sizeof(val));
+        } else if (ELF32_R_TYPE(reloc.r_info) == R_386_32) {
+          // The FEX-relocation is applied on top of this during cache serialization, so this must be countered
+          uint32_t* orig = reinterpret_cast<uint32_t*>(SyscallHandler->VAFileStart + reloc.r_offset);
+          uint32_t val = *orig + reloc.r_addend + SyscallHandler->VAFileStart;
+          memcpy(orig, &val, sizeof(val));
+        }
+      }
     }
   }
 
