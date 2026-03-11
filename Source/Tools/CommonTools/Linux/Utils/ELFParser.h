@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+#include <FEXCore/Core/CodeCache.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <elf.h>
 #include <fcntl.h>
+#include <optional>
 #include <unistd.h>
 
 #include "Linux/Utils/ELFContainer.h"
@@ -19,6 +21,7 @@
 struct ELFParser {
   Elf64_Ehdr ehdr;
   fextl::vector<Elf64_Phdr> phdrs;
+  std::optional<fextl::vector<Elf64_Shdr>> shdrs;
   ::ELFLoader::ELFContainer::ELFType type {::ELFLoader::ELFContainer::TYPE_NONE};
 
   fextl::string InterpreterElf;
@@ -30,6 +33,7 @@ struct ELFParser {
 
     fd = NewFD;
     type = ::ELFLoader::ELFContainer::TYPE_NONE;
+    shdrs.reset();
 
     if (fd == -1) {
       // Likely just doesn't exist
@@ -236,6 +240,70 @@ struct ELFParser {
     return ReadElf(NewFD);
   }
 
+  /**
+   * Parses relocation sections (SHT_REL/SHT_RELA) and returns a map of
+   * offsets to relocations that FEX's JIT must know about.
+   */
+  fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> PopulateRelocations() {
+    if (fd == -1 || !EnsureSectionHeadersLoaded()) {
+      return {};
+    }
+
+    fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> Relocations;
+    bool Is32Bit = (type == ::ELFLoader::ELFContainer::TYPE_X86_32);
+
+    for (const auto& shdr : *shdrs) {
+      if (shdr.sh_entsize == 0) {
+        continue;
+      }
+
+      const size_t EntryCount = shdr.sh_size / shdr.sh_entsize;
+
+      if (!Is32Bit) {
+        if (shdr.sh_type == SHT_REL) {
+          LOGMAN_THROW_A_FMT(false, "Unexpected relocation section type");
+        } else if (shdr.sh_type == SHT_RELA) {
+          fextl::vector<Elf64_Rela> Entries(EntryCount);
+          if (pread(fd, Entries.data(), shdr.sh_size, shdr.sh_offset) == -1) {
+            LOGMAN_THROW_A_FMT(false, "Failed to read RELA section");
+          }
+          for (auto& Entry : Entries) {
+            auto RelocType = ClassifyRelocation64(ELF64_R_TYPE(Entry.r_info));
+            if (RelocType) {
+              Relocations.emplace(static_cast<uint32_t>(Entry.r_offset), *RelocType);
+            }
+          }
+        }
+      } else {
+        if (shdr.sh_type == SHT_REL) {
+          fextl::vector<Elf32_Rel> Entries(EntryCount);
+          if (pread(fd, Entries.data(), shdr.sh_size, shdr.sh_offset) == -1) {
+            LOGMAN_THROW_A_FMT(false, "Failed to read REL section");
+          }
+          for (auto& Entry : Entries) {
+            auto RelocType = ClassifyRelocation32(ELF32_R_TYPE(Entry.r_info));
+            if (RelocType) {
+              Relocations.emplace(static_cast<uint32_t>(Entry.r_offset), *RelocType);
+            }
+          }
+        } else if (shdr.sh_type == SHT_RELA) {
+          fextl::vector<Elf32_Rela> Entries(EntryCount);
+          if (pread(fd, Entries.data(), shdr.sh_size, shdr.sh_offset) == -1) {
+            LOGMAN_THROW_A_FMT(false, "Failed to read RELA section");
+          }
+          for (auto& Entry : Entries) {
+            auto RelocType = ClassifyRelocation32(ELF32_R_TYPE(Entry.r_info));
+            if (RelocType) {
+              Relocations.emplace(static_cast<uint32_t>(Entry.r_offset), *RelocType);
+            }
+          }
+        }
+      }
+    }
+
+    return Relocations;
+  }
+
   void Closefd() {
     if (fd != -1) {
       close(fd);
@@ -245,5 +313,66 @@ struct ELFParser {
 
   ~ELFParser() {
     Closefd();
+  }
+
+private:
+  /// Returns true if loading section headers succeeded
+  bool EnsureSectionHeadersLoaded() {
+    if (shdrs.has_value()) {
+      return !shdrs->empty();
+    }
+
+    if (fd == -1 || ehdr.e_shoff == 0 || ehdr.e_shnum == 0) {
+      shdrs.emplace();
+      return false;
+    }
+
+    if (type == ::ELFLoader::ELFContainer::TYPE_X86_64) {
+      shdrs.emplace(ehdr.e_shnum);
+      if (pread(fd, shdrs->data(), sizeof(Elf64_Shdr) * ehdr.e_shnum, ehdr.e_shoff) == -1) {
+        shdrs->clear();
+        return false;
+      }
+    } else {
+      fextl::vector<Elf32_Shdr> shdrs32(ehdr.e_shnum);
+      if (pread(fd, shdrs32.data(), sizeof(Elf32_Shdr) * ehdr.e_shnum, ehdr.e_shoff) == -1) {
+        shdrs.emplace();
+        return false;
+      }
+
+      shdrs.emplace(ehdr.e_shnum);
+      for (int i = 0; i < ehdr.e_shnum; i++) {
+#define COPY(name) (*shdrs)[i].name = shdrs32[i].name
+        COPY(sh_name);
+        COPY(sh_type);
+        COPY(sh_flags);
+        COPY(sh_addr);
+        COPY(sh_offset);
+        COPY(sh_size);
+        COPY(sh_link);
+        COPY(sh_info);
+        COPY(sh_addralign);
+        COPY(sh_entsize);
+#undef COPY
+      }
+    }
+
+    return !shdrs->empty();
+  }
+
+  static std::optional<FEXCore::GuestRelocationType> ClassifyRelocation32(uint32_t Type) {
+    if (Type == R_386_RELATIVE || Type == R_386_32) {
+      return FEXCore::GuestRelocationType::Rel32;
+    }
+    return std::nullopt;
+  }
+
+  static std::optional<FEXCore::GuestRelocationType> ClassifyRelocation64(uint32_t Type) {
+    if (Type == R_X86_64_RELATIVE || Type == R_X86_64_64) {
+      return FEXCore::GuestRelocationType::Rel64;
+    } else if (Type == R_X86_64_32) {
+      return FEXCore::GuestRelocationType::Rel32;
+    }
+    return std::nullopt;
   }
 };

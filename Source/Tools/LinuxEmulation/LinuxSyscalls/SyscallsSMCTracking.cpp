@@ -202,7 +202,12 @@ FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXC
   return {Entry->first, Entry->second.Length, Entry->second.Prot.Writable};
 }
 
-static fextl::vector<Elf64_Phdr> ReadELFHeaders(int FD, std::span<std::byte> HeaderData = {}) {
+struct ReadELFHeadersResult {
+  fextl::vector<Elf64_Phdr> ProgramHeaders;
+  fextl::unordered_map<uint32_t, FEXCore::GuestRelocationType> Relocations;
+};
+
+static ReadELFHeadersResult ReadELFHeaders(int FD, std::span<std::byte> HeaderData = {}) {
   std::string_view ELFMagic = ELFMAG;
   if (HeaderData.data()) {
     if (HeaderData.size_bytes() < ELFMagic.size() || std::memcmp(ELFMagic.data(), HeaderData.data(), ELFMagic.size()) != 0) {
@@ -215,7 +220,13 @@ static fextl::vector<Elf64_Phdr> ReadELFHeaders(int FD, std::span<std::byte> Hea
 
   ELFParser Parser;
   Parser.ReadElf(dup(FD));
-  return std::move(Parser.phdrs);
+
+  auto Relocations = Parser.PopulateRelocations();
+  if (!Relocations.empty()) {
+    LogMan::Msg::IFmt("Loaded ELF with {} relocations", Relocations.size());
+  }
+
+  return ReadELFHeadersResult {std::move(Parser.phdrs), std::move(Relocations)};
 }
 
 static void LoadCodeCache(FEXCore::Core::InternalThreadState& Thread, FEXCore::ExecutableFileSectionInfo& Section, uint64_t CodeCacheConfigId) {
@@ -505,7 +516,9 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
         CheckForElfFile = true;
 #endif
         if (CheckForElfFile) {
-          Resource->ProgramHeaders = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
+          auto ELFResult = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
+          Resource->ProgramHeaders = std::move(ELFResult.ProgramHeaders);
+          Resource->MappedFile->Relocations = std::move(ELFResult.Relocations);
           LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
                                                                               "file");
         }
