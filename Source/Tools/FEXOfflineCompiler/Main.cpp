@@ -4,6 +4,7 @@
 #include <PortabilityInfo.h>
 #include <Thunks.h>
 
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeCache.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/HostFeatures.h>
@@ -201,7 +202,12 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
     std::vector<std::unique_ptr<ELFCodeLoader>> LoaderMem;
 
     fmt::print(stderr, "Compiling code...\n");
+    FEX_CONFIG_OPT(MaxInst, MAXINST);
     for (auto Addr : BlockList) {
+      if (!CTX->CheckIfBlockIsCacheable(*Thread, Addr + SyscallHandler->VAFileStart, MaxInst)) {
+        continue;
+      }
+
       CTX->CompileRIP(Thread, Addr + SyscallHandler->VAFileStart);
     }
 

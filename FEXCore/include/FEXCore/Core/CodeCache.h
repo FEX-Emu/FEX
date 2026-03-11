@@ -28,7 +28,12 @@ namespace HLE {
   struct SourcecodeMap;
 } // namespace HLE
 
-enum class GuestRelocationType : uint32_t { Rel32, Rel64 };
+enum class GuestRelocationType : uint32_t {
+  Rel32,
+  Rel64,
+  // Skip blocks containing this relocation
+  Skip,
+};
 
 // Generic information associated with an executable file.
 struct ExecutableFileInfo {

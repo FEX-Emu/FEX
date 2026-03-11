@@ -542,6 +542,18 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
           Resource->ProgramHeaders = std::move(ELFResult.ProgramHeaders);
           Resource->MappedFile->Relocations = std::move(ELFResult.Relocations);
           Resource->RequiresDelayedCacheLoad = ELFResult.HasCodeRelocations;
+
+          // GuestRelocationType::Skip indicates to FEXOfflineCompiler that
+          // any blocks covered by the relocation may not be cached.
+          // At runtime, we can safely drop these relocations.
+          for (auto it = Resource->MappedFile->Relocations.begin(); it != Resource->MappedFile->Relocations.end();) {
+            if (it->second == FEXCore::GuestRelocationType::Skip) {
+              it = Resource->MappedFile->Relocations.erase(it);
+            } else {
+              ++it;
+            }
+          }
+
           LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
                                                                               "file");
         }
