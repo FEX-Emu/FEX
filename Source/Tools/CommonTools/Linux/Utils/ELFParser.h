@@ -241,6 +241,67 @@ struct ELFParser {
   }
 
   /**
+   * Checks if DT_TEXTREL/DF_TEXTREL exist in the PT_DYNAMIC segment.
+   *
+   * These indicate that the ELF has relocations that cover to read-only code
+   * pages. The dynamic loader will temporarily map these pages as writeable
+   * to apply the relocations.
+   */
+  bool HasCodeRelocations() const {
+    if (fd == -1) {
+      return false;
+    }
+
+    auto phdr_it = std::ranges::find_if(phdrs, [](auto& phdr) { return phdr.p_type == PT_DYNAMIC; });
+    if (phdr_it == phdrs.end()) {
+      return false;
+    }
+    auto& phdr = *phdr_it;
+
+    if (type == ::ELFLoader::ELFContainer::TYPE_X86_32) {
+      const size_t EntryCount = phdr.p_filesz / sizeof(Elf32_Dyn);
+      fextl::vector<Elf32_Dyn> Entries(EntryCount);
+
+      if (pread(fd, Entries.data(), phdr.p_filesz, phdr.p_offset) == -1) {
+        return false;
+      }
+
+      for (auto& Entry : Entries) {
+        if (Entry.d_tag == DT_NULL) {
+          break;
+        }
+        if (Entry.d_tag == DT_TEXTREL) {
+          return true;
+        }
+        if (Entry.d_tag == DT_FLAGS && (Entry.d_un.d_val & DF_TEXTREL)) {
+          return true;
+        }
+      }
+    } else {
+      const size_t EntryCount = phdr.p_filesz / sizeof(Elf64_Dyn);
+      fextl::vector<Elf64_Dyn> Entries(EntryCount);
+
+      if (pread(fd, Entries.data(), phdr.p_filesz, phdr.p_offset) == -1) {
+        return false;
+      }
+
+      for (auto& Entry : Entries) {
+        if (Entry.d_tag == DT_NULL) {
+          break;
+        }
+        if (Entry.d_tag == DT_TEXTREL) {
+          return true;
+        }
+        if (Entry.d_tag == DT_FLAGS && (Entry.d_un.d_val & DF_TEXTREL)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Parses relocation sections (SHT_REL/SHT_RELA) and returns a map of
    * offsets to relocations that FEX's JIT must know about.
    */
