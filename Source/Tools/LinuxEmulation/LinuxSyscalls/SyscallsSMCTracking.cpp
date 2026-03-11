@@ -205,6 +205,7 @@ FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXC
 struct ReadELFHeadersResult {
   fextl::vector<Elf64_Phdr> ProgramHeaders;
   fextl::robin_map<uint32_t, FEXCore::GuestRelocationType> Relocations;
+  bool HasCodeRelocations;
 };
 
 static ReadELFHeadersResult ReadELFHeaders(int FD, std::span<std::byte> HeaderData = {}) {
@@ -226,7 +227,8 @@ static ReadELFHeadersResult ReadELFHeaders(int FD, std::span<std::byte> HeaderDa
     LogMan::Msg::IFmt("Loaded ELF with {} relocations", Relocations.size());
   }
 
-  return ReadELFHeadersResult {std::move(Parser.phdrs), std::move(Relocations)};
+  auto HasCodeRelocations = Parser.HasCodeRelocations();
+  return ReadELFHeadersResult {std::move(Parser.phdrs), std::move(Relocations), HasCodeRelocations};
 }
 
 static void LoadCodeCache(FEXCore::Core::InternalThreadState& Thread, FEXCore::ExecutableFileSectionInfo& Section, uint64_t CodeCacheConfigId) {
@@ -552,6 +554,7 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
           auto ELFResult = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
           Resource->ProgramHeaders = std::move(ELFResult.ProgramHeaders);
           Resource->MappedFile->Relocations = std::move(ELFResult.Relocations);
+          Resource->RequiresDelayedCacheLoad = ELFResult.HasCodeRelocations;
           LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
                                                                               "file");
         }
