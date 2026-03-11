@@ -21,15 +21,15 @@ class IREmitter {
 public:
   IREmitter(FEXCore::Utils::IntrusivePooledAllocator& ThreadAllocator, bool SupportsTSOImm9)
     : DualListData {ThreadAllocator, 8 * 1024 * 1024}
-    , SupportsTSOImm9(SupportsTSOImm9) {
-    ReownOrClaimBuffer();
-    ResetWorkingList();
-  }
+    , SupportsTSOImm9(SupportsTSOImm9) {}
 
   virtual ~IREmitter() = default;
 
   void ReownOrClaimBuffer() {
     DualListData.ReownOrClaimBuffer();
+
+    // Reset the working list on new buffer.
+    ResetWorkingList();
   }
 
   void DelayedDisownBuffer() {
@@ -39,7 +39,6 @@ public:
   IRListView ViewIR() {
     return IRListView(&DualListData);
   }
-  void ResetWorkingList();
 
   /**
    * @name IR allocation routines
@@ -512,6 +511,9 @@ protected:
   fextl::vector<Ref> CodeBlocks;
   uint64_t Entry {};
   bool SupportsTSOImm9 {};
+
+private:
+  void ResetWorkingList();
 };
 
 } // namespace FEXCore::IR

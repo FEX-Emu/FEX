@@ -4487,8 +4487,6 @@ void OpDispatchBuilder::StoreResult(RegClass Class, X86Tables::DecodedOp Op, Ref
 OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx)
   : IREmitter {ctx->OpDispatcherAllocator, ctx->HostFeatures.SupportsTSOImm9}
   , CTX {ctx} {
-  ResetWorkingList();
-
   if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {
     SaveAVXStateFunc = &OpDispatchBuilder::SaveAVXState;
     RestoreAVXStateFunc = &OpDispatchBuilder::RestoreAVXState;
@@ -4501,7 +4499,8 @@ OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx)
 }
 
 void OpDispatchBuilder::ResetWorkingList() {
-  IREmitter::ResetWorkingList();
+  IREmitter::ReownOrClaimBuffer();
+
   JumpTargets.clear();
   BlockSetRIP = false;
   DecodeFailure = false;

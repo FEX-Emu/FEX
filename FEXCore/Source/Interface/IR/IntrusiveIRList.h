@@ -119,11 +119,7 @@ class DualIntrusiveAllocatorThreadPool final : public DualIntrusiveAllocator {
 public:
   DualIntrusiveAllocatorThreadPool(FEXCore::Utils::IntrusivePooledAllocator& ThreadAllocator, size_t Size)
     : DualIntrusiveAllocator {Size}
-    , PoolObject {ThreadAllocator, Size * 2} {
-    // Claim a buffer on allocation
-    PoolObject.ReownOrClaimBuffer();
-  }
-
+    , PoolObject {ThreadAllocator, Size * 2} {}
   void ReownOrClaimBuffer() {
     Data = PoolObject.ReownOrClaimBuffer();
     List = Data + MemorySize;
