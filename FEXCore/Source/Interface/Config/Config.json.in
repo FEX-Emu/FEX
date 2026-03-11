@@ -195,7 +195,7 @@
       },
       "DisableL2Cache": {
         "Type": "bool",
-        "Default": "false",
+        "Default": "true",
         "Desc": [
           "Disables FEXCore's JIT L2 cache lookup. Saving memory.",
           "Can potentially introduce more stutters."
@@ -203,7 +203,7 @@
       },
       "DynamicL1Cache": {
         "Type": "bool",
-        "Default": "false",
+        "Default": "true",
         "Desc": [
           "Switches FEXCore's JIT L1 cache to be dynamically sized. Saving memory.",
           "Can potentially introduce more stutters."
