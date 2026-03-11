@@ -410,6 +410,34 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
   }
 
   InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len);
+
+  // Prepare for delayed code cache load after ld/Wine is done applying relocations.
+  // Hooking into mprotect is a reliable heuristic that matches behavior of ld (for ELF) and Wine (for PE).
+  // False-positives are avoided by setting RequiresDelayedCacheLoad in TrackMmap only for
+  // binaries that we know will go through this path.
+  fextl::vector<FEXCore::ExecutableFileSectionInfo> CachedSections;
+  if (EnableCodeCaching && (prot & PROT_EXEC) && (prot & PROT_WRITE) == 0) {
+    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
+
+    auto VMAEntry = VMATracking.FindVMAEntry(reinterpret_cast<uint64_t>(addr));
+    auto Resource = VMAEntry != VMATracking.VMAs.end() ? VMAEntry->second.Resource : nullptr;
+    if (Resource && Resource->MappedFile && Resource->RequiresDelayedCacheLoad) {
+      Resource->RequiresDelayedCacheLoad = false;
+      LogMan::Msg::IFmt("Triggering delayed cache load for {} after mprotect of {:#x}-{:#x}", Resource->MappedFile->Filename,
+                        VMAEntry->first, VMAEntry->first + VMAEntry->second.Length);
+
+      for (auto VMA = Resource->FirstVMA; VMA; VMA = VMA->ResourceNextVMA) {
+        CachedSections.push_back(BuildSectionInfo(*Resource, VMA->Base, VMA->Length));
+      }
+    }
+  }
+
+  // Trigger delayed cache load. This must be done separately since
+  // LoadCodeCache will call interfaces that acquire the VMATracking mutex.
+  for (auto& CachedSection : CachedSections) {
+    LoadCodeCache(*Thread, CachedSection, CodeCacheConfigId);
+  }
+
   return Result;
 }
 
@@ -495,7 +523,7 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
     const bool MappedELFHeaderAgain = ResourceIt != ResourceEnd && offset == 0 && !ResourceIt->second.ProgramHeaders.empty();
     if (ResourceIt == ResourceEnd || MappedELFHeaderAgain) {
       // Create a new MappedResource for previously unseen file and for re-mappings of an ELF header
-      ResourceIt = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
+      ResourceIt = VMATracking.InsertMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, 0, {}, {}});
       ResourceIt->second.Iterator = ResourceIt;
       Inserted = true;
     }
@@ -573,7 +601,7 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
     auto [Iter, IterEnd] = VMATracking.FindResources(mrid);
     LOGMAN_THROW_A_FMT(Iter == IterEnd, "VMA tracking error");
 
-    Iter = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
+    Iter = VMATracking.InsertMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, 0, {}, {}});
     Resource = &Iter->second;
     Resource->Iterator = Iter;
   }
@@ -584,7 +612,11 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
   // FEXServer was requested to generate library caches on program launch.
   if (EnableCodeCaching && Resource && Resource->MappedFile && VMATracking::VMAProt::fromProt(prot).Executable) {
     if (Thread) {
-      CachedSection.emplace(BuildSectionInfo(*Resource, addr, Size));
+      if (!Resource->RequiresDelayedCacheLoad) {
+        CachedSection.emplace(BuildSectionInfo(*Resource, addr, Size));
+      } else {
+        LogMan::Msg::IFmt("Delaying code cache load for {} until mprotect {:#x}-{:#x}", Resource->MappedFile->Filename, addr, addr + Size);
+      }
     } else {
       // Cache can't be loaded with a thread; skip this for now
       LogMan::Msg::DFmt("Oops, tried caching without a thread: {}", Resource->MappedFile->Filename);
@@ -645,7 +677,7 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int 
 
   auto [Iter, IterEnd] = VMATracking.FindResources(mrid);
   if (Iter == IterEnd) {
-    Iter = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, Length});
+    Iter = VMATracking.InsertMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, Length, {}, {}});
     Iter->second.Iterator = Iter;
   }
   auto Resource = &Iter->second;
