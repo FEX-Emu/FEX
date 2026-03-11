@@ -73,6 +73,7 @@ public:
    */
   FEX_DEFAULT_VISIBILITY virtual void ExecuteThread(FEXCore::Core::InternalThreadState* Thread) = 0;
 
+  FEX_DEFAULT_VISIBILITY virtual bool CheckIfBlockIsCacheable(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestRIP, uint64_t MaxInst) = 0;
   FEX_DEFAULT_VISIBILITY virtual void CompileRIP(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) = 0;
   FEX_DEFAULT_VISIBILITY virtual void CompileRIPCount(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) = 0;
 

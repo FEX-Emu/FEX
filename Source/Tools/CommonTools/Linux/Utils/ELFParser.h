@@ -461,6 +461,12 @@ private:
   static std::optional<FEXCore::GuestRelocationType> ClassifyRelocation32(uint32_t Type) {
     if (Type == R_386_RELATIVE || Type == R_386_32) {
       return FEXCore::GuestRelocationType::Rel32;
+    } else if (Type == R_386_PC32) {
+      // Currently not handled
+      return FEXCore::GuestRelocationType::Skip;
+    } else if (Type == R_386_TLS_TPOFF) {
+      // Currently not handled
+      return FEXCore::GuestRelocationType::Skip;
     }
     return std::nullopt;
   }

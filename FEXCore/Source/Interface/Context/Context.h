@@ -127,6 +127,7 @@ public:
 
   void ExecuteThread(FEXCore::Core::InternalThreadState* Thread) override;
 
+  bool CheckIfBlockIsCacheable(FEXCore::Core::InternalThreadState&, uint64_t GuestRIP, uint64_t MaxInst) override;
   void CompileRIP(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) override;
   void CompileRIPCount(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) override;
 
