@@ -1998,7 +1998,6 @@ DEF_OP(MemSet) {
           msr(ARMEmitter::SystemRegister::NZCV, TMP3);
 
           MakeFinalAddress();
-
           (void)Bind(&DoneInternal);
           return;
         }
@@ -2086,10 +2085,6 @@ DEF_OP(MemSet) {
 }
 
 DEF_OP(MemCpy) {
-  // TODO: A future looking task would be to support this with ARM's MOPS instructions.
-  // The 8-bit non-atomic path directly matches ARM's CPYP/CPYM/CPYE instruction,
-  //
-  // Assuming non-atomicity and non-faulting behaviour, this can accelerate this implementation.
   const auto Op = IROp->C<IR::IROp_MemCpy>();
 
   const bool IsAtomic = CTX->IsMemcpyAtomicTSOEnabled();
@@ -2220,8 +2215,40 @@ DEF_OP(MemCpy) {
   };
 
   auto EmitMemcpy = [&](int32_t Direction) {
-    const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
+    const bool IsBackwards = Direction == -1;
+
+    const auto FinalizeAddresses = [&] {
+      if (IsBackwards) {
+        switch (Size) {
+        case 1:
+          sub(Dst0.X(), TMP1, TMP3);
+          sub(Dst1.X(), TMP2, TMP3);
+          break;
+        case 2:
+        case 4:
+        case 8:
+          sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Size));
+          sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Size));
+          break;
+        default: LOGMAN_MSG_A_FMT("Unhandled MemCpy size: {}", Size); break;
+        }
+      } else {
+        switch (Size) {
+        case 1:
+          add(Dst0.X(), TMP1, TMP3);
+          add(Dst1.X(), TMP2, TMP3);
+          break;
+        case 2:
+        case 4:
+        case 8:
+          add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Size));
+          add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Size));
+          break;
+        default: LOGMAN_MSG_A_FMT("Unhandled MemCpy size: {}", Size); break;
+        }
+      }
+    };
 
     ARMEmitter::BiDirectionalLabel AgainInternal {};
     ARMEmitter::ForwardLabel DoneInternal {};
@@ -2230,6 +2257,39 @@ DEF_OP(MemCpy) {
     (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
     if (!IsAtomic) {
+      if (CTX->HostFeatures.SupportsMOPS) {
+        // If doing something larger than a byte copy, then we need to scale
+        // the counter value accordingly to convert it to bytes.
+        if (Size > 1) {
+          lsl(ARMEmitter::Size::i64Bit, TMP1, TMP1, FEXCore::ilog2(Size));
+        }
+
+        // Adjust addresses so that we treat the backward copy as a forward copy
+        if (IsBackwards) {
+          sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, TMP1);
+          sub(ARMEmitter::Size::i64Bit, TMP3, TMP3, TMP1);
+          add(ARMEmitter::Size::i64Bit, TMP2, TMP2, Size);
+          add(ARMEmitter::Size::i64Bit, TMP3, TMP3, Size);
+        }
+
+        // Unfortunately copy operations fiddle with NZCV, so we need to preserve it.
+        mrs(TMP4, ARMEmitter::SystemRegister::NZCV);
+        cpyfp(TMP2, TMP3, TMP1);
+        cpyfm(TMP2, TMP3, TMP1);
+        cpyfe(TMP2, TMP3, TMP1);
+        msr(ARMEmitter::SystemRegister::NZCV, TMP4);
+
+        // Needs to use temporaries just in case of overwrite
+        mov(TMP1, MemRegDest.X());
+        mov(TMP2, MemRegSrc.X());
+        mov(TMP3, Length.X());
+
+        FinalizeAddresses();
+
+        (void)Bind(&DoneInternal);
+        return;
+      }
+
       ARMEmitter::ForwardLabel AbsPos {};
       ARMEmitter::ForwardLabel AgainInternal256Exit {};
       ARMEmitter::ForwardLabel AgainInternal128Exit {};
@@ -2243,7 +2303,7 @@ DEF_OP(MemCpy) {
       sub(ARMEmitter::Size::i64Bit, TMP4, TMP4, 32);
       (void)tbnz(TMP4, 63, &AgainInternal);
 
-      if (Direction == -1) {
+      if (IsBackwards) {
         sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
         sub(ARMEmitter::Size::i64Bit, TMP3, TMP3, 32 - Size);
       }
@@ -2278,7 +2338,7 @@ DEF_OP(MemCpy) {
       add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
       (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
-      if (Direction == -1) {
+      if (IsBackwards) {
         add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
         add(ARMEmitter::Size::i64Bit, TMP3, TMP3, 32 - Size);
       }
@@ -2286,9 +2346,9 @@ DEF_OP(MemCpy) {
 
     (void)Bind(&AgainInternal);
     if (IsAtomic) {
-      MemCpyTSO(OpSize, SizeDirection);
+      MemCpyTSO(Size, SizeDirection);
     } else {
-      MemCpy(OpSize, SizeDirection);
+      MemCpy(Size, SizeDirection);
     }
     sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
     (void)cbnz(ARMEmitter::Size::i64Bit, TMP1, &AgainInternal);
@@ -2300,47 +2360,7 @@ DEF_OP(MemCpy) {
     mov(TMP2, MemRegSrc.X());
     mov(TMP3, Length.X());
 
-    if (SizeDirection >= 0) {
-      switch (OpSize) {
-      case 1:
-        add(Dst0.X(), TMP1, TMP3);
-        add(Dst1.X(), TMP2, TMP3);
-        break;
-      case 2:
-        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
-        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
-        break;
-      case 4:
-        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
-        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
-        break;
-      case 8:
-        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
-        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
-        break;
-      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
-      }
-    } else {
-      switch (OpSize) {
-      case 1:
-        sub(Dst0.X(), TMP1, TMP3);
-        sub(Dst1.X(), TMP2, TMP3);
-        break;
-      case 2:
-        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
-        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
-        break;
-      case 4:
-        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
-        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
-        break;
-      case 8:
-        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
-        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
-        break;
-      default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
-      }
-    }
+    FinalizeAddresses();
   };
 
   if (DirectionIsInline) {
