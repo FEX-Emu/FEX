@@ -305,7 +305,9 @@ public:
 
   OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx);
 
+  // Should only be called at the start of IR Emission.
   void ResetWorkingList();
+
   void ResetDecodeFailure() {
     NeedsBlockEnd = DecodeFailure = false;
   }

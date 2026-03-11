@@ -506,7 +506,6 @@ ContextImpl::GenerateIRResult
 ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("GenerateIR");
 
-  Thread->OpDispatcher->ReownOrClaimBuffer();
   Thread->OpDispatcher->ResetWorkingList();
 
   uint64_t TotalInstructions {0};
@@ -706,8 +705,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         // If we had a dispatch error then leave early
         if (HadDispatchError && TotalInstructions == 0) {
           // Couldn't handle any instruction in op dispatcher
-          Thread->OpDispatcher->ResetWorkingList();
-          return {{}, 0, 0, 0, 0};
+          Thread->OpDispatcher->DelayedDisownBuffer();
+          return {std::nullopt, 0, 0, 0, 0};
         }
 
         if (NeedsBlockEnd) {
@@ -774,6 +773,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   auto [IRView, TotalInstructions, TotalInstructionsLength, StartAddr, Length, NeedsAddGuestCodeRanges] =
     GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
   if (!IRView) {
+    // OpDispatcher IR already released in this case.
     return {{}, nullptr, 0, 0, false};
   }
 
@@ -784,6 +784,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   // as expensive and are easily reverted.
   if (MaxInst != 1) {
     if (auto Block = Thread->LookupCache->FindBlock(Thread, GuestRIP)) {
+      // Raced to compile, release the OpDispatcher IR.
       Thread->OpDispatcher->DelayedDisownBuffer();
       return {.CompiledCode = {.BlockBegin = reinterpret_cast<uint8_t*>(Block), .EntryPoints = {{GuestRIP, reinterpret_cast<uint8_t*>(Block)}}},
               .DebugData = nullptr,
