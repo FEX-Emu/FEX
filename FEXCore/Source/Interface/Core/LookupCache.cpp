@@ -42,7 +42,7 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   LOGMAN_THROW_A_FMT(PagePointer != -1ULL, "Failed to allocate PagePointer");
 
   // Disable THP on the Lookup cache.
-  FEXCore::Allocator::VirtualTHPControl(reinterpret_cast<void*>(PagePointer), TotalCacheSize, FEXCore::Allocator::THPControl::Disable);
+  FEXCore::Allocator::VirtualTHPControl(reinterpret_cast<const void*>(PagePointer), TotalCacheSize, FEXCore::Allocator::THPControl::Disable);
 
   FEXCore::Allocator::VirtualName("FEXMem_Lookup", reinterpret_cast<void*>(PagePointer),
                                   ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE);
