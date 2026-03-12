@@ -25,6 +25,12 @@ void InitializeThread(FEXCore::Core::InternalThreadState* Thread) {
   const void* CallRetStackAlloc = ::VirtualAlloc(
     nullptr, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + 2 * FEXCore::Utils::FEX_PAGE_SIZE, MEM_RESERVE, PAGE_NOACCESS);
 
+  FEXCore::Allocator::VirtualName("FEXMem_CallRetStacks", const_cast<void*>(CallRetStackAlloc),
+                                  FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + 2 * FEXCore::Utils::FEX_PAGE_SIZE);
+  FEXCore::Allocator::VirtualTHPControl(const_cast<void*>(CallRetStackAlloc),
+                                        FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + 2 * FEXCore::Utils::FEX_PAGE_SIZE,
+                                        FEXCore::Allocator::THPControl::RequestNoHugeTLB);
+
   Thread->CallRetStackBase = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CallRetStackAlloc) + FEXCore::Utils::FEX_PAGE_SIZE);
   ::VirtualAlloc(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE, MEM_COMMIT, PAGE_READWRITE);
 

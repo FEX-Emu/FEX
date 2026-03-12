@@ -32,6 +32,19 @@ enum class THPControl {
   RequestNoHugeTLB,
 };
 
+#ifndef _WIN32
+FEX_DEFAULT_VISIBILITY void SetupHooks(size_t PageSize);
+#else
+using VirtualNamePtr = void (*)(const char*, void*, size_t);
+using VirtualTHPPtr = void (*)(void*, size_t, THPControl);
+struct HookPtrs {
+  VirtualNamePtr VirtualName;
+  VirtualTHPPtr VirtualTHPControl;
+};
+FEX_DEFAULT_VISIBILITY void SetupHooks(size_t PageSize, HookPtrs Ptrs);
+#endif
+FEX_DEFAULT_VISIBILITY void ClearHooks();
+
 #ifdef _WIN32
 inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Commit = true) {
   // Allocate top-down to avoid polluting the lower VA space, as even on 64-bit some programs (i.e. LuaJIT) require allocations below 4GB.
@@ -87,9 +100,8 @@ inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
   return ::VirtualProtect(Ptr, Size, prot, nullptr) == 0;
 }
 
-inline void VirtualName(const char*, void*, size_t) {}
-inline void VirtualTHPControl(void* Ptr, size_t Size, THPControl Control) {}
-
+FEX_DEFAULT_VISIBILITY extern VirtualNamePtr VirtualName;
+FEX_DEFAULT_VISIBILITY extern VirtualTHPPtr VirtualTHPControl;
 #else
 using MMAP_Hook = void* (*)(void*, size_t, int, int, int, off_t);
 using MUNMAP_Hook = int (*)(void*, size_t);
@@ -152,7 +164,6 @@ void aligned_free(void* ptr);
 FEX_DEFAULT_VISIBILITY extern void InitializeThread();
 
 #ifndef _WIN32
-void InitializeAllocator(size_t PageSize);
 void SetupAllocatorHooks(void* (*)(void* addr, size_t length, int prot, int flags, int fd, off_t offset), int (*)(void* addr, size_t length));
 #endif
 

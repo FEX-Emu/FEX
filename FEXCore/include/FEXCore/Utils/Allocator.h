@@ -12,9 +12,6 @@ struct InternalThreadState;
 }
 
 namespace FEXCore::Allocator {
-FEX_DEFAULT_VISIBILITY void SetupHooks(size_t PageSize);
-FEX_DEFAULT_VISIBILITY void ClearHooks();
-
 FEX_DEFAULT_VISIBILITY size_t DetermineVASize();
 
 #ifdef GLIBC_ALLOCATOR_FAULT
