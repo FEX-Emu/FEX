@@ -189,6 +189,9 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
 
   FEXCore::Allocator::VirtualName("FEXMem_CallRetStacks", reinterpret_cast<void*>(AllocBase), CALLRET_STACK_ALLOC_SIZE);
 
+  // Disable HUGEPAGE on callret stacks.
+  FEXCore::Allocator::VirtualTHPControl(reinterpret_cast<void*>(AllocBase), CALLRET_STACK_ALLOC_SIZE, FEXCore::Allocator::THPControl::Disable);
+
   // Set the base used for invalidation to the start past the guard pages
   ThreadStateObject->Thread->CallRetStackBase = reinterpret_cast<void*>(AllocBase + FEXCore::Utils::FEX_PAGE_SIZE);
   ::mprotect(ThreadStateObject->Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE, PROT_READ | PROT_WRITE);
