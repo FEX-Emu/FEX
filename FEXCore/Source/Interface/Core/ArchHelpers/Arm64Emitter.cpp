@@ -677,7 +677,7 @@ void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Regi
   }
 }
 
-void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask, bool NZCV) {
+void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, SpillStaticRegOptions Options) {
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {
     // Disable AFP features when spilling registers.
@@ -698,7 +698,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   }
 #endif
 
-  if (NZCV) {
+  if (Options.NZCV) {
     // Regardless of what GPRs/FPRs we're spilling, we need to spill NZCV since it
     // is always static and almost certainly clobbered by the subsequent code.
     //
@@ -710,25 +710,25 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
 
   // PF/AF are special, remove them from the mask
   uint32_t PFAFMask = ((1u << REG_PF.Idx()) | ((1u << REG_AF.Idx())));
-  unsigned PFAFSpillMask = GPRSpillMask & PFAFMask;
-  GPRSpillMask &= ~PFAFSpillMask;
+  unsigned PFAFSpillMask = Options.GPRSpillMask & PFAFMask;
+  Options.GPRSpillMask &= ~PFAFSpillMask;
 
   str(REG_CALLRET_SP, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.callret_sp));
 
   for (size_t i = 0; i < StaticRegisters.size(); i += 2) {
     auto Reg1 = StaticRegisters[i];
     auto Reg2 = StaticRegisters[i + 1];
-    if (((1U << Reg1.Idx()) & GPRSpillMask) && ((1U << Reg2.Idx()) & GPRSpillMask)) {
+    if (((1U << Reg1.Idx()) & Options.GPRSpillMask) && ((1U << Reg2.Idx()) & Options.GPRSpillMask)) {
       stp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
-    } else if (((1U << Reg1.Idx()) & GPRSpillMask)) {
+    } else if (((1U << Reg1.Idx()) & Options.GPRSpillMask)) {
       str(Reg1.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
-    } else if (((1U << Reg2.Idx()) & GPRSpillMask)) {
+    } else if (((1U << Reg2.Idx()) & Options.GPRSpillMask)) {
       str(Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i + 1]));
     }
   }
 
   // Now handle PF/AF
-  if (NZCV && PFAFSpillMask) {
+  if (Options.NZCV && PFAFSpillMask) {
     auto PFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw);
     auto AFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
     LOGMAN_THROW_A_FMT(PFAFSpillMask == PFAFMask, "PF/AF not spilled together");
@@ -737,18 +737,18 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
     stp<ARMEmitter::IndexType::OFFSET>(REG_PF.W(), REG_AF.W(), STATE.R(), PFOffset);
   }
 
-  if (FPRs) {
+  if (Options.FPRs) {
     if (EmitterCTX->HostFeatures.SupportsAVX && EmitterCTX->HostFeatures.SupportsSVE256) {
       for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
         const auto Reg = StaticFPRegisters[i];
 
-        if (((1U << Reg.Idx()) & FPRSpillMask) != 0) {
+        if (((1U << Reg.Idx()) & Options.FPRSpillMask) != 0) {
           mov(ARMEmitter::Size::i64Bit, TmpReg, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
           st1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B, STATE.R(), TmpReg);
         }
       }
     } else {
-      if (GPRSpillMask && FPRSpillMask == ~0U) {
+      if (Options.GPRSpillMask && Options.FPRSpillMask == ~0U) {
         // Optimize the common case where we can spill four registers per instruction
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
@@ -764,11 +764,11 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
           const auto Reg1 = StaticFPRegisters[i];
           const auto Reg2 = StaticFPRegisters[i + 1];
 
-          if (((1U << Reg1.Idx()) & FPRSpillMask) && ((1U << Reg2.Idx()) & FPRSpillMask)) {
+          if (((1U << Reg1.Idx()) & Options.FPRSpillMask) && ((1U << Reg2.Idx()) & Options.FPRSpillMask)) {
             stp<ARMEmitter::IndexType::OFFSET>(Reg1.Q(), Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
-          } else if (((1U << Reg1.Idx()) & FPRSpillMask)) {
+          } else if (((1U << Reg1.Idx()) & Options.FPRSpillMask)) {
             str(Reg1.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
-          } else if (((1U << Reg2.Idx()) & FPRSpillMask)) {
+          } else if (((1U << Reg2.Idx()) & Options.FPRSpillMask)) {
             str(Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i + 1][0]));
           }
         }
@@ -777,8 +777,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   }
 }
 
-void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask, std::optional<ARMEmitter::Register> OptionalReg,
-                                  std::optional<ARMEmitter::Register> OptionalReg2, bool NZCV) {
+void Arm64Emitter::FillStaticRegs(FillStaticRegOptions Options) {
   auto FindTempReg = [this](uint32_t* GPRFillMask) -> std::optional<ARMEmitter::Register> {
     for (auto Reg : StaticRegisters) {
       if (((1U << Reg.Idx()) & *GPRFillMask)) {
@@ -789,20 +788,21 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     return std::nullopt;
   };
 
-  LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 2 GPRs for a temp");
-  uint32_t TempGPRFillMask = GPRFillMask;
-  if (!OptionalReg.has_value()) {
-    OptionalReg = FindTempReg(&TempGPRFillMask);
+  LOGMAN_THROW_A_FMT(Options.GPRFillMask != 0, "Must fill at least 2 GPRs for a temp");
+  uint32_t TempGPRFillMask = Options.GPRFillMask;
+  if (!Options.OptionalReg.has_value()) {
+    Options.OptionalReg = FindTempReg(&TempGPRFillMask);
   }
 
-  if (!OptionalReg2.has_value()) {
-    OptionalReg2 = FindTempReg(&TempGPRFillMask);
+  if (!Options.OptionalReg2.has_value()) {
+    Options.OptionalReg2 = FindTempReg(&TempGPRFillMask);
   }
-  LOGMAN_THROW_A_FMT(OptionalReg.has_value() && OptionalReg2.has_value(), "Didn't have an SRA register to use as a temporary while "
-                                                                          "spilling!");
+  LOGMAN_THROW_A_FMT(Options.OptionalReg.has_value() && Options.OptionalReg2.has_value(), "Didn't have an SRA register to use as a "
+                                                                                          "temporary while "
+                                                                                          "spilling!");
 
-  auto TmpReg = *OptionalReg;
-  auto TmpReg2 = *OptionalReg2;
+  auto TmpReg = *Options.OptionalReg;
+  auto TmpReg2 = *Options.OptionalReg2;
 
 #ifdef ARCHITECTURE_arm64ec
   // Load STATE in from the CPU area as x28 is not callee saved in the ARM64EC ABI.
@@ -812,7 +812,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
   ldr(REG_CALLRET_SP, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.callret_sp));
 
-  if (NZCV) {
+  if (Options.NZCV) {
     // Regardless of what GPRs/FPRs we're filling, we need to fill NZCV since it
     // is always static and was almost certainly clobbered.
     //
@@ -822,19 +822,19 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     msr(ARMEmitter::SystemRegister::NZCV, TmpReg);
   }
 
-  FillSpecialRegs(TmpReg, TmpReg2, true, FPRs);
+  FillSpecialRegs(TmpReg, TmpReg2, true, Options.FPRs);
 
-  if (FPRs) {
+  if (Options.FPRs) {
     if (EmitterCTX->HostFeatures.SupportsAVX && EmitterCTX->HostFeatures.SupportsSVE256) {
       for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
         const auto Reg = StaticFPRegisters[i];
-        if (((1U << Reg.Idx()) & FPRFillMask) != 0) {
+        if (((1U << Reg.Idx()) & Options.FPRFillMask) != 0) {
           mov(ARMEmitter::Size::i64Bit, TmpReg, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
           ld1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B.Zeroing(), STATE.R(), TmpReg);
         }
       }
     } else {
-      if (GPRFillMask && FPRFillMask == ~0U) {
+      if (Options.GPRFillMask && Options.FPRFillMask == ~0U) {
         // Optimize the common case where we can fill four registers per instruction.
         // Use one of the filling static registers before we fill it.
         // Load the sse offset in to the temporary register
@@ -851,11 +851,11 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
           const auto Reg1 = StaticFPRegisters[i];
           const auto Reg2 = StaticFPRegisters[i + 1];
 
-          if (((1U << Reg1.Idx()) & FPRFillMask) && ((1U << Reg2.Idx()) & FPRFillMask)) {
+          if (((1U << Reg1.Idx()) & Options.FPRFillMask) && ((1U << Reg2.Idx()) & Options.FPRFillMask)) {
             ldp<ARMEmitter::IndexType::OFFSET>(Reg1.Q(), Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
-          } else if (((1U << Reg1.Idx()) & FPRFillMask)) {
+          } else if (((1U << Reg1.Idx()) & Options.FPRFillMask)) {
             ldr(Reg1.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
-          } else if (((1U << Reg2.Idx()) & FPRFillMask)) {
+          } else if (((1U << Reg2.Idx()) & Options.FPRFillMask)) {
             ldr(Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i + 1][0]));
           }
         }
@@ -865,23 +865,23 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
   // PF/AF are special, remove them from the mask
   uint32_t PFAFMask = ((1u << REG_PF.Idx()) | ((1u << REG_AF.Idx())));
-  uint32_t PFAFFillMask = GPRFillMask & PFAFMask;
-  GPRFillMask &= ~PFAFMask;
+  uint32_t PFAFFillMask = Options.GPRFillMask & PFAFMask;
+  Options.GPRFillMask &= ~PFAFMask;
 
   for (size_t i = 0; i < StaticRegisters.size(); i += 2) {
     auto Reg1 = StaticRegisters[i];
     auto Reg2 = StaticRegisters[i + 1];
-    if (((1U << Reg1.Idx()) & GPRFillMask) && ((1U << Reg2.Idx()) & GPRFillMask)) {
+    if (((1U << Reg1.Idx()) & Options.GPRFillMask) && ((1U << Reg2.Idx()) & Options.GPRFillMask)) {
       ldp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
-    } else if ((1U << Reg1.Idx()) & GPRFillMask) {
+    } else if ((1U << Reg1.Idx()) & Options.GPRFillMask) {
       ldr(Reg1.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
-    } else if ((1U << Reg2.Idx()) & GPRFillMask) {
+    } else if ((1U << Reg2.Idx()) & Options.GPRFillMask) {
       ldr(Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i + 1]));
     }
   }
 
   // Now handle PF/AF
-  if (NZCV && PFAFFillMask) {
+  if (Options.NZCV && PFAFFillMask) {
     LOGMAN_THROW_A_FMT(PFAFFillMask == PFAFMask, "PF/AF not filled together");
 
     ldp<ARMEmitter::IndexType::OFFSET>(REG_PF.W(), REG_AF.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw));
@@ -1056,7 +1056,10 @@ size_t Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, boo
   const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
 
   // Spill the static registers.
-  SpillStaticRegs(TmpReg, true, PreserveSRAMask, PreserveSRAFPRMask);
+  SpillStaticRegs(TmpReg, {
+                            .GPRSpillMask = PreserveSRAMask,
+                            .FPRSpillMask = PreserveSRAFPRMask,
+                          });
 
   sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
 
@@ -1103,7 +1106,11 @@ void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
   }
 
   // Fill the static registers.
-  FillStaticRegs(FPRs, PreserveSRAMask, PreserveSRAFPRMask);
+  FillStaticRegs({
+    .GPRFillMask = PreserveSRAMask,
+    .FPRFillMask = PreserveSRAFPRMask,
+    .FPRs = FPRs,
+  });
 
   // Pop the vector registers.
   PopVectorRegisters(CanUseSVE256, DynamicFPRs);

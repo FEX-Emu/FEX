@@ -265,7 +265,10 @@ DEF_OP(Syscall) {
   uint32_t GPRSpillMask = ~0U;
   uint32_t FPRSpillMask = ~0U;
 
-  SpillStaticRegs(TMP1, true, GPRSpillMask, FPRSpillMask);
+  SpillStaticRegs(TMP1, {
+                          .GPRSpillMask = GPRSpillMask,
+                          .FPRSpillMask = FPRSpillMask,
+                        });
 
   // Now that we are spilled, store in the state that we are in a syscall
   // Still without overwriting registers that matter
@@ -299,7 +302,12 @@ DEF_OP(Syscall) {
 
   // Result is now in x0
   // Fix the stack and any values that were stepped on
-  FillStaticRegs(true, GPRSpillMask, FPRSpillMask, ARMEmitter::Reg::r1, ARMEmitter::Reg::r2);
+  FillStaticRegs({
+    .OptionalReg = ARMEmitter::Reg::r1,
+    .OptionalReg2 = ARMEmitter::Reg::r2,
+    .GPRFillMask = GPRSpillMask,
+    .FPRFillMask = FPRSpillMask,
+  });
 
   // Now the registers we've spilled are back in their original host registers
   // We can safely claim we are no longer in a syscall
@@ -322,7 +330,10 @@ DEF_OP(Thunk) {
   // X0: CTX
   // X1: Args (from guest stack)
 
-  SpillStaticRegs(TMP1, true, ~0U, ~0U, false); // spill to ctx before ra64 spill
+  // spill to ctx before ra64 spill
+  SpillStaticRegs(TMP1, {
+                          .NZCV = false,
+                        });
 
   PushDynamicRegs(TMP1);
 
@@ -337,7 +348,10 @@ DEF_OP(Thunk) {
 
   PopDynamicRegs();
 
-  FillStaticRegs(true, ~0U, ~0U, std::nullopt, std::nullopt, false); // load from ctx after ra64 refill
+  // load from ctx after ra64 refill
+  FillStaticRegs({
+    .NZCV = false,
+  });
 }
 
 DEF_OP(ValidateCode) {
