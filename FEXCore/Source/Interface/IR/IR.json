@@ -2775,15 +2775,15 @@
       },
       "FPR = F64TAN FPR:$Src": {
         "DestSize": "OpSize::i64Bit",
-        "JITDispatch": false
+        "JITDispatch": true
       },
       "FPR = F64SIN FPR:$Src": {
         "DestSize": "OpSize::i64Bit",
-        "JITDispatch": false
+        "JITDispatch": true
       },
       "FPR = F64COS FPR:$Src": {
         "DestSize": "OpSize::i64Bit",
-        "JITDispatch": false
+        "JITDispatch": true
       },
       "FPR:$Sin, FPR:$Cos = F64SINCOS FPR:$Src": {
         "DestSize": "OpSize::i64Bit",

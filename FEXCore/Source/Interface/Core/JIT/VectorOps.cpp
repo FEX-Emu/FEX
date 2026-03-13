@@ -4611,4 +4611,293 @@ DEF_OP(VFCopySign) {
   }
 }
 
+DEF_OP(F64SIN) {
+  // Double-precision sin approximation, derived from:
+  // https://github.com/ARM-software/optimized-routines  math/aarch64/advsimd/sin.c
+  const auto Op = IROp->C<IR::IROp_F64SIN>();
+  const auto Src = GetVReg(Op->Src);
+  const auto Dst = GetVReg(Node);
+
+  ARMEmitter::ForwardLabel Fallback;
+  ARMEmitter::ForwardLabel Done;
+
+  const auto LoadFPConst = [&](ARMEmitter::VRegister FprDst, uint64_t Val) {
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, Val);
+    fmov(ARMEmitter::Size::i64Bit, FprDst.D(), TMP4);
+  };
+
+  // Range check: fall back for |x| >= 2^23, NaN, and inf.
+  LoadFPConst(VTMP1, 0x4160'0000'0000'0000ULL);
+  fabs(VTMP2.D(), Src.D());
+  fcmp(VTMP2.D(), VTMP1.D());
+  (void)b(ARMEmitter::Condition::CC_HS, &Fallback);
+
+  // n = rint(x/pi).
+  LoadFPConst(VTMP1, 0x3FD4'5F30'6DC9'C883ULL); // inv_pi
+  fmul(VTMP2.D(), Src.D(), VTMP1.D());
+  frinta(VTMP2.D(), VTMP2.D());
+
+  // odd = (int(n) & 1) << 63.
+  fcvtzs(ARMEmitter::Size::i64Bit, TMP1, VTMP2.D());
+  lsl(ARMEmitter::Size::i64Bit, TMP1, TMP1, 63);
+
+  // r = x - n*pi  (range reduction into -pi/2 .. pi/2), in extended precision.
+  fmov(Dst.D(), Src.D());
+  LoadFPConst(VTMP1, 0x4009'21FB'5444'2D18ULL); // pi_1
+  fmsub(Dst.D(), VTMP2.D(), VTMP1.D(), Dst.D());
+  LoadFPConst(VTMP1, 0x3CA1'A626'3314'5C06ULL); // pi_2
+  fmsub(Dst.D(), VTMP2.D(), VTMP1.D(), Dst.D());
+  LoadFPConst(VTMP1, 0x395C'1CD1'2902'4E09ULL); // pi_3
+  fmsub(Dst.D(), VTMP2.D(), VTMP1.D(), Dst.D());
+
+  // sin(r) poly approx.
+  fmul(VTMP1.D(), Dst.D(), Dst.D());
+  fmov(ARMEmitter::Size::i64Bit, TMP2, Dst.D());
+
+  // Horner: p = c6 + r2*(c5 + r2*(... + r2*c0)).
+  LoadFPConst(VTMP2, 0xBD69'E954'0300'A100ULL); // c6
+  LoadFPConst(Dst, 0x3DE6'0E27'7AE0'7CECULL);      // c5
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0xBE5A'E633'9199'87C6ULL);      // c4
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3EC7'1DE3'7A97'D93EULL);      // c3
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0xBF2A'01A0'1993'6F27ULL);      // c2
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3F81'1111'1110'8A4DULL);      // c1
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0xBFC5'5555'5555'547BULL);      // c0
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+
+  // y = r + r^3 * p.
+  fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP2);
+  fmul(VTMP1.D(), VTMP1.D(), Dst.D());
+  fmadd(Dst.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+
+  // result = y XOR odd.
+  fmov(ARMEmitter::Size::i64Bit, TMP2, Dst.D());
+  eor(ARMEmitter::Size::i64Bit, TMP2, TMP2, TMP1);
+  fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP2);
+
+  (void)b(&Done);
+
+  // Fallback (scalar).
+  (void)Bind(&Fallback);
+  {
+    str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+    fmov(VTMP1.D(), Src.D());
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64SIN].ABIHandler));
+    ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64SIN].Func));
+    blr(TMP1);
+    ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+    fmov(Dst.D(), VTMP1.D());
+  }
+
+  (void)Bind(&Done);
+}
+
+DEF_OP(F64COS) {
+  // Double-precision cos approximation, derived from:
+  // https://github.com/ARM-software/optimized-routines  math/aarch64/advsimd/cos.c
+  // cos(x) = sin(x + pi/2), computed by shifting the range reduction:
+  // n = rint(x/pi + 0.5) - 0.5. Same polynomial and accuracy as F64SIN.
+  const auto Op = IROp->C<IR::IROp_F64COS>();
+  const auto Src = GetVReg(Op->Src);
+  const auto Dst = GetVReg(Node);
+
+  ARMEmitter::ForwardLabel Fallback;
+  ARMEmitter::ForwardLabel Done;
+
+  const auto LoadFPConst = [&](ARMEmitter::VRegister FprDst, uint64_t Val) {
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, Val);
+    fmov(ARMEmitter::Size::i64Bit, FprDst.D(), TMP4);
+  };
+
+  // Range check: fall back for |x| >= 2^23, NaN, and inf.
+  LoadFPConst(VTMP1, 0x4160'0000'0000'0000ULL);
+  fabs(VTMP2.D(), Src.D());
+  fcmp(VTMP2.D(), VTMP1.D());
+  (void)b(ARMEmitter::Condition::CC_HS, &Fallback);
+
+  // n = rint(x * (1/pi) + 0.5).
+  LoadFPConst(VTMP1, 0x3FD4'5F30'6DC9'C883ULL); // inv_pi
+  fmov(ARMEmitter::ScalarRegSize::i64Bit, VTMP2, 0.5f);
+  fmadd(VTMP2.D(), Src.D(), VTMP1.D(), VTMP2.D());
+  frinta(VTMP2.D(), VTMP2.D());
+
+  // odd = (int(n) & 1) << 63.
+  fcvtzs(ARMEmitter::Size::i64Bit, TMP1, VTMP2.D());
+  lsl(ARMEmitter::Size::i64Bit, TMP1, TMP1, 63);
+
+  // n = n - 0.5.
+  fmov(ARMEmitter::ScalarRegSize::i64Bit, VTMP1, 0.5f);
+  fsub(VTMP2.D(), VTMP2.D(), VTMP1.D());
+
+  // r = x - n*pi  (range reduction into -pi/2 .. pi/2), in extended precision.
+  fmov(Dst.D(), Src.D());
+  LoadFPConst(VTMP1, 0x4009'21FB'5444'2D18ULL); // pi_1
+  fmsub(Dst.D(), VTMP2.D(), VTMP1.D(), Dst.D());
+  LoadFPConst(VTMP1, 0x3CA1'A626'3314'5C06ULL); // pi_2
+  fmsub(Dst.D(), VTMP2.D(), VTMP1.D(), Dst.D());
+  LoadFPConst(VTMP1, 0x395C'1CD1'2902'4E09ULL); // pi_3
+  fmsub(Dst.D(), VTMP2.D(), VTMP1.D(), Dst.D());
+
+  // sin(r) poly approx.
+  fmul(VTMP1.D(), Dst.D(), Dst.D());
+  fmov(ARMEmitter::Size::i64Bit, TMP2, Dst.D());
+
+  // Horner: p = c6 + r2*(c5 + r2*(... + r2*c0)).
+  LoadFPConst(VTMP2, 0xBD69'E954'0300'A100ULL); // c6
+  LoadFPConst(Dst, 0x3DE6'0E27'7AE0'7CECULL);   // c5
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0xBE5A'E633'9199'87C6ULL);   // c4
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3EC7'1DE3'7A97'D93EULL);   // c3
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0xBF2A'01A0'1993'6F27ULL);   // c2
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3F81'1111'1110'8A4DULL);   // c1
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0xBFC5'5555'5555'547BULL);   // c0
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+
+  // y = r + r^3 * p.
+  fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP2);
+  fmul(VTMP1.D(), VTMP1.D(), Dst.D());
+  fmadd(Dst.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+
+  // result = y XOR odd.
+  fmov(ARMEmitter::Size::i64Bit, TMP2, Dst.D());
+  eor(ARMEmitter::Size::i64Bit, TMP2, TMP2, TMP1);
+  fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP2);
+
+  (void)b(&Done);
+
+  // Fallback (scalar).
+  (void)Bind(&Fallback);
+  {
+    str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+    fmov(VTMP1.D(), Src.D());
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64COS].ABIHandler));
+    ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64COS].Func));
+    blr(TMP1);
+    ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+    fmov(Dst.D(), VTMP1.D());
+  }
+
+  (void)Bind(&Done);
+}
+
+DEF_OP(F64TAN) {
+  // Double-precision tan approximation using half-angle polynomial with
+  // double-angle reconstruction, derived from:
+  // https://github.com/ARM-software/optimized-routines  math/aarch64/advsimd/tan.c
+  const auto Op = IROp->C<IR::IROp_F64TAN>();
+  const auto Src = GetVReg(Op->Src);
+  const auto Dst = GetVReg(Node);
+
+  ARMEmitter::ForwardLabel Fallback;
+  ARMEmitter::ForwardLabel Done;
+
+  const auto LoadFPConst = [&](ARMEmitter::VRegister FprDst, uint64_t Val) {
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, Val);
+    fmov(ARMEmitter::Size::i64Bit, FprDst.D(), TMP4);
+  };
+
+  // Range check: fall back for |x| >= 2^23, NaN, and inf.
+  LoadFPConst(VTMP1, 0x4160'0000'0000'0000ULL);
+  fabs(VTMP2.D(), Src.D());
+  fcmp(VTMP2.D(), VTMP1.D());
+  (void)b(ARMEmitter::Condition::CC_HS, &Fallback);
+
+  // q = nearest integer to 2 * x / pi.
+  LoadFPConst(VTMP1, 0x3FE4'5F30'6DC9'C883ULL); // two_over_pi
+  fmul(VTMP2.D(), Src.D(), VTMP1.D());
+  frinta(VTMP2.D(), VTMP2.D());
+
+  // qi = int(q).
+  fcvtzs(ARMEmitter::Size::i64Bit, TMP1, VTMP2.D());
+
+  // r = x - q * pi/2  (range reduction into -pi/4 .. pi/4), in extended precision.
+  fmov(Dst.D(), Src.D());
+  LoadFPConst(VTMP1, 0x3FF9'21FB'5444'2D18ULL); // half_pi[0]
+  fmsub(Dst.D(), VTMP2.D(), VTMP1.D(), Dst.D());
+  LoadFPConst(VTMP1, 0x3C91'A626'3314'5C07ULL); // half_pi[1]
+  fmsub(Dst.D(), VTMP2.D(), VTMP1.D(), Dst.D());
+
+  // Further reduce r to [-pi/8, pi/8], to be reconstructed using double angle
+  // formula.
+  fmov(ARMEmitter::ScalarRegSize::i64Bit, VTMP1, 0.5f);
+  fmul(Dst.D(), Dst.D(), VTMP1.D());
+
+  // Approximate tan(r) using order 8 polynomial.
+  // tan(x) is odd, so: tan(r) ~= r + r^3 * (C0 + r^2 * P(r)).
+  fmul(VTMP1.D(), Dst.D(), Dst.D());
+  fmov(ARMEmitter::Size::i64Bit, TMP2, Dst.D());
+
+  // Horner: p = C8 + r2*(C7 + r2*(... + r2*C0)).
+  LoadFPConst(VTMP2, 0x3F34'E4FD'1414'7622ULL); // C8
+  LoadFPConst(Dst, 0x3F42'89F2'2964'A03CULL);   // C7
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3F57'EA75'D05B'583EULL);   // C6
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3F6D'6C7D'DBF8'7047ULL);   // C5
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3F82'26E5'E5EC'DFA3ULL);   // C4
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3F96'64F4'7E5B'5445ULL);   // C3
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3FAB'A1BA'1BB4'6414ULL);   // C2
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3FC1'1111'1111'0A63ULL);   // C1
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+  LoadFPConst(Dst, 0x3FD5'5555'5555'5556ULL);   // C0
+  fmadd(VTMP2.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+
+  // p = r + r^3 * p.
+  fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP2);
+  fmul(VTMP1.D(), VTMP1.D(), Dst.D());
+  fmadd(Dst.D(), VTMP1.D(), VTMP2.D(), Dst.D());
+
+  // Recombination uses double-angle formula:
+  //   tan(2x) = 2 * tan(x) / (1 - tan^2(x))
+  // and reciprocity around pi/2:
+  //   tan(x) = 1 / tan(pi/2 - x)
+  // to assemble result using change-of-sign and conditional selection of
+  // numerator/denominator, dependent on odd/even-ness of q (hence quadrant).
+  fadd(VTMP1.D(), Dst.D(), Dst.D());
+  fmul(VTMP2.D(), Dst.D(), Dst.D());
+  fmov(ARMEmitter::ScalarRegSize::i64Bit, Dst, 1.0f);
+  fsub(VTMP2.D(), VTMP2.D(), Dst.D());
+
+  ARMEmitter::ForwardLabel SkipSwap;
+  (void)tbnz(TMP1, 0, &SkipSwap);
+
+  fneg(Dst.D(), VTMP1.D());
+  fmov(VTMP1.D(), VTMP2.D());
+  fmov(VTMP2.D(), Dst.D());
+
+  (void)Bind(&SkipSwap);
+
+  // result = numerator / denominator.
+  fdiv(Dst.D(), VTMP2.D(), VTMP1.D());
+
+  (void)b(&Done);
+
+  // Fallback (scalar).
+  (void)Bind(&Fallback);
+  {
+    str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+    fmov(VTMP1.D(), Src.D());
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64TAN].ABIHandler));
+    ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64TAN].Func));
+    blr(TMP1);
+    ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+    fmov(Dst.D(), VTMP1.D());
+  }
+
+  (void)Bind(&Done);
+}
+
+
 } // namespace FEXCore::CPU
