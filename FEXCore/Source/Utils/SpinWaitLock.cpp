@@ -5,7 +5,7 @@ namespace FEXCore::Utils::SpinWaitLock {
 #ifdef ARCHITECTURE_arm64
 constexpr uint64_t NanosecondsInSecond = 1'000'000'000ULL;
 
-static uint32_t GetCycleCounterFrequency() {
+static uint64_t GetCycleCounterFrequency() {
   uint64_t Result {};
   __asm("mrs %[Res], CNTFRQ_EL0" : [Res] "=r"(Result));
   return Result;
@@ -21,7 +21,7 @@ static uint64_t CalculateCyclesPerNanosecond() {
   return NanosecondsInSecond / CounterFrequency;
 }
 
-uint32_t CycleCounterFrequency = GetCycleCounterFrequency();
+uint64_t CycleCounterFrequency = GetCycleCounterFrequency();
 uint64_t CyclesPerNanosecond = CalculateCyclesPerNanosecond();
 #endif
 } // namespace FEXCore::Utils::SpinWaitLock

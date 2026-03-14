@@ -141,7 +141,7 @@ constexpr uint32_t FAMILY_IDENTIFIER = GenerateFamily(CPUFamily {
 #endif
 
 #ifdef ARCHITECTURE_arm64
-uint32_t GetCycleCounterFrequency() {
+uint64_t GetCycleCounterFrequency() {
   uint64_t Result {};
   __asm("mrs %[Res], CNTFRQ_EL0" : [Res] "=r"(Result));
   return Result;
@@ -408,7 +408,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
 }
 
 #else
-uint32_t GetCycleCounterFrequency() {
+uint64_t GetCycleCounterFrequency() {
   return 0;
 }
 
@@ -813,7 +813,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0Dh(uint32_t Leaf) const {
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res {};
   // TSC frequency = ECX * EBX / EAX
-  uint32_t FrequencyHz = GetCycleCounterFrequency();
+  uint64_t FrequencyHz = GetCycleCounterFrequency();
   if (FrequencyHz) {
     Res.eax = 1;
     Res.ebx = 1U << CTX->Config.TSCScale;
