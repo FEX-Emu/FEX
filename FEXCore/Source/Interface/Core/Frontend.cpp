@@ -1348,6 +1348,13 @@ const uint8_t* Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, u
   return _InstStream - EntryPoint + RIP;
 }
 
+bool Decoder::CheckIfCacheable(FEXCore::Core::InternalThreadState& Thread, const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst) {
+  DecodeInstructionsAtEntry(&Thread, InstStream, PC, MaxInst);
+  bool Uncacheable = HitBadRelocation;
+  DelayedDisownBuffer();
+  return !Uncacheable;
+}
+
 void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thread, const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   BlockInfo.TotalInstructionCount = 0;
@@ -1465,6 +1472,13 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
       }
 
       BlockIt->BlockStatus = DecodeInstruction(OpAddress);
+      if (HitBadRelocation) {
+        BlockInfo.TotalInstructionCount = 0;
+        BlockInfo.Blocks = {*BlockIt};
+        BlockInfo.EntryPoints.clear();
+        BlockInfo.CodePages.clear();
+        return;
+      }
       uint64_t OpEndAddress = OpAddress + DecodeInst->InstSize;
 
       DecodedMinAddress = std::min(DecodedMinAddress, OpAddress);
@@ -1483,7 +1497,7 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
 
       // Can not continue this block at all on invalid instruction
       if (BlockIt->BlockStatus != DecodedBlockStatus::SUCCESS) [[unlikely]] {
-        if (!EntryBlock) {
+        if (!EntryBlock && BlockIt->BlockStatus != DecodedBlockStatus::BAD_RELOCATION) {
           // In multiblock configurations, we can early terminate any non-entrypoint blocks with the expectation that this won't get hit.
           // Improves compile-times.
           // Just need to undo additions that this block decoding has caused.

@@ -3,6 +3,7 @@
 
 #include <FEXCore/fextl/functional.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
@@ -27,7 +28,12 @@ namespace HLE {
   struct SourcecodeMap;
 } // namespace HLE
 
-enum class GuestRelocationType : uint32_t { Rel32, Rel64 };
+enum class GuestRelocationType : uint32_t {
+  Rel32,
+  Rel64,
+  // Skip blocks containing this relocation
+  Skip,
+};
 
 // Generic information associated with an executable file.
 struct ExecutableFileInfo {
@@ -44,7 +50,7 @@ struct ExecutableFileInfo {
 
   uint64_t FileId = 0;
   fextl::string Filename;
-  fextl::robin_map<uint32_t, GuestRelocationType> Relocations;
+  fextl::unordered_map<uint32_t, GuestRelocationType> Relocations;
 };
 
 // Information associated with a specific section of an executable file

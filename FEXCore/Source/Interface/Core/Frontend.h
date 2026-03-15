@@ -54,6 +54,7 @@ public:
   };
 
   Decoder(FEXCore::Core::InternalThreadState* Thread);
+  bool CheckIfCacheable(FEXCore::Core::InternalThreadState&, const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst);
   void DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thread, const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst);
 
   const DecodedBlockInformation* GetDecodedBlockInfo() const {
@@ -150,7 +151,7 @@ private:
   fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
 
-  const fextl::robin_map<uint32_t, GuestRelocationType>* Relocations {nullptr};
+  const fextl::unordered_map<uint32_t, GuestRelocationType>* Relocations {nullptr};
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);

@@ -49,6 +49,7 @@ struct MappedResource {
   uint64_t Length; // 0 if not fixed size
   ContainerType::iterator Iterator;
 
+  bool RequiresDelayedCacheLoad = false;
   fextl::vector<Elf64_Phdr> ProgramHeaders;
 };
 
