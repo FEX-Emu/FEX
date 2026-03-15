@@ -27,6 +27,11 @@ enum class ProtectOptions : uint32_t {
 };
 FEX_DEF_NUM_OPS(ProtectOptions)
 
+enum class THPControl {
+  RequestHugeTLB,
+  RequestNoHugeTLB,
+};
+
 #ifdef _WIN32
 inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Commit = true) {
   // Allocate top-down to avoid polluting the lower VA space, as even on 64-bit some programs (i.e. LuaJIT) require allocations below 4GB.
@@ -83,7 +88,7 @@ inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
 }
 
 inline void VirtualName(const char*, void*, size_t) {}
-inline void VirtualTHP(void* Ptr, size_t Size) {}
+inline void VirtualTHPControl(void* Ptr, size_t Size, THPControl Control) {}
 
 #else
 using MMAP_Hook = void* (*)(void*, size_t, int, int, int, off_t);
@@ -124,8 +129,8 @@ inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
   return ::mprotect(Ptr, Size, prot) == 0;
 }
 
-inline void VirtualTHP(void* Ptr, size_t Size) {
-  ::madvise(Ptr, Size, MADV_HUGEPAGE);
+inline void VirtualTHPControl(void* Ptr, size_t Size, THPControl Control) {
+  ::madvise(Ptr, Size, Control == THPControl::RequestHugeTLB ? MADV_HUGEPAGE : MADV_NOHUGEPAGE);
 }
 
 #endif
