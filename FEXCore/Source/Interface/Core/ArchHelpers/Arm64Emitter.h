@@ -135,10 +135,35 @@ protected:
   // Returning REG_INVALID if there was no mapping.
   FEXCore::X86State::X86Reg GetX86RegRelationToARMReg(ARMEmitter::Register Reg);
 
-  void SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U, bool NZCV = true);
-  void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U,
-                      std::optional<ARMEmitter::Register> OptionalReg = std::nullopt,
-                      std::optional<ARMEmitter::Register> OptionalReg2 = std::nullopt, bool NZCV = true);
+  struct SpillStaticRegOptions final {
+    uint32_t GPRSpillMask {~0U};
+    uint32_t FPRSpillMask {~0U};
+    bool FPRs {true};
+    bool NZCV {true};
+  };
+
+  struct FillStaticRegOptions final {
+    std::optional<ARMEmitter::Register> OptionalReg {std::nullopt};
+    std::optional<ARMEmitter::Register> OptionalReg2 {std::nullopt};
+    uint32_t GPRFillMask {~0U};
+    uint32_t FPRFillMask {~0U};
+    bool FPRs {true};
+    bool NZCV {true};
+  };
+
+  void SpillStaticRegs(ARMEmitter::Register TmpReg, SpillStaticRegOptions Options);
+  void FillStaticRegs(FillStaticRegOptions Options);
+
+
+  void SpillStaticRegs(ARMEmitter::Register TmpReg) {
+    // Work around a clang bug: https://bugs.llvm.org/show_bug.cgi?id=36684
+    SpillStaticRegs(TmpReg, {});
+  }
+
+  void FillStaticRegs() {
+    // Work around a clang bug: https://bugs.llvm.org/show_bug.cgi?id=36684
+    FillStaticRegs({});
+  }
 
   // Register 0-18 + 29 + 30 are caller saved
   static constexpr uint32_t CALLER_GPR_MASK = 0b0110'0000'0000'0111'1111'1111'1111'1111U;
@@ -178,7 +203,9 @@ protected:
     if (SupportsPreserveAllABI) {
       return SpillForPreserveAllABICall(TmpReg, FPRs);
     } else {
-      SpillStaticRegs(TmpReg, FPRs);
+      SpillStaticRegs(TmpReg, {
+                                .FPRs = FPRs,
+                              });
       return PushDynamicRegs(TmpReg);
     }
   }
@@ -188,7 +215,7 @@ protected:
       FillForPreserveAllABICall(FPRs);
     } else {
       PopDynamicRegs();
-      FillStaticRegs(FPRs);
+      FillStaticRegs({.FPRs = FPRs});
     }
   }
 

@@ -227,7 +227,10 @@ DEF_OP(ProcessorID) {
   // Ordering is incredibly important here
   // We must spill any overlapping registers first THEN claim we are in a syscall without invalidating state at all
   // Only spill the registers that intersect with our usage
-  SpillStaticRegs(TMP1, false, SpillMask);
+  SpillStaticRegs(TMP1, {
+                          .GPRSpillMask = SpillMask,
+                          .FPRs = false,
+                        });
 
   // Now that we are spilled, store in the state that we are in a syscall
   // Still without overwriting registers that matter
@@ -264,7 +267,13 @@ DEF_OP(ProcessorID) {
 
   // Now that we are done in the syscall we need to carefully peel back the state
   // First unspill the registers from before
-  FillStaticRegs(false, SpillMask, ~0U, ARMEmitter::Reg::r8, ARMEmitter::Reg::r2);
+
+  FillStaticRegs({
+    .OptionalReg = ARMEmitter::Reg::r8,
+    .OptionalReg2 = ARMEmitter::Reg::r2,
+    .GPRFillMask = SpillMask,
+    .FPRs = false,
+  });
 
   // Now the registers we've spilled are back in their original host registers
   // We can safely claim we are no longer in a syscall
