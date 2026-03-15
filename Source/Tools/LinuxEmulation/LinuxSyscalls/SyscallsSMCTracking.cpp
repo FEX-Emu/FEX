@@ -504,6 +504,11 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
         CheckForElfFile = true;
 #endif
+        if (!(prot & PROT_READ)) {
+          // If this isn't mapped readable then it can't be checked.
+          CheckForElfFile = false;
+        }
+
         if (CheckForElfFile) {
           Resource->ProgramHeaders = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
           LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
