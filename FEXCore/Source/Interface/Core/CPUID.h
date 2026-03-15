@@ -14,7 +14,7 @@ namespace Context {
   class ContextImpl;
 }
 
-uint32_t GetCycleCounterFrequency();
+uint64_t GetCycleCounterFrequency();
 
 // Debugging define to switch what family of CPU we execute as.
 // Might be useful if an application makes an assumption about a CPU.

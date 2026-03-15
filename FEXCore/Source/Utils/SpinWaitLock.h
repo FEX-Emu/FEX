@@ -50,7 +50,7 @@ namespace FEXCore::Utils::SpinWaitLock {
 #define SPINLOOP_32BIT SPINLOOP_BODY(ldar, w)
 #define SPINLOOP_64BIT SPINLOOP_BODY(ldar, x)
 
-extern uint32_t CycleCounterFrequency;
+extern uint64_t CycleCounterFrequency;
 extern uint64_t CyclesPerNanosecond;
 
 ///< Get the raw cycle counter which is synchronizing.
