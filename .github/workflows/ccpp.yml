@@ -147,6 +147,12 @@ jobs:
       with:
         target: struct_verifier
 
+    - name: Ensure expected atexit registrations
+      shell: bash
+      run: |
+        COUNT=$(llvm-objdump -D build/Bin/FEX | grep '__cxa_atexit@plt>\\$' | wc -l)
+        [ "$COUNT" -eq 1 ] || { echo "Expected 1 atexit handlers, found $COUNT"; exit 1; }
+
     - name: Remove old SHM regions
       if: ${{ always() }}
       run: cmake --build build --target remove_old_shm_regions
