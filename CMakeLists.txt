@@ -446,6 +446,11 @@ if(ENUM_ENUM_WARNING)
   add_compile_options(-Wno-deprecated-enum-enum-conversion)
 endif()
 
+# GCC enables -Wchanges-meaning by default and treats some cases as an error
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(-Wno-error=changes-meaning)
+endif()
+
 if(ENABLE_WERROR OR ENABLE_STRICT_WERROR)
   add_compile_options(-Werror)
   if (NOT ENABLE_STRICT_WERROR)
