@@ -28,6 +28,7 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
+#include "Windows/Common/Allocator.h"
 #include "Common/CallRetStack.h"
 #include "Common/JITGuardPage.h"
 #include "Common/Config.h"
@@ -523,6 +524,8 @@ void BTCpuProcessInit() {
   const auto NtDll = GetModuleHandle("ntdll.dll");
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   OvercommitTracker.emplace(IsWine);
+
+  FEX::Windows::Allocator::SetupHooks(NtDll);
 
   {
     auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine);
