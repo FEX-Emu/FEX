@@ -32,7 +32,7 @@ public:
     // Differs from Itanium specification
     LOGMAN_THROW_A_FMT(PMF.adj == 0, "C++ Pointer-To-Member representation didn't have adj == 0. Are you trying to cast a virtual member?");
 #else
-#error Don't know how to cast Member to function here. Likely just Itanium
+#error "Don't know how to cast Member to function here. Likely just Itanium"
 #endif
     return PMF.ptr;
   }
@@ -54,7 +54,7 @@ public:
                                            "members.");
     return PMF.ptr;
 #else
-#error Don't know how to cast Member to function here. Likely just Itanium
+#error "Don't know how to cast Member to function here. Likely just Itanium"
 #endif
   }
 

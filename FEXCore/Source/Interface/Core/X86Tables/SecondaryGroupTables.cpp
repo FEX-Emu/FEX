@@ -50,7 +50,7 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> SecondGroup_ArchSelect_LUT = {{
   },
 }};
 
-constexpr auto SecondInstGroupOps = []() consteval {
+constexpr std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = []() consteval {
   std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> Table{};
   constexpr U16U8InfoStruct SecondaryExtensionOpTable[] = {
     // GROUP 1

@@ -123,6 +123,11 @@ else()
   endif()
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # GCC requires libatomic to use 128-bit atomics
+  list(APPEND LIBS atomic)
+endif()
+
 # Generate config
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json.in
   ${CMAKE_BINARY_DIR}/generated/Config/Config.json)

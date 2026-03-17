@@ -28,6 +28,10 @@ class ContextImpl;
 namespace FEXCore::CPU {
 
 #define STATE_PTR(STATE_TYPE, FIELD) STATE.R(), offsetof(FEXCore::Core::STATE_TYPE, FIELD)
+#define STATE_PTR_IDX(STATE_TYPE, FIELD, INDEX) STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::STATE_TYPE, FIELD, INDEX)
+#define FALLBACK_HANDLER_OFFSET(INDEX, FIELD) \
+  STATE.R(),                                  \
+    (ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, Pointers.FallbackHandlerPointers, INDEX) + offsetof(FEXCore::Core::FallbackABIInfo, FIELD))
 
 class Dispatcher final : public Arm64Emitter {
 public:

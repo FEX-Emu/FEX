@@ -721,11 +721,11 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, SpillStaticRegOp
     auto Reg1 = StaticRegisters[i];
     auto Reg2 = StaticRegisters[i + 1];
     if (((1U << Reg1.Idx()) & Options.GPRSpillMask) && ((1U << Reg2.Idx()) & Options.GPRSpillMask)) {
-      stp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
+      stp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.gregs, i));
     } else if (((1U << Reg1.Idx()) & Options.GPRSpillMask)) {
-      str(Reg1.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
+      str(Reg1.X(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.gregs, i));
     } else if (((1U << Reg2.Idx()) & Options.GPRSpillMask)) {
-      str(Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i + 1]));
+      str(Reg2.X(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.gregs, i + 1));
     }
   }
 
@@ -745,7 +745,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, SpillStaticRegOp
         const auto Reg = StaticFPRegisters[i];
 
         if (((1U << Reg.Idx()) & Options.FPRSpillMask) != 0) {
-          mov(ARMEmitter::Size::i64Bit, TmpReg, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+          mov(ARMEmitter::Size::i64Bit, TmpReg, ARRAY_OFFSETOF(Core::CpuStateFrame, State.xmm.avx.data, i));
           st1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B, STATE.R(), TmpReg);
         }
       }
@@ -753,7 +753,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, SpillStaticRegOp
       if (Options.GPRSpillMask && Options.FPRSpillMask == ~0U) {
         // Optimize the common case where we can spill four registers per instruction
         // Load the sse offset in to the temporary register
-        add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
+        add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data));
         for (size_t i = 0; i < StaticFPRegisters.size(); i += 4) {
           const auto Reg1 = StaticFPRegisters[i];
           const auto Reg2 = StaticFPRegisters[i + 1];
@@ -767,11 +767,11 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, SpillStaticRegOp
           const auto Reg2 = StaticFPRegisters[i + 1];
 
           if (((1U << Reg1.Idx()) & Options.FPRSpillMask) && ((1U << Reg2.Idx()) & Options.FPRSpillMask)) {
-            stp<ARMEmitter::IndexType::OFFSET>(Reg1.Q(), Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
+            stp<ARMEmitter::IndexType::OFFSET>(Reg1.Q(), Reg2.Q(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.xmm.sse.data, i));
           } else if (((1U << Reg1.Idx()) & Options.FPRSpillMask)) {
-            str(Reg1.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
+            str(Reg1.Q(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.xmm.sse.data, i));
           } else if (((1U << Reg2.Idx()) & Options.FPRSpillMask)) {
-            str(Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i + 1][0]));
+            str(Reg2.Q(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.xmm.sse.data, i + 1));
           }
         }
       }
@@ -831,7 +831,7 @@ void Arm64Emitter::FillStaticRegs(FillStaticRegOptions Options) {
       for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
         const auto Reg = StaticFPRegisters[i];
         if (((1U << Reg.Idx()) & Options.FPRFillMask) != 0) {
-          mov(ARMEmitter::Size::i64Bit, TmpReg, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+          mov(ARMEmitter::Size::i64Bit, TmpReg, ARRAY_OFFSETOF(Core::CpuStateFrame, State.xmm.avx.data, i));
           ld1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B.Zeroing(), STATE.R(), TmpReg);
         }
       }
@@ -840,7 +840,7 @@ void Arm64Emitter::FillStaticRegs(FillStaticRegOptions Options) {
         // Optimize the common case where we can fill four registers per instruction.
         // Use one of the filling static registers before we fill it.
         // Load the sse offset in to the temporary register
-        add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
+        add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data));
         for (size_t i = 0; i < StaticFPRegisters.size(); i += 4) {
           const auto Reg1 = StaticFPRegisters[i];
           const auto Reg2 = StaticFPRegisters[i + 1];
@@ -854,11 +854,11 @@ void Arm64Emitter::FillStaticRegs(FillStaticRegOptions Options) {
           const auto Reg2 = StaticFPRegisters[i + 1];
 
           if (((1U << Reg1.Idx()) & Options.FPRFillMask) && ((1U << Reg2.Idx()) & Options.FPRFillMask)) {
-            ldp<ARMEmitter::IndexType::OFFSET>(Reg1.Q(), Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
+            ldp<ARMEmitter::IndexType::OFFSET>(Reg1.Q(), Reg2.Q(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.xmm.sse.data, i));
           } else if (((1U << Reg1.Idx()) & Options.FPRFillMask)) {
-            ldr(Reg1.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
+            ldr(Reg1.Q(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.xmm.sse.data, i));
           } else if (((1U << Reg2.Idx()) & Options.FPRFillMask)) {
-            ldr(Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i + 1][0]));
+            ldr(Reg2.Q(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.xmm.sse.data, i + 1));
           }
         }
       }
@@ -874,11 +874,11 @@ void Arm64Emitter::FillStaticRegs(FillStaticRegOptions Options) {
     auto Reg1 = StaticRegisters[i];
     auto Reg2 = StaticRegisters[i + 1];
     if (((1U << Reg1.Idx()) & Options.GPRFillMask) && ((1U << Reg2.Idx()) & Options.GPRFillMask)) {
-      ldp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
+      ldp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.gregs, i));
     } else if ((1U << Reg1.Idx()) & Options.GPRFillMask) {
-      ldr(Reg1.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
+      ldr(Reg1.X(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.gregs, i));
     } else if ((1U << Reg2.Idx()) & Options.GPRFillMask) {
-      ldr(Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i + 1]));
+      ldr(Reg2.X(), STATE.R(), ARRAY_OFFSETOF(FEXCore::Core::CpuStateFrame, State.gregs, i + 1));
     }
   }
 

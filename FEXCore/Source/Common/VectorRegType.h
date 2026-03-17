@@ -16,7 +16,11 @@ struct VectorScalarF64Pair {
 #ifdef ARCHITECTURE_arm64
 // Can't use uint8x16_t directly from arm_neon.h here.
 // Overrides softfloat-3e's defines which causes problems.
+#ifdef __clang__
 using VectorRegType = __attribute__((neon_vector_type(16))) uint8_t;
+#else
+using VectorRegType = __attribute__((vector_size(16))) uint8_t;
+#endif
 struct VectorRegPairType {
   VectorRegType val[2];
 };

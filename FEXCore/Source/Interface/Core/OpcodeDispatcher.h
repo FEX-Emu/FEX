@@ -1668,7 +1668,7 @@ private:
   [[nodiscard]]
   static uint32_t GPROffset(X86State::X86Reg reg) {
     LOGMAN_THROW_A_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
-    return static_cast<uint32_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
+    return static_cast<uint32_t>(ARRAY_OFFSETOF(Core::CPUState, gregs, reg));
   }
 
   [[nodiscard]]
@@ -1887,15 +1887,15 @@ private:
       // For DF, we need to transform 0/1 into 1/-1
       StoreDF(_SubShift(OpSize::i64Bit, Constant(1), Value, ShiftType::LSL, 1));
     } else if (BitOffset == FEXCore::X86State::RFLAG_TF_RAW_LOC) {
-      auto PackedTF = _LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      auto PackedTF = _LoadContextGPR(OpSize::i8Bit, ARRAY_OFFSETOF(FEXCore::Core::CPUState, flags, BitOffset));
       // An exception should still be raised after an instruction that unsets TF, leave the unblocked bit set but unset
       // the TF bit to cause such behaviour. The handling code at the start of the next block will then unset the
       // unblocked bit before raising the exception.
       auto NewPackedTF =
         _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Value, Constant(0), _And(OpSize::i32Bit, PackedTF, Constant(~1)), Constant(1));
-      _StoreContextGPR(OpSize::i8Bit, NewPackedTF, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      _StoreContextGPR(OpSize::i8Bit, NewPackedTF, ARRAY_OFFSETOF(FEXCore::Core::CPUState, flags, BitOffset));
     } else {
-      _StoreContextGPR(OpSize::i8Bit, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      _StoreContextGPR(OpSize::i8Bit, Value, ARRAY_OFFSETOF(FEXCore::Core::CPUState, flags, BitOffset));
     }
   }
 
@@ -1950,8 +1950,8 @@ private:
   [[nodiscard]]
   static uint32_t CacheIndexToContextOffset(int Index) {
     switch (Index) {
-    case MM0Index ... MM7Index: return offsetof(FEXCore::Core::CPUState, mm[Index - MM0Index]);
-    case AVXHigh0Index ... AVXHigh15Index: return offsetof(FEXCore::Core::CPUState, avx_high[Index - AVXHigh0Index][0]);
+    case MM0Index ... MM7Index: return ARRAY_OFFSETOF(FEXCore::Core::CPUState, mm, Index - MM0Index);
+    case AVXHigh0Index ... AVXHigh15Index: return ARRAY_OFFSETOF(FEXCore::Core::CPUState, avx_high, Index - AVXHigh0Index);
     default: return ~0U;
     }
   }
@@ -2151,7 +2151,7 @@ private:
       // Recover the sign bit, it is the logical DF value
       return _Lshr(OpSize::i64Bit, LoadDF(), Constant(63));
     } else {
-      return _LoadContextGPR(OpSize::i8Bit, offsetof(Core::CPUState, flags[BitOffset]));
+      return _LoadContextGPR(OpSize::i8Bit, ARRAY_OFFSETOF(Core::CPUState, flags, BitOffset));
     }
   }
 

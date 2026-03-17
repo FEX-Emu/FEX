@@ -28,6 +28,9 @@
 // then program behavior is undefined.
 #define FEX_UNREACHABLE __builtin_unreachable()
 
+// Like offsetof but for array members with a dynamic element index
+#define ARRAY_OFFSETOF(Type, ArrayMember, Index) (offsetof(Type, ArrayMember) + sizeof(Type::ArrayMember[0]) * (Index))
+
 namespace FEXCore::Assert {
 // This function can not be inlined
 [[noreturn]]

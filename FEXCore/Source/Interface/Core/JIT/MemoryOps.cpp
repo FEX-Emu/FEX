@@ -563,7 +563,7 @@ DEF_OP(LoadDF) {
   auto Flag = X86State::RFLAG_DF_RAW_LOC;
 
   // DF needs sign extension to turn 0x1/0xFF into 1/-1
-  ldrsb(Dst.X(), STATE, offsetof(FEXCore::Core::CPUState, flags[Flag]));
+  ldrsb(Dst.X(), STATE, ARRAY_OFFSETOF(FEXCore::Core::CPUState, flags, Flag));
 }
 
 DEF_OP(ContextClear) {

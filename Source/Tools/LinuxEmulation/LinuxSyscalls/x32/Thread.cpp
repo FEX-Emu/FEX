@@ -208,7 +208,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     futex, [](FEXCore::Core::CpuStateFrame* Frame, int* uaddr, int futex_op, int val, const timespec32* timeout, int* uaddr2, uint32_t val3) -> uint64_t {
-      void* timeout_ptr = (void*)timeout;
+      const void* timeout_ptr = (const void*)timeout;
       struct timespec tp64 {};
       int cmd = futex_op & FUTEX_CMD_MASK;
       if (timeout && (cmd == FUTEX_WAIT || cmd == FUTEX_LOCK_PI || cmd == FUTEX_WAIT_BITSET || cmd == FUTEX_WAIT_REQUEUE_PI)) {
