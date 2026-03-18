@@ -493,7 +493,7 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
     // Only handle FDs that are backed by regular files that are executable
     if (PathLength != -1 && S_ISREG(buf.st_mode) && (buf.st_mode & S_IXUSR)) {
       // ELF files that are mapped multiple times get a separate MappedResource for each base virtual address
-      if (Inserted) {
+      if ((prot & PROT_READ) && Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
         Resource->MappedFile->FileId = CTX->GetCodeCache().ComputeCodeMapId(Resource->MappedFile->Filename, fd);
@@ -504,11 +504,6 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
         CheckForElfFile = true;
 #endif
-        if (!(prot & PROT_READ)) {
-          // If this isn't mapped readable then it can't be checked.
-          CheckForElfFile = false;
-        }
-
         if (CheckForElfFile) {
           Resource->ProgramHeaders = ReadELFHeaders(fd, std::span {reinterpret_cast<std::byte*>(addr), length});
           LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
