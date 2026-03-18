@@ -147,7 +147,8 @@ static void IteratePids() {
     auto ExePath = Entry.path() / "exe";
 
     // If cmdline doesn't exist then skip.
-    if (!std::filesystem::exists(CMDLinePath)) {
+    std::error_code ec;
+    if (!std::filesystem::exists(CMDLinePath, ec) || ec) {
       continue;
     }
 
@@ -177,7 +178,6 @@ static void IteratePids() {
       }
     }
 
-    std::error_code ec;
     std::string exe_link = std::filesystem::read_symlink(ExePath, ec);
 
     auto deleted_pos = exe_link.find(" (deleted)");
