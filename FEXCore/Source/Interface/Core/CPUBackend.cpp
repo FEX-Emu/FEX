@@ -364,7 +364,7 @@ namespace CPU {
     FEXCore::Allocator::VirtualName("FEXMemJIT", reinterpret_cast<void*>(Ptr), Size);
 
     // Huge-pages reduce the amount of iTLB misses dramatically when it works.
-    FEXCore::Allocator::VirtualTHP(reinterpret_cast<void*>(Ptr), Size);
+    FEXCore::Allocator::VirtualTHPControl(reinterpret_cast<void*>(Ptr), Size, FEXCore::Allocator::THPControl::Enable);
 
     LookupCache = fextl::make_unique<GuestToHostMap>();
   }
