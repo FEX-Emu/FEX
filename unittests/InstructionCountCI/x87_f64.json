@@ -2204,7 +2204,7 @@
       ]
     },
     "fptan": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xd9 11b 0xf2 /6"
       ],
@@ -2212,10 +2212,9 @@
         "ldrb w20, [x28, #1051]",
         "add x21, x28, x20, lsl #4",
         "ldr d2, [x21, #1056]",
-        "str x30, [sp, #-16]!",
         "fmov d0, d2",
-        "ldr x0, [x28, #2208]",
-        "ldr x3, [x28, #2216]",
+        "ldr x0, [x28, #2992]",
+        "str x30, [sp, #-16]!",
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
@@ -2415,7 +2414,7 @@
       ]
     },
     "fsincos": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xd9 11b 0xfb /7"
       ],
@@ -2423,20 +2422,24 @@
         "ldrb w20, [x28, #1051]",
         "add x21, x28, x20, lsl #4",
         "ldr d2, [x21, #1056]",
-        "str x30, [sp, #-16]!",
         "fmov d0, d2",
-        "ldr x0, [x28, #2192]",
-        "ldr x3, [x28, #2200]",
+        "ldr x0, [x28, #2976]",
+        "str x30, [sp, #-16]!",
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d3, d0",
-        "fmov d4, d1",
+        "fmov d0, d2",
+        "ldr x0, [x28, #2984]",
+        "str x30, [sp, #-16]!",
+        "blr x0",
+        "ldr x30, [sp], #16",
+        "fmov d2, d0",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
         "strb wzr, [x28, #1050]",
         "strb w20, [x28, #1051]",
         "add x22, x28, x20, lsl #4",
-        "str d4, [x22, #1056]",
+        "str d2, [x22, #1056]",
         "str d3, [x21, #1056]",
         "ldrb w21, [x28, #1202]",
         "mov w22, #0x1",
@@ -2483,7 +2486,7 @@
       ]
     },
     "fsin": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0xd9 11b 0xfe /7"
       ],
@@ -2491,10 +2494,9 @@
         "ldrb w20, [x28, #1051]",
         "add x20, x28, x20, lsl #4",
         "ldr d2, [x20, #1056]",
-        "str x30, [sp, #-16]!",
         "fmov d0, d2",
-        "ldr x0, [x28, #2160]",
-        "ldr x3, [x28, #2168]",
+        "ldr x0, [x28, #2976]",
+        "str x30, [sp, #-16]!",
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
@@ -2503,7 +2505,7 @@
       ]
     },
     "fcos": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0xd9 11b 0xff /7"
       ],
@@ -2511,10 +2513,9 @@
         "ldrb w20, [x28, #1051]",
         "add x20, x28, x20, lsl #4",
         "ldr d2, [x20, #1056]",
-        "str x30, [sp, #-16]!",
         "fmov d0, d2",
-        "ldr x0, [x28, #2176]",
-        "ldr x3, [x28, #2184]",
+        "ldr x0, [x28, #2984]",
+        "str x30, [sp, #-16]!",
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
