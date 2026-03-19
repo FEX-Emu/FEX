@@ -172,6 +172,13 @@ set(TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
 set(OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version")
 set(OVERRIDE_HASH "detect" CACHE STRING "Override the FEX git hash")
 
+get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if (NOT IS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release
+        CACHE STRING "Choose the type of build." FORCE)
+    message(STATUS "No build type set, defaulting to a Release build")
+endif()
+
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (CMAKE_BUILD_TYPE MATCHES "DEBUG")
   set(ENABLE_ASSERTIONS TRUE)
