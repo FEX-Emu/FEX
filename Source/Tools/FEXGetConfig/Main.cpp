@@ -14,6 +14,8 @@
 #include <filesystem>
 #include <string>
 #include <sys/prctl.h>
+#include <sys/signal.h>
+#include <ucontext.h>
 
 namespace {
 struct TSOEmulationFacts {
@@ -94,6 +96,103 @@ TSOEmulationFacts GetTSOEmulationFacts() {
 #endif
 } // namespace
 
+#ifdef ARCHITECTURE_arm64
+namespace SIGBUSTest {
+static bool* FaultArray {};
+
+__attribute__((naked)) void atomic_store_u16(std::byte* Data, uint16_t Value) {
+  asm volatile(R"(
+    stlrh w1, [x0];
+    ret;
+    )" ::
+                 : "memory");
+}
+
+__attribute__((naked)) void atomic_store_u32(std::byte* Data, uint32_t Value) {
+  asm volatile(R"(
+    stlr w1, [x0];
+    ret;
+    )" ::
+                 : "memory");
+}
+
+__attribute__((naked)) void atomic_store_u64(std::byte* Data, uint64_t Value) {
+  asm volatile(R"(
+    stlr x1, [x0];
+    ret;
+    )" ::
+                 : "memory");
+}
+__attribute__((naked)) void atomic_store_u128(std::byte* Data, uint64_t Value) {
+  asm volatile(R"(
+    stlxp w3, x1, x1, [x0];
+    ret;
+    )" ::
+                 : "memory");
+}
+
+static void HandleSIGBUS(int, siginfo_t* info, void* context) {
+  FaultArray[reinterpret_cast<uintptr_t>(info->si_addr) & 63] = true;
+
+  ucontext_t* ucontext = (ucontext_t*)context;
+  mcontext_t* mcontext = &ucontext->uc_mcontext;
+  // Skip the stlr.
+  mcontext->pc += 4;
+}
+
+void TestSIGBUS() {
+  struct sigaction act {};
+  act.sa_sigaction = HandleSIGBUS;
+  act.sa_flags = SA_SIGINFO;
+  sigaction(SIGBUS, &act, &act);
+  auto ptr = reinterpret_cast<std::byte*>(mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+
+  auto test_fault = [](bool* FaultOffsets, auto AccessFunction, std::byte* AccessArray) {
+    FaultArray = FaultOffsets;
+    for (size_t i = 0; i < 64; ++i) {
+      AccessFunction(AccessArray + i, 1);
+    }
+  };
+
+  auto print_granule = [](const char* size, bool* FaultArray) {
+    std::string output {};
+    for (size_t i = 0; i < 64; ++i) {
+      if (i && (i % 16 == 0)) {
+        output += " ";
+      }
+
+      if (FaultArray[i]) {
+        output += "\e[31m■\e[0m";
+      } else {
+        output += "\e[32m■\e[0m";
+      }
+    }
+
+    fprintf(stdout, "%s: %s\n", size, output.c_str());
+  };
+
+  bool FaultOffset_16bit[64] {};
+  bool FaultOffset_32bit[64] {};
+  bool FaultOffset_64bit[64] {};
+  bool FaultOffset_128bit[64] {};
+
+  test_fault(FaultOffset_16bit, atomic_store_u16, ptr);
+  test_fault(FaultOffset_32bit, atomic_store_u32, ptr);
+  test_fault(FaultOffset_64bit, atomic_store_u64, ptr);
+  test_fault(FaultOffset_128bit, atomic_store_u128, ptr);
+
+  munmap(ptr, 4096);
+  sigaction(SIGBUS, &act, nullptr);
+
+  fprintf(stdout, "Fault Granularity: Split every 16 bytes\n");
+  print_granule(" 16-bit", FaultOffset_16bit);
+  print_granule(" 32-bit", FaultOffset_32bit);
+  print_granule(" 64-bit", FaultOffset_64bit);
+  print_granule("128-bit", FaultOffset_128bit);
+}
+} // namespace SIGBUSTest
+#endif
+
 int main(int argc, char** argv, char** envp) {
   FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
   FEXCore::Config::Initialize();
@@ -114,6 +213,7 @@ int main(int argc, char** argv, char** envp) {
   Parser.add_option("--tso-emulation-info").action("store_true").help("Print how FEX is emulating the x86-TSO memory model.");
 
 #ifdef ARCHITECTURE_arm64
+  Parser.add_option("--test-fault-granularity").action("store_true").help("Show SIGBUS fault granularity");
   Parser.add_option("--identification-reg-info").action("store_true").help("Print identification registers");
 #endif
 
@@ -145,6 +245,12 @@ int main(int argc, char** argv, char** envp) {
   if (Options.is_set_by_user("version")) {
     fprintf(stdout, GIT_DESCRIBE_STRING "\n");
   }
+
+#ifdef ARCHITECTURE_arm64
+  if (Options.is_set_by_user("test_fault_granularity")) {
+    SIGBUSTest::TestSIGBUS();
+  }
+#endif
 
   if (Options.is_set_by_user("install_prefix")) {
     char SelfPath[PATH_MAX];
