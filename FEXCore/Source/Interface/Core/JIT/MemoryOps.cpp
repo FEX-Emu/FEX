@@ -2258,6 +2258,20 @@ DEF_OP(MemCpy) {
 
     if (!IsAtomic) {
       if (CTX->HostFeatures.SupportsMOPS) {
+        // In the event we have an overlap (gross), we need to fall back
+        // to the non-mops copy handler. Since the overlap check needs to
+        // make use of NZCV, we need to save it. This can be avoided with
+        // ARMv9.6+'s FEAT_CMPBR, but alas, we don't have access to that right now.
+        //
+        // NOTE: That we need to temporarily trash TMP1 and restore it after the
+        //       comparison.
+        ARMEmitter::ForwardLabel OverlapCase;
+        mrs(TMP4, ARMEmitter::SystemRegister::NZCV);
+        sub(ARMEmitter::Size::i64Bit, TMP1, TMP2, TMP3);
+        cmp(ARMEmitter::Size::i64Bit, TMP1, Length.X());
+        mov(TMP1, Length.X());
+        (void)bc(ARMEmitter::Condition::CC_LT, &OverlapCase);
+
         // If doing something larger than a byte copy, then we need to scale
         // the counter value accordingly to convert it to bytes.
         if (Size > 1) {
@@ -2273,21 +2287,16 @@ DEF_OP(MemCpy) {
         }
 
         // Unfortunately copy operations fiddle with NZCV, so we need to preserve it.
-        mrs(TMP4, ARMEmitter::SystemRegister::NZCV);
         cpyfp(TMP2, TMP3, TMP1);
         cpyfm(TMP2, TMP3, TMP1);
         cpyfe(TMP2, TMP3, TMP1);
         msr(ARMEmitter::SystemRegister::NZCV, TMP4);
 
-        // Needs to use temporaries just in case of overwrite
-        mov(TMP1, MemRegDest.X());
-        mov(TMP2, MemRegSrc.X());
-        mov(TMP3, Length.X());
+        (void)b(&DoneInternal);
 
-        FinalizeAddresses();
-
-        (void)Bind(&DoneInternal);
-        return;
+        // Turns out we overlap and need to fall back. Make sure to restore NZCV.
+        (void)Bind(&OverlapCase);
+        msr(ARMEmitter::SystemRegister::NZCV, TMP4);
       }
 
       ARMEmitter::ForwardLabel AbsPos {};
@@ -2367,7 +2376,7 @@ DEF_OP(MemCpy) {
     LOGMAN_THROW_A_FMT(DirectionConstant == 1 || DirectionConstant == -1, "unexpected direction");
     EmitMemcpy(DirectionConstant);
   } else {
-    // Emit forward direction memset then backward direction memset.
+    // Emit forward direction memcpy then backward direction memcpy.
     for (int32_t Direction : {1, -1}) {
       EmitMemcpy(Direction);
       if (Direction == 1) {
