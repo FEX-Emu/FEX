@@ -1926,7 +1926,6 @@ DEF_OP(MemSet) {
                                       ARMEmitter::SubRegSize::i8Bit;
 
   auto EmitMemset = [&](int32_t Direction) {
-    const int32_t OpSize = Size;
     const int32_t SizeDirection = Size * Direction;
     const bool IsBackwards = Direction == -1;
 
@@ -1934,20 +1933,20 @@ DEF_OP(MemSet) {
     // whether or not the memset is forwards or backwards.
     const auto MakeFinalAddress = [&] {
       if (IsBackwards) {
-        switch (OpSize) {
+        switch (Size) {
         case 1: sub(Dst.X(), MemReg.X(), Length.X()); break;
-        case 2: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1); break;
-        case 4: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2); break;
-        case 8: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3); break;
-        default: LOGMAN_MSG_A_FMT("Unhandled MemSet size: {}", OpSize); break;
+        case 2:
+        case 4:
+        case 8: sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Size)); break;
+        default: LOGMAN_MSG_A_FMT("Unhandled MemSet size: {}", Size); break;
         }
       } else {
-        switch (OpSize) {
+        switch (Size) {
         case 1: add(Dst.X(), MemReg.X(), Length.X()); break;
-        case 2: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1); break;
-        case 4: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2); break;
-        case 8: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3); break;
-        default: LOGMAN_MSG_A_FMT("Unhandled MemSet size: {}", OpSize); break;
+        case 2:
+        case 4:
+        case 8: add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Size)); break;
+        default: LOGMAN_MSG_A_FMT("Unhandled MemSet size: {}", Size); break;
         }
       }
     };
@@ -2053,9 +2052,9 @@ DEF_OP(MemSet) {
 
     (void)Bind(&AgainInternal);
     if (IsAtomic) {
-      MemStoreTSO(Value, OpSize, SizeDirection);
+      MemStoreTSO(Value, Size, SizeDirection);
     } else {
-      MemStore(Value, OpSize, SizeDirection);
+      MemStore(Value, Size, SizeDirection);
     }
     sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
     (void)cbnz(ARMEmitter::Size::i64Bit, TMP1, &AgainInternal);
