@@ -4,7 +4,8 @@
   "RegData": {
     "RAX": "0",
     "RCX": "0",
-    "RDI": "0xE8000100"
+    "RDI": "0xE8000100",
+    "R11": "0"
   },
 
   "MemoryRegions": {
