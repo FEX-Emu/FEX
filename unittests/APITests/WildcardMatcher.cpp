@@ -1,4 +1,5 @@
-#include "FEXCore/fextl/string.h"
+#include <FEXCore/fextl/string.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/WildcardMatcher.h>
 #include <catch2/catch_test_macros.hpp>
 
