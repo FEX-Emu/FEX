@@ -49,6 +49,7 @@ jobs:
       run: cmake --build build --target asm_files 32bit_asm_files JemallocLibs Catch2 vixl cephes_128bit
 
     - name: Build
+      id: build
       run: cmake --build build
 
     - name: Install
@@ -56,40 +57,40 @@ jobs:
 
     # GCC tests
     - name: GCC64 Target Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: gcc_target_tests_64
 
     - name: GCC32 Target Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: gcc_target_tests_32
 
     # API tests
     - name: API Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: api_tests
 
     - name: FEXCore API Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: fexcore_apitests
 
     # ARM emission tests
     - name: ARM Emitter Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: emitter_tests
 
     # Linux  tests
     - name: FEX Linux Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: fex_linux_tests_all
@@ -98,13 +99,13 @@ jobs:
 
     # Thunking
     - name: Thunkgen tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: thunkgen_tests
 
     - name: Test GL No-Thunks
-      if: ${{ always() && matrix.arch[1] == 'x64' }}
+      if: ${{ steps.build.outcome == 'success' && matrix.arch[1] == 'x64' }}
       uses: ./.github/workflows/test
       with:
         target: thunk_functional_tests_nothunks
@@ -112,7 +113,7 @@ jobs:
         DISPLAY: ':0'
 
     - name: Test GL Thunks
-      if: ${{ always() && matrix.arch[1] == 'x64' }}
+      if: ${{ steps.build.outcome == 'success' && matrix.arch[1] == 'x64' }}
       uses: ./.github/workflows/test
       with:
         target: thunk_functional_tests_thunks
@@ -121,28 +122,28 @@ jobs:
 
     # ASM tests
     - name: ASM Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: asm_tests
 
     # POSIX tests
     - name: POSIX Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: posix_tests
 
     # GVisor tests
     - name: GVisor Tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: gvisor_tests
 
     # Struct verifier tests
     - name: Struct verifier tests
-      if: ${{ always() }}
+      if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
         target: struct_verifier
