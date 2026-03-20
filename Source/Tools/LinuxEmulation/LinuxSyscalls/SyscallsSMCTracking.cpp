@@ -223,10 +223,6 @@ static ReadELFHeadersResult ReadELFHeaders(int FD, std::span<std::byte> HeaderDa
   Parser.ReadElf(dup(FD));
 
   auto Relocations = Parser.PopulateRelocations();
-  if (!Relocations.empty()) {
-    LogMan::Msg::IFmt("Loaded ELF with {} relocations", Relocations.size());
-  }
-
   auto HasCodeRelocations = Parser.HasCodeRelocations();
   return ReadELFHeadersResult {std::move(Parser.phdrs), std::move(Relocations), HasCodeRelocations};
 }
