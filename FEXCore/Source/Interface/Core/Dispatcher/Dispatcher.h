@@ -99,6 +99,11 @@ private:
   uint64_t LUDIVHandlerAddress {};
   uint64_t LDIVHandlerAddress {};
 
+  // F64 trig shared handlers
+  uint64_t F64SinHandlerAddress {};
+  uint64_t F64CosHandlerAddress {};
+  uint64_t F64TanHandlerAddress {};
+
   void EmitDispatcher();
   uint64_t GenerateABICall(FallbackABI ABI);
 
@@ -108,6 +113,10 @@ private:
   void EmitI32ToExtF80();
   void EmitF32ToExtF80();
   void EmitF64ToExtF80();
+
+  void EmitF64Sin();
+  void EmitF64Cos();
+  void EmitF64Tan();
 
   FEX_CONFIG_OPT(DisableL2Cache, DISABLEL2CACHE);
 };

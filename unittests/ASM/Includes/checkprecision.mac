@@ -23,8 +23,30 @@
         setnb   al ; stores xmm12 >= xmm13, i.e. abs(REF) * tolerance >= abs(REF - X)
 %endmacro
 
+;; Double-precision variant.
+;; Clobbers xmm12, xmm13, xmm14, xmm15
+;; Returns result in al.
+;; Arguments are in memory locations.
+%macro check_relerr_d 3; %1=REF %2=X %3=TOLERANCE
+        movsd   xmm12, qword [ %1 ] ; xmm12 has REF
+        movsd   xmm13, qword [ %2 ] ; xmm13 has X
+        movsd   xmm15, qword [rel abs_mask_double] ; xmm15 has the abs double mask
+        movapd  xmm14, xmm12 ; xmm14 has REF
+        subsd   xmm14, xmm13 ; xmm14 = REF - X
+        andpd   xmm12, xmm15 ; xmm12 = abs(REF)
+        mulsd   xmm12, qword [ %3 ] ; xmm12 = abs(REF) * tolerance
+        movapd  xmm13, xmm14 ; xmm13 = REF - X
+        andpd   xmm13, xmm15 ; xmm13 = abs(REF - X)
+
+        xor     eax, eax ; clears eax
+        comisd  xmm12, xmm13 ; compares xmm12 and xmm13
+        setnb   al ; stores xmm12 >= xmm13, i.e. abs(REF) * tolerance >= abs(REF - X)
+%endmacro
+
 %macro define_check_data_constants 0
-abs_mask_float:    
+abs_mask_float:
   dd 0x7fffffff   ; Bitmask to get absolute value of a float (single precision)
+abs_mask_double:
+  dq 0x7fffffffffffffff ; Bitmask to get absolute value of a double
 %endmacro
 %endif

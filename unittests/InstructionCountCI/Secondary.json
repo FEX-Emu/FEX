@@ -651,7 +651,7 @@
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr q3, [x28, #3136]",
+        "ldr q3, [x28, #3168]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
@@ -662,7 +662,7 @@
       "Comment": "0x0f 0x50",
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr q3, [x28, #3136]",
+        "ldr q3, [x28, #3168]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
@@ -3690,7 +3690,7 @@
         "mov w20, #0xffff",
         "strb w20, [x28, #1202]",
         "ldr d2, [x28, #1056]",
-        "ldr d3, [x28, #3264]",
+        "ldr d3, [x28, #3296]",
         "cmlt v2.16b, v2.16b, #0",
         "and v2.8b, v2.8b, v3.8b",
         "addp v2.16b, v2.16b, v2.16b",

@@ -4611,4 +4611,44 @@ DEF_OP(VFCopySign) {
   }
 }
 
+DEF_OP(F64SIN) {
+  const auto Op = IROp->C<IR::IROp_F64SIN>();
+  const auto Src = GetVReg(Op->Src);
+  const auto Dst = GetVReg(Node);
+
+  fmov(VTMP1.D(), Src.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64SinHandler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
+
+DEF_OP(F64COS) {
+  const auto Op = IROp->C<IR::IROp_F64COS>();
+  const auto Src = GetVReg(Op->Src);
+  const auto Dst = GetVReg(Node);
+
+  fmov(VTMP1.D(), Src.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64CosHandler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
+
+DEF_OP(F64TAN) {
+  const auto Op = IROp->C<IR::IROp_F64TAN>();
+  const auto Src = GetVReg(Op->Src);
+  const auto Dst = GetVReg(Node);
+
+  fmov(VTMP1.D(), Src.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64TanHandler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
+
+
 } // namespace FEXCore::CPU
