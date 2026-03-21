@@ -399,13 +399,13 @@ bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCac
     auto begin = ranges::lower_bound(BlockList, BinarySection.BeginVA - BinarySection.FileStartVA, std::less {}, &BlockListEntry::first);
     auto end =
       ranges::upper_bound(begin, BlockList.end(), BinarySection.EndVA - BinarySection.FileStartVA - 1, std::less {}, &BlockListEntry::first);
-    BlockList.erase(end, BlockList.end());
-    BlockList.erase(BlockList.begin(), begin);
-    if (BlockList.empty()) {
+    if (begin == end) {
       // Not an error since there is just no data to load
       LogMan::Msg::IFmt("No blocks cached in this range, aborting");
       return true;
     }
+    BlockList.erase(end, BlockList.end());
+    BlockList.erase(BlockList.begin(), begin);
   }
 
   // Read relocations
