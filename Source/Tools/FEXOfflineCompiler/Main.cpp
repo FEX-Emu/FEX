@@ -201,7 +201,18 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
   {
     std::vector<std::unique_ptr<ELFCodeLoader>> LoaderMem;
 
+    // Refuse to continue if the block list contains any out-of-bounds blocks.
+    // This often indicates a corrupted code map.
+    {
+      auto [min_val, max_val] = std::ranges::minmax_element(BlockList, std::less {});
+      auto MinBound = SyscallHandler->LookupExecutableFileSection(Thread, *min_val + SyscallHandler->VAFileStart);
+      auto MaxBound = SyscallHandler->LookupExecutableFileSection(Thread, *max_val + SyscallHandler->VAFileStart);
+      LOGMAN_THROW_A_FMT(MinBound && MaxBound, "Cached blocks offsets {:#x}-{:#x} out of bounds for library {} ({:016x} @ {:#x})!",
+                         *min_val, *max_val, Binary.Filename, Binary.FileId, SyscallHandler->VAFileStart);
+    }
+
     fmt::print(stderr, "Compiling code...\n");
+
     FEX_CONFIG_OPT(MaxInst, MAXINST);
     for (auto Addr : BlockList) {
       if (!CTX->CheckIfBlockIsCacheable(*Thread, Addr + SyscallHandler->VAFileStart, MaxInst)) {
