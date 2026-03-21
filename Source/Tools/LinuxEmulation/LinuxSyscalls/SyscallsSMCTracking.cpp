@@ -219,8 +219,12 @@ static ReadELFHeadersResult ReadELFHeaders(int FD, std::span<std::byte> HeaderDa
     // Read from FD in case the caller didn't have a mapped header available
   }
 
+  // Re-open the file with a fresh file descriptor (and let ELFParser close it on return).
+  // NOTE: FDs returned by dup() share the same cursor state, so reading from them would have observable side effects.
+  auto NewFD = open(fextl::fmt::format("/proc/self/fd/{}", FD).c_str(), O_RDONLY);
+
   ELFParser Parser;
-  Parser.ReadElf(dup(FD));
+  Parser.ReadElf(NewFD);
 
   auto Relocations = Parser.PopulateRelocations();
   if (!Relocations.empty()) {
