@@ -224,7 +224,9 @@ static ReadELFHeadersResult ReadELFHeaders(int FD, std::span<std::byte> HeaderDa
   auto NewFD = open(fextl::fmt::format("/proc/self/fd/{}", FD).c_str(), O_RDONLY);
 
   ELFParser Parser;
-  Parser.ReadElf(NewFD);
+  if (!Parser.ReadElf(NewFD)) {
+    return {};
+  }
 
   auto Relocations = Parser.PopulateRelocations();
   if (!Relocations.empty()) {
