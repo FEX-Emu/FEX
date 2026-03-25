@@ -176,6 +176,7 @@ private:
   FEXCore::CPUID::FunctionResults Function_0Dh(uint32_t Leaf) const;
   FEXCore::CPUID::FunctionResults Function_15h(uint32_t Leaf) const;
   FEXCore::CPUID::FunctionResults Function_1Ah(uint32_t Leaf) const;
+  FEXCore::CPUID::FunctionResults Function_24h(uint32_t Leaf) const;
   FEXCore::CPUID::FunctionResults Function_4000_0000h(uint32_t Leaf) const;
   FEXCore::CPUID::FunctionResults Function_4000_0001h(uint32_t Leaf) const;
   FEXCore::CPUID::FunctionResults Function_8000_0000h(uint32_t Leaf) const;
@@ -200,7 +201,7 @@ private:
 
   void SetupHostHybridFlag();
   void SetupFeatures();
-  static constexpr size_t PRIMARY_FUNCTION_COUNT = 27;
+  static constexpr size_t PRIMARY_FUNCTION_COUNT = 37;
   static constexpr size_t HYPERVISOR_FUNCTION_COUNT = 2;
   static constexpr size_t EXTENDED_FUNCTION_COUNT = 32;
   static constexpr std::array<FunctionHandler, PRIMARY_FUNCTION_COUNT> Primary = {
@@ -268,7 +269,48 @@ private:
 #ifndef CPUID_AMD
     // 0x1A: Hybrid Information Sub-leaf
     &CPUIDEmu::Function_1Ah,
+    // 0x1B: PCONFIG info
+    &CPUIDEmu::Function_Reserved,
+    // 0x1C: Last Branch Records (LBR) info
+    &CPUIDEmu::Function_Reserved,
+    // 0x1D: Tile info
+    &CPUIDEmu::Function_Reserved,
+    // 0x1E: TMUL info
+    &CPUIDEmu::Function_Reserved,
+    // 0x1F: V2 Extended topology
+    &CPUIDEmu::Function_Reserved,
+    // 0x20: Processor History Reset info
+    &CPUIDEmu::Function_Reserved,
+    // 0x21: Unimplemented
+    &CPUIDEmu::Function_Reserved,
+    // 0x22: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x23: Architectural Performance Monitoring Extended
+    &CPUIDEmu::Function_Reserved,
+    // 0x24: Converged Vector ISA
+    &CPUIDEmu::Function_24h,
 #else
+    // 0x1A: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x1B: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x1C: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x1D: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x1E: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x1F: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x20: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x21: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x22: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x23: Reserved
+    &CPUIDEmu::Function_Reserved,
+    // 0x24: Reserved
     &CPUIDEmu::Function_Reserved,
 #endif
   };
@@ -340,8 +382,48 @@ private:
 #ifndef CPUID_AMD
     // 0x1A: Hybrid Information Sub-leaf
     {SupportsConstant::NONCONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1B: PCONFIG info
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1C: Last Branch Records (LBR) info
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1D: Tile info
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1E: TMUL info
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1F: V2 Extended topology
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x20: Processor History Reset info
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x21: Unimplemented/Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x22: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x23: Architectural Performance Monitoring Extended
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x24: Converged Vector ISA
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NEEDSLEAFCONSTANT},
 #else
     // 0x1A: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1B: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1C: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1D: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1E: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x1F: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x20: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x21: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x22: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x23: Reserved
+    {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
+    // 0x24: Reserved
     {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
 #endif
   }};
