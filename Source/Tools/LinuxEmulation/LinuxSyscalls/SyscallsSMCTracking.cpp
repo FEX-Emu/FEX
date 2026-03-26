@@ -541,9 +541,9 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
         Resource->MappedFile->FileId = CTX->GetCodeCache().ComputeCodeMapId(Resource->MappedFile->Filename, fd);
 
-        // Read ELF headers if applicable.
+        // Read ELF headers if applicable and needed for code caching.
         // For performance, skip ELF checks if we're not mapping the file header
-        bool CheckForElfFile = (offset == 0);
+        bool CheckForElfFile = (offset == 0) && EnableCodeCaching;
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
         CheckForElfFile = true;
 #endif
