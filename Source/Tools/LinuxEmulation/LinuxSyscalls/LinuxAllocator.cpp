@@ -196,14 +196,7 @@ restart: {
 
     if (MappedPtr == MAP_FAILED && errno != EEXIST) {
       return reinterpret_cast<void*>(-errno);
-    } else if (MappedPtr == MAP_FAILED || MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FEXCore::Utils::FEX_PAGE_SHIFT)) {
-      // Handles the case where MAP_FIXED_NOREPLACE failed with MAP_FAILED
-      // or if the host system's kernel isn't new enough then it returns the wrong pointer
-      if (MappedPtr != MAP_FAILED && MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FEXCore::Utils::FEX_PAGE_SHIFT)) {
-        // Make sure to munmap this so we don't leak memory
-        ::munmap(MappedPtr, length);
-      }
-
+    } else if (MappedPtr == MAP_FAILED) {
       if (UpperPage == TOP_KEY) {
         BottomPage = BASE_KEY;
         Wrapped = true;
@@ -240,13 +233,7 @@ restart: {
     void* MappedPtr = ::mmap(reinterpret_cast<void*>(PageAddr << FEXCore::Utils::FEX_PAGE_SHIFT),
                              PagesLength << FEXCore::Utils::FEX_PAGE_SHIFT, prot, flags, fd, offset);
 
-    if (MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FEXCore::Utils::FEX_PAGE_SHIFT) && (flags & FEX_MAP_FIXED_NOREPLACE)) {
-      // Handles the case where MAP_FIXED_NOREPLACE isn't handled by the host system's
-      // kernel and returns the wrong pointer
-      // Make sure to munmap this so we don't leak memory
-      ::munmap(MappedPtr, length);
-      return reinterpret_cast<void*>(-EEXIST);
-    } else if (MappedPtr != MAP_FAILED) {
+    if (MappedPtr != MAP_FAILED) {
       SetUsedPages(PageAddr, PagesLength);
       return MappedPtr;
     } else {

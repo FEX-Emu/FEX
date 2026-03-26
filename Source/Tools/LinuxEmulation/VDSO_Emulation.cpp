@@ -703,22 +703,11 @@ void LoadFEXGeneratedCode(FEXCore::Core::InternalThreadState* Thread, bool Is64B
       Mapping->X86GeneratedCodePtr = Result;
     }
   } else {
-    // First 64bit page
-    constexpr uintptr_t LOCATION_MAX = 0x1'0000'0000;
-
     // We need to have the sigret handler in the lower 32bits of memory space
     // Scan top down and try to allocate a location
     for (size_t Location = 0xFFFF'E000; Location != 0x0; Location -= PageSize) {
       auto Ptr = Handler->GuestMmap(Is64Bit, Thread, reinterpret_cast<void*>(Location), PageSize, PROT_READ | PROT_WRITE,
                                     MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-      if (!FEX::HLE::HasSyscallError(Ptr) && reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
-        // Failed to map in the lower 32bits
-        // Try again
-        // Can happen in the case that host kernel ignores MAP_FIXED_NOREPLACE
-        Handler->GuestMunmap(Thread, Ptr, PageSize);
-        continue;
-      }
 
       if (!FEX::HLE::HasSyscallError(Ptr)) {
         Mapping->X86GeneratedCodePtr = Ptr;
