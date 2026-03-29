@@ -68,6 +68,10 @@ PrintValue(uint64_t Value) {
   LogMan::Msg::DFmt("Value: 0x{:x}", Value);
 }
 
+static void PrintMsg(const char* Value) {
+  LogMan::Msg::DFmt("{}", Value);
+}
+
 static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
   LogMan::Msg::DFmt("Value: 0x{:016x}'{:016x}", ValueUpper, Value);
 }
@@ -636,6 +640,8 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
 
     Ptrs.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Ptrs.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
+    Ptrs.PrintMsgValue = reinterpret_cast<uint64_t>(PrintMsg);
+
     Ptrs.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadRemoveCodeEntryFromJit);
     Ptrs.MonoBackpatcherWrite = reinterpret_cast<uint64_t>(&Context::ContextImpl::MonoBackpatcherWrite);
     Ptrs.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);

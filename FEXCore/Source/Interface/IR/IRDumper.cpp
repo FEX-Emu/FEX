@@ -38,6 +38,10 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, uint64_t Arg) 
   *out << fextl::fmt::format("#{:#x}", Arg);
 }
 
+static void PrintArg(fextl::stringstream* out, const IRListView*, const char* const Arg) {
+  *out << fextl::fmt::format("'{}'", Arg);
+}
+
 static void PrintArg(fextl::stringstream* out, const IRListView*, CondClass Arg) {
   if (Arg == CondClass::AL) {
     *out << "ALWAYS";
