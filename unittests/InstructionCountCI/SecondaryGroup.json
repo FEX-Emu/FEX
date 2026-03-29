@@ -1615,8 +1615,8 @@
         "stp q28, q29, [x4, #352]",
         "stp q30, q31, [x4, #384]",
         "ldr w20, [x28, #972]",
+        "mov w21, #0xffc0",
         "and w20, w20, #0xffc0",
-        "mov w21, #0xffff",
         "stp w20, w21, [x4, #24]"
       ]
     },
@@ -1855,8 +1855,8 @@
         "cbnz x20, #+0x8",
         "b #+0x14",
         "ldr w20, [x28, #972]",
+        "mov w21, #0xffc0",
         "and w20, w20, #0xffc0",
-        "mov w21, #0xffff",
         "stp w20, w21, [x4, #24]",
         "ubfx x20, x4, #0, #3",
         "str x20, [x4, #512]"
