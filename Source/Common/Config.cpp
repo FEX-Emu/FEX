@@ -2,17 +2,17 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 #include "Common/JSONPool.h"
-#include "FEXCore/fextl/vector.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/FileLoading.h>
+#include <FEXCore/Utils/WildcardMatcher.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
-#include <FEXCore/Utils/WildcardMatcher.h>
 #include <cstring>
 #include <fmt/format.h>
 #include <functional>
@@ -29,7 +29,7 @@
 
 namespace FEX::Config {
 namespace JSON {
-  static void LoadJSonConfig(const fextl::string& Config, std::function<void(const char* Name, const char* ConfigSring)> Func) {
+  static void LoadJSonConfig(const fextl::string& Config, std::function<void(const char* Name, const char* ConfigString)> Func) {
     fextl::vector<char> Data;
     if (!FEXCore::FileLoading::LoadFile(Data, Config)) {
       return;
@@ -68,9 +68,8 @@ namespace JSON {
           break;
         }
 
-        // Matches the first and then get out
+        // Find the first match, then break
         if (FEXCore::Utils::Wildcard::Matches(ItemName, Config)) {
-          // Safe to assume its just pairs of strings at this point?
           ConfigBlocks.push_back(OverrideNamedList);
           break;
         }

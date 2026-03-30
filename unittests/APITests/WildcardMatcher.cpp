@@ -42,7 +42,6 @@ TEST_CASE("Wildcard regex simple") {
 }
 
 
-// Tests potential usage inside fex itself
 TEST_CASE("FEX regex") {
   CHECK(Matches("*Config*", "/home/ubuntu/.fex-emu/Config.json"));
   CHECK(Matches("*Config.json", "/home/ubuntu/.fex-emu/Config.json"));
