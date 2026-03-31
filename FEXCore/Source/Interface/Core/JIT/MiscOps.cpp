@@ -210,6 +210,25 @@ DEF_OP(Print) {
   PopDynamicRegs();
 }
 
+DEF_OP(PrintMsg) {
+  auto Op = IROp->C<IR::IROp_PrintMsg>();
+
+  PushDynamicRegs(TMP1);
+  SpillStaticRegs(TMP1);
+
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, reinterpret_cast<uintptr_t>(Op->Value));
+  ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.PrintMsgValue));
+
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    GenerateIndirectRuntimeCall<void, uint64_t>(ARMEmitter::Reg::r1);
+  } else {
+    blr(ARMEmitter::Reg::r1);
+  }
+
+  FillStaticRegs();
+  PopDynamicRegs();
+}
+
 DEF_OP(ProcessorID) {
   if (CTX->HostFeatures.SupportsCPUIndexInTPIDRRO) {
     mrs(GetReg(Node), ARMEmitter::SystemRegister::TPIDRRO_EL0);

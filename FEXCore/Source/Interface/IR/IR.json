@@ -136,6 +136,7 @@
     "u16": "uint16_t",
     "u32": "uint32_t",
     "u64": "uint64_t",
+    "c_str": "const char*",
     "OpSize": "FEXCore::IR::OpSize",
     "SSA": "OrderedNode*",
     "GPR": "OrderedNode*",
@@ -239,6 +240,12 @@
         "HasSideEffects": true,
         "Desc": ["Debug operation that prints an SSA value to the console",
                  "May only print 64bits of the value"]
+      },
+      "PrintMsg c_str:$Value": {
+        "HasSideEffects": true,
+        "Desc": ["Debug operation that prints an string to the console.",
+                 "This is for debug only! Will break code caching!"
+        ]
       },
       "GPR = AllocateGPR i1:$ForPair": {
         "Desc": ["Silly pseudo-instruction to allocate a register for a future destination",
