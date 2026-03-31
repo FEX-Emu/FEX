@@ -5,12 +5,74 @@
 #include <fcntl.h>
 #include <fmt/format.h>
 #include <unistd.h>
-#include <vector>
 #include <xxhash.h>
+#include <functional>
 
 namespace XXFileHash {
-// 32MB blocks
-constexpr static size_t BLOCK_SIZE = 32 * 1024 * 1024;
+class Reader {
+public:
+  Reader(int fd, size_t Size)
+    : fd {fd}
+    , Size {Size} {}
+
+  virtual ~Reader() = default;
+
+  bool Initialized() const {
+    return IsInitialized;
+  }
+
+  using Callback = std::function<bool(const void* Data, size_t Size)>;
+  virtual bool Read(Callback cb) = 0;
+
+protected:
+  int fd {};
+  size_t Size {};
+  bool IsInitialized {};
+};
+
+class MemoryReader final : public Reader {
+public:
+  MemoryReader(int fd, size_t Size)
+    : Reader(fd, Size) {
+    Ptr = reinterpret_cast<std::byte*>(mmap(nullptr, Size, PROT_READ, MAP_SHARED, fd, 0));
+    IsInitialized = Ptr != MAP_FAILED;
+  }
+
+  ~MemoryReader() {
+    munmap(reinterpret_cast<void*>(Ptr), Size);
+  }
+
+  bool Read(Callback cb) override {
+    auto ReadPtr = Ptr;
+    const auto ReadEndPtr = Ptr + Size;
+    size_t ReadSize {};
+
+    // Claim sequential access.
+    ::madvise(reinterpret_cast<void*>(ReadPtr), Size, MADV_SEQUENTIAL);
+
+    while (ReadPtr < ReadEndPtr) {
+      ReadSize = std::min<size_t>(READ_BLOCK_SIZE, ReadEndPtr - ReadPtr);
+
+      if (!cb(ReadPtr, ReadSize)) {
+        return false;
+      }
+
+      // Only allow a single block read to be resident.
+      ::madvise(reinterpret_cast<void*>(ReadPtr), ReadSize, MADV_DONTNEED);
+
+      ReadPtr += ReadSize;
+    }
+
+    return true;
+  }
+
+private:
+  std::byte* Ptr {};
+
+  // Only allow 128MB in flight.
+  constexpr static size_t READ_BLOCK_SIZE = 128 * 1024 * 1024;
+};
+
 std::optional<uint64_t> HashFile(const fextl::string& Filepath) {
   int fd = open(Filepath.c_str(), O_RDONLY);
   if (fd == -1) {
@@ -48,33 +110,39 @@ std::optional<uint64_t> HashFile(const fextl::string& Filepath) {
     return HadError();
   }
 
+  MemoryReader Read(fd, Size);
+
+  if (!Read.Initialized()) {
+    return HadError();
+  }
+
+  const auto Start = std::chrono::high_resolution_clock::now();
+  auto Now = Start;
   const double SizeD = Size;
-  std::vector<char> Data(BLOCK_SIZE);
-  off_t CurrentOffset = 0;
-  auto Now = std::chrono::high_resolution_clock::now();
+  size_t CurrentOffset {};
 
-  // Let the kernel know that we will be reading linearly
-  posix_fadvise(fd, 0, Size, POSIX_FADV_SEQUENTIAL);
-  while (CurrentOffset < Size) {
-
-    ssize_t Result = pread(fd, Data.data(), BLOCK_SIZE, CurrentOffset);
-    if (Result == -1) {
-      return HadError();
+  auto CB_XXH = [&](const void* Data, size_t BlockSize) -> bool {
+    if (XXH3_64bits_update(State, Data, BlockSize) == XXH_ERROR) {
+      return false;
     }
 
-    if (XXH3_64bits_update(State, Data.data(), Result) == XXH_ERROR) {
-      return HadError();
-    }
     auto Cur = std::chrono::high_resolution_clock::now();
     auto Dur = Cur - Now;
     if (Dur >= std::chrono::seconds(1)) {
       fmt::print("{:.2}% hashed\n", (double)CurrentOffset / SizeD * 100.0);
       Now = Cur;
     }
-    CurrentOffset += Result;
+
+    CurrentOffset += BlockSize;
+
+    return true;
+  };
+
+  if (!Read.Read(CB_XXH)) {
+    return HadError();
   }
 
-  const XXH64_hash_t Hash = XXH3_64bits_digest(State);
+  const auto Hash = XXH3_64bits_digest(State);
   XXH3_freeState(State);
 
   close(fd);
