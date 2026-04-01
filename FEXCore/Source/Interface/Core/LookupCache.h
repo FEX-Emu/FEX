@@ -3,7 +3,7 @@
 #include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/SHMStats.h>
-#include "Utils/WritePriorityMutex.h"
+#include <FEXCore/Utils/WritePriorityMutex.h>
 
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory_resource.h>
