@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "Utils/Allocator/HostAllocator.h"
+#include "Utils/Allocator.h"
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -32,8 +33,8 @@ std::pmr::memory_resource* get_default_resource() {
 }
 } // namespace fextl::pmr
 
-#ifndef _WIN32
 namespace FEXCore::Allocator {
+#ifndef _WIN32
 MMAP_Hook mmap {::mmap};
 MUNMAP_Hook munmap {::munmap};
 
@@ -304,5 +305,18 @@ void UnlockAfterFork(FEXCore::Core::InternalThreadState* Thread, bool Child) {
     Alloc64->UnlockAfterFork(Thread, Child);
   }
 }
-} // namespace FEXCore::Allocator
+#else
+
+void VirtualNameNOP(const char*, const void*, size_t) {}
+void VirtualTHPNOP(const void* Ptr, size_t Size, THPControl Control) {}
+
+VirtualNamePtr VirtualName {VirtualNameNOP};
+VirtualTHPPtr VirtualTHPControl {VirtualTHPNOP};
+
+void SetupHooks(size_t PageSize, HookPtrs Ptrs) {
+  VirtualName = Ptrs.VirtualName;
+  VirtualTHPControl = Ptrs.VirtualTHPControl;
+}
+
 #endif
+} // namespace FEXCore::Allocator
