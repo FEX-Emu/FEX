@@ -6,9 +6,10 @@ set(TESTS
   FileMappingBaseAddress
   Filesystem
   InterruptableConditionVariable
-  StringUtils)
+  StringUtils
+  WildcardMatcher)
 
-list(APPEND LIBS Common FEXCore JemallocLibs)
+list(APPEND LIBS Common FEXCore FEXCore_Base JemallocLibs)
 
 foreach(API_TEST ${TESTS})
   add_executable(${API_TEST} ${API_TEST}.cpp)

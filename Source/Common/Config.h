@@ -81,7 +81,7 @@ fextl::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer();
  *
  * @return unique_ptr for that layer
  */
-fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(const fextl::string* File = nullptr);
+fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(const fextl::string* File = nullptr, std::optional<fextl::string> AppName = std::nullopt);
 fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(std::string_view AppConfig);
 
 /**
