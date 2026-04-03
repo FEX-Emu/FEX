@@ -1347,6 +1347,11 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
       Shuffle >>= ShiftAmount;
     }
   } else {
+    if (Src1 == Src2 && Shuffle == 0) {
+      // TODO: We can optimize significantly more shuffles when we know the sources match.
+      // Special case broadcast element 0.
+      return _VDupElement(DstSize, ElementSize, Src1, Shuffle & SelectionMask);
+    }
     if (ElementSize == OpSize::i32Bit) {
       // We can shuffle optimally in a lot of cases.
       // TODO: We can optimize more of these cases.
