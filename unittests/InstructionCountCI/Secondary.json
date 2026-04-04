@@ -3586,6 +3586,13 @@
         "zip1 v16.2d, v3.2d, v2.2d"
       ]
     },
+    "shufps xmm11, xmm11, 0x0": {
+      "ExpectedInstructionCount": 1,
+      "Comment": "Seen in Death Stranding 2",
+      "ExpectedArm64ASM": [
+        "dup v27.4s, v27.s[0]"
+      ]
+    },
     "bswap eax": {
       "ExpectedInstructionCount": 1,
       "Comment": "0x0f 0xc8",
