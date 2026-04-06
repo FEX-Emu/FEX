@@ -13,10 +13,10 @@
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/Utils/WritePriorityMutex.h>
 
 namespace FEXCore {
 struct HostFeatures;
-class ForkableSharedMutex;
 class ThunkHandler;
 } // namespace FEXCore
 
@@ -144,7 +144,7 @@ public:
   FEX_DEFAULT_VISIBILITY virtual void InvalidateCodeBuffersCodeRange(uint64_t Start, uint64_t Length) = 0;
   FEX_DEFAULT_VISIBILITY virtual void
   InvalidateThreadCachedCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) = 0;
-  FEX_DEFAULT_VISIBILITY virtual FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() = 0;
+  FEX_DEFAULT_VISIBILITY virtual FEXCore::Utils::WritePriorityMutex::Mutex& GetCodeInvalidationMutex() = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void
   ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) = 0;

@@ -9,11 +9,15 @@
 #include <unistd.h>
 #else
 #include <synchapi.h>
+// Don't pull in all WIN32 headers for INFINITE. Causes too many problems.
+#ifndef INFINITE
+#define INFINITE 0xffffffff
+#endif
 #endif
 
 #include <FEXCore/Utils/LogManager.h>
 
-#include "Utils/SpinWaitLock.h"
+#include <FEXCore/Utils/SpinWaitLock.h>
 
 namespace FEXCore::Utils::WritePriorityMutex {
 

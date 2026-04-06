@@ -209,7 +209,7 @@ public:
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
   void InvalidateCodeBuffersCodeRange(uint64_t Start, uint64_t Length) override;
   void InvalidateThreadCachedCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
-  FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() override {
+  FEXCore::Utils::WritePriorityMutex::Mutex& GetCodeInvalidationMutex() override {
     return CodeInvalidationMutex;
   }
 
@@ -263,7 +263,7 @@ public:
     FEX_CONFIG_OPT(MonoHacks, MONOHACKS);
   } Config;
 
-  FEXCore::ForkableSharedMutex CodeInvalidationMutex;
+  FEXCore::Utils::WritePriorityMutex::Mutex CodeInvalidationMutex {};
 
   uint32_t StrictSplitLockMutex {};
 

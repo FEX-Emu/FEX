@@ -2,7 +2,7 @@
 
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Context/Context.h"
-#include "Utils/SpinWaitLock.h"
+#include <FEXCore/Utils/SpinWaitLock.h>
 
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/EnumUtils.h>

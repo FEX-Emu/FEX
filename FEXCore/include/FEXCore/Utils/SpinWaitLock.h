@@ -50,8 +50,9 @@ namespace FEXCore::Utils::SpinWaitLock {
 #define SPINLOOP_32BIT SPINLOOP_BODY(ldar, w)
 #define SPINLOOP_64BIT SPINLOOP_BODY(ldar, x)
 
-extern uint64_t CycleCounterFrequency;
-extern uint64_t CyclesPerNanosecond;
+FEX_DEFAULT_VISIBILITY extern uint64_t CycleCounterFrequency;
+
+FEX_DEFAULT_VISIBILITY extern uint64_t CyclesPerNanosecond;
 
 ///< Get the raw cycle counter which is synchronizing.
 /// `CNTVCTSS_EL0` also does the same thing, but requires the FEAT_ECV feature.

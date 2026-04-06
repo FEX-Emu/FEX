@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "Utils/SpinWaitLock.h"
+#include <FEXCore/Utils/SpinWaitLock.h>
 
 #include <Interface/Context/Context.h>
 #include <Interface/Core/ArchHelpers/Arm64Emitter.h>
