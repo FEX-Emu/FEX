@@ -4889,6 +4889,11 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::Prefetch(OpcodeArgs, bool ForStore, bool Stream, uint8_t Level) {
+  if (Op->Src[0].IsGPR()) {
+    // NOP instance.
+    return;
+  }
+
   Ref DestMem = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.LoadData = false});
   _Prefetch(ForStore, Stream, Level, DestMem, Invalid(), MemOffsetType::SXTX, 1);
 }
