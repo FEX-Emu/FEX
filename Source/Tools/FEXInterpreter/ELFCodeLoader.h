@@ -411,7 +411,7 @@ public:
 
     // Set the process personality here
     // Also, what about ADDR_LIMIT_3GB & co ?
-    uint32_t Personality = personality(~0ULL);
+    uint32_t Personality = personality(~0U);
     Personality |= ExecuteAll ? READ_IMPLIES_EXEC : 0;
     if (-1 == personality(Personality)) {
       LogMan::Msg::EFmt("Setting personality failed");
