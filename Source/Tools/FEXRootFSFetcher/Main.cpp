@@ -1031,6 +1031,10 @@ int32_t AskForDistroSelection(const std::span<const WebFileFetcher::FileTargets>
   if (!ArgOptions::DistroVersion.empty()) {
     Info.DistroVersion = ArgOptions::DistroVersion;
   }
+  // explicit CLI selection must still run exact-match logic.
+  if (!ArgOptions::DistroName.empty() || !ArgOptions::DistroVersion.empty()) {
+    Info.Unknown = false;
+  }
 
   return _AskForDistroSelection(Info, Targets);
 }
