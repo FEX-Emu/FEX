@@ -233,7 +233,10 @@ uint64_t CodeCache::ComputeCodeMapId(std::string_view Filename, int FD) {
 
 struct CodeCacheHeader {
   std::array<char, 4> Magic = ExpectedMagic;
-  uint32_t FormatVersion = 1;
+  // Version history:
+  // 1: Initial version
+  // 2: Padding code buffer data to enable direct mapping
+  uint32_t FormatVersion = 2;
   uint8_t FEXVersion[20] = {};
   uint32_t NumBlocks;
   uint32_t NumCodePages;
@@ -260,7 +263,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   std::ranges::copy(GIT_HASH, header.FEXVersion);
   header.NumBlocks = LookupCache.BlockList.size();
   header.NumCodePages = LookupCache.CodePages.size();
-  header.CodeBufferSize = CTX.LatestOffset;
+  header.CodeBufferSize = FEXCore::AlignUp(CTX.LatestOffset, Utils::FEX_PAGE_SIZE);
   header.NumRelocations = Relocations.size();
   header.SerializedBaseAddress = SerializedBaseAddress;
   ::write(fd, &header, sizeof(header));
@@ -300,12 +303,10 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   ::write(fd, Relocations.data(), Relocations.size() * sizeof(Relocations[0]));
 
   // Pad to next page in file so that the CodeBuffer can be mmap'ed into process on load
-  char Zero[64] {};
-  auto Off = lseek(fd, 0, SEEK_CUR);
-  while (Off != AlignUp(Off, Utils::FEX_PAGE_SIZE)) {
-    auto BytesToWrite = std::min(AlignUp(Off, Utils::FEX_PAGE_SIZE) - Off, sizeof(Zero));
-    ::write(fd, Zero, BytesToWrite);
-    Off += BytesToWrite;
+  {
+    auto AlignedSize = AlignUp(lseek(fd, 0, SEEK_CUR), Utils::FEX_PAGE_SIZE);
+    ::ftruncate(fd, AlignedSize);
+    lseek(fd, AlignedSize, SEEK_SET);
   }
 
   // Dump the host code (relocated for position-independent serialization)
@@ -315,6 +316,12 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
     return false;
   }
   ::write(fd, CodeBufferData.data(), CodeBufferData.size());
+  // Pad to next page in file for mmap
+  {
+    auto PaddedSize = AlignUp(lseek(fd, 0, SEEK_CUR), Utils::FEX_PAGE_SIZE);
+    ::ftruncate(fd, PaddedSize);
+    lseek(fd, PaddedSize, SEEK_SET);
+  }
 
   // Dump code pages
   static_assert(OrderedContainer<decltype(LookupCache.CodePages)>, "Non-deterministic data source");
