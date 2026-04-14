@@ -2762,11 +2762,11 @@
       },
       "FPR = F64FPREM FPR:$Src1, FPR:$Src2": {
         "DestSize": "OpSize::i64Bit",
-        "JITDispatch": false
+        "JITDispatch": true
       },
       "FPR = F64FPREM1 FPR:$Src1, FPR:$Src2": {
         "DestSize": "OpSize::i64Bit",
-        "JITDispatch": false
+        "JITDispatch": true
       },
       "FPR = F64SCALE FPR:$Src1, FPR:$Src2": {
         "DestSize": "OpSize::i64Bit",
