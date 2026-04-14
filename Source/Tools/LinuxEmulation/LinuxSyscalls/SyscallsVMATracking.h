@@ -136,8 +136,18 @@ struct VMATracking {
     return MappedResources.equal_range(mrid);
   }
 
+  bool HasPendingResourceDeletions() const {
+    return !PendingResourceDeletions.empty();
+  }
+
+  // Flush pending MappedResource deletions. This must be called after code
+  // invalidation related to unmapped/remapped memory to avoid memory leaks.
+  // - Mutex must be unique_locked before calling
+  void FlushPendingResourceDeletions();
+
 private:
   MappedResource::ContainerType MappedResources;
+  fextl::vector<MappedResource> PendingResourceDeletions;
 };
 
 
