@@ -235,7 +235,13 @@ void VMATracking::DeleteVMARange(FEXCore::Context::Context* CTX, uintptr_t Base,
         // If linked to a Mapped Resource, remove from linked list and possibly delete the Mapped Resource
         if (Current->Resource) {
           if (ListRemove(Current) && Current->Resource != PreservedMappedResource) {
-            MappedResources.erase(Current->Resource->Iterator);
+            auto Iter = Current->Resource->Iterator;
+            // Defer deletion if the resource has mapped code cache data, so its code buffer
+            // outlives code cache invalidation (which runs after the VMA lock is released).
+            if (false) { // TODO: Consider unconditionally deferring deletion?
+              PendingResourceDeletions.push_back(std::move(*Current->Resource));
+            }
+            MappedResources.erase(Iter);
           }
         }
 
@@ -275,6 +281,11 @@ void VMATracking::DeleteVMARange(FEXCore::Context::Context* CTX, uintptr_t Base,
       }
     }
   }
+}
+
+void VMATracking::FlushPendingResourceDeletions() {
+  Mutex.check_lock_owned_by_self_as_write();
+  PendingResourceDeletions.clear();
 }
 
 // Change flags of mappings in a range and split the mappings if needed
@@ -542,7 +553,11 @@ uintptr_t VMATracking::DeleteSHMRegion(FEXCore::Context::Context* CTX, uintptr_t
   do {
     if (Entry->second.Resource == Resource) {
       if (ListRemove(&Entry->second)) {
-        MappedResources.erase(Entry->second.Resource->Iterator);
+        auto Iter = Entry->second.Resource->Iterator;
+        if (false) { // TODO: Consider unconditionally deferring deletion?
+          PendingResourceDeletions.push_back(std::move(*Entry->second.Resource));
+        }
+        MappedResources.erase(Iter);
       }
       Entry = VMAs.erase(Entry);
     } else {
