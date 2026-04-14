@@ -2005,8 +2005,19 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
         Thread->ExclusiveStore.Size = 0;
         return 4;
       }
+    } else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
+      if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs, StrictSplitLockMutex)) {
+        // Skip this instruction now
+        return 4;
+      } else {
+        uint8_t Op = (PC[0] >> 12) & 0xF;
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: 0x{:x} Instruction: 0x{:08x}\n", Op, ProgramCounter, PC[0]);
+        return std::nullopt;
+      }
     }
-    return 0;
+
+    LogMan::Msg::EFmt("Unhandled non-JIT atomic");
+    return std::nullopt;
   }
 
   const auto Frame = Thread->CurrentFrame;
