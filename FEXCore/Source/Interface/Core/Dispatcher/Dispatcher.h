@@ -107,6 +107,8 @@ private:
   uint64_t F64ScaleHandlerAddress {};
   uint64_t F64AtanHandlerAddress {};
   uint64_t F64FYL2XHandlerAddress {};
+  uint64_t F64FPREMHandlerAddress {};
+  uint64_t F64FPREM1HandlerAddress {};
 
   void EmitDispatcher();
   uint64_t GenerateABICall(FallbackABI ABI);
@@ -125,6 +127,8 @@ private:
   void EmitF64Scale();
   void EmitF64Atan();
   void EmitF64FYL2X();
+  void EmitF64FPREM();
+  void EmitF64FPREM1();
 
   FEX_CONFIG_OPT(DisableL2Cache, DISABLEL2CACHE);
 };
