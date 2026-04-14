@@ -261,9 +261,13 @@ public:
   void TrackMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot);
   void TrackMadvise(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int advice);
 
-  void InvalidateCodeRangeIfNecessary(FEXCore::Core::InternalThreadState* Thread, uint64_t Base, uint64_t Length) {
+  void InvalidateCodeRangeIfNecessary(FEXCore::Core::InternalThreadState* Thread, uint64_t Base, uint64_t Length, bool CheckPendingVMAResources) {
     if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
       TM.InvalidateGuestCodeRange(Thread, Base, Length);
+    }
+    if (CheckPendingVMAResources) {
+      auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
+      VMATracking.FlushPendingResourceDeletions();
     }
   }
 

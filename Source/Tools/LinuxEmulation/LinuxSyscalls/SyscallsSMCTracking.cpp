@@ -170,7 +170,7 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
 }
 
 void SyscallHandler::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
-  InvalidateCodeRangeIfNecessary(Thread, Start, Length);
+  InvalidateCodeRangeIfNecessary(Thread, Start, Length, false);
 }
 
 static FEXCore::ExecutableFileSectionInfo BuildSectionInfo(const VMATracking::MappedResource& Resource, uint64_t Base, uint64_t Size) {
@@ -263,11 +263,12 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
                                 int fd, off_t offset) {
   LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits");
 
-  uint64_t Result {};
+  uint64_t Result;
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
   std::optional<LateApplyExtendedVolatileMetadata> LateMetadata = std::nullopt;
 
   std::optional<FEXCore::ExecutableFileSectionInfo> CachedSection;
+  bool PendingResourceDeletion;
 
   {
     // NOTE: Frontend calls this with a nullptr Thread during initialization, but
@@ -290,9 +291,10 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
     }
 
     LateMetadata = TrackMmap(Thread, Result, length, prot, flags, fd, offset, CachedSection);
+    PendingResourceDeletion = VMATracking.HasPendingResourceDeletions();
   }
 
-  InvalidateCodeRangeIfNecessary(Thread, Result, Size);
+  InvalidateCodeRangeIfNecessary(Thread, Result, Size, PendingResourceDeletion);
 
   if (LateMetadata) {
     auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
@@ -310,8 +312,9 @@ uint64_t SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThread
   LOGMAN_THROW_A_FMT(Is64Bit || (reinterpret_cast<uintptr_t>(addr) >> 32) == 0, "values must fit to 32 bits: {}", fmt::ptr(addr));
   LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits");
 
-  uint64_t Result {};
+  uint64_t Result;
   uint64_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
+  bool PendingResourceDeletion;
 
   {
     // Frontend calls this with nullptr Thread during initialization.
@@ -331,8 +334,9 @@ uint64_t SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThread
       }
     }
     TrackMunmap(Thread, addr, length);
+    PendingResourceDeletion = VMATracking.HasPendingResourceDeletions();
   }
-  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size, PendingResourceDeletion);
 
   if (length) {
     auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
@@ -413,7 +417,7 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
     TrackMprotect(Thread, addr, len, prot);
   }
 
-  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len, false);
 
   // Prepare for delayed code cache load after ld/Wine is done applying relocations.
   // Hooking into mprotect is a reliable heuristic that matches behavior of ld (for ELF) and Wine (for PE).
@@ -446,8 +450,9 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
 }
 
 uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, int shmid, const void* shmaddr, int shmflg) {
-  uint64_t Result {};
-  uint64_t Length {};
+  uint64_t Result;
+  uint64_t Length;
+  bool PendingResourceDeletion;
 
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
@@ -472,15 +477,17 @@ uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadS
 
     Length = stat.shm_segsz;
     TrackShmat(Thread, shmid, Result, shmflg, Length);
+    PendingResourceDeletion = VMATracking.HasPendingResourceDeletions();
   }
 
-  InvalidateCodeRangeIfNecessary(Thread, Result, Length);
+  InvalidateCodeRangeIfNecessary(Thread, Result, Length, PendingResourceDeletion);
   return Result;
 }
 
 uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, const void* shmaddr) {
-  uint64_t Result {};
-  uint64_t Length {};
+  uint64_t Result;
+  uint64_t Length;
+  bool PendingResourceDeletion;
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
     if (Is64Bit) {
@@ -496,9 +503,10 @@ uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadS
     }
 
     Length = TrackShmdt(Thread, reinterpret_cast<uintptr_t>(shmaddr));
+    PendingResourceDeletion = VMATracking.HasPendingResourceDeletions();
   }
 
-  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length, PendingResourceDeletion);
   return Result;
 }
 
