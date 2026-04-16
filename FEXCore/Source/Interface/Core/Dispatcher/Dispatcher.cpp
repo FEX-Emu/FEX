@@ -549,6 +549,8 @@ void Dispatcher::EmitDispatcher() {
   EmitF64Sin();
   EmitF64Cos();
   EmitF64Tan();
+  EmitF64F2XM1();
+  EmitF64Scale();
 
   // Interpreter fallbacks
   {
@@ -1246,6 +1248,179 @@ void Dispatcher::EmitF64Tan() {
   dc64(0x4160'0000'0000'0000ULL); // 2^23
 }
 
+void Dispatcher::EmitF64Scale() {
+  // Computes result = src1 * 2^trunc(src2).
+  // Input: VTMP1 = base (src1), VTMP2 = exponent (src2). Output: VTMP1.
+  F64ScaleHandlerAddress = GetCursorAddress<uint64_t>();
+
+  ARMEmitter::ForwardLabel Fallback;
+
+  // save nzcv
+  mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+  str(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+
+  // n = trunc(src2).
+  frintz(VTMP2.D(), VTMP2.D());
+
+  // NaN check: NaN != NaN sets V flag.
+  fcmp(VTMP2.D(), VTMP2.D());
+  (void)b(ARMEmitter::Condition::CC_VS, &Fallback);
+
+  fcvtzs(ARMEmitter::Size::i64Bit, TMP1, VTMP2.D());
+
+  // Range check: int_n in [-1022, 1023].
+  cmn(ARMEmitter::Size::i64Bit, TMP1, 1022);
+  (void)b(ARMEmitter::Condition::CC_LT, &Fallback);
+  cmp(ARMEmitter::Size::i64Bit, TMP1, 1023);
+  (void)b(ARMEmitter::Condition::CC_GT, &Fallback);
+
+  // 2^n, then result = src1 * 2^n.
+  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1023);
+  lsl(ARMEmitter::Size::i64Bit, TMP1, TMP1, 52);
+  fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP1);
+  fmul(VTMP1.D(), VTMP1.D(), VTMP2.D());
+
+  // restore nzcv
+  ldr(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+  msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+
+  ret();
+
+  // Fallback path.
+  (void)Bind(&Fallback);
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64SCALE].ABIHandler));
+  ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64SCALE].Func));
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  ret();
+}
+
+void Dispatcher::EmitF64F2XM1() {
+  // JIT-inlined double-precision 2^x - 1 for x in [-1, 1].
+  // Uses argument reduction: split x into n = round(x) and r = x - n,
+  // then compute 2^x - 1 = 2^n * (2^r - 1) + (2^n - 1).
+  // 2^r - 1 is approximated via a 13-term Horner polynomial in r.
+  // Input in VTMP1.D(), output in VTMP1.D().
+  F64F2XM1HandlerAddress = GetCursorAddress<uint64_t>();
+
+  constexpr auto Accum = ARMEmitter::VReg::v2;
+
+  ARMEmitter::ForwardLabel Fallback;
+  ARMEmitter::ForwardLabel OneLabel;
+  ARMEmitter::ForwardLabel C1Label, C2Label, C3Label, C4Label, C5Label, C6Label;
+  ARMEmitter::ForwardLabel C7Label, C8Label, C9Label, C10Label, C11Label, C12Label, C13Label;
+
+  // Save q2.
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::QReg::q2, ARMEmitter::Reg::rsp, -16);
+
+  // save nzcv
+  mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+  str(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+
+  // Range check: |x| > 1.0 -> fallback.
+  fabs(VTMP2.D(), VTMP1.D());
+  ldr(Accum.D(), &OneLabel);
+  fcmp(VTMP2.D(), Accum.D());
+  (void)b(ARMEmitter::Condition::CC_HI, &Fallback);
+
+  // Argument reduction: n = round(x), r = x - n.
+  frinta(VTMP2.D(), VTMP1.D());
+  fcvtzs(ARMEmitter::Size::i64Bit, TMP1, VTMP2.D());
+  fsub(Accum.D(), VTMP1.D(), VTMP2.D());
+
+  // scale = 2^n, scale_m1 = 2^n - 1.
+  // TMP1 = scale bits, TMP3 = scale_m1 bits, Accum = r.
+  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1023);
+  lsl(ARMEmitter::Size::i64Bit, TMP1, TMP1, 52);
+  fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP1);
+  ldr(VTMP1.D(), &OneLabel);
+  fsub(VTMP1.D(), VTMP2.D(), VTMP1.D());
+  fmov(ARMEmitter::Size::i64Bit, TMP3, VTMP1.D());
+
+  // Horner polynomial: p = c1 + r * (c2 + r * (... + r * c13)).
+  ldr(VTMP1.D(), &C13Label);
+  ldr(VTMP2.D(), &C12Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C11Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C10Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C9Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C8Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C7Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C6Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C5Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C4Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C3Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C2Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C1Label);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+
+  // q = r * p, then result = scale * q + scale_m1.
+  fmul(VTMP1.D(), Accum.D(), VTMP1.D());
+  fmov(ARMEmitter::Size::i64Bit, Accum.D(), TMP1);
+  fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP3);
+  fmadd(VTMP1.D(), Accum.D(), VTMP1.D(), VTMP2.D());
+
+  // restore nzcv
+  ldr(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+  msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+
+  // Restore q2 and return.
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::QReg::q2, ARMEmitter::Reg::rsp, 16);
+  ret();
+
+  // Fallback path.
+  (void)Bind(&Fallback);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::QReg::q2, ARMEmitter::Reg::rsp, 16);
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64F2XM1].ABIHandler));
+  ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64F2XM1].Func));
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  ret();
+
+  // Constant pool
+  Align(16);
+  (void)Bind(&OneLabel);
+  dc64(0x3FF0'0000'0000'0000ULL); // 1.0
+  (void)Bind(&C1Label);
+  dc64(0x3FE6'2E42'FEFA'39EFULL); // ln(2)
+  (void)Bind(&C2Label);
+  dc64(0x3FCE'BFBD'FF82'C58EULL);
+  (void)Bind(&C3Label);
+  dc64(0x3FAC'6B08'D704'A0BEULL);
+  (void)Bind(&C4Label);
+  dc64(0x3F83'B2AB'6FBA'4E76ULL);
+  (void)Bind(&C5Label);
+  dc64(0x3F55'D87F'E78A'672FULL);
+  (void)Bind(&C6Label);
+  dc64(0x3F24'3091'2F86'C785ULL);
+  (void)Bind(&C7Label);
+  dc64(0x3EEF'FCBF'C588'B0C2ULL);
+  (void)Bind(&C8Label);
+  dc64(0x3EB6'2C02'23A5'C821ULL);
+  (void)Bind(&C9Label);
+  dc64(0x3E7B'5253'D395'E7C0ULL);
+  (void)Bind(&C10Label);
+  dc64(0x3E3E'4CF5'158B'8EC5ULL);
+  (void)Bind(&C11Label);
+  dc64(0x3DFE'8CAC'7351'BB20ULL);
+  (void)Bind(&C12Label);
+  dc64(0x3DBC'3BD6'50FC'2981ULL);
+  (void)Bind(&C13Label);
+  dc64(0x3D78'1619'3166'D0F5ULL);
+}
+
 uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
   auto Address = GetCursorAddress<uint64_t>();
   constexpr static auto FallbackPointerReg = TMP4;
@@ -1693,6 +1868,8 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     Ptrs.F64SinHandler = F64SinHandlerAddress;
     Ptrs.F64CosHandler = F64CosHandlerAddress;
     Ptrs.F64TanHandler = F64TanHandlerAddress;
+    Ptrs.F64F2XM1Handler = F64F2XM1HandlerAddress;
+    Ptrs.F64ScaleHandler = F64ScaleHandlerAddress;
 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Ptrs.FallbackHandlerPointers, &ABIPointers[0]);

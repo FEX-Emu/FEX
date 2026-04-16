@@ -4651,4 +4651,33 @@ DEF_OP(F64TAN) {
 }
 
 
+DEF_OP(F64SCALE) {
+  const auto Op = IROp->C<IR::IROp_F64SCALE>();
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+  const auto Dst = GetVReg(Node);
+
+  fmov(VTMP1.D(), Src1.D());
+  fmov(VTMP2.D(), Src2.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64ScaleHandler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
+
+DEF_OP(F64F2XM1) {
+  const auto Op = IROp->C<IR::IROp_F64F2XM1>();
+  const auto Src = GetVReg(Op->Src);
+  const auto Dst = GetVReg(Node);
+
+  fmov(VTMP1.D(), Src.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64F2XM1Handler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
+
+
 } // namespace FEXCore::CPU

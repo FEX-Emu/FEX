@@ -379,6 +379,8 @@ struct JITPointers {
   uint64_t F64SinHandler {};
   uint64_t F64CosHandler {};
   uint64_t F64TanHandler {};
+  uint64_t F64F2XM1Handler {};
+  uint64_t F64ScaleHandler {};
   /**  @} */
 
   // Copy of process-wide named vector constants data.
