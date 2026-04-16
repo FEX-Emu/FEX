@@ -303,7 +303,7 @@ public:
     StartNewBlock();
   }
 
-  OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx);
+  OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread);
 
   // Should only be called at the start of IR Emission.
   void ResetWorkingList();
@@ -1376,6 +1376,7 @@ private:
   };
 
   FEXCore::Context::ContextImpl* CTX {};
+  FEXCore::Core::InternalThreadState* Thread;
 
   constexpr static unsigned FullNZCVMask = (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC) |
                                            (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC);
@@ -1591,6 +1592,7 @@ private:
   }
 
   AddressMode DecodeAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, MemoryAccessType AccessType, bool IsLoad);
+  uint64_t CalcAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, bool IsLoad);
 
   Ref LoadSource(RegClass Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                  const LoadSourceOptions& Options = {});
