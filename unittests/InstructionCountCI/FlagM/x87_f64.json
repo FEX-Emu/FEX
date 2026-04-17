@@ -2142,7 +2142,7 @@
       ]
     },
     "f2xm1": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xd9 11b 0xf0 /6"
       ],
@@ -2150,10 +2150,9 @@
         "ldrb w20, [x28, #1051]",
         "add x20, x28, x20, lsl #4",
         "ldr d2, [x20, #1056]",
-        "str x30, [sp, #-16]!",
         "fmov d0, d2",
-        "ldr x0, [x28, #2248]",
-        "ldr x3, [x28, #2256]",
+        "ldr x0, [x28, #3008]",
+        "str x30, [sp, #-16]!",
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
@@ -2444,7 +2443,7 @@
       ]
     },
     "fscale": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd9 11b 0xfd /7"
       ],
@@ -2456,11 +2455,10 @@
         "ldr d2, [x21, #1056]",
         "add x20, x28, x20, lsl #4",
         "ldr d3, [x20, #1056]",
-        "str x30, [sp, #-16]!",
         "fmov d0, d3",
         "fmov d1, d2",
-        "ldr x0, [x28, #2312]",
-        "ldr x3, [x28, #2320]",
+        "ldr x0, [x28, #3016]",
+        "str x30, [sp, #-16]!",
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
