@@ -3,11 +3,8 @@
 
 #pragma once
 
+#include <ntstatus.h>
 #include <winternl.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef UINT64 unixlib_handle_t;
 
@@ -15,10 +12,20 @@ extern NTSTATUS(WINAPI* __wine_set_unix_env)(const char*, const char*);
 
 extern NTSTATUS(WINAPI* __wine_unix_call_dispatcher)(unixlib_handle_t, unsigned int, void*);
 
-static inline NTSTATUS __wine_unix_call(unixlib_handle_t handle, unsigned int code, void* args) {
-  return __wine_unix_call_dispatcher(handle, code, args);
-}
+namespace FEX::Windows::Unixlib {
+using CallDispatcher = NTSTATUS(WINAPI*)(unixlib_handle_t, unsigned int, void*);
 
-#ifdef __cplusplus
+inline unixlib_handle_t* Handle;
+inline CallDispatcher Dispatcher;
+
+void Init(HMODULE NtDll);
+
+inline NTSTATUS Call(unsigned int code, void* args) {
+  if (!Dispatcher) {
+    return STATUS_NOT_SUPPORTED;
+  }
+  return Dispatcher(*Handle, code, args);
 }
-#endif
+} // namespace FEX::Windows::Unixlib
+
+#define WINE_UNIX_CALL(code, args) FEX::Windows::Unixlib::Call((code), (args))
