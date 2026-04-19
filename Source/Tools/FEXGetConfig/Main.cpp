@@ -100,35 +100,35 @@ TSOEmulationFacts GetTSOEmulationFacts() {
 namespace SIGBUSTest {
 static bool* FaultArray {};
 
-__attribute__((naked)) void atomic_store_u16(std::byte* Data, uint16_t Value) {
+__attribute__((naked)) void atomic_load_u16(std::byte* Data) {
   asm volatile(R"(
-    stlrh w1, [x0];
+    ldarh w1, [x0];
     ret;
     )" ::
-                 : "memory");
+                 : "x1", "memory");
 }
 
-__attribute__((naked)) void atomic_store_u32(std::byte* Data, uint32_t Value) {
+__attribute__((naked)) void atomic_load_u32(std::byte* Data) {
   asm volatile(R"(
-    stlr w1, [x0];
+    ldar w1, [x0];
     ret;
     )" ::
-                 : "memory");
+                 : "x1", "memory");
 }
 
-__attribute__((naked)) void atomic_store_u64(std::byte* Data, uint64_t Value) {
+__attribute__((naked)) void atomic_load_u64(std::byte* Data) {
   asm volatile(R"(
-    stlr x1, [x0];
+    ldar x1, [x0];
     ret;
     )" ::
-                 : "memory");
+                 : "x1", "memory");
 }
-__attribute__((naked)) void atomic_store_u128(std::byte* Data, uint64_t Value) {
+__attribute__((naked)) void atomic_load_u128(std::byte* Data) {
   asm volatile(R"(
-    stlxp w3, x1, x1, [x0];
+    ldaxp x1, x2, [x0];
     ret;
     )" ::
-                 : "memory");
+                 : "x1", "x2", "x3", "memory");
 }
 
 static void HandleSIGBUS(int, siginfo_t* info, void* context) {
@@ -150,7 +150,7 @@ void TestSIGBUS() {
   auto test_fault = [](bool* FaultOffsets, auto AccessFunction, std::byte* AccessArray) {
     FaultArray = FaultOffsets;
     for (size_t i = 0; i < 64; ++i) {
-      AccessFunction(AccessArray + i, 1);
+      AccessFunction(AccessArray + i);
     }
   };
 
@@ -176,10 +176,10 @@ void TestSIGBUS() {
   bool FaultOffset_64bit[64] {};
   bool FaultOffset_128bit[64] {};
 
-  test_fault(FaultOffset_16bit, atomic_store_u16, ptr);
-  test_fault(FaultOffset_32bit, atomic_store_u32, ptr);
-  test_fault(FaultOffset_64bit, atomic_store_u64, ptr);
-  test_fault(FaultOffset_128bit, atomic_store_u128, ptr);
+  test_fault(FaultOffset_16bit, atomic_load_u16, ptr);
+  test_fault(FaultOffset_32bit, atomic_load_u32, ptr);
+  test_fault(FaultOffset_64bit, atomic_load_u64, ptr);
+  test_fault(FaultOffset_128bit, atomic_load_u128, ptr);
 
   munmap(ptr, 4096);
   sigaction(SIGBUS, &act, nullptr);
