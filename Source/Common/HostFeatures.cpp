@@ -539,6 +539,7 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
 
   constexpr uint32_t Implementer_QCOM = 0x51;
   constexpr uint32_t PartNum_Oryon1 = 0x001;
+  constexpr uint32_t PartNum_Oryon3 = 0x002;
 
   auto GetMIDRImplementer = [](uint32_t MIDR) -> uint32_t {
     return (MIDR >> 24) & 0xFF;
@@ -592,6 +593,31 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
       break;
     }
   }
+
+  // Not necessarily an erratum but non-standard behaviour.
+  // FEAT_LSE2 specifically states:
+  // `If FEAT_LSE2 is implemented, Load-Acquire/Store-Release instructions without exclusive or atomic behavior
+  // generate an Alignment fault if all of the following apply:`
+  // - Not all bytes of the memory access lie within a 16-byte quantity aligned to 16 bytes.
+  // - The value of SCTLR_ELx.nAA applicable to the current Exception level is 0.
+  // Additionally states:
+  // `The address accessed by the 128-bit atomic instructions must be aligned to 128-bits, otherwise the instructions generate an Alignment fault.`
+  // With additional requirements stated:
+  // `The following instructions generate an Alignment fault if all bytes being accessed are not within a single 16-byte quantity, aligned to 16 bytes for access:`
+  // - LDAPR, LDAPRH, LDAPUR, LDAPURH, LDAPURSH, LDAPURSW, LDAR, LDARH, LDLAR, LDLARH.
+  // - STLLR, STLLRH, STLR, STLRH, STLUR, and STLURH.
+  //
+  // Qualcomm Oryon-3 supports cross-16B granule atomic 128-bit RMW operations.
+  // Instructions that support cross-16B atomics:
+  // - LDAXP/STLXP
+  // - LSE: CAS, CASP, LD{ADD,CLR,EOR,SET,SMAX,SMIN,UMAX,UMIN}, SWP
+  // Specifically instructions that /aren't/ affected by this:
+  // - All LRCPC1/2/3/4 instructions
+  //
+  // This means this feature only helps correctness of `LOCK` instructions that cross 16B granules.
+  // It does nothing to improve performance of "regular" LRCPC loads and stores.
+  // The only way to detect this feature is to detect Oryon-3
+  HostFeatures->SupportsUnalignedAtomicRMWIn64BGranule = MIDR_Implementer == Implementer_QCOM && MIDR_PartNum == PartNum_Oryon3;
 }
 
 void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFeatures, bool SupportsCacheMaintenanceOps, uint64_t CTR,
