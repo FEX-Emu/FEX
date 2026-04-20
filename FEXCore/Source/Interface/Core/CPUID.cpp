@@ -92,6 +92,7 @@ namespace ProductNames {
   static const char ARM_AppleSilicon[] = "Apple Silicon";
 
   static const char ARM_ORYON_1[] = "Oryon-1";
+  static const char ARM_ORYON_3[] = "Oryon-3";
   static const char ARM_Ampere_1[] = "AmpereOne";
   static const char ARM_Ampere_1A[] = "AmpereOneA";
   static const char ARM_Ampere_1B[] = "AmpereOneB";
@@ -186,8 +187,9 @@ void CPUIDEmu::SetupHostHybridFlag() {
   // CPU priority order
   // This is mostly arbitrary but will sort by some sort of CPU priority by performance
   // Relative list so things they will commonly end up in big.little configurations sort of relate
-  static constexpr std::array<CPUMIDR, 67> CPUMIDRs = {{
+  static constexpr std::array<CPUMIDR, 68> CPUMIDRs = {{
     // Typically big CPU cores
+    {0x51, 0x002, 1, ProductNames::ARM_ORYON_3}, // Qualcomm Oryon-3
     {0x51, 0x001, 1, ProductNames::ARM_ORYON_1}, // Qualcomm Oryon-1
 
     {0x61, 0x039, 1, ProductNames::ARM_Avalanche_M2Max}, // Apple Avalanche (M2 Max)

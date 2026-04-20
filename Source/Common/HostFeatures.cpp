@@ -539,6 +539,7 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
 
   constexpr uint32_t Implementer_QCOM = 0x51;
   constexpr uint32_t PartNum_Oryon1 = 0x001;
+  constexpr uint32_t PartNum_Oryon3 = 0x002;
 
   auto GetMIDRImplementer = [](uint32_t MIDR) -> uint32_t {
     return (MIDR >> 24) & 0xFF;
@@ -552,7 +553,7 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
   const uint32_t MIDR_PartNum = GetMIDRPartNum(MIDR);
 
 #ifdef ARCHITECTURE_arm64
-  if (MIDR_Implementer == Implementer_QCOM && MIDR_PartNum == PartNum_Oryon1) {
+  if (MIDR_Implementer == Implementer_QCOM && (MIDR_PartNum == PartNum_Oryon1 || MIDR_PartNum == PartNum_Oryon3)) {
     // Work around an errata in Qualcomm's Oryon.
     // While this CPU implements the RAND extension:
     // - The RNDR register works.

@@ -11,3 +11,4 @@ install(TARGETS FEXGetConfig RUNTIME
 target_link_libraries(FEXGetConfig PRIVATE ${LIBS})
 
 target_include_directories(FEXGetConfig PRIVATE ${CMAKE_BINARY_DIR}/generated)
+target_compile_options(FEXGetConfig PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
