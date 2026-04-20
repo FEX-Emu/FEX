@@ -26,24 +26,25 @@ fextl::string GenerateSteamConfigTemplate(const FEX::Config::PortableInformation
     return {};
   }
 
-  // Try and find a mount point.
   fextl::string MountPoint {};
+
+  // If the graphics provider was provided through an environment variable, then use that.
+  // Otherwise, try to find a mount point.
+  const char* GraphicsProvider = getenv("STEAM_COMPAT_GRAPHICS_PROVIDER");
   const char* RuntimeDir = getenv("XDG_RUNTIME_DIR");
-  if (RuntimeDir) {
+  const char* CacheDir = getenv("XDG_CACHE_HOME");
+  const auto UserDirectory = fextl::fmt::format("/run/user/{}", geteuid());
+  if (GraphicsProvider) {
+    MountPoint = GraphicsProvider;
+  } else if (RuntimeDir) {
     MountPoint = fextl::fmt::format("{}/fexrootfs/", RuntimeDir);
+  } else if (FHU::Filesystem::Exists(UserDirectory)) {
+    MountPoint = fextl::fmt::format("{}/fexrootfs/", UserDirectory);
+  } else if (CacheDir) {
+    MountPoint = fextl::fmt::format("{}/fexrootfs/", CacheDir);
   } else {
-    const auto UserDirectory = fextl::fmt::format("/run/user/{}", geteuid());
-    if (FHU::Filesystem::Exists(UserDirectory)) {
-      MountPoint = fextl::fmt::format("{}/fexrootfs/", UserDirectory);
-    } else {
-      const char* CacheDir = getenv("XDG_CACHE_HOME");
-      if (CacheDir) {
-        MountPoint = fextl::fmt::format("{}/fexrootfs/", CacheDir);
-      } else {
-        // We tried really hard to find a mount path.
-        MountPoint = "~/.cache/fexrootfs/";
-      }
-    }
+    // We tried really hard to find a mount path.
+    MountPoint = "~/.cache/fexrootfs/";
   }
 
   // Update the @FEX_COMPAT_TOOL@ config to point to the root of the depot.
