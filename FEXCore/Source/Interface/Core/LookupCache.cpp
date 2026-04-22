@@ -87,8 +87,11 @@ void LookupCache::ClearL2Cache(const FEXCore::LookupCacheBaseLockToken& lk) {
 }
 
 void LookupCache::ClearThreadLocalCaches(const LookupCacheWriteLockToken&) {
+  // TODO: Preserve code cache entries?
   // Clear L1 and L2 by clearing the full cache.
   FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), TotalCacheSize, false);
+
+  // TODO: Rename this member to avoid confusion with code caching
   CachedCodePages.clear();
 }
 
