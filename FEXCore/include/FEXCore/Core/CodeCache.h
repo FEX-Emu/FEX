@@ -8,6 +8,7 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXCore/fextl/robin_map.h>
+#include <FEXCore/Utils/TypeDefines.h>
 
 #include <atomic>
 #include <cstdint>
@@ -178,7 +179,54 @@ private:
   CodeMapOpener& FileOpener;
 };
 
+class AbstractCodeCache;
+
+/**
+ * Manages runtime state associated with a mapped code cache file.
+ *
+ * The mapped file pointer is managed by the frontend and must be valid
+ * throughout the lifetime of this object.
+ */
+struct MappedCodeCacheFile {
+  // Calls UnregisterMappedCodeBuffer internally, see its docstring about synchronization requirements
+  ~MappedCodeCacheFile();
+
+  // If not nullptr, the MappedCodeCacheFile will be unregistered from this on destruction
+  AbstractCodeCache* CacheManager;
+
+  std::span<std::byte> MappedFile; // Mapped data of the whole cache file
+  std::span<std::byte> CodeBuffer; // Subspan of cached ARM64 data within MappedFile
+  std::byte* BlockListInFile;      // Pointer to BlockListEntry data within MappedFile
+  uint32_t NumBlocks;              // Number of BlockListEntry objects
+  uint32_t NumCodePages;           // Number of code page entrypoint mappings
+
+  struct PageRelocationRange {
+    uint32_t Offset; // In bytes from start of file
+    uint32_t Length; // Number of relocations
+  };
+
+  // List of relocation ranges in the mapped cache file, grouped by the code page they apply to.
+  // This vector is indexed by the relative page offset from the start of the ARM64 code data.
+  //
+  // For example PageRelocationRanges[1] == { 0x100, 0x20 } means:
+  // - there are 0x20 bytes of relocation data at offset 0x100 in the cache file
+  // - these 0x20 bytes of relocation data will patch data at CodeBuffer[0x1000..0x2000]
+  fextl::vector<PageRelocationRange> PageRelocationRanges;
+  fextl::vector<bool> LoadedPages;
+
+  uint64_t GuestBase {}; // Guest base address for relocation application
+
+  // Helper member to prevent moving/copying without disallowing aggregate-construction
+  std::atomic<int> disallow_copy_or_move;
+
+  size_t NumPages() const {
+    return CodeBuffer.size_bytes() / FEXCore::Utils::FEX_PAGE_SIZE;
+  }
+};
+
 class AbstractCodeCache {
+  fextl::vector<std::span<std::byte>> MappedCodeBuffers;
+
 public:
   virtual ~AbstractCodeCache() = default;
 
@@ -191,13 +239,6 @@ public:
   virtual uint64_t ComputeCodeMapId(std::string_view Filename, int FD) = 0;
 
   /**
-   * Loads a code cache from mapped memory and appends it to the current Core state.
-   * TODO: Optionally recompiles all contained code blocks at runtime for validation.
-   * Returns false if the provided cache file is invalid, and true otherwise.
-   */
-  virtual bool LoadData(Core::InternalThreadState*, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) = 0;
-
-  /**
    * Bundles the current Core state (CodeBuffer, GuestToHostMapping, ...) to a code cache and writes it to the given file descriptor.
    * Returns true on success.
    */
@@ -207,6 +248,42 @@ public:
    * Function to be called before compiling any code for caching purposes
    */
   virtual void InitiateCacheGeneration() = 0;
+
+  /**
+   * Loads a code cache from mapped memory.
+   *
+   * Code sections must be enabled in a second step (see EnableLoadedSection).
+   * Afterwards, individual code pages must be finalized using FinalizeCodePages.
+   *
+   * On success, this returns a MappedCodeCacheFile that must be kept alive
+   * as long the cache is in use.
+   */
+  virtual fextl::unique_ptr<MappedCodeCacheFile> LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo&, uint64_t FileStartVA) = 0;
+
+  /**
+   * Registers cached blocks for the given file section to the LookupCache.
+   *
+   * Also runs extended cache validation if enabled.
+   */
+  virtual bool EnableLoadedSection(Core::InternalThreadState*, MappedCodeCacheFile&, const ExecutableFileSectionInfo&) = 0;
+
+  /**
+   * Extend the given code range so that it can be safely finalized.
+   *
+   * This is required for example to avoid dangling page-crossing FEX relocations on the edges
+   *
+   * StartPage and EndPage a 0-based relative page offsets into the cached code.
+   */
+  static std::span<std::byte> SelectCodeRangeToFinalize(MappedCodeCacheFile&, size_t StartPage, size_t EndPage);
+
+  /**
+   * Finalize code pages in the given range (see SelectCodePagesToFinalize) for execution.
+   */
+  virtual void FinalizeCodePages(MappedCodeCacheFile&, std::span<std::byte> CodeRange) = 0;
+
+  void RegisterMappedCodeBuffer(MappedCodeCacheFile&);
+  void UnregisterMappedCodeBuffer(MappedCodeCacheFile&);
+  bool IsAddressInMappedCodeBuffer(uintptr_t Address) const;
 };
 
 } // namespace FEXCore
