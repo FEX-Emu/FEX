@@ -265,7 +265,7 @@ public:
     if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
       TM.InvalidateGuestCodeRange(Thread, Base, Length);
     }
-    if (CheckPendingVMAResources) {
+    if (CheckPendingVMAResources && Thread) {
       auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
       VMATracking.FlushPendingResourceDeletions();
     }
@@ -363,6 +363,9 @@ private:
 
   std::mutex FutexMutex;
   std::mutex SyscallMutex;
+  // std::mutex CodeCachePatchingMutex;
+  FEXCore::ForkableUniqueMutex CodeCachePatchingMutex;
+
   FEX::CodeLoader* LocalLoader {};
   bool NeedToCheckXID {true};
 
