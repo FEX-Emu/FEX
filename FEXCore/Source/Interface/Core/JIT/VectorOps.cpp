@@ -4650,6 +4650,37 @@ DEF_OP(F64TAN) {
   fmov(Dst.D(), VTMP1.D());
 }
 
+// Src1=y(ST1), Src2=x(ST0). Marshal into VTMP1/VTMP2 and dispatch the shared handler.
+DEF_OP(F64ATAN) {
+  const auto Op = IROp->C<IR::IROp_F64ATAN>();
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+  const auto Dst = GetVReg(Node);
+
+  fmov(VTMP1.D(), Src1.D());
+  fmov(VTMP2.D(), Src2.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64AtanHandler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
+
+// Src=x(ST0), Src2=y(ST1). Marshal into VTMP1/VTMP2 and dispatch the shared handler.
+DEF_OP(F64FYL2X) {
+  const auto Op = IROp->C<IR::IROp_F64FYL2X>();
+  const auto Src = GetVReg(Op->Src);
+  const auto Src2 = GetVReg(Op->Src2);
+  const auto Dst = GetVReg(Node);
+
+  fmov(VTMP1.D(), Src.D());
+  fmov(VTMP2.D(), Src2.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64FYL2XHandler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
 
 DEF_OP(F64SCALE) {
   const auto Op = IROp->C<IR::IROp_F64SCALE>();
