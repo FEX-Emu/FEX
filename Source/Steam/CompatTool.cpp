@@ -35,7 +35,7 @@ fextl::string GenerateSteamConfigTemplate(const FEX::Config::PortableInformation
   const char* CacheDir = getenv("XDG_CACHE_HOME");
   const auto UserDirectory = fextl::fmt::format("/run/user/{}", geteuid());
   if (GraphicsProvider) {
-    MountPoint = GraphicsProvider;
+    MountPoint = FHU::Filesystem::ParentPath(GraphicsProvider);
   } else if (RuntimeDir) {
     MountPoint = fextl::fmt::format("{}/fexrootfs/", RuntimeDir);
   } else if (FHU::Filesystem::Exists(UserDirectory)) {
