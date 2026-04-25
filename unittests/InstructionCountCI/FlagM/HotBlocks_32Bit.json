@@ -126,7 +126,7 @@
         "mrs x0, nzcv",
         "cmp w22, w4",
         "ccmp w23, w5, #nzcv, eq",
-        "rmif x0, #0, #NzCV",
+        "rmif x0, #28, #NzCV",
         "csel x4, x22, x4, ne",
         "csel x5, x23, x5, ne",
         "cfinv"

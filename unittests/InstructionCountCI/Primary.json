@@ -1826,14 +1826,6 @@
         "strh w20, [x8, #-2]!"
       ]
     },
-    "push dword -1": {
-      "ExpectedInstructionCount": 2,
-      "Comment": "0x6a",
-      "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "str x20, [x8, #-8]!"
-      ]
-    },
     "push qword -1": {
       "ExpectedInstructionCount": 2,
       "Comment": "0x6a",

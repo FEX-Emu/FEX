@@ -274,7 +274,7 @@ DEF_OP(CmpPairZ) {
 
   // Restore NzCV
   if (CTX->HostFeatures.SupportsFlagM) {
-    rmif(TMP1, 0, 0xb /* NzCV */);
+    rmif(TMP1, 28, 0xb /* NzCV */);
   } else {
     cset(ARMEmitter::Size::i32Bit, TMP2, ARMEmitter::Condition::CC_EQ);
     bfi(ARMEmitter::Size::i32Bit, TMP1, TMP2, 30 /* lsb: Z */, 1);

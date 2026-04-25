@@ -377,7 +377,7 @@
         "mrs x0, nzcv",
         "cmp w20, w4",
         "ccmp w21, w5, #nzcv, eq",
-        "rmif x0, #0, #NzCV",
+        "rmif x0, #28, #NzCV",
         "csel x4, x20, x4, ne",
         "csel x5, x21, x5, ne",
         "subs x26, x4, #0x0 (0)"
