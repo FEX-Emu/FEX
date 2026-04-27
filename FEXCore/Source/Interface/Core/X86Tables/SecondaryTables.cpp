@@ -31,19 +31,19 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Secondary_ArchSelect_LUT = {{
   },
   {
     {"PUSH FS", TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX> } },
-    {"PUSH FS", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX> } },
+    {"PUSH FS", TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX> } },
   },
   {
     {"POP FS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX> } },
-    {"POP FS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX> } },
+    {"POP FS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX> } },
   },
   {
     {"PUSH GS", TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX> } },
-    {"PUSH GS", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX> } },
+    {"PUSH GS", TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX> } },
   },
   {
     {"POP GS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX> } },
-    {"POP GS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX> } },
+    {"POP GS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX> } },
   },
 }};
 
