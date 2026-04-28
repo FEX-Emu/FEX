@@ -30,15 +30,15 @@ public:
       auto data_7 = cpuid(0x7);
       Feat_fsgsbase = data_7.ebx & (1U << 0);
       Feat_bmi1 = data_7.ebx & (1U << 3);
-      Feat_avx &= data_7.ebx & (1U << 5);
+      Feat_avx = Feat_avx && (data_7.ebx & (1U << 5));
       Feat_bmi2 = data_7.ebx & (1U << 8);
       Feat_clwb = data_7.ebx & (1U << 24);
-      Feat_rand &= data_7.ebx & (1U << 18);
+      Feat_rand = Feat_rand && (data_7.ebx & (1U << 18));
       Feat_adx = data_7.ebx & (1U << 19);
       Feat_clflopt = data_7.ebx & (1U << 23);
       Feat_sha = data_7.ebx & (1U << 29);
       Feat_vaes = data_7.ecx & (1U << 9);
-      Feat_pclmulqdq &= data_7.ecx & (1U << 10);
+      Feat_pclmulqdq = Feat_pclmulqdq && (data_7.ecx & (1U << 10));
       Feat_rdpid = data_7.ecx & (1U << 22);
     }
 
