@@ -106,12 +106,24 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   const auto Size = OpSizeFromSrc(Op);
 
   Ref data = _ReadStackValue(0);
-  if (Truncate) {
-    data = _Float_ToGPR_ZS(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+  bool CanUseFloatReg = Size == OpSize::i64Bit;
+  if (CanUseFloatReg) {
+    // If possible, it's faster to keep the data in an FPR than doing a GPR transfer.
+    if (Truncate) {
+      data = _Vector_FToZS(OpSize::i128Bit, OpSize::i64Bit, data);
+    } else {
+      data = _Vector_FToS(OpSize::i128Bit, OpSize::i64Bit, data);
+    }
+    StoreResultFPR_WithOpSize(Op, Op->Dest, data, OpSize::i64Bit, OpSize::i8Bit);
   } else {
-    data = _Float_ToGPR_S(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+    if (Truncate) {
+      data = _Float_ToGPR_ZS(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+    } else {
+      data = _Float_ToGPR_S(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+    }
+    StoreResultGPR_WithOpSize(Op, Op->Dest, data, Size, OpSize::i8Bit,
+                              CTX->IsVectorAtomicTSOEnabled() ? MemoryAccessType::DEFAULT : MemoryAccessType::NONTSO);
   }
-  StoreResultGPR_WithOpSize(Op, Op->Dest, data, Size, OpSize::i8Bit);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
