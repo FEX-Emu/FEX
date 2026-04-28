@@ -178,7 +178,8 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
 
   Data = _F80CVTInt(Size, Data, Truncate);
 
-  StoreResultGPR_WithOpSize(Op, Op->Dest, Data, Size, OpSize::i8Bit);
+  StoreResultGPR_WithOpSize(Op, Op->Dest, Data, Size, OpSize::i8Bit,
+                            CTX->IsVectorAtomicTSOEnabled() ? MemoryAccessType::DEFAULT : MemoryAccessType::NONTSO);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
