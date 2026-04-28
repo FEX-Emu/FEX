@@ -598,8 +598,9 @@ CodeCache::LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo& F
     RelocIt = EndRelocIt;
   }
 
-  return fextl::make_unique<MappedCodeCacheFile>(this, CacheFile, CodeDataInFile, BlockListStart, header.NumBlocks, header.NumCodePages,
-                                                 std::move(PageRelocationRanges), fextl::vector<bool>(NumPages), FileStartVA);
+  return fextl::unique_ptr<MappedCodeCacheFile>(
+    new MappedCodeCacheFile {this, CacheFile, CodeDataInFile, BlockListStart, header.NumBlocks, header.NumCodePages,
+                             std::move(PageRelocationRanges), fextl::vector<bool>(NumPages), FileStartVA});
 }
 
 bool CodeCache::EnableLoadedSection(Core::InternalThreadState* Thread, MappedCodeCacheFile& Code, const ExecutableFileSectionInfo& BinarySection) {
