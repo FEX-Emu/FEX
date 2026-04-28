@@ -1,4 +1,9 @@
 // SPDX-License-Identifier: MIT
+#include "FEXCore/Utils/LogManager.h"
+#include "FEXCore/Utils/MathUtils.h"
+#include "FEXCore/Utils/TypeDefines.h"
+#include "FEXCore/fextl/memory.h"
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/SpinWaitLock.h>
 
 #include <Interface/Context/Context.h>
@@ -16,9 +21,13 @@
 
 #include <FEXHeaderUtils/Filesystem.h>
 
+#include <algorithm>
 #include <git_version.h>
 
+#include <span>
 #include <xxhash.h>
+
+#include <FEXCore/Utils/AllocatorHooks.h>
 
 #include <fstream>
 
@@ -31,6 +40,32 @@ ExecutableFileInfo::ExecutableFileInfo(fextl::unique_ptr<HLE::SourcecodeMap> Map
   , Filename(Filename) {}
 #endif
 ExecutableFileInfo::~ExecutableFileInfo() = default;
+
+MappedCodeCacheFile::~MappedCodeCacheFile() {
+  if (CacheManager) {
+    CacheManager->UnregisterMappedCodeBuffer(*this);
+  }
+}
+
+void AbstractCodeCache::RegisterMappedCodeBuffer(MappedCodeCacheFile& Code) {
+  MappedCodeBuffers.push_back(Code.CodeBuffer);
+  // Unregister on destruction of Code
+  Code.CacheManager = this;
+}
+
+void AbstractCodeCache::UnregisterMappedCodeBuffer(MappedCodeCacheFile& Code) {
+  std::erase_if(MappedCodeBuffers, [&](const auto& Elem) { return Elem.data() == Code.CodeBuffer.data(); });
+}
+
+bool AbstractCodeCache::IsAddressInMappedCodeBuffer(uintptr_t Address) const {
+  for (const auto& Range : MappedCodeBuffers) {
+    auto Start = reinterpret_cast<uintptr_t>(Range.data());
+    if (Address >= Start && Address < Start + Range.size_bytes()) {
+      return true;
+    }
+  }
+  return false;
+}
 
 fextl::string CodeMap::GetBaseFilename(const ExecutableFileInfo& MainExecutable, bool AddNombSuffix) {
   auto FileId = MainExecutable.FileId;
@@ -233,7 +268,10 @@ uint64_t CodeCache::ComputeCodeMapId(std::string_view Filename, int FD) {
 
 struct CodeCacheHeader {
   std::array<char, 4> Magic = ExpectedMagic;
-  uint32_t FormatVersion = 1;
+  // Version history:
+  // 1: Initial version
+  // 2: Padding code buffer data to enable direct mapping
+  uint32_t FormatVersion = 2;
   uint8_t FEXVersion[20] = {};
   uint32_t NumBlocks;
   uint32_t NumCodePages;
@@ -260,7 +298,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   std::ranges::copy(GIT_HASH, header.FEXVersion);
   header.NumBlocks = LookupCache.BlockList.size();
   header.NumCodePages = LookupCache.CodePages.size();
-  header.CodeBufferSize = CTX.LatestOffset;
+  header.CodeBufferSize = FEXCore::AlignUp(CTX.LatestOffset, Utils::FEX_PAGE_SIZE);
   header.NumRelocations = Relocations.size();
   header.SerializedBaseAddress = SerializedBaseAddress;
   ::write(fd, &header, sizeof(header));
@@ -300,12 +338,10 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   ::write(fd, Relocations.data(), Relocations.size() * sizeof(Relocations[0]));
 
   // Pad to next page in file so that the CodeBuffer can be mmap'ed into process on load
-  char Zero[64] {};
-  auto Off = lseek(fd, 0, SEEK_CUR);
-  while (Off != AlignUp(Off, Utils::FEX_PAGE_SIZE)) {
-    auto BytesToWrite = std::min(AlignUp(Off, Utils::FEX_PAGE_SIZE) - Off, sizeof(Zero));
-    ::write(fd, Zero, BytesToWrite);
-    Off += BytesToWrite;
+  {
+    auto AlignedSize = AlignUp(lseek(fd, 0, SEEK_CUR), Utils::FEX_PAGE_SIZE);
+    ::ftruncate(fd, AlignedSize);
+    lseek(fd, AlignedSize, SEEK_SET);
   }
 
   // Dump the host code (relocated for position-independent serialization)
@@ -315,6 +351,12 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
     return false;
   }
   ::write(fd, CodeBufferData.data(), CodeBufferData.size());
+  // Pad to next page in file for mmap
+  {
+    auto PaddedSize = AlignUp(lseek(fd, 0, SEEK_CUR), Utils::FEX_PAGE_SIZE);
+    ::ftruncate(fd, PaddedSize);
+    lseek(fd, PaddedSize, SEEK_SET);
+  }
 
   // Dump code pages
   static_assert(OrderedContainer<decltype(LookupCache.CodePages)>, "Non-deterministic data source");
@@ -327,178 +369,6 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
       Entrypoint -= SourceBinary.FileStartVA;
       ::write(fd, &Entrypoint, sizeof(Entrypoint));
     }
-  }
-
-  return true;
-}
-
-bool CodeCache::LoadData(Core::InternalThreadState* Thread, std::byte* MappedCacheFile, const ExecutableFileSectionInfo& BinarySection) {
-  if (!EnableCodeCaching) {
-    return true;
-  }
-
-  namespace ranges = std::ranges;
-
-  // Read file header
-  CodeCacheHeader header {};
-  ::memcpy(&header, MappedCacheFile, sizeof(header));
-  MappedCacheFile += sizeof(header);
-
-  LogMan::Msg::IFmt("Cache load: {:5} blocks; base={:#14x}; off={:#9x}-{:#09x}; {:016x} {}", header.NumBlocks, BinarySection.FileStartVA,
-                    BinarySection.BeginVA - BinarySection.FileStartVA, BinarySection.EndVA - BinarySection.FileStartVA,
-                    BinarySection.FileInfo.FileId, BinarySection.FileInfo.Filename);
-
-  if (!ranges::equal(header.Magic, header.ExpectedMagic)) {
-    LogMan::Msg::EFmt("Invalid cache file header");
-    return false;
-  }
-
-  if (!ranges::equal(header.FEXVersion, GIT_HASH)) {
-    LogMan::Msg::IFmt("Cache generated from old FEX version {:02x}, current is {:02x}; skipping", fmt::join(header.FEXVersion, ""),
-                      fmt::join(GIT_HASH, ""));
-    return false;
-  }
-
-  if (header.NumBlocks == 0) {
-    // Valid caches are never empty
-    LogMan::Msg::IFmt("Code cache empty, aborting");
-    return false;
-  }
-
-  // Read guest<->host block mappings
-  using BlockListEntry = decltype(GuestToHostMap::BlockList)::value_type;
-  fextl::vector<BlockListEntry> BlockList(header.NumBlocks);
-  {
-    for (auto& BlockPtr : BlockList) {
-      ::memcpy(&BlockPtr.first, MappedCacheFile, sizeof(BlockPtr.first));
-      MappedCacheFile += sizeof(BlockPtr.first);
-      ::memcpy(&BlockPtr.second.HostCode, MappedCacheFile, sizeof(BlockPtr.second.HostCode));
-      MappedCacheFile += sizeof(BlockPtr.second.HostCode);
-      uint64_t NumGuestPages;
-      ::memcpy(&NumGuestPages, MappedCacheFile, sizeof(NumGuestPages));
-      MappedCacheFile += sizeof(NumGuestPages);
-
-      BlockPtr.second.CodePages.resize(NumGuestPages);
-      ::memcpy(BlockPtr.second.CodePages.data(), MappedCacheFile, std::span {BlockPtr.second.CodePages}.size_bytes());
-      MappedCacheFile += std::span {BlockPtr.second.CodePages}.size_bytes();
-    }
-
-    // Consistency check: VMA regions at the top and end should belong to the same file
-    auto [min_val, max_val] = ranges::minmax_element(BlockList, std::less {}, &decltype(BlockList)::value_type::first);
-    auto MinBound = CTX.SyscallHandler->LookupExecutableFileSection(Thread, min_val->first + BinarySection.FileStartVA);
-    auto MaxBound = CTX.SyscallHandler->LookupExecutableFileSection(Thread, max_val->first + BinarySection.FileStartVA);
-    if (&MinBound->FileInfo != &BinarySection.FileInfo || &MaxBound->FileInfo != &BinarySection.FileInfo) {
-      ERROR_AND_DIE_FMT("Cached blocks offsets {:#x}-{:#x} out of bounds for guest library {} ({:016x} @ {:#x}) while trying to load "
-                        "section {:#x}-{:#x}!",
-                        min_val->first, max_val->first, BinarySection.FileInfo.Filename, BinarySection.FileInfo.FileId,
-                        BinarySection.FileStartVA, BinarySection.BeginVA, BinarySection.EndVA);
-    }
-
-    // Constrain BlockList to the given ExecutableFileSectionInfo
-    LOGMAN_THROW_A_FMT(ranges::is_sorted(BlockList, [](auto& a, auto& b) { return a.first < b.first; }), "Expected sorted block list");
-    auto begin = ranges::lower_bound(BlockList, BinarySection.BeginVA - BinarySection.FileStartVA, std::less {}, &BlockListEntry::first);
-    auto end =
-      ranges::upper_bound(begin, BlockList.end(), BinarySection.EndVA - BinarySection.FileStartVA - 1, std::less {}, &BlockListEntry::first);
-    if (begin == end) {
-      // Not an error since there is just no data to load
-      LogMan::Msg::IFmt("No blocks cached in this range, aborting");
-      return true;
-    }
-    BlockList.erase(end, BlockList.end());
-    BlockList.erase(BlockList.begin(), begin);
-  }
-
-  // Read relocations
-  fextl::vector<FEXCore::CPU::Relocation> Relocations(header.NumRelocations, FEXCore::CPU::Relocation::Default());
-  ::memcpy(Relocations.data(), MappedCacheFile, Relocations.size() * sizeof(Relocations[0]));
-  MappedCacheFile += Relocations.size() * sizeof(Relocations[0]);
-
-  // Pad to next page in file, which contains CodeBuffer data
-  MappedCacheFile = reinterpret_cast<std::byte*>(AlignUp(reinterpret_cast<uintptr_t>(MappedCacheFile), Utils::FEX_PAGE_SIZE));
-
-  // Prepare CodeBuffer: Page aligned and big enough to hold all cached data
-  auto Lock = std::unique_lock {CTX.CodeBufferWriteMutex};
-  if (Thread) {
-    if (auto Prev = Thread->CPUBackend->CheckCodeBufferUpdate()) {
-      Allocator::VirtualDontNeed(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
-      auto lk = Thread->LookupCache->AcquireWriteLock();
-      Thread->LookupCache->ChangeGuestToHostMapping(*Prev, *CTX.GetLatest()->LookupCache, lk);
-    }
-  }
-
-  auto CodeBuffer = CTX.GetLatest();
-  LOGMAN_THROW_A_FMT(reinterpret_cast<uintptr_t>(CodeBuffer->Ptr) % 0x1000 == 0, "Expected CodeBuffer base to be page-aligned");
-  const auto Delta = AlignUp(CTX.LatestOffset, 0x1000) - CTX.LatestOffset;
-  CTX.LatestOffset += Delta;
-
-  while (CTX.LatestOffset + header.CodeBufferSize > CodeBuffer->UsableSize()) {
-    if (Thread) {
-      CTX.ClearCodeCache(Thread);
-      CodeBuffer = CTX.GetLatest();
-      LogMan::Msg::IFmt("Increased code buffer size to {} MiB for cache load", CodeBuffer->AllocatedSize / 1024 / 1024);
-    } else {
-      ERROR_AND_DIE_FMT("Cannot extend codebuffer without thread!");
-    }
-  }
-
-  // Read CodeBuffer data from file. Make sure the destination is page-aligned.
-  // TODO: Only load the data needed for the selected section
-  auto CodeBufferRange =
-    std::as_writable_bytes(std::span {CodeBuffer->Ptr, CodeBuffer->UsableSize()}).subspan(CTX.LatestOffset, header.CodeBufferSize);
-  ::memcpy(CodeBufferRange.data(), MappedCacheFile, header.CodeBufferSize);
-  MappedCacheFile += header.CodeBufferSize;
-  CTX.LatestOffset += header.CodeBufferSize;
-
-  // Apply FEX relocations
-  auto Ret = ApplyCodeRelocations(BinarySection.FileStartVA, CodeBufferRange, Relocations, false);
-  LOGMAN_THROW_A_FMT(Ret == true, "Failed to apply code cache relocations");
-
-  {
-    auto& LookupCache = *CodeBuffer->LookupCache;
-    auto WriteLock = LookupCache.AcquireWriteLock();
-
-    // Register blocks to LookupCache
-    for (auto& [Guest, Host] : BlockList) {
-      for (auto& CodePage : Host.CodePages) {
-        CodePage += BinarySection.FileStartVA;
-      }
-      auto HostCode = reinterpret_cast<void*>(Host.HostCode + reinterpret_cast<uintptr_t>(CodeBufferRange.data()));
-      LookupCache.AddBlockMapping(Guest + BinarySection.FileStartVA, std::move(Host.CodePages), HostCode, WriteLock);
-    }
-
-    // Register loaded code ranges
-    fextl::vector<uint64_t> Entrypoints;
-    for (uint32_t i = 0; i < header.NumCodePages; ++i) {
-      uint64_t CodePage;
-      memcpy(&CodePage, MappedCacheFile, sizeof(CodePage));
-      CodePage += BinarySection.FileStartVA;
-      MappedCacheFile += sizeof(CodePage);
-
-      uint64_t NumEntrypoints;
-      memcpy(&NumEntrypoints, MappedCacheFile, sizeof(NumEntrypoints));
-      MappedCacheFile += sizeof(NumEntrypoints);
-
-      Entrypoints.resize(NumEntrypoints);
-      memcpy(Entrypoints.data(), MappedCacheFile, NumEntrypoints * sizeof(Entrypoints[0]));
-      MappedCacheFile += NumEntrypoints * sizeof(Entrypoints[0]);
-      for (auto& Entrypoint : Entrypoints) {
-        Entrypoint += BinarySection.FileStartVA;
-      }
-
-      if (LookupCache.AddBlockExecutableRange(Entrypoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE, WriteLock)) {
-        CTX.SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
-      }
-    }
-  }
-
-  if (EnableCodeCacheValidation) {
-    fextl::set<uint64_t> GuestBlocks, HostBlocks;
-    for (auto& [Guest, Host] : BlockList) {
-      GuestBlocks.insert(Guest + BinarySection.FileStartVA);
-      HostBlocks.insert(Host.HostCode);
-    }
-
-    Validate(BinarySection, std::move(GuestBlocks), HostBlocks, CodeBufferRange);
   }
 
   return true;
@@ -616,7 +486,7 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   ValidationThread->LookupCache->ClearCache(ValidationThread->LookupCache->AcquireWriteLock());
   ValidationCTX->LatestOffset = 0;
 
-  LogMan::Msg::IFmt("\tSuccessfully validated cache");
+  LogMan::Msg::IFmt("            successfully validated cache");
 }
 
 bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
@@ -661,6 +531,289 @@ bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> C
   }
 
   return true;
+}
+
+fextl::unique_ptr<MappedCodeCacheFile>
+CodeCache::LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo& FileInfo, uint64_t FileStartVA) {
+  if (!EnableCodeCaching) {
+    return nullptr;
+  }
+
+  FEXCORE_PROFILE_SCOPED("LoadCache");
+
+  // Read file header
+  CodeCacheHeader header {};
+  ::memcpy(&header, CacheFile.data(), sizeof(header));
+
+  if (!std::ranges::equal(header.Magic, header.ExpectedMagic)) {
+    LogMan::Msg::EFmt("Invalid cache file header");
+    return nullptr;
+  }
+
+  if (!std::ranges::equal(header.FEXVersion, GIT_HASH)) {
+    LogMan::Msg::IFmt("Cache generated from old FEX version {:02x}, current is {:02x}; skipping", fmt::join(header.FEXVersion, ""),
+                      fmt::join(GIT_HASH, ""));
+    return nullptr;
+  }
+
+  if (header.NumBlocks == 0) {
+    // Valid caches are never empty
+    LogMan::Msg::IFmt("Code cache empty, aborting");
+    return nullptr;
+  }
+
+  // Skip over BlockEntry data since it won't be used until EnableLoadedSection
+  // TODO: Store direct offset to relocations in the header
+  auto* BlockListStart = CacheFile.data() + sizeof(header);
+  auto* Cursor = BlockListStart;
+  for (uint32_t i = 0; i < header.NumBlocks; ++i) {
+    Cursor += sizeof(uint64_t); // guest address
+    Cursor += sizeof(uint64_t); // host code address
+    uint64_t NumGuestCodePages;
+    ::memcpy(&NumGuestCodePages, Cursor, sizeof(NumGuestCodePages));
+    Cursor += sizeof(NumGuestCodePages);
+    Cursor += NumGuestCodePages * sizeof(uint64_t);
+  }
+
+  auto Relocations = std::span {reinterpret_cast<const FEXCore::CPU::Relocation*>(Cursor), header.NumRelocations};
+  Cursor += Relocations.size_bytes();
+
+  // Pad to next page to get the code buffer data
+  Cursor = reinterpret_cast<std::byte*>(AlignUp(reinterpret_cast<uintptr_t>(Cursor), Utils::FEX_PAGE_SIZE));
+  auto CodeDataInFile = std::span {Cursor, header.CodeBufferSize};
+
+  // Make code data inaccessible until finalized
+  Allocator::VirtualProtect(CodeDataInFile.data(), header.CodeBufferSize, Allocator::ProtectOptions::None);
+
+  // Group relocations by page
+  size_t NumPages = header.CodeBufferSize / Utils::FEX_PAGE_SIZE;
+  fextl::vector<MappedCodeCacheFile::PageRelocationRange> PageRelocationRanges(NumPages, {0, 0});
+  auto RelocBaseOffset = std::as_bytes(Relocations).data() - CacheFile.data();
+  auto RelocIt = Relocations.begin();
+  for (size_t Page = 0; Page < NumPages; ++Page) {
+    auto EndRelocIt = std::upper_bound(RelocIt, Relocations.end(), Page,
+                                       [](auto& Page, auto& Reloc) { return Page < Reloc.Header.Offset / Utils::FEX_PAGE_SIZE; });
+    PageRelocationRanges.at(Page) = {static_cast<uint32_t>(RelocBaseOffset + (RelocIt - Relocations.begin()) * sizeof(CPU::Relocation)),
+                                     static_cast<uint32_t>(EndRelocIt - RelocIt)};
+    RelocIt = EndRelocIt;
+  }
+
+  return fextl::unique_ptr<MappedCodeCacheFile>(
+    new MappedCodeCacheFile {this, CacheFile, CodeDataInFile, BlockListStart, header.NumBlocks, header.NumCodePages,
+                             std::move(PageRelocationRanges), fextl::vector<bool>(NumPages), FileStartVA});
+}
+
+bool CodeCache::EnableLoadedSection(Core::InternalThreadState* Thread, MappedCodeCacheFile& Code, const ExecutableFileSectionInfo& BinarySection) {
+  if (!EnableCodeCaching) {
+    return true;
+  }
+
+  namespace ranges = std::ranges;
+
+  FEXCORE_PROFILE_SCOPED("EnableLoadedSection");
+
+  // Read block list from cache file
+  // TODO: Store section-ized BlockLists in cache file
+  using BlockListEntry = decltype(GuestToHostMap::BlockList)::value_type;
+  fextl::vector<BlockListEntry> BlockList(Code.NumBlocks);
+  {
+    auto* Cursor = Code.BlockListInFile;
+    for (auto& BlockPtr : BlockList) {
+      ::memcpy(&BlockPtr.first, Cursor, sizeof(BlockPtr.first));
+      Cursor += sizeof(BlockPtr.first);
+      ::memcpy(&BlockPtr.second.HostCode, Cursor, sizeof(BlockPtr.second.HostCode));
+      Cursor += sizeof(BlockPtr.second.HostCode);
+      uint64_t NumGuestPages;
+      ::memcpy(&NumGuestPages, Cursor, sizeof(NumGuestPages));
+      Cursor += sizeof(NumGuestPages);
+
+      BlockPtr.second.CodePages.resize(NumGuestPages);
+      ::memcpy(BlockPtr.second.CodePages.data(), Cursor, std::span {BlockPtr.second.CodePages}.size_bytes());
+      Cursor += std::span {BlockPtr.second.CodePages}.size_bytes();
+    }
+
+    // Constrain BlockList to the given ExecutableFileSectionInfo
+    LOGMAN_THROW_A_FMT(ranges::is_sorted(BlockList, [](auto& a, auto& b) { return a.first < b.first; }), "Expected sorted block list");
+    auto begin = ranges::lower_bound(BlockList, BinarySection.BeginVA - BinarySection.FileStartVA, std::less {}, &BlockListEntry::first);
+    auto end =
+      ranges::upper_bound(begin, BlockList.end(), BinarySection.EndVA - BinarySection.FileStartVA - 1, std::less {}, &BlockListEntry::first);
+    if (begin == end) {
+      LogMan::Msg::IFmt("No blocks cached in this range, aborting");
+      return true;
+    }
+    BlockList.erase(end, BlockList.end());
+    BlockList.erase(BlockList.begin(), begin);
+  }
+
+  LogMan::Msg::IFmt("Cache load: {:5} blocks; base={:#14x}; off={:#9x}-{:#09x}; {:016x} {}", BlockList.size(), BinarySection.FileStartVA,
+                    BinarySection.BeginVA - BinarySection.FileStartVA, BinarySection.EndVA - BinarySection.FileStartVA,
+                    BinarySection.FileInfo.FileId, BinarySection.FileInfo.Filename);
+
+  if (EnableLazyCodeCaching) {
+    LogMan::Msg::IFmt("            lazy mapping: base={:#14x} -> host={}; cache_source={}", BinarySection.FileStartVA,
+                      fmt::ptr(Code.CodeBuffer.data()), fmt::ptr(Code.MappedFile.data()));
+  }
+  // Register blocks to LookupCache.
+  // The host addresses will point into the protected code buffer, so that FEX
+  // can lazily apply relocations on first execution of each page.
+  auto CodeBuffer = CTX.GetLatest();
+  {
+    FEXCORE_PROFILE_SCOPED("Decode");
+    auto& LookupCache = *CodeBuffer->LookupCache;
+    auto WriteLock = LookupCache.AcquireWriteLock();
+
+    for (auto& [Guest, Block] : BlockList) {
+      for (auto& CodePage : Block.CodePages) {
+        CodePage += BinarySection.FileStartVA;
+      }
+      LOGMAN_THROW_A_FMT(Block.HostCode < Code.CodeBuffer.size_bytes(), "Host offset {:#x} out of range ({:#x})", Block.HostCode,
+                         Code.CodeBuffer.size_bytes());
+      auto HostCode = &Code.CodeBuffer[Block.HostCode];
+      LookupCache.AddBlockMapping(Guest + BinarySection.FileStartVA, std::move(Block.CodePages), HostCode, WriteLock);
+    }
+
+    // Guest code pages
+    auto* Cursor = Code.CodeBuffer.data() + Code.CodeBuffer.size_bytes();
+    fextl::vector<uint64_t> Entrypoints;
+    for (uint32_t i = 0; i < Code.NumCodePages; ++i) {
+      uint64_t CodePage;
+      memcpy(&CodePage, Cursor, sizeof(CodePage));
+      CodePage += BinarySection.FileStartVA;
+      Cursor += sizeof(CodePage);
+
+      uint64_t NumEntrypoints;
+      memcpy(&NumEntrypoints, Cursor, sizeof(NumEntrypoints));
+      Cursor += sizeof(NumEntrypoints);
+
+      Entrypoints.resize(NumEntrypoints);
+      memcpy(Entrypoints.data(), Cursor, std::span {Entrypoints}.size_bytes());
+      Cursor += std::span {Entrypoints}.size_bytes();
+      for (auto& Entrypoint : Entrypoints) {
+        Entrypoint += BinarySection.FileStartVA;
+      }
+
+      if (LookupCache.AddBlockExecutableRange(Entrypoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE, WriteLock)) {
+        CTX.SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+      }
+    }
+  }
+
+  if (!EnableLazyCodeCaching || EnableCodeCacheValidation) {
+    auto Range = SelectCodeRangeToFinalize(Code, 0, Code.CodeBuffer.size_bytes() / Utils::FEX_PAGE_SIZE);
+    FinalizeCodePages(Code, Range);
+  }
+
+  if (EnableCodeCacheValidation) {
+    fextl::set<uint64_t> GuestBlocks, HostBlocks;
+    for (auto& [Guest, Host] : BlockList) {
+      GuestBlocks.insert(Guest + BinarySection.FileStartVA);
+      HostBlocks.insert(Host.HostCode);
+    }
+
+    Validate(BinarySection, std::move(GuestBlocks), HostBlocks, Code.CodeBuffer);
+  }
+
+  return true;
+}
+
+} // namespace FEXCore::Context
+
+namespace FEXCore {
+
+static std::span<CPU::Relocation> SpanPageRelocations(const MappedCodeCacheFile& Code, size_t PageIndex) {
+  auto [Offset, Count] = Code.PageRelocationRanges.at(PageIndex);
+  return std::span {reinterpret_cast<FEXCore::CPU::Relocation*>(Code.MappedFile.data() + Offset), Count};
+}
+
+std::span<std::byte> AbstractCodeCache::SelectCodeRangeToFinalize(MappedCodeCacheFile& Code, size_t StartPage, size_t EndPage) {
+  // First, check if we were racing another thread in loading this range
+  if (std::find(Code.LoadedPages.begin() + StartPage, Code.LoadedPages.begin() + EndPage, false) == Code.LoadedPages.begin() + EndPage) {
+    return {};
+  }
+
+  LOGMAN_THROW_A_FMT(StartPage < EndPage, "Invalid page range [{}, {})", StartPage, EndPage);
+  LOGMAN_THROW_A_FMT(EndPage <= Code.NumPages(), "End page {} out of range ({})", EndPage, Code.NumPages());
+
+  // Include any pages that have relocations or block link records crossing
+  // into the current page range. This ensures we don't attempt to finalize
+  // any page twice, partially apply FEX relocations, or trigger page loads
+  // during block linking.
+  while (EndPage < Code.NumPages()) {
+    auto PageRelocs = SpanPageRelocations(Code, EndPage - 1);
+    if (!PageRelocs.empty()) {
+      auto It = std::prev(PageRelocs.end());
+      size_t RelocEnd = It->Header.Offset + 16 /* Upper bound for relocation size */;
+      if (RelocEnd > EndPage * Utils::FEX_PAGE_SIZE) {
+        ++EndPage;
+        continue;
+      }
+    }
+
+    // Check for trailing block link
+    {
+      auto PageRelocs = SpanPageRelocations(Code, EndPage);
+      if (!PageRelocs.empty() && PageRelocs.begin()->Header.Offset < EndPage * Utils::FEX_PAGE_SIZE + 0x18) {
+        ++EndPage;
+        continue;
+      }
+    }
+    break;
+  };
+  while (StartPage != 0) {
+    auto PageRelocs = SpanPageRelocations(Code, StartPage - 1);
+    if (!PageRelocs.empty()) {
+      auto It = std::prev(PageRelocs.end());
+      size_t RelocEnd = It->Header.Offset + 16 /* Upper bound for relocation size */;
+      if (RelocEnd > StartPage * Utils::FEX_PAGE_SIZE) {
+        --StartPage;
+        continue;
+      }
+    }
+
+    // Check for trailing block link
+    {
+      auto PageRelocs = SpanPageRelocations(Code, StartPage);
+      if (!PageRelocs.empty() && PageRelocs.begin()->Header.Offset < StartPage * Utils::FEX_PAGE_SIZE + 0x18) {
+        --StartPage;
+        continue;
+      }
+    }
+    break;
+  };
+
+  return Code.CodeBuffer.subspan(StartPage * Utils::FEX_PAGE_SIZE, (EndPage - StartPage) * Utils::FEX_PAGE_SIZE);
+}
+} // namespace FEXCore
+
+namespace FEXCore::Context {
+
+void CodeCache::FinalizeCodePages(MappedCodeCacheFile& Code, std::span<std::byte> CodeRange) {
+  const size_t StartOffset = CodeRange.data() - Code.CodeBuffer.data();
+  const auto StartPage = StartOffset / Utils::FEX_PAGE_SIZE;
+  const auto EndPage = StartPage + CodeRange.size_bytes() / Utils::FEX_PAGE_SIZE;
+
+  // None of the selected pages should be loaded at all; otherwise, SelectCodeRangeToFinalize returned inconsistent ranges
+  LOGMAN_THROW_A_FMT(std::find(Code.LoadedPages.begin() + StartPage, Code.LoadedPages.begin() + EndPage, true) == Code.LoadedPages.begin() + EndPage,
+                     "Inconsistent page load state");
+
+  FEXCORE_PROFILE_SCOPED("FinalizeCodePages");
+
+  // Map writeable to allow applying relocations
+  // TODO: Are there any remaining race conditions here?
+  Allocator::VirtualProtect(CodeRange.data(), CodeRange.size_bytes(), Allocator::ProtectOptions::Write);
+
+  // Apply relocations
+  for (size_t i = StartPage; i < EndPage; ++i) {
+    auto PageRelocations = SpanPageRelocations(Code, i);
+    (void)ApplyCodeRelocations(Code.GuestBase, Code.CodeBuffer, PageRelocations, false);
+    Code.LoadedPages[i] = true;
+  }
+
+  ARMEmitter::Emitter::ClearICache(CodeRange.data(), CodeRange.size_bytes());
+  if (!Allocator::VirtualProtect(CodeRange.data(), CodeRange.size_bytes(),
+                                 Allocator::ProtectOptions::Read | Allocator::ProtectOptions::Write | Allocator::ProtectOptions::Exec)) {
+    ERROR_AND_DIE_FMT("VirtualProtect failed");
+  }
 }
 
 } // namespace FEXCore::Context

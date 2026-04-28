@@ -30,7 +30,21 @@ $end_info$
 #include <Linux/Utils/ELFParser.h>
 
 namespace FEX::HLE {
-// SMC interactions
+static void HandleSegfaultForCodeCacheFinalization(FEXCore::Core::InternalThreadState& Thread, FEXCore::MappedCodeCacheFile& Code,
+                                                   uintptr_t FaultAddress) {
+  FEXCORE_PROFILE_SCOPED("Load code cache page");
+  size_t PageIdx = (reinterpret_cast<std::byte*>(FaultAddress) - Code.CodeBuffer.data()) / FEXCore::Utils::FEX_PAGE_SIZE;
+
+  auto RangeToFinalize = Thread.CTX->GetCodeCache().SelectCodeRangeToFinalize(Code, PageIdx, PageIdx + 1);
+  if (!RangeToFinalize.empty()) {
+    Thread.CTX->GetCodeCache().FinalizeCodePages(Code, RangeToFinalize);
+  }
+}
+
+// Handles segfaults from:
+// - call-ret shadow stack overflow
+// - guest-side self-modifying code (SMC)
+// - lazy loading of mapped code cache pages
 bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
   const auto FaultAddress = (uintptr_t)((siginfo_t*)info)->si_addr;
 
@@ -46,13 +60,25 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, 
     // Can't use the deferred signal lock in the SIGSEGV handler.
     auto lk = FEXCore::MaskSignalsAndLockMutex<std::shared_lock>(_SyscallHandler->VMATracking.Mutex);
 
-    auto VMATracking = &_SyscallHandler->VMATracking;
+    auto& VMATracking = _SyscallHandler->VMATracking;
 
     // If the write spans two pages, they will be flushed one at a time (generating two faults)
-    auto Entry = VMATracking->FindVMAEntry(FaultAddress);
+    auto Entry = VMATracking.FindVMAEntry(FaultAddress);
 
-    // If an untracked address, or the mapping wasn't writable, it can't be handled here
-    if (Entry == VMATracking->VMAs.end() || !Entry->second.Prot.Writable) {
+    if (Entry == VMATracking.VMAs.end()) {
+      // Not a guest page; check mapped code cache pages
+      auto* Code = VMATracking.FindMappedCodeCacheByHostAddress(FaultAddress);
+      if (!Code) {
+        // Untracked address; not handled here
+        return false;
+      }
+      std::lock_guard lk(_SyscallHandler->CodeCachePatchingMutex);
+      HandleSegfaultForCodeCacheFinalization(*Thread, *Code, FaultAddress);
+      return true;
+    }
+
+    // If the mapping wasn't writable, it can't be handled here
+    if (!Entry->second.Prot.Writable) {
       return false;
     }
 
@@ -170,7 +196,7 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
 }
 
 void SyscallHandler::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
-  InvalidateCodeRangeIfNecessary(Thread, Start, Length);
+  InvalidateCodeRangeIfNecessary(Thread, Start, Length, false);
 }
 
 static FEXCore::ExecutableFileSectionInfo BuildSectionInfo(const VMATracking::MappedResource& Resource, uint64_t Base, uint64_t Size) {
@@ -233,41 +259,56 @@ static ReadELFHeadersResult ReadELFHeaders(int FD, std::span<std::byte> HeaderDa
   return ReadELFHeadersResult {std::move(Parser.phdrs), std::move(Relocations), HasCodeRelocations};
 }
 
-static void LoadCodeCache(FEXCore::Core::InternalThreadState& Thread, FEXCore::ExecutableFileSectionInfo& Section, uint64_t CodeCacheConfigId) {
+static fextl::unique_ptr<FEXCore::MappedCodeCacheFile>
+LoadCodeCache(FEXCore::Core::InternalThreadState& Thread, VMATracking::VMATracking& VMATracking,
+              const FEXCore::ExecutableFileInfo& FileInfo, uint64_t CodeCacheConfigId, uint64_t FileStartVA) {
+  auto& CodeCache = Thread.CTX->GetCodeCache();
+
   auto CacheFilename = fextl::fmt::format("{}cache/{}-{:016x}", FEX::Config::GetCacheDirectory(),
-                                          FEXCore::CodeMap::GetBaseFilename(Section.FileInfo, false), CodeCacheConfigId);
+                                          FEXCore::CodeMap::GetBaseFilename(FileInfo, false), CodeCacheConfigId);
   int CacheFD = open(CacheFilename.c_str(), O_RDONLY);
   if (CacheFD == -1) {
     LogMan::Msg::IFmt("Cache file does not exist: {}", CacheFilename);
-    return;
+    return nullptr;
   }
 
   struct stat buf;
   if (fstat(CacheFD, &buf) != 0) {
     LogMan::Msg::EFmt("Invalid cache file: {}", CacheFilename);
     close(CacheFD);
-    return;
+    return nullptr;
   }
 
-  auto CacheFileSize = buf.st_size;
-  auto MappedCache = (std::byte*)FEXCore::Allocator::mmap(nullptr, CacheFileSize, PROT_READ, MAP_PRIVATE, CacheFD, 0);
-  LOGMAN_THROW_A_FMT(MappedCache, "Failed to map code cache into memory");
-  if (!Thread.CTX->GetCodeCache().LoadData(&Thread, MappedCache, Section)) {
-    // TODO: Delete this cache file
-  }
-  FEXCore::Allocator::munmap(MappedCache, CacheFileSize);
+  auto CacheFileSize = static_cast<std::size_t>(buf.st_size);
+  auto MappedCache = (std::byte*)FEXCore::Allocator::mmap(nullptr, CacheFileSize, PROT_READ | PROT_WRITE, MAP_PRIVATE, CacheFD, 0);
   close(CacheFD);
+  if (!MappedCache || MappedCache == MAP_FAILED) {
+    LogMan::Msg::EFmt("Failed to map code cache into memory");
+    return nullptr;
+  }
+
+  auto Result = CodeCache.LoadCache(std::span {MappedCache, CacheFileSize}, FileInfo, FileStartVA);
+  if (!Result) {
+    FEXCore::Allocator::munmap(MappedCache, CacheFileSize);
+    return nullptr;
+  }
+
+  // NOTE: This is synchronized by acquiring VMATracking.Mutex at call site
+  CodeCache.RegisterMappedCodeBuffer(*Result);
+
+  return Result;
 }
 
 void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags,
                                 int fd, off_t offset) {
   LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits");
 
-  uint64_t Result {};
+  uint64_t Result;
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
   std::optional<LateApplyExtendedVolatileMetadata> LateMetadata = std::nullopt;
 
   std::optional<FEXCore::ExecutableFileSectionInfo> CachedSection;
+  bool PendingResourceDeletion;
 
   {
     // NOTE: Frontend calls this with a nullptr Thread during initialization, but
@@ -290,9 +331,10 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
     }
 
     LateMetadata = TrackMmap(Thread, Result, length, prot, flags, fd, offset, CachedSection);
+    PendingResourceDeletion = VMATracking.HasPendingResourceDeletions();
   }
 
-  InvalidateCodeRangeIfNecessary(Thread, Result, Size);
+  InvalidateCodeRangeIfNecessary(Thread, Result, Size, PendingResourceDeletion);
 
   if (LateMetadata) {
     auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
@@ -300,7 +342,8 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
   }
 
   if (EnableCodeCaching && CachedSection) {
-    LoadCodeCache(*Thread, *CachedSection, CodeCacheConfigId);
+    Thread->CTX->GetCodeCache().EnableLoadedSection(
+      Thread, *static_cast<const VMATracking::ExecutableFileState&>(CachedSection->FileInfo).MappedCache, *CachedSection);
   }
 
   return reinterpret_cast<void*>(Result);
@@ -310,8 +353,9 @@ uint64_t SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThread
   LOGMAN_THROW_A_FMT(Is64Bit || (reinterpret_cast<uintptr_t>(addr) >> 32) == 0, "values must fit to 32 bits: {}", fmt::ptr(addr));
   LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits");
 
-  uint64_t Result {};
+  uint64_t Result;
   uint64_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
+  bool PendingResourceDeletion;
 
   {
     // Frontend calls this with nullptr Thread during initialization.
@@ -331,8 +375,9 @@ uint64_t SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThread
       }
     }
     TrackMunmap(Thread, addr, length);
+    PendingResourceDeletion = VMATracking.HasPendingResourceDeletions();
   }
-  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size, PendingResourceDeletion);
 
   if (length) {
     auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
@@ -413,7 +458,7 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
     TrackMprotect(Thread, addr, len, prot);
   }
 
-  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len, false);
 
   // Prepare for delayed code cache load after ld/Wine is done applying relocations.
   // Hooking into mprotect is a reliable heuristic that matches behavior of ld (for ELF) and Wine (for PE).
@@ -437,17 +482,21 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
   }
 
   // Trigger delayed cache load. This must be done separately since
-  // LoadCodeCache will call interfaces that acquire the VMATracking mutex.
+  // EnableLoadedSection will call interfaces that acquire the VMATracking mutex.
   for (auto& CachedSection : CachedSections) {
-    LoadCodeCache(*Thread, CachedSection, CodeCacheConfigId);
+    auto Cache = static_cast<const VMATracking::ExecutableFileState&>(CachedSection.FileInfo).MappedCache.get();
+    if (Cache) {
+      Thread->CTX->GetCodeCache().EnableLoadedSection(Thread, *Cache, CachedSection);
+    }
   }
 
   return Result;
 }
 
 uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, int shmid, const void* shmaddr, int shmflg) {
-  uint64_t Result {};
-  uint64_t Length {};
+  uint64_t Result;
+  uint64_t Length;
+  bool PendingResourceDeletion;
 
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
@@ -472,15 +521,17 @@ uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadS
 
     Length = stat.shm_segsz;
     TrackShmat(Thread, shmid, Result, shmflg, Length);
+    PendingResourceDeletion = VMATracking.HasPendingResourceDeletions();
   }
 
-  InvalidateCodeRangeIfNecessary(Thread, Result, Length);
+  InvalidateCodeRangeIfNecessary(Thread, Result, Length, PendingResourceDeletion);
   return Result;
 }
 
 uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, const void* shmaddr) {
-  uint64_t Result {};
-  uint64_t Length {};
+  uint64_t Result;
+  uint64_t Length;
+  bool PendingResourceDeletion;
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
     if (Is64Bit) {
@@ -496,9 +547,10 @@ uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadS
     }
 
     Length = TrackShmdt(Thread, reinterpret_cast<uintptr_t>(shmaddr));
+    PendingResourceDeletion = VMATracking.HasPendingResourceDeletions();
   }
 
-  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length);
+  InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length, PendingResourceDeletion);
   return Result;
 }
 
@@ -537,7 +589,7 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
     if (PathLength != -1 && S_ISREG(buf.st_mode) && (buf.st_mode & S_IXUSR)) {
       // ELF files that are mapped multiple times get a separate MappedResource for each base virtual address
       if ((prot & PROT_READ) && Inserted) {
-        Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
+        Resource->MappedFile = fextl::make_unique<VMATracking::ExecutableFileState>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
         Resource->MappedFile->FileId = CTX->GetCodeCache().ComputeCodeMapId(Resource->MappedFile->Filename, fd);
 
@@ -623,7 +675,14 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
   // Load code cache if present.
   // FEXServer was requested to generate library caches on program launch.
   if (EnableCodeCaching && Resource && Resource->MappedFile && VMATracking::VMAProt::fromProt(prot).Executable) {
-    if (Thread) {
+    if (!Resource->MappedFile->AttemptedCacheLoad) {
+      Resource->MappedFile->MappedCache = LoadCodeCache(*Thread, VMATracking, *Resource->MappedFile, CodeCacheConfigId, Resource->FirstVMA->Base);
+      Resource->MappedFile->AttemptedCacheLoad = true;
+    }
+
+    if (!Resource->MappedFile->MappedCache) {
+      // No cache present
+    } else if (Thread) {
       if (!Resource->RequiresDelayedCacheLoad) {
         CachedSection.emplace(BuildSectionInfo(*Resource, addr, Size));
       } else {
