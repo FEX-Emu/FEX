@@ -46,6 +46,7 @@ $end_info$
 #include "BTInterface.h"
 #include "Windows/Common/SHMStats.h"
 
+#include <arm_neon.h>
 #include <cstdint>
 #include <cstdio>
 #include <type_traits>
@@ -312,32 +313,46 @@ static bool HandleUnalignedAccess(const ThreadCPUArea CPUArea, ARM64_NT_CONTEXT&
   return Result.has_value();
 }
 
-static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, CONTEXT& Context) {
+static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, const CONTEXT& Context) {
   auto& State = Thread->CurrentFrame->State;
 
   if ((Context.ContextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER) {
-    // General register state
-    State.gregs[FEXCore::X86State::REG_RAX] = Context.Rax;
-    State.gregs[FEXCore::X86State::REG_RCX] = Context.Rcx;
-    State.gregs[FEXCore::X86State::REG_RDX] = Context.Rdx;
-    State.gregs[FEXCore::X86State::REG_RBX] = Context.Rbx;
+    // Ensure ordering.
+    static_assert(((offsetof(CONTEXT, Rax) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RAX);
+    static_assert(((offsetof(CONTEXT, Rcx) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RCX);
+    static_assert(((offsetof(CONTEXT, Rdx) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RDX);
+    static_assert(((offsetof(CONTEXT, Rbx) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RBX);
+    static_assert(((offsetof(CONTEXT, Rsp) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RSP);
+    static_assert(((offsetof(CONTEXT, Rbp) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RBP);
+    static_assert(((offsetof(CONTEXT, Rsi) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RSI);
+    static_assert(((offsetof(CONTEXT, Rdi) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RDI);
+    static_assert(((offsetof(CONTEXT, R8) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_R8);
+    static_assert(((offsetof(CONTEXT, R9) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_R9);
+    static_assert(((offsetof(CONTEXT, R10) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_R10);
+    static_assert(((offsetof(CONTEXT, R11) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_R11);
+    static_assert(((offsetof(CONTEXT, R12) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_R12);
+    static_assert(((offsetof(CONTEXT, R13) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_R13);
+    static_assert(((offsetof(CONTEXT, R14) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_R14);
+    static_assert(((offsetof(CONTEXT, R15) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_R15);
 
-    State.gregs[FEXCore::X86State::REG_RSI] = Context.Rsi;
-    State.gregs[FEXCore::X86State::REG_RDI] = Context.Rdi;
-    State.gregs[FEXCore::X86State::REG_R8] = Context.R8;
-    State.gregs[FEXCore::X86State::REG_R9] = Context.R9;
-    State.gregs[FEXCore::X86State::REG_R10] = Context.R10;
-    State.gregs[FEXCore::X86State::REG_R11] = Context.R11;
-    State.gregs[FEXCore::X86State::REG_R12] = Context.R12;
-    State.gregs[FEXCore::X86State::REG_R13] = Context.R13;
-    State.gregs[FEXCore::X86State::REG_R14] = Context.R14;
-    State.gregs[FEXCore::X86State::REG_R15] = Context.R15;
+    // General register state
+    auto Src = reinterpret_cast<const uint64_t*>(&Context.Rax);
+    auto Dst = reinterpret_cast<uint64_t*>(&State.gregs[FEXCore::X86State::REG_RAX]);
+
+    asm volatile(R"(
+      ld1 {v0.2d, v1.2d, v2.2d, v3.2d}, [%[Src]], #64;
+      st1 {v0.2d, v1.2d, v2.2d, v3.2d}, [%[Dst]], #64;
+      ld1 {v0.2d, v1.2d, v2.2d, v3.2d}, [%[Src]], #64;
+      st1 {v0.2d, v1.2d, v2.2d, v3.2d}, [%[Dst]], #64;
+    )"
+                 : [Src] "+r"(Src), [Dst] "+r"(Dst)::"memory", "v0", "v1", "v2", "v3");
   }
 
   if ((Context.ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL) {
     State.rip = Context.Rip;
-    State.gregs[FEXCore::X86State::REG_RSP] = Context.Rsp;
-    State.gregs[FEXCore::X86State::REG_RBP] = Context.Rbp;
+    static_assert(((offsetof(CONTEXT, Rsp) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RSP);
+    static_assert(((offsetof(CONTEXT, Rbp) - offsetof(CONTEXT, Rax)) / sizeof(uint64_t)) == FEXCore::X86State::REG_RBP);
+    memcpy(&State.gregs[FEXCore::X86State::REG_RSP], &Context.Rsp, sizeof(uint64_t) * 2);
     CTX->SetFlagsFromCompactedEFLAGS(Thread, Context.EFlags);
   }
 
@@ -365,13 +380,27 @@ static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, C
   if ((Context.ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT) {
     // Floating-point register state
     if ((Context.ContextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE) {
-      const auto* Ymm = RtlLocateExtendedFeature(reinterpret_cast<CONTEXT_EX*>(&Context + 1), XSTATE_AVX, nullptr);
+      auto Ymm = RtlLocateExtendedFeature(const_cast<CONTEXT_EX*>(reinterpret_cast<const CONTEXT_EX*>(&Context + 1)), XSTATE_AVX, nullptr);
       CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters),
                                     reinterpret_cast<const __uint128_t*>(Ymm));
     } else {
       CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters), nullptr);
     }
-    memcpy(State.mm, Context.FltSave.FloatRegisters, sizeof(State.mm));
+
+    // Sanity check to make sure padding is correct.
+    static_assert(sizeof(State.mm[0]) == 16);
+
+    // X87 registers
+    auto Src = reinterpret_cast<const uint64_t*>(Context.FltSave.FloatRegisters);
+    auto Dst = reinterpret_cast<uint64_t*>(State.mm);
+
+    asm volatile(R"(
+      ld1 {v0.2d, v1.2d, v2.2d, v3.2d}, [%[Src]], #64;
+      st1 {v0.2d, v1.2d, v2.2d, v3.2d}, [%[Dst]], #64;
+      ld1 {v0.2d, v1.2d, v2.2d, v3.2d}, [%[Src]], #64;
+      st1 {v0.2d, v1.2d, v2.2d, v3.2d}, [%[Dst]], #64;
+    )"
+                 : [Src] "+r"(Src), [Dst] "+r"(Dst)::"memory", "v0", "v1", "v2", "v3");
 
     State.FCW = Context.FltSave.ControlWord;
     State.flags[FEXCore::X86State::X87FLAG_IE_LOC] = Context.FltSave.StatusWord & 1;
