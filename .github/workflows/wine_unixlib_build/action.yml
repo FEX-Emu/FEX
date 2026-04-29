@@ -1,0 +1,23 @@
+name: Wine Unixlib Build
+description: Build the FEX Wine unixlib
+
+runs:
+  using: composite
+  steps:
+    - name: Clean Build Environment
+      shell: bash
+      run: rm -Rf build_unixlib
+
+    - name: Configure Unixlib
+      shell: bash
+      run: |
+        cmake -S Source/Windows/Unixlib -B build_unixlib -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -G Ninja -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-unix -DCMAKE_INSTALL_PREFIX=/usr
+
+    - name: Build Unixlib
+      shell: bash
+      run: cmake --build build_unixlib
+
+    - name: Install Unixlib
+      shell: bash
+      run: DESTDIR="$PWD"/install cmake --build build_unixlib -t install
