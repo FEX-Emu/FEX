@@ -2691,6 +2691,15 @@ private:
       return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->Sub(OpSize::i64Bit, E->Constant(K), R));
     }
 
+    ArithRef URem(uint64_t K) {
+      if (IsConstant) {
+        return ArithRef(E, C % K);
+      }
+      FEXCore::IR::Ref Q = E->_AllocateGPR(true), Rem = E->_AllocateGPR(true);
+      E->_UDiv(OpSize::i64Bit, R, E->Invalid(), E->Constant(K), Q, Rem);
+      return ArithRef(E, Rem);
+    }
+
     ArithRef Lshl(uint64_t Shift) {
       if (Shift == 0) {
         return *this;

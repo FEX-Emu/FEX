@@ -2134,14 +2134,14 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
-  Src = Src.And(0x1F);
+  Src = Src.And(0x1F).URem(Size + 1);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
   Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
     auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
-    Src = Src.And(0x1F);
+    Src = Src.And(0x1F).URem(Size + 1);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -2349,14 +2349,14 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
-  Src = Src.And(0x1F);
+  Src = Src.And(0x1F).URem(Size + 1);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
   Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
     auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
-    Src = Src.And(0x1F);
+    Src = Src.And(0x1F).URem(Size + 1);
     Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
