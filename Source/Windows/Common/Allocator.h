@@ -3,5 +3,5 @@
 #include <winternl.h>
 
 namespace FEX::Windows::Allocator {
-void SetupHooks(HMODULE ntdll);
+void SetupHooks(bool IsWine);
 }
