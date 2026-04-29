@@ -793,8 +793,8 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0x0f 0x5f",
       "ExpectedArm64ASM": [
-        "fcmgt v0.4s, v17.4s, v16.4s",
-        "bit v16.16b, v17.16b, v0.16b"
+        "fcmgt v0.4s, v16.4s, v17.4s",
+        "bif v16.16b, v17.16b, v0.16b"
       ]
     },
     "punpcklbw mm0, mm1": {

@@ -3437,9 +3437,9 @@
         "Map 1 0b00 0x5f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt v0.4s, v18.4s, v17.4s",
+        "fcmgt v0.4s, v17.4s, v18.4s",
         "mov v16.16b, v17.16b",
-        "bit v16.16b, v18.16b, v0.16b",
+        "bif v16.16b, v18.16b, v0.16b",
         "stp xzr, xzr, [x28, #192]"
       ]
     },
@@ -3451,11 +3451,11 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #208]",
         "ldr q3, [x28, #224]",
-        "fcmgt v0.4s, v18.4s, v17.4s",
+        "fcmgt v0.4s, v17.4s, v18.4s",
         "mov v16.16b, v17.16b",
-        "bit v16.16b, v18.16b, v0.16b",
-        "fcmgt v0.4s, v3.4s, v2.4s",
-        "bit v2.16b, v3.16b, v0.16b",
+        "bif v16.16b, v18.16b, v0.16b",
+        "fcmgt v0.4s, v2.4s, v3.4s",
+        "bif v2.16b, v3.16b, v0.16b",
         "str q2, [x28, #192]"
       ]
     },
@@ -3465,9 +3465,9 @@
         "Map 1 0b01 0x5f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt v0.2d, v18.2d, v17.2d",
+        "fcmgt v0.2d, v17.2d, v18.2d",
         "mov v16.16b, v17.16b",
-        "bit v16.16b, v18.16b, v0.16b",
+        "bif v16.16b, v18.16b, v0.16b",
         "stp xzr, xzr, [x28, #192]"
       ]
     },
@@ -3479,11 +3479,11 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #208]",
         "ldr q3, [x28, #224]",
-        "fcmgt v0.2d, v18.2d, v17.2d",
+        "fcmgt v0.2d, v17.2d, v18.2d",
         "mov v16.16b, v17.16b",
-        "bit v16.16b, v18.16b, v0.16b",
-        "fcmgt v0.2d, v3.2d, v2.2d",
-        "bit v2.16b, v3.16b, v0.16b",
+        "bif v16.16b, v18.16b, v0.16b",
+        "fcmgt v0.2d, v2.2d, v3.2d",
+        "bif v2.16b, v3.16b, v0.16b",
         "str q2, [x28, #192]"
       ]
     },
