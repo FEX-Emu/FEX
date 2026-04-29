@@ -324,6 +324,13 @@ struct FEX_PACKED X80SoftFloat {
 #else
     extFloat80_t Zero {0, 0};
     if (extF80_eq(state, lhs, Zero)) {
+      // FSCALE(0, +Inf) is 0 * Inf, which is invalid. FSCALE(0, anything
+      // else) is still 0.
+      if (rhs.Top.Exponent == 0x7FFF && rhs.Top.Sign == 0 && (rhs.Significand & 0x7FFFFFFFFFFFFFFFULL) == 0) {
+        state->exceptionFlags |= softfloat_flag_invalid;
+        X80SoftFloat QNaN(0, 0x7FFFUL, 0xC000000000000000ULL);
+        return QNaN;
+      }
       return lhs;
     }
     X80SoftFloat Int = FRNDINT(state, rhs, softfloat_round_minMag);
