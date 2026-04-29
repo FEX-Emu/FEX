@@ -163,7 +163,7 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
 
     // Check for NaN/Infinity: exponent = 0x7fff
     SaveNZCV();
-    _TestNZ(OpSize::i64Bit, Exponent, Constant(0x7fff));
+    SubWithFlags(OpSize::i64Bit, Exponent, 0x7fff);
     Ref IsSpecial = _NZCVSelect01(CondClass::EQ);
 
     // For overflow detection, check if exponent indicates a value >= 2^15
