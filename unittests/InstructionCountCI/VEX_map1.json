@@ -3950,18 +3950,19 @@
         "Map 1 0b00 0x5f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt v0.4s, v18.4s, v17.4s",
+        "fcmgt v0.4s, v17.4s, v18.4s",
         "mov v16.16b, v17.16b",
-        "bit v16.16b, v18.16b, v0.16b"
+        "bif v16.16b, v18.16b, v0.16b"
       ]
     },
     "vmaxps ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b00 0x5f 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt p0.s, p7/z, z18.s, z17.s",
+        "fcmgt p0.s, p7/z, z17.s, z18.s",
+        "not p0.b, p7/z, p0.b",
         "mov z0.d, z17.d",
         "mov z0.s, p0/m, z18.s",
         "mov z16.d, z0.d"
@@ -3973,18 +3974,19 @@
         "Map 1 0b01 0x5f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt v0.2d, v18.2d, v17.2d",
+        "fcmgt v0.2d, v17.2d, v18.2d",
         "mov v16.16b, v17.16b",
-        "bit v16.16b, v18.16b, v0.16b"
+        "bif v16.16b, v18.16b, v0.16b"
       ]
     },
     "vmaxpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b01 0x5f 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt p0.d, p7/z, z18.d, z17.d",
+        "fcmgt p0.d, p7/z, z17.d, z18.d",
+        "not p0.b, p7/z, p0.b",
         "mov z0.d, z17.d",
         "mov z0.d, p0/m, z18.d",
         "mov z16.d, z0.d"
