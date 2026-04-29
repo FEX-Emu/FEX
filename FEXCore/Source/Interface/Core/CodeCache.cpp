@@ -300,12 +300,10 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   ::write(fd, Relocations.data(), Relocations.size() * sizeof(Relocations[0]));
 
   // Pad to next page in file so that the CodeBuffer can be mmap'ed into process on load
-  char Zero[64] {};
-  auto Off = lseek(fd, 0, SEEK_CUR);
-  while (Off != AlignUp(Off, Utils::FEX_PAGE_SIZE)) {
-    auto BytesToWrite = std::min(AlignUp(Off, Utils::FEX_PAGE_SIZE) - Off, sizeof(Zero));
-    ::write(fd, Zero, BytesToWrite);
-    Off += BytesToWrite;
+  {
+    auto AlignedSize = AlignUp(lseek(fd, 0, SEEK_CUR), Utils::FEX_PAGE_SIZE);
+    ::ftruncate(fd, AlignedSize);
+    lseek(fd, AlignedSize, SEEK_SET);
   }
 
   // Dump the host code (relocated for position-independent serialization)
