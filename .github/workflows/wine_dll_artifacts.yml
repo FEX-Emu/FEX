@@ -44,12 +44,17 @@ jobs:
       with:
         target: arm64ec
 
+    - name: Build Unixlib
+      uses: ./.github/workflows/wine_unixlib_build
+
     - name: Upload libraries
       uses: actions/upload-artifact@v6
       timeout-minutes: 1
       with:
         overwrite: true
         name: wine_dll_artifacts
-        path: ${{ github.workspace }}/install/usr/lib/wine/aarch64-windows/lib*.dll
+        path: |
+          ${{ github.workspace }}/install/usr/lib/wine/aarch64-windows/lib*.dll
+          ${{ github.workspace }}/install/usr/lib/wine/aarch64-unix/lib*.so
         retention-days: 60
         compression-level: 9
