@@ -55,6 +55,29 @@ DEF_OP(ExitFunction) {
 
   uint64_t NewRIP;
 
+  if constexpr (Context::BLOCK_DEBUGGING) {
+    // Skip block linking when BLOCK_DEBUGGING as it adds overhead and is unncessary.
+    // This is a debug only feature and doesn't need caching help.
+    bool IsInlineRIP = IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP);
+    ARMEmitter::ForwardLabel l_ExitLink;
+    if (IsInlineRIP) {
+      ldr(TMP1, &l_ExitLink);
+      str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
+    } else {
+      auto RipReg = GetReg(Op->NewRIP);
+      str(RipReg.X(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
+    }
+    ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.DispatcherLoopTop));
+    br(TMP2);
+
+    if (IsInlineRIP) {
+      BindOrRestart(&l_ExitLink);
+      dc64(NewRIP);
+    }
+
+    return;
+  }
+
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
 #ifdef ARCHITECTURE_arm64ec
     if (NewRIP < EC_CODE_BITMAP_MAX_ADDRESS && RtlIsEcCode(NewRIP)) {
