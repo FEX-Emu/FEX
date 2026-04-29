@@ -6,7 +6,8 @@
   "MemoryRegions": {
     "0x100000000": "4096",
     "0x100002000": "4096"
-  }
+  },
+  "HostFeatures": ["SSE4A"]
 }
 %endif
 
