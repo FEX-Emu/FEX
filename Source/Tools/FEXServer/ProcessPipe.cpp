@@ -64,6 +64,9 @@ static std::string NewCodeMapDirectory;
 // Path to directory for processed code maps (suitable for cache generation)
 static std::string ReadyCodeMapDirectory;
 
+// Path to FEXOfflineCompiler executable (inferred from FEXServer install location)
+const std::string OfflineCompilerPath = (std::filesystem::read_symlink("/proc/self/exe").parent_path() / "FEXOfflineCompiler").string();
+
 void SetWatchFD(int FD) {
   WatchFD = FD;
 }
@@ -470,8 +473,8 @@ int32_t EmbedSubprocess(const char* path, char* const* args) {
  * Spawn a FEXOfflineCompiler instance to generate a code cache from the given code map
  */
 static int RunOfflineCompiler(const char* CodeMap) {
-  const char* ExecveArgs[] = {"FEXOfflineCompiler", "generate", CodeMap, nullptr};
-  return EmbedSubprocess("FEXOfflineCompiler", const_cast<char* const*>(&ExecveArgs[0]));
+  const char* ExecveArgs[] = {OfflineCompilerPath.c_str(), "generate", CodeMap, nullptr};
+  return EmbedSubprocess(OfflineCompilerPath.c_str(), const_cast<char* const*>(&ExecveArgs[0]));
 };
 
 void HandleSocketData(fasio::tcp_socket& Socket) {
