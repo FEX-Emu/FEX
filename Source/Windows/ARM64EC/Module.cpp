@@ -677,7 +677,7 @@ bool ResetToConsistentStateImpl(const ThreadCPUArea CPUArea, EXCEPTION_RECORD* E
     // A suspend interrupt can occur in ExitFunctionEC before InSimulation is unset and set SuspendDoorbell. If this
     // occurs then it is still our duty to cooperatively suspend with an appropriate context. To support this, after
     // unsetting InSimulation a brk #0xCAFE instruction will be raised that we can handle here.
-    NativeContext->Pc = reinterpret_cast<uintptr_t>(ExitFunctionSuspendResumePoint); // Jump to the suspend resume point.
+    NativeContext->Pc = reinterpret_cast<uintptr_t>(&ExitFunctionSuspendResumePoint); // Jump to the suspend resume point.
     *CPUArea.Area->SuspendDoorbell = 0;
     return true;
   }
