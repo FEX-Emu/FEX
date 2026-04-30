@@ -1434,8 +1434,8 @@ DEF_OP(VFMin) {
       bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
     } else if (Dst == Vector2) {
       // Destination is already Vector2, Invert arguments and insert Vector1 on false.
-      fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
-      bif(Dst.Q(), Vector1.Q(), VTMP1.Q());
+      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      bit(Dst.Q(), Vector1.Q(), VTMP1.Q());
     } else {
       // Dst is not either source, need a move.
       fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
@@ -1466,7 +1466,8 @@ DEF_OP(VFMax) {
     const auto Mask = PRED_TMP_32B;
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    fcmgt(SubRegSize, ComparePred, Mask.Zeroing(), Vector2.Z(), Vector1.Z());
+    fcmgt(SubRegSize, ComparePred, Mask.Zeroing(), Vector1.Z(), Vector2.Z());
+    not_(ComparePred, Mask.Zeroing(), ComparePred);
 
     if (Dst == Vector1) {
       // Trivial case where Vector1 is also the destination.
@@ -1488,17 +1489,17 @@ DEF_OP(VFMax) {
 
     if (Dst == Vector1) {
       // Destination is already Vector1, need to insert Vector2 on true.
-      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-      bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
+      fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
+      bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
     } else if (Dst == Vector2) {
       // Destination is already Vector2, Invert arguments and insert Vector1 on true.
       fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
       bit(Dst.Q(), Vector1.Q(), VTMP1.Q());
     } else {
       // Dst is not either source, need a move.
-      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
       mov(Dst.Q(), Vector1.Q());
-      bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
+      bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
     }
   }
 }
