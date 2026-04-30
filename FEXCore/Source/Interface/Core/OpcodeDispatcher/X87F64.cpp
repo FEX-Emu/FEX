@@ -382,6 +382,8 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   // Split node into SIG and EXP while handling the special zero case.
   // i.e. if val == 0.0, then sig = 0.0, exp = -inf
   // if val == -0.0, then sig = -0.0, exp = -inf
+  // if val is +/-Inf, then sig = val, exp = +inf
+  // if val is NaN, then sig = val, exp = val
   // otherwise we just extract the 64-bit sig and exp as normal.
   Ref Node = _ReadStackValue(0);
 
@@ -390,6 +392,11 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   // zero case
   Ref ExpZV = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(0xfff0'0000'0000'0000UL));
   Ref SigZV = Node;
+
+  // Inf/NaN case
+  Ref ExpInfOnlyV = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(0x7ff0'0000'0000'0000UL));
+  Ref ExpNanV = Node;
+  Ref SigInfV = Node;
 
   // non zero case
   Ref ExpNZ = _Bfe(OpSize::i64Bit, 11, 52, Gpr);
@@ -400,12 +407,24 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   SigNZ = _Or(OpSize::i64Bit, SigNZ, Constant(0x3ff0'0000'0000'0000LL));
   Ref SigNZV = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, SigNZ);
 
-  // Comparison and select to push onto stack
   SaveNZCV();
+
+  // Mantissa non-zero => NaN (exp result = input); else Inf (exp result = +Inf)
+  Ref Mantissa = _And(OpSize::i64Bit, Gpr, Constant(0x000f'ffff'ffff'ffffULL));
+  _TestNZ(OpSize::i64Bit, Mantissa, Constant(~0ULL));
+  Ref ExpInfV = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, ExpInfOnlyV, ExpNanV);
+
+  // Biased exponent == 0x7ff => Inf/NaN path, else non-zero-case.
+  Ref BiasedExp = _Bfe(OpSize::i64Bit, 11, 52, Gpr);
+  SubWithFlags(OpSize::i64Bit, BiasedExp, 0x7ff);
+  Ref ExpNZOrInf = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, ExpInfV, ExpNZV);
+  Ref SigNZOrInf = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, SigInfV, SigNZV);
+
+  // Zero folds on top.
   _TestNZ(OpSize::i64Bit, Gpr, Constant(0x7fff'ffff'ffff'ffffUL));
 
-  Ref Sig = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, SigZV, SigNZV);
-  Ref Exp = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, ExpZV, ExpNZV);
+  Ref Sig = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, SigZV, SigNZOrInf);
+  Ref Exp = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, ExpZV, ExpNZOrInf);
 
   _PopStackDestroy();
   _PushStack(Exp, Invalid(), OpSize::iInvalid);

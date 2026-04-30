@@ -260,6 +260,10 @@ struct FEX_PACKED X80SoftFloat {
     if (lhs.Top.Exponent == 0x0 && lhs.Significand == 0x0) {
       return lhs;
     }
+    // Inf/NaN pass through unchanged in the significand slot.
+    if (lhs.Top.Exponent == 0x7FFF) {
+      return lhs;
+    }
     X80SoftFloat Tmp = lhs;
     Tmp.Top.Exponent = 0x3FFF;
     Tmp.Top.Sign = lhs.Top.Sign;
@@ -287,6 +291,14 @@ struct FEX_PACKED X80SoftFloat {
     if (lhs.Top.Exponent == 0x0 && lhs.Significand == 0x0) {
       X80SoftFloat Result(1, 0x7FFFUL, 0x8000'0000'0000'0000UL);
       return Result;
+    }
+    // +/-Inf returns +Inf in the exponent slot; NaN propagates.
+    if (lhs.Top.Exponent == 0x7FFF) {
+      if ((lhs.Significand & 0x7FFFFFFFFFFFFFFFULL) == 0) {
+        X80SoftFloat Result(0, 0x7FFFUL, 0x8000'0000'0000'0000UL);
+        return Result;
+      }
+      return lhs;
     }
 
     int32_t TrueExp = lhs.Top.Exponent - ExponentBias;
