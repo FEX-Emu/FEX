@@ -36,6 +36,7 @@ $end_info$
 #include "Common/TSOHandlerConfig.h"
 #include "Common/ImageTracker.h"
 #include "Common/InvalidationTracker.h"
+#include "Common/MonoHeuristic.h"
 #include "Common/OvercommitTracker.h"
 #include "Common/CPUFeatures.h"
 #include "Common/Logging.h"
@@ -513,6 +514,9 @@ void BTCpuProcessInit() {
   FEX::Config::LoadConfig(fextl::string {ExecutableName}, _environ, FEX::ReadPortabilityInformation());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
+
+  // Handle Mono TSO heuristic early.
+  FEX::Windows::HandleMonoTSOHeuristicConfig(FEX::Windows::BaseName(FEX::Windows::GetExecutableFilePathW()));
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, "0");
