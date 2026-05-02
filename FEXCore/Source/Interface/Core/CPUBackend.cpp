@@ -12,7 +12,6 @@
 #include <cstdint>
 
 #ifndef _WIN32
-#include <linux/prctl.h>
 #include <sys/prctl.h>
 #endif
 

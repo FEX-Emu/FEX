@@ -2,7 +2,6 @@
 #ifdef ENABLE_FEX_ALLOCATOR
 #include <rpmalloc/rpmalloc.h>
 #ifndef _WIN32
-#include <linux/prctl.h>
 #include <sys/prctl.h>
 #include <sys/mman.h>
 #else

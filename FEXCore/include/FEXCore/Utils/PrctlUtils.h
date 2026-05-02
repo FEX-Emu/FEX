@@ -2,7 +2,6 @@
 #pragma once
 
 #ifndef _WIN32
-#include <linux/prctl.h>
 #include <sys/mman.h>
 #include <sys/user.h>
 #include <sys/prctl.h>
