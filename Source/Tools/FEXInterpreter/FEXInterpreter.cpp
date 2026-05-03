@@ -63,7 +63,7 @@ $end_info$
 #include <utility>
 
 #include <sys/sysinfo.h>
-#include <sys/signal.h>
+#include <signal.h>
 
 namespace FEX::Logging {
 static bool SilentLog {};

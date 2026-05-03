@@ -14,7 +14,7 @@
 #include <filesystem>
 #include <string>
 #include <sys/prctl.h>
-#include <sys/signal.h>
+#include <signal.h>
 #include <ucontext.h>
 
 namespace {

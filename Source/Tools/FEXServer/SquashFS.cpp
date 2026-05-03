@@ -9,7 +9,7 @@
 
 #include <fcntl.h>
 #include <filesystem>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <thread>

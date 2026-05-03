@@ -17,9 +17,9 @@
 #include <fcntl.h>
 #include <linux/limits.h>
 #include <unistd.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/prctl.h>
-#include <sys/signal.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
