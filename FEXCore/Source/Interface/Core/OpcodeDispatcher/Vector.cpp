@@ -974,10 +974,7 @@ Ref OpDispatchBuilder::PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVector
   const auto NumElements = IR::NumElements(Size, IR::OpSize::i16Bit);
   const auto HalfNumElements = NumElements >> 1;
 
-  // TODO: PSHUFLW/PSHUFHW (Is128BitLane) still need to preserve the
-  // unaffected 64-bit half, which precludes a single-instruction merge for
-  // most permutations. Future work could specialize these via VInsElement
-  // when register aliasing makes the merge free.
+  // TODO: 128-bit lanes still preserve the untouched half via TBL.
   switch (Shuffle) {
   case IdentityCopy: {
     // Special case identity copy.
@@ -1004,52 +1001,41 @@ Ref OpDispatchBuilder::PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVector
     return Dup;
   }
   default: {
-    // For MMX `pshufw` (Size == i64Bit), the entire register is the shuffled
-    // half so we can replace the table lookup with cheaper register-only
-    // operations that map directly onto a single ARM64 NEON instruction.
-    // The 4-byte sibling Single128Bit4ByteVectorShuffle (#3871) performed the
-    // analogous brute-force search for PSHUFD/VPERMILPS. Each immediate below
-    // was verified by enumerating 1-instruction sequences over
-    // {DUP, REV32, REV64, ZIP1/2, UZP1/2, TRN1/2, EXT} and checking they
-    // produce the same permutation as `pshufw mm, mm, imm`.
-    //
-    // The 128/256-bit (PSHUFLW/PSHUFHW) paths still need to preserve the
-    // unaffected 64-bit half, which precludes a single-instruction merge for
-    // these shuffles, so they fall through to the table lookup below.
+    // 64-bit (MMX pshufw): single-op covers the immediates below.
     if (!Is128BitLane && Size == OpSize::i64Bit) {
       switch (Shuffle) {
       case 0b00'01'10'11:
-        // Reverse all 4 elements.
+        ///< Reverse all four elements.
         return _VRev64(OpSize::i64Bit, OpSize::i16Bit, IncomingLane);
       case 0b00'11'10'01:
-        // Vector rotate - one element.
+        ///< Vector rotate - One element.
         return _VExtr(OpSize::i64Bit, OpSize::i16Bit, IncomingLane, IncomingLane, 1);
       case 0b01'00'11'10:
-        // Swap 32-bit halves.
+        ///< Swap 32-bit halves.
         return _VRev64(OpSize::i64Bit, OpSize::i32Bit, IncomingLane);
       case 0b01'01'00'00:
-        // Self-zip low halves: [w0,w0,w1,w1].
+        ///< Self-zip low halves.
         return _VZip(OpSize::i64Bit, OpSize::i16Bit, IncomingLane, IncomingLane);
       case 0b10'00'10'00:
-        // Even elements broadcast: [w0,w2,w0,w2].
+        ///< Even elements broadcast.
         return _VUnZip(OpSize::i64Bit, OpSize::i16Bit, IncomingLane, IncomingLane);
       case 0b10'01'00'11:
-        // Vector rotate - three elements.
+        ///< Vector rotate - Three elements.
         return _VExtr(OpSize::i64Bit, OpSize::i16Bit, IncomingLane, IncomingLane, 3);
       case 0b10'10'00'00:
-        // Self-trn1: [w0,w0,w2,w2].
+        ///< Self-trn1.
         return _VTrn(OpSize::i64Bit, OpSize::i16Bit, IncomingLane, IncomingLane);
       case 0b10'11'00'01:
-        // Reverse element pairs: [w1,w0,w3,w2].
+        ///< Reverse element pairs.
         return _VRev32(OpSize::i64Bit, OpSize::i16Bit, IncomingLane);
       case 0b11'01'11'01:
-        // Odd elements broadcast: [w1,w3,w1,w3].
+        ///< Odd elements broadcast.
         return _VUnZip2(OpSize::i64Bit, OpSize::i16Bit, IncomingLane, IncomingLane);
       case 0b11'11'01'01:
-        // Self-trn2: [w1,w1,w3,w3].
+        ///< Self-trn2.
         return _VTrn2(OpSize::i64Bit, OpSize::i16Bit, IncomingLane, IncomingLane);
       case 0b11'11'10'10:
-        // Self-zip high halves: [w2,w2,w3,w3].
+        ///< Self-zip high halves.
         return _VZip2(OpSize::i64Bit, OpSize::i16Bit, IncomingLane, IncomingLane);
       default: break;
       }
