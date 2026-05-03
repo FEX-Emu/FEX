@@ -164,3 +164,29 @@ add_custom_target(struct_verifier
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "302" ${TEST_JOB_FLAG} "-R" "Test_verify*")
+
+include(CheckCSourceCompiles)
+
+check_c_source_compiles("
+#include <signal.h>
+int main(void){
+    sigset_t s;
+    (void)sizeof(s.__val);   // glibc
+    return 0;
+}" SIGSET_HAS___VAL)
+
+check_c_source_compiles("
+#include <signal.h>
+int main(void){
+    sigset_t s;
+    (void)sizeof(s.__bits);  // musl
+    return 0;
+}" SIGSET_HAS___BITS)
+
+if(SIGSET_HAS___VAL)
+  add_compile_definitions("SIGSET_VAL=__val")
+elseif(SIGSET_HAS___BITS)
+  add_compile_definitions("SIGSET_VAL=__bits")
+else()
+  message(FATAL_ERROR "Unknown sigset_t layout!")
+endif()
