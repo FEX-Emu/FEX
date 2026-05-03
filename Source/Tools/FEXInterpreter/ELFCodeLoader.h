@@ -766,25 +766,37 @@ public:
     // Ensure we don't read past the end into garbage data
     stat_buffer[std::clamp(bytes_read, 0L, static_cast<ssize_t>(sizeof(stat_buffer)) - 1)] = '\0';
 
+    uint64_t start_code, end_code, start_stack, start_data, end_data, start_brk, arg_start, arg_end, env_start, env_end;
+
     // See man proc_pid_stat
     int items_read = sscanf(stat_buffer,
-                            "%*d %*s %*c %*d %*d "      // 1 to 5
-                            "%*d %*d %*d %*u %*u "      // 6 to 10
-                            "%*u %*u %*u %*u %*u "      // 11 to 15
-                            "%*d %*d %*d %*d %*d "      // 16 to 20
-                            "%*d %*u %*u %*d %*u "      // 21 to 25
-                            "%llu %llu %llu %*u %*u "   // 26 to 30
-                            "%*u %*u %*u %*u %*u "      // 31 to 35
-                            "%*u %*u %*d %*d %*u "      // 36 to 40
-                            "%*u %*u %*u %*d %llu "     // 40 to 45
-                            "%llu %llu %llu %llu %llu " // 46 to 50
-                            "%llu",                     // 51
-                            &map.start_code, &map.end_code, &map.start_stack, &map.start_data, &map.end_data, &map.start_brk,
-                            &map.arg_start, &map.arg_end, &map.env_start, &map.env_end);
+                            "%*d %*s %*c %*d %*d " // 1 to 5
+                            "%*d %*d %*d %*u %*u " // 6 to 10
+                            "%*u %*u %*u %*u %*u " // 11 to 15
+                            "%*d %*d %*d %*d %*d " // 16 to 20
+                            "%*d %*u %*u %*d %*u " // 21 to 25
+                            "%lu %lu %lu %*u %*u " // 26 to 30
+                            "%*u %*u %*u %*u %*u " // 31 to 35
+                            "%*u %*u %*d %*d %*u " // 36 to 40
+                            "%*u %*u %*u %*d %lu " // 40 to 45
+                            "%lu %lu %lu %lu %lu " // 46 to 50
+                            "%lu",                 // 51
+                            &start_code, &end_code, &start_stack, &start_data, &end_data, &start_brk, &arg_start, &arg_end, &env_start, &env_end);
 
     if (items_read != 10) {
       return false;
     }
+
+    map.start_code = start_code;
+    map.end_code = end_code;
+    map.start_stack = start_stack;
+    map.start_data = start_data;
+    map.end_data = end_data;
+    map.start_brk = start_brk;
+    map.arg_start = arg_start;
+    map.arg_end = arg_end;
+    map.env_start = env_start;
+    map.env_end = env_end;
 
     map.brk = reinterpret_cast<uint64_t>(sbrk(0));
 
