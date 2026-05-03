@@ -33,7 +33,7 @@ $end_info$
 #include <stdint.h>
 #include <sched.h>
 #include <sys/personality.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
