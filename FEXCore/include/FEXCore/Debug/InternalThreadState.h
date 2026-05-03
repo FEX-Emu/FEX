@@ -104,8 +104,6 @@ struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCo
 
   std::shared_ptr<FEXCore::CompileService> CompileService;
 
-  std::shared_mutex ObjectCacheRefCounter {};
-
   // This pointer is owned by the frontend.
   FEXCore::SHMStats::ThreadStats* ThreadStats {};
 
