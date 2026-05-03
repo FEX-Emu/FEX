@@ -1001,7 +1001,6 @@ Ref OpDispatchBuilder::PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVector
     return Dup;
   }
   default: {
-    // 64-bit (MMX pshufw): single-op covers the immediates below.
     if (!Is128BitLane && Size == OpSize::i64Bit) {
       switch (Shuffle) {
       case 0b00'01'10'11:
