@@ -17,6 +17,7 @@
 #include <OptionParser.h>
 
 #include <fmt/printf.h>
+#include <libgen.h>
 
 #include <fstream>
 #include <optional>
