@@ -30,7 +30,7 @@ $end_info$
 #include <optional>
 #include <sys/stat.h>
 
-#include <bits/types/sigset_t.h>
+#include <signal.h>
 #include <linux/seccomp.h>
 
 namespace FEX::HLE {
