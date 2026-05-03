@@ -1,6 +1,8 @@
 #include <catch2/catch_all.hpp>
 #include <FEXCore/Utils/Allocator.h>
 
+#include <unistd.h>
+
 namespace {
 
 using FEXCore::Allocator::MemoryRegion;
