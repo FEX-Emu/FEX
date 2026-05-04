@@ -649,17 +649,19 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
                        "capacity size. This will "
                        "likely crash! Asserting now!");
 
+    // Peek into sigset_t implementation details, extracting the __val member for glibc and __bits for musl
+    auto& [sigmask_val] = _context->uc_sigmask;
+    static_assert(sizeof(sigmask_val[0]) == sizeof(uint64_t), "Unknown sigset_t layout");
+
     ThreadObject->SignalInfo.DeferredSignalFrames.emplace_back(ThreadStateObject::DeferredSignalState {
       .Info = SigInfo,
       .Signal = Signal,
-      .SigMask = _context->uc_sigmask.SIGSET_VAL[0],
+      .SigMask = sigmask_val[0],
     });
-
-    uint64_t NewMask = GetNewSigMask(Signal);
 
     // Update our host signal mask so we don't hit race conditions with signals
     // This allows us to maintain the expected signal mask through the guest signal handling and then all the way back again
-    memcpy(&_context->uc_sigmask, &NewMask, sizeof(uint64_t));
+    sigmask_val[0] = GetNewSigMask(Signal);
 
     // Now update the faulting page permissions so it will fault on write.
     mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_NONE);
