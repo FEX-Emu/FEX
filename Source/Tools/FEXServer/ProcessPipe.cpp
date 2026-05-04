@@ -12,6 +12,7 @@
 #include <FEXCore/HLE/SourcecodeResolver.h>
 
 #include <fmt/ranges.h>
+#include <inttypes.h>
 
 #include <atomic>
 #include <cassert>
@@ -97,8 +98,8 @@ void CheckRaiseFDLimit() {
   if (MaxFDs.rlim_cur == MaxFDs.rlim_max) {
     fprintf(stderr, "[FEXMountDaemon] Our open FD limit is already set to max and we are wanting to increase it\n");
     fprintf(stderr, "[FEXMountDaemon] FEXMountDaemon will now no longer be able to track new instances of FEX\n");
-    fprintf(stderr, "[FEXMountDaemon] Current limit is %zd(hard %zd) FDs and we are at %zd\n", MaxFDs.rlim_cur, MaxFDs.rlim_max,
-            GetNumFilesOpen());
+    fprintf(stderr, "[FEXMountDaemon] Current limit is %" PRIuMAX "(hard %" PRIuMAX ") FDs and we are at %zu\n", (uintmax_t)MaxFDs.rlim_cur,
+            (uintmax_t)MaxFDs.rlim_max, GetNumFilesOpen());
     fprintf(stderr, "[FEXMountDaemon] Ask your administrator to raise your kernel's hard limit on open FDs\n");
     return;
   }
@@ -112,7 +113,8 @@ void CheckRaiseFDLimit() {
   NewLimit.rlim_cur = std::min(NewLimit.rlim_cur, NewLimit.rlim_max);
 
   if (setrlimit(RLIMIT_NOFILE, &NewLimit) != 0) {
-    fprintf(stderr, "[FEXMountDaemon] Couldn't raise FD limit to %zd even though our hard limit is %zd\n", NewLimit.rlim_cur, NewLimit.rlim_max);
+    fprintf(stderr, "[FEXMountDaemon] Couldn't raise FD limit to %" PRIu64 " even though our hard limit is %" PRIu64 "\n",
+            (uintmax_t)NewLimit.rlim_cur, (uintmax_t)NewLimit.rlim_max);
   } else {
     // Set the new limit
     MaxFDs = NewLimit;
