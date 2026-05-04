@@ -15,7 +15,6 @@
 
 namespace FEXCore {
 class LookupCache;
-class CompileService;
 struct JITSymbolBuffer;
 } // namespace FEXCore
 
@@ -101,8 +100,6 @@ struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCo
   NonMovableUniquePtr<FEXCore::Frontend::Decoder> FrontendDecoder;
   NonMovableUniquePtr<FEXCore::IR::PassManager> PassManager;
   NonMovableUniquePtr<JITSymbolBuffer> SymbolBuffer;
-
-  std::shared_ptr<FEXCore::CompileService> CompileService;
 
   // This pointer is owned by the frontend.
   FEXCore::SHMStats::ThreadStats* ThreadStats {};
