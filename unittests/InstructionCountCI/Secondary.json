@@ -1153,32 +1153,30 @@
       ]
     },
     "pshufw mm0, mm1, 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
         "strb w20, [x28, #1202]",
         "ldr d2, [x28, #1072]",
-        "ldr x0, [x28, #2672]",
-        "ldr d3, [x0, #16]",
-        "tbl v2.8b, {v2.16b}, v3.8b",
-        "str d2, [x28, #1056]",
+        "dup v3.4h, v2.h[0]",
+        "mov v3.h[0], v2.h[1]",
+        "str d3, [x28, #1056]",
         "strh w20, [x28, #1064]"
       ]
     },
     "pshufw mm0, [rax], 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0x70",
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
-        "ldr x0, [x28, #2672]",
-        "ldr d3, [x0, #16]",
-        "tbl v2.8b, {v2.16b}, v3.8b",
+        "dup v3.4h, v2.h[0]",
+        "mov v3.h[0], v2.h[1]",
         "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
         "strb w20, [x28, #1202]",
-        "str d2, [x28, #1056]",
+        "str d3, [x28, #1056]",
         "strh w20, [x28, #1064]"
       ]
     },

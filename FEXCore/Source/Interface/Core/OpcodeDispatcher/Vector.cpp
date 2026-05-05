@@ -1011,10 +1011,522 @@ Ref OpDispatchBuilder::PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVector
 }
 
 void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
-  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
   const auto Size = OpSizeFromSrc(Op);
+  const auto TBLIndex = FEXCore::IR::INDEXED_NAMED_VECTOR_PSHUFLW;
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
-  Ref Dest = PShufWLane(Size, FEXCore::IR::INDEXED_NAMED_VECTOR_PSHUFLW, true, Src, Shuffle);
+
+  // Single MMX 64-bit shuffle. Shuffle selector can fit full selection.
+  Ref Dest {};
+  switch (Shuffle) {
+  // Single-instruction shuffle operations.
+  case 0b00'00'00'00: Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0); break;
+  case 0b00'10'01'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Src, Src); break;
+  case 0b01'00'01'00: Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src); break;
+  case 0b00'11'10'01: Dest = _VExtr(OpSize::i64Bit, OpSize::i16Bit, Src, Src, 1); break;
+  case 0b01'00'11'10: Dest = _VRev64(OpSize::i64Bit, OpSize::i32Bit, Src); break;
+  case 0b01'01'01'01: Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1); break;
+  case 0b01'10'01'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 1, Src, Src); break;
+  case 0b10'10'01'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Src, Src); break;
+  case 0b10'10'10'10: Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2); break;
+  case 0b11'00'01'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 0, Src, Src); break;
+  case 0b11'01'01'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Src, Src); break;
+  case 0b11'10'00'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Src, Src); break;
+  case 0b11'10'01'00: Dest = Src; break;
+  case 0b11'10'01'01: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Src, Src); break;
+  case 0b11'10'01'10: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Src, Src); break;
+  case 0b11'10'01'11: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src); break;
+  case 0b11'10'10'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Src, Src); break;
+  case 0b11'10'11'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Src, Src); break;
+  case 0b11'10'11'10: Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 1); break;
+  case 0b11'11'01'00: Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Src, Src); break;
+  case 0b11'11'11'11: Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3); break;
+  // Two instruction shuffle operations.
+  case 0b00'00'00'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Dest, Src);
+    break;
+  case 0b00'00'00'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Dest, Src);
+    break;
+  case 0b00'00'00'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Dest, Src);
+    break;
+  case 0b00'00'01'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 1, Dest, Src);
+    break;
+  case 0b00'00'10'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Dest, Src);
+    break;
+  case 0b00'00'11'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Dest, Src);
+    break;
+  case 0b00'00'11'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i32Bit, 0, 1, Dest, Src);
+    break;
+  case 0b00'01'00'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b00'01'00'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 0);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i16Bit, Dest, Dest, 1);
+    break;
+  case 0b00'01'00'11:
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Dest, Src, 6);
+    break;
+  case 0b00'01'01'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Src);
+    break;
+  case 0b00'01'01'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i16Bit, Src, Dest, 1);
+    break;
+  case 0b00'10'00'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 2, Dest, Src);
+    break;
+  case 0b00'10'00'10:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Src, Src);
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Dest, 1);
+    break;
+  case 0b00'10'01'01:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Src);
+    break;
+  case 0b00'10'01'10:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Src);
+    break;
+  case 0b00'10'01'11:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Src);
+    break;
+  case 0b00'10'10'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Src);
+    break;
+  case 0b00'10'10'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i16Bit, Src, Dest, 1);
+    break;
+  case 0b00'10'11'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Src);
+    break;
+  case 0b00'10'11'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Src);
+    break;
+  case 0b00'11'00'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Dest, Src);
+    break;
+  case 0b00'11'01'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Src);
+    break;
+  case 0b00'11'10'11:
+    Dest = _VZip2(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i16Bit, Src, Dest, 1);
+    break;
+  case 0b00'11'11'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i16Bit, Src, Dest, 1);
+    break;
+  case 0b01'00'00'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Src);
+    break;
+  case 0b01'00'00'10:
+    Dest = _VRev64(OpSize::i64Bit, OpSize::i32Bit, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Dest, Src);
+    break;
+  case 0b01'00'01'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Src);
+    break;
+  case 0b01'00'01'10:
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Dest, Src);
+    break;
+  case 0b01'00'01'11:
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Dest, Src);
+    break;
+  case 0b01'00'10'00:
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Dest, Src);
+    break;
+  case 0b01'00'10'01:
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Src, 2);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Src);
+    break;
+  case 0b01'00'10'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Src);
+    break;
+  case 0b01'00'11'00:
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Dest, Src);
+    break;
+  case 0b01'00'11'01:
+    Dest = _VRev64(OpSize::i64Bit, OpSize::i32Bit, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Dest, Src);
+    break;
+  case 0b01'00'11'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Src);
+    break;
+  case 0b01'01'00'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Dest, Src);
+    break;
+  case 0b01'01'01'00:
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b01'01'01'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Dest, Src);
+    break;
+  case 0b01'01'01'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Dest, Src);
+    break;
+  case 0b01'01'10'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Dest, Src);
+    break;
+  case 0b01'01'11'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Dest, Src);
+    break;
+  case 0b01'01'11'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i32Bit, 0, 1, Dest, Src);
+    break;
+  case 0b01'10'00'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 1, Dest, Src);
+    break;
+  case 0b01'10'01'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 2, Dest, Src);
+    break;
+  case 0b01'10'01'10:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Src, Src);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Dest);
+    break;
+  case 0b01'10'01'11:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 1, Dest, Src);
+    break;
+  case 0b01'10'10'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 1, Dest, Src);
+    break;
+  case 0b01'10'10'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 1, Dest, Src);
+    break;
+  case 0b01'10'11'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 1, Dest, Src);
+    break;
+  case 0b01'10'11'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 1, Dest, Src);
+    break;
+  case 0b01'11'01'00:
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Dest, Src);
+    break;
+  case 0b01'11'01'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Dest, Src);
+    break;
+  case 0b01'11'01'11:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Dest);
+    break;
+  case 0b01'11'10'01:
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Dest);
+    break;
+  case 0b01'11'11'10:
+    Dest = _VRev64(OpSize::i64Bit, OpSize::i32Bit, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Dest);
+    break;
+  case 0b01'11'11'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 1, Dest, Src);
+    break;
+  case 0b10'00'00'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b10'00'01'00:
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b10'00'10'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Src, Src);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Dest);
+    break;
+  case 0b10'00'10'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 0, Dest, Src);
+    break;
+  case 0b10'00'11'10:
+    Dest = _VRev64(OpSize::i64Bit, OpSize::i32Bit, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 0, Dest, Dest);
+    break;
+  case 0b10'01'00'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Dest, 6);
+    break;
+  case 0b10'01'00'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Dest, 6);
+    break;
+  case 0b10'01'00'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Dest, 6);
+    break;
+  case 0b10'01'00'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Dest, 6);
+    break;
+  case 0b10'01'01'00:
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Src, 6);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i32Bit, 0, 0, Dest, Src);
+    break;
+  case 0b10'01'01'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b10'01'10'01:
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Src, 2);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Dest);
+    break;
+  case 0b10'01'10'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b10'01'11'10:
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Src, 6);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i32Bit, 0, 1, Dest, Src);
+    break;
+  case 0b10'10'00'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b10'10'00'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Dest, Src);
+    break;
+  case 0b10'10'01'01:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b10'10'01'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 1, Dest, Src);
+    break;
+  case 0b10'10'01'11:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b10'10'10'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 0, Dest, Src);
+    break;
+  case 0b10'10'10'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Dest, Src);
+    break;
+  case 0b10'10'10'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Dest, Src, 6);
+    break;
+  case 0b10'10'11'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b10'10'11'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Dest, Src);
+    break;
+  case 0b10'11'01'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b10'11'10'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Dest, Src);
+    break;
+  case 0b10'11'10'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 1);
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i16Bit, Dest, Dest, 1);
+    break;
+  case 0b10'11'11'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 2, Dest, Src);
+    break;
+  case 0b11'00'00'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 0);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 3, Dest, Src);
+    break;
+  case 0b11'00'01'01:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 0, Dest, Src);
+    break;
+  case 0b11'00'01'10:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 0, Dest, Src);
+    break;
+  case 0b11'00'01'11:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 0, Dest, Src);
+    break;
+  case 0b11'00'10'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 0, Dest, Src);
+    break;
+  case 0b11'00'11'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Src, Src);
+    Dest = _VZip(OpSize::i64Bit, OpSize::i32Bit, Dest, Dest);
+    break;
+  case 0b11'00'11'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 0, Dest, Src);
+    break;
+  case 0b11'00'11'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 0, Dest, Src);
+    break;
+  case 0b11'01'00'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b11'01'01'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 3, Dest, Src);
+    break;
+  case 0b11'01'01'10:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b11'01'01'11:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b11'01'10'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b11'01'11'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b11'01'11'01:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Src, Src);
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Dest, 1);
+    break;
+  case 0b11'01'11'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b11'01'11'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 1, Dest, Src);
+    break;
+  case 0b11'10'00'01:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Dest, Src);
+    break;
+  case 0b11'10'00'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Dest, Src);
+    break;
+  case 0b11'10'00'11:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Dest, Src);
+    break;
+  case 0b11'10'10'01:
+    Dest = _VExtr(OpSize::i64Bit, OpSize::i8Bit, Src, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i32Bit, 1, 1, Dest, Src);
+    break;
+  case 0b11'10'10'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 2);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 3, 3, Dest, Src);
+    break;
+  case 0b11'10'10'11:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 3, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Dest, Src);
+    break;
+  case 0b11'10'11'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i32Bit, Src, 1);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Dest, Src);
+    break;
+  case 0b11'10'11'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 2, Dest, Src);
+    break;
+  case 0b11'11'00'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Dest, Src);
+    break;
+  case 0b11'11'00'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 0, Dest, Src);
+    break;
+  case 0b11'11'01'01:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Dest, Src);
+    break;
+  case 0b11'11'01'10:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Dest, Src);
+    break;
+  case 0b11'11'01'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 1, Dest, Src);
+    break;
+  case 0b11'11'10'00:
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Src, Src);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 2, 3, Dest, Src);
+    break;
+  case 0b11'11'10'11:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 1, 2, Dest, Src);
+    break;
+  case 0b11'11'11'00:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 0, Dest, Src);
+    break;
+  case 0b11'11'11'01:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 1, Dest, Src);
+    break;
+  case 0b11'11'11'10:
+    Dest = _VDupElement(OpSize::i64Bit, OpSize::i16Bit, Src, 3);
+    Dest = _VInsElement(OpSize::i64Bit, OpSize::i16Bit, 0, 2, Dest, Src);
+    break;
+  default:
+    auto LookupIndexes = LoadAndCacheIndexedNamedVectorConstant(Size, TBLIndex, Shuffle * 16);
+    Dest = _VTBL1(Size, Src, LookupIndexes);
+    break;
+  }
   StoreResultFPR(Op, Dest);
 }
 
