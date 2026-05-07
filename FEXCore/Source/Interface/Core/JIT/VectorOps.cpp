@@ -4612,6 +4612,36 @@ DEF_OP(VFCopySign) {
   }
 }
 
+DEF_OP(F64FPREM) {
+  const auto Op = IROp->C<IR::IROp_F64FPREM>();
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+
+  fmov(VTMP1.D(), Src1.D());
+  fmov(VTMP2.D(), Src2.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64FPREMHandler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
+
+DEF_OP(F64FPREM1) {
+  const auto Op = IROp->C<IR::IROp_F64FPREM1>();
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+
+  fmov(VTMP1.D(), Src1.D());
+  fmov(VTMP2.D(), Src2.D());
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.F64FPREM1Handler));
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  fmov(Dst.D(), VTMP1.D());
+}
+
 DEF_OP(F64SIN) {
   const auto Op = IROp->C<IR::IROp_F64SIN>();
   const auto Src = GetVReg(Op->Src);

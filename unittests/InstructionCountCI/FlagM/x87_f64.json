@@ -2287,7 +2287,7 @@
       ]
     },
     "fprem1": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0xd9 11b 0xf5 /6"
       ],
@@ -2299,11 +2299,10 @@
         "ldr d2, [x21, #1056]",
         "add x20, x28, x20, lsl #4",
         "ldr d3, [x20, #1056]",
-        "str x30, [sp, #-16]!",
         "fmov d0, d3",
         "fmov d1, d2",
-        "ldr x0, [x28, #2296]",
-        "ldr x3, [x28, #2304]",
+        "ldr x0, [x28, #3048]",
+        "str x30, [sp, #-16]!",
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
@@ -2336,7 +2335,7 @@
       ]
     },
     "fprem": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0xd9 11b 0xf8 /7"
       ],
@@ -2348,11 +2347,10 @@
         "ldr d2, [x21, #1056]",
         "add x20, x28, x20, lsl #4",
         "ldr d3, [x20, #1056]",
-        "str x30, [sp, #-16]!",
         "fmov d0, d3",
         "fmov d1, d2",
-        "ldr x0, [x28, #2280]",
-        "ldr x3, [x28, #2288]",
+        "ldr x0, [x28, #3040]",
+        "str x30, [sp, #-16]!",
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
