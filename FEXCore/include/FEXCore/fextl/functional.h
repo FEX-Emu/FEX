@@ -32,30 +32,20 @@ public:
       internal = std::move(f);
     } else {
       // Other arguments require allocation, which is a problem since
-      // std::function doesn't allow allocator customization. Implementations
-      // are generally able to avoid allocation for lambdas with a single
-      // pointer capture however. We can exploit this special case by wrapping
-      // the actual argument in a lambda that points an external storage
-      // location.
+      // std::function doesn't allow allocator customization.
 
       static_assert(!std::is_pointer_v<F>, "Pointer types must manually be dereferenced");
 
-      // First, relocate argument to a location returned from FEX's allocators
+      // Relocate argument to a location returned from FEX's allocators
       using Fnoref = std::remove_reference_t<F>;
       storage = Alloc(alignof(Fnoref), sizeof(Fnoref));
-      auto moved_lambda = new (storage) Fnoref {std::move(f)};
+      new (storage) Fnoref {std::move(f)};
 
-      // Second, wrap the relocated argument in a single-capture lambda
-      auto wrapped_lambda = [moved_lambda](Args... args) {
+      // Create a wrapper and store a pointer to it
+      internal_invoker = +[](const move_only_function* self, Args... args) -> R {
+        auto* moved_lambda = reinterpret_cast<Fnoref*>(self->storage);
         return (*moved_lambda)(std::forward<Args>(args)...);
       };
-
-      // Third, assign the result to std::function, ensuring it's indeed
-      // allocation-free by checking for nothrow-constructibility
-      static_assert(noexcept(internal = std::move(wrapped_lambda)), "This implementation of std::function "
-                                                                    "does not support implementing "
-                                                                    "fextl::move_only_function");
-      internal = std::move(wrapped_lambda);
 
       // Finally, if a destructor must be called, generate a pointer to its destructor
       if constexpr (!std::is_trivially_destructible_v<Fnoref>) {
@@ -78,6 +68,7 @@ public:
       this->~move_only_function();
     }
     internal = std::exchange(other.internal, nullptr);
+    internal_invoker = std::exchange(other.internal_invoker, nullptr);
     internal_destructor = std::exchange(other.internal_destructor, nullptr);
     storage = std::exchange(other.storage, nullptr);
     return *this;
@@ -91,16 +82,21 @@ public:
   }
 
   R operator()(Args... args) const {
-    return internal(std::forward<Args>(args)...);
+    return internal_invoker(this, std::forward<Args>(args)...);
   }
 
   explicit operator bool() const noexcept {
-    return (bool)internal;
+    return (bool)internal || internal_invoker;
   }
 
 private:
+  static R InvokeInternal(const move_only_function* self, Args... args) {
+    return self->internal(std::forward<Args>(args)...);
+  }
+
   std::function<R(Args...)> internal;
   void (*internal_destructor)(move_only_function*) = nullptr;
+  R (*internal_invoker)(const move_only_function*, Args...) = InvokeInternal;
   void* storage = nullptr;
 };
 } // namespace fextl
