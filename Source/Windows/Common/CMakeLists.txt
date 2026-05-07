@@ -9,6 +9,7 @@ target_include_directories(CommonWindowsRuntime PRIVATE "${CMAKE_SOURCE_DIR}/Sou
 add_library(CommonWindows STATIC
   Allocator.cpp
   CPUFeatures.cpp
+  MonoHeuristic.cpp
   SHMStats.cpp
   InvalidationTracker.cpp
   ImageTracker.cpp

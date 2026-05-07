@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cerrno>
+#include <ntstatus.h>
 #include <winternl.h>
 #include <windows.h>
 #include <processenv.h>
@@ -256,7 +257,22 @@ DLLEXPORT_FUNC(DWORD, GetFileAttributesA, (LPCSTR lpFileName)) {
 }
 
 DLLEXPORT_FUNC(DWORD, GetFileAttributesW, (LPCWSTR lpFileName)) {
-  UNIMPLEMENTED();
+  FILE_BASIC_INFORMATION Info;
+  ScopedUnicodeString NTPath;
+  if (!RtlDosPathNameToNtPathName_U(lpFileName, &*NTPath, nullptr, nullptr)) {
+    SetLastError(ERROR_PATH_NOT_FOUND);
+    return INVALID_FILE_ATTRIBUTES;
+  }
+
+  OBJECT_ATTRIBUTES ObjAttributes;
+  InitializeObjectAttributes(&ObjAttributes, &*NTPath, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
+  NTSTATUS Status = NtQueryAttributesFile(&ObjAttributes, &Info);
+
+  if (Status == STATUS_SUCCESS) {
+    return Info.FileAttributes;
+  }
+
+  return INVALID_FILE_ATTRIBUTES;
 }
 
 DLLEXPORT_FUNC(WINBOOL, SetFileAttributesA, (LPCSTR lpFileName, DWORD dwFileAttributes)) {
@@ -369,4 +385,18 @@ DLLEXPORT_FUNC(DWORD, GetCurrentDirectoryA, (DWORD nBufferLength, LPSTR lpBuffer
 
 DLLEXPORT_FUNC(DWORD, GetCurrentDirectoryW, (DWORD nBufferLength, LPWSTR lpBuffer)) {
   return RtlGetCurrentDirectory_U(nBufferLength * sizeof(wchar_t), lpBuffer) / sizeof(wchar_t);
+}
+
+DLLEXPORT_FUNC(BOOL, PathFileExistsA, (LPCSTR Path)) {
+  if (!Path) {
+    return false;
+  }
+  return GetFileAttributesA(Path) != INVALID_FILE_ATTRIBUTES;
+}
+
+DLLEXPORT_FUNC(BOOL, PathFileExistsW, (LPWSTR Path)) {
+  if (!Path) {
+    return false;
+  }
+  return GetFileAttributesW(Path) != INVALID_FILE_ATTRIBUTES;
 }

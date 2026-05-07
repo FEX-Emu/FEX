@@ -22,6 +22,17 @@ inline fextl::string GetExecutableFilePath() {
   return Path;
 }
 
+inline std::wstring GetExecutableFilePathW() {
+  std::array<WCHAR, PATH_MAX> Buf;
+  UNICODE_STRING PathW {.Length = 0, .MaximumLength = Buf.size() * sizeof(WCHAR), .Buffer = Buf.data()};
+
+  if (LdrGetDllFullName(nullptr, &PathW)) {
+    return {};
+  }
+
+  return std::wstring(PathW.Buffer);
+}
+
 inline fextl::string GetSectionFilePath(uint64_t Address) {
   struct {
     MEMORY_SECTION_NAME Info;
@@ -43,4 +54,8 @@ inline fextl::string GetSectionFilePath(uint64_t Address) {
 inline std::string_view BaseName(std::string_view Path) {
   return Path.substr(Path.find_last_of('\\') + 1);
 }
+inline std::wstring_view BaseName(std::wstring_view Path) {
+  return Path.substr(Path.find_last_of(L'\\') + 1);
+}
+
 } // namespace FEX::Windows
