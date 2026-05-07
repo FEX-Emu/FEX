@@ -12,6 +12,7 @@ EXPORTS
   BTCpuNotifyMemoryFree
   BTCpuNotifyMapViewOfSection
   BTCpuNotifyUnmapViewOfSection
+  BTCpuNotifyProcessExecuteFlagsChange
   BTCpuNotifyReadFile
   BTCpuProcessInit
   BTCpuResetToConsistentState

@@ -30,6 +30,19 @@ InvalidationTracker::InvalidationTracker(FEXCore::Context::Context& CTX, const s
   }
 }
 
+static bool ProtHasExec(ULONG Prot) {
+  return (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+}
+
+static bool ProtIsReadable(ULONG Prot) {
+  return (Prot & (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE |
+                  PAGE_EXECUTE_WRITECOPY)) != 0;
+}
+
+static bool ProtIsWritable(ULONG Prot) {
+  return (Prot & (PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+}
+
 void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, uint64_t Size, ULONG Prot) {
   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
   const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
@@ -38,16 +51,27 @@ void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, u
     std::unique_lock Lock(IntervalsLock);
 
     FEXCore::IntervalList<uint64_t>::Interval ProtInterval {AlignedBase, AlignedBase + AlignedSize};
-    if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) {
+
+    const bool HasExec = ProtHasExec(Prot);
+    const bool EffectiveExec = HasExec || (DEPDisabled && ProtIsReadable(Prot));
+    const bool EffectiveRWX = EffectiveExec && ProtIsWritable(Prot);
+
+    if (EffectiveExec) {
       XIntervals.Insert(ProtInterval);
-      if (Prot & (PAGE_EXECUTE_WRITECOPY | PAGE_EXECUTE_READWRITE)) {
+      if (EffectiveRWX) {
         LogMan::Msg::DFmt("Add SMC interval: {:X} - {:X}", AlignedBase, AlignedBase + AlignedSize);
         RWXIntervals.Insert(ProtInterval);
+      }
+      if (DEPDisabled && !HasExec) {
+        DEPPromotedIntervals.Insert(ProtInterval);
       }
       return true;
     } else if (XIntervals.Intersect(ProtInterval)) {
       XIntervals.Remove(ProtInterval);
       RWXIntervals.Remove(ProtInterval);
+      if (DEPDisabled) {
+        DEPPromotedIntervals.Remove(ProtInterval);
+      }
       return true;
     }
 
@@ -58,6 +82,53 @@ void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, u
     // IntervalsLock cannot be held during invalidation
     InvalidateIntervalInternal(AlignedBase, AlignedSize);
   }
+}
+
+void InvalidationTracker::HandleProcessExecuteFlagsChange(ULONG Flags) {
+  const bool DisableDEP = (Flags & MEM_EXECUTE_OPTION_ENABLE) != 0;
+
+  std::scoped_lock CodeLock(CTX.GetCodeInvalidationMutex());
+  std::unique_lock Lock(IntervalsLock);
+
+  if (DisableDEP == DEPDisabled) {
+    return;
+  }
+
+  DEPDisabled = DisableDEP;
+
+  if (DisableDEP) {
+    DEPPromotedIntervals.Clear();
+
+    MEMORY_BASIC_INFORMATION Info;
+    uint64_t Address = 0;
+
+    while (VirtualQuery(reinterpret_cast<LPCVOID>(Address), &Info, sizeof(Info))) {
+      uint64_t BaseAddress = reinterpret_cast<uint64_t>(Info.BaseAddress);
+      if (Info.State == MEM_COMMIT && ProtIsReadable(Info.Protect) && !ProtHasExec(Info.Protect)) {
+        const auto AlignedBase = BaseAddress & FEXCore::Utils::FEX_PAGE_MASK;
+        const auto AlignedSize = (BaseAddress - AlignedBase + Info.RegionSize + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
+        FEXCore::IntervalList<uint64_t>::Interval ProtInterval {AlignedBase, AlignedBase + AlignedSize};
+
+        XIntervals.Insert(ProtInterval);
+        if (ProtIsWritable(Info.Protect)) {
+          RWXIntervals.Insert(ProtInterval);
+        }
+        DEPPromotedIntervals.Insert(ProtInterval);
+      }
+
+      Address = BaseAddress + Info.RegionSize;
+    }
+  } else {
+    for (const auto& Interval : DEPPromotedIntervals) {
+      XIntervals.Remove(Interval);
+      RWXIntervals.Remove(Interval);
+    }
+    DEPPromotedIntervals.Clear();
+  }
+
+  // Invalidate all cached code: previously-compiled blocks may contain NoExec stubs for addresses
+  // that are now executable (or reference regions whose executability just changed).
+  InvalidateIntervalInternalLocked(0, std::numeric_limits<uint64_t>::max());
 }
 
 void InvalidationTracker::HandleImageMap(std::string_view Name, uint64_t Address) {
@@ -146,9 +217,12 @@ void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size)
 }
 
 bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPc, uint64_t FaultAddress) {
-  const bool NeedsInvalidate = [&](uint64_t Address) {
+  const auto [NeedsInvalidate, UntrapProt] = [&](uint64_t Address) -> std::pair<bool, ULONG> {
     std::shared_lock Lock(IntervalsLock);
-    return RWXIntervals.Query(Address).Enclosed;
+    if (!RWXIntervals.Query(Address).Enclosed) {
+      return {false, 0};
+    }
+    return {true, GetUntrapProt(Address)};
   }(FaultAddress);
 
   if (NeedsInvalidate) {
@@ -162,7 +236,7 @@ bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThread
       ULONG TmpProt;
       void* TmpAddress = reinterpret_cast<void*>(FaultAddress);
       SIZE_T TmpSize = 1;
-      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READWRITE, &TmpProt);
+      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, UntrapProt, &TmpProt);
     }
     DetectMonoBackpatcherBlock(Thread, HostPc);
     return true;
@@ -223,7 +297,7 @@ void InvalidationTracker::DisableSMCDetection() {
   SMCDetectionDisabled = true;
   uint64_t Address = 0;
 
-  // Reprotect all RWX intervals as RWX
+  // Reprotect all RWX intervals as writable
   FEXCore::IntervalList<uint64_t>::QueryResult Query;
   do {
     Query = RWXIntervals.Query(Address);
@@ -231,10 +305,24 @@ void InvalidationTracker::DisableSMCDetection() {
       void* TmpAddress = reinterpret_cast<void*>(Address);
       SIZE_T TmpSize = static_cast<SIZE_T>(Query.Size);
       ULONG TmpProt;
-      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READWRITE, &TmpProt);
+      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, GetUntrapProt(Address), &TmpProt);
     }
     Address += Query.Size;
   } while (Query.Size);
+}
+
+ULONG InvalidationTracker::GetTrapProt(uint64_t Address) const {
+  if (DEPDisabled && DEPPromotedIntervals.Query(Address).Enclosed) {
+    return PAGE_READONLY;
+  }
+  return PAGE_EXECUTE_READ;
+}
+
+ULONG InvalidationTracker::GetUntrapProt(uint64_t Address) const {
+  if (DEPDisabled && DEPPromotedIntervals.Query(Address).Enclosed) {
+    return PAGE_READWRITE;
+  }
+  return PAGE_EXECUTE_READWRITE;
 }
 
 void InvalidationTracker::InvalidateIntervalInternal(uint64_t Address, uint64_t Size) {
@@ -275,7 +363,7 @@ bool InvalidationTracker::ProtectRWXIntervalsInternal(uint64_t Address, uint64_t
       void* TmpAddress = reinterpret_cast<void*>(Address);
       SIZE_T TmpSize = static_cast<SIZE_T>(std::min(End, Address + Query.Size) - Address);
       ULONG TmpProt;
-      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, ForWriteLocked ? PAGE_EXECUTE_READWRITE : PAGE_EXECUTE_READ, &TmpProt);
+      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, ForWriteLocked ? GetUntrapProt(Address) : GetTrapProt(Address), &TmpProt);
     } else if (!Query.Size) {
       // No more regions past `Address` in the interval list
       break;
