@@ -58,6 +58,9 @@ $end_info$
 #include <winternl.h>
 #include <winnt.h>
 #include <wine/debug.h>
+#include <wine/unixlib.h>
+
+#include "Unixlib/FEXUnixlib.h"
 
 namespace Exception {
 class ECSyscallHandler;
@@ -595,7 +598,8 @@ NTSTATUS ProcessInit() {
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   OvercommitTracker.emplace(IsWine);
 
-  FEX::Windows::Allocator::SetupHooks(NtDll);
+  FEX::Windows::Allocator::SetupHooks(IsWine);
+  FEX::Windows::Unixlib::Init(NtDll);
 
   {
     auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine);
@@ -623,15 +627,6 @@ NTSTATUS ProcessInit() {
 
   const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
   Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
-
-  FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
-  if (TSOEnabled()) {
-    BOOL Enable = TRUE;
-    NTSTATUS Status = NtSetInformationProcess(NtCurrentProcess(), ProcessFexHardwareTso, &Enable, sizeof(Enable));
-    if (Status == STATUS_SUCCESS) {
-      CTX->SetHardwareTSOSupport(true);
-    }
-  }
 
   FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
   FEX_CONFIG_OPT(StartupSleep, STARTUPSLEEP);

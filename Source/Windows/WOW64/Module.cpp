@@ -59,6 +59,8 @@ $end_info$
 #include <wine/debug.h>
 #include <wine/unixlib.h>
 
+#include "Unixlib/FEXUnixlib.h"
+
 namespace ControlBits {
 // When this is unset, a thread can be safely interrupted and have its context recovered
 // IMPORTANT: This can only safely be written by the owning thread
@@ -135,7 +137,7 @@ std::mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
 std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
 
-decltype(__wine_unix_call_dispatcher) WineUnixCall;
+FEX::Windows::Unixlib::CallDispatcher WineUnixCall;
 
 std::pair<NTSTATUS, TLS> GetThreadTLS(HANDLE Thread) {
   THREAD_BASIC_INFORMATION Info;
@@ -525,7 +527,8 @@ void BTCpuProcessInit() {
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   OvercommitTracker.emplace(IsWine);
 
-  FEX::Windows::Allocator::SetupHooks(NtDll);
+  FEX::Windows::Allocator::SetupHooks(IsWine);
+  FEX::Windows::Unixlib::Init(NtDll);
 
   {
     auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine);
@@ -565,15 +568,6 @@ void BTCpuProcessInit() {
 
   // wow64.dll will only initialise the cross-process queue if this is set
   GetTLS().Wow64Info().CpuFlags = WOW64_CPUFLAGS_SOFTWARE;
-
-  FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
-  if (TSOEnabled()) {
-    BOOL Enable = TRUE;
-    NTSTATUS Status = NtSetInformationProcess(NtCurrentProcess(), ProcessFexHardwareTso, &Enable, sizeof(Enable));
-    if (Status == STATUS_SUCCESS) {
-      CTX->SetHardwareTSOSupport(true);
-    }
-  }
 
   FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
   FEX_CONFIG_OPT(StartupSleep, STARTUPSLEEP);
