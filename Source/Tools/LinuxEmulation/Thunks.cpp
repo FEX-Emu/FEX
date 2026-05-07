@@ -259,6 +259,8 @@ void ThunkHandler_impl::LoadLib(std::string_view Name) {
 
     LogMan::Msg::DFmt("Loaded {} syms", i);
   }
+
+  _SyscallHandler->TriggerGuestLibWrapperCodeCacheLoad(*ThreadObject->Thread, ThreadObject->Thread->CurrentFrame->State.rip);
 }
 
 /**

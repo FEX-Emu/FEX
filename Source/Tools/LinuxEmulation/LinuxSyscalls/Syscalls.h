@@ -292,6 +292,7 @@ public:
   std::optional<FEXCore::ExecutableFileSectionInfo>
   LookupExecutableFileSection(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) final override;
 
+  void TriggerGuestLibWrapperCodeCacheLoad(FEXCore::Core::InternalThreadState&, uint64_t AnyAddr);
   int OpenCodeMapFile() override;
 
   FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override;

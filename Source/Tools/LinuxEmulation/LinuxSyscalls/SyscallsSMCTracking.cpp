@@ -366,6 +366,26 @@ uint64_t SyscallHandler::GuestMremap(bool Is64Bit, FEXCore::Core::InternalThread
   return Result;
 }
 
+void SyscallHandler::TriggerGuestLibWrapperCodeCacheLoad(FEXCore::Core::InternalThreadState& Thread, uint64_t AnyAddr) {
+  if (!EnableCodeCaching) {
+    return;
+  }
+
+  // TODO: Instead of deferring the entire cache load, only delay applicance of sha256 relocations!
+
+  auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, &Thread);
+  auto VMAEntry = VMATracking.FindVMAEntry(reinterpret_cast<uint64_t>(AnyAddr));
+
+  for (auto* VMA = VMAEntry->second.Resource->FirstVMA; VMA; VMA = VMA->ResourceNextVMA) {
+    if (!VMA->Prot.Executable) {
+      continue;
+    }
+
+    auto SectionInfo = BuildSectionInfo(*VMAEntry->second.Resource, VMA->Base, VMA->Length);
+    LoadCodeCache(Thread, SectionInfo, CodeCacheConfigId);
+  }
+}
+
 int SyscallHandler::OpenCodeMapFile() {
   // Query from FEXServer whether this is the first instance of this executable; if it is, also enable code dumping!
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
@@ -623,7 +643,11 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
   // Load code cache if present.
   // FEXServer was requested to generate library caches on program launch.
   if (EnableCodeCaching && Resource && Resource->MappedFile && VMATracking::VMAProt::fromProt(prot).Executable) {
-    if (Thread) {
+    if (Resource->MappedFile->Filename.ends_with("-guest.so")) {
+      // For guest library wrappers, cache loading must be delayed until LoadLib is called.
+      // Before that, we can't patch up the SHA256 function identifiers.
+      LogMan::Msg::IFmt("Delaying code cache load for {}", Resource->MappedFile->Filename);
+    } else if (Thread) {
       if (!Resource->RequiresDelayedCacheLoad) {
         CachedSection.emplace(BuildSectionInfo(*Resource, addr, Size));
       } else {
