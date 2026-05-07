@@ -21,6 +21,10 @@ struct VDSOMapping {
   size_t VDSOSize {};
   void* X86GeneratedCodePtr {};
   size_t X86GeneratedCodeSize {};
+
+  explicit operator bool() const {
+    return VDSOBase != nullptr;
+  }
 };
 
 struct VDSOEntrypoints {
