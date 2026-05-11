@@ -383,6 +383,8 @@ struct JITPointers {
   uint64_t F64ScaleHandler {};
   uint64_t F64AtanHandler {};
   uint64_t F64FYL2XHandler {};
+  uint64_t F64FPREMHandler {};
+  uint64_t F64FPREM1Handler {};
   /**  @} */
 
   // Copy of process-wide named vector constants data.
