@@ -302,6 +302,7 @@ enum FallbackHandlerIndex {
   OPINDEX_F80MUL,
   OPINDEX_F80DIV,
   OPINDEX_F80FYL2X,
+  OPINDEX_F80FYL2XP1,
   OPINDEX_F80ATAN,
   OPINDEX_F80FPREM1,
   OPINDEX_F80FPREM,
@@ -315,6 +316,7 @@ enum FallbackHandlerIndex {
   OPINDEX_F64ATAN,
   OPINDEX_F64F2XM1,
   OPINDEX_F64FYL2X,
+  OPINDEX_F64FYL2XP1,
   OPINDEX_F64FPREM,
   OPINDEX_F64FPREM1,
   OPINDEX_F64SCALE,
@@ -383,6 +385,7 @@ struct JITPointers {
   uint64_t F64ScaleHandler {};
   uint64_t F64AtanHandler {};
   uint64_t F64FYL2XHandler {};
+  uint64_t F64FYL2XP1Handler {};
   uint64_t F64FPREMHandler {};
   uint64_t F64FPREM1Handler {};
   /**  @} */

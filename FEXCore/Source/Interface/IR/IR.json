@@ -2780,6 +2780,10 @@
         "DestSize": "OpSize::i64Bit",
         "JITDispatch": true
       },
+      "FPR = F64FYL2XP1 FPR:$Src, FPR:$Src2": {
+        "DestSize": "OpSize::i64Bit",
+        "JITDispatch": true
+      },
       "FPR = F64TAN FPR:$Src": {
         "DestSize": "OpSize::i64Bit",
         "JITDispatch": true
@@ -3205,6 +3209,20 @@
         "X87": true
       },
       "FPR = F80FYL2X FPR:$X80Src1, FPR:$X80Src2": {
+        "DestSize": "OpSize::i128Bit",
+        "JITDispatch": false
+      },
+      "FPR = F80FYL2XP1Stack": {
+        "Desc": [
+          "Computes ST1 * log2(1 + ST0)",
+          "Stores the result in ST1, and pops the top of the stack.",
+          "Returns the new value at the top of the stack, i.e. the result of the operation."
+        ],
+        "HasSideEffects": true,
+        "DestSize": "OpSize::i128Bit",
+        "X87": true
+      },
+      "FPR = F80FYL2XP1 FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "OpSize::i128Bit",
         "JITDispatch": false
       },
