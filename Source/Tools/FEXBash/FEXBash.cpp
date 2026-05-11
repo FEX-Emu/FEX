@@ -13,6 +13,34 @@ $end_info$
 #include <unistd.h>
 #include <vector>
 
+static std::string EnchantedPS1(const char* PS1Env) {
+  using namespace std::string_view_literals;
+  const char* ColorTerm = getenv("COLORTERM");
+  const bool SupportsTrueColor = isatty(STDIN_FILENO) && ColorTerm && (ColorTerm == "truecolor"sv || ColorTerm == "24bit"sv);
+
+  std::string PS1 = "PS1=FEXBash ";
+  if (SupportsTrueColor) {
+    // Rainbow FEXBash text matching the FEX logo
+    PS1 = "PS1="
+          R"(\[\e[38;2;251;0;145m\]F)"
+          R"(\[\e[38;2;199;0;198m\]E)"
+          R"(\[\e[38;2;141;68;253m\]X)"
+          R"(\[\e[38;2;31;159;248m\]B)"
+          R"(\[\e[38;2;0;218;181m\]a)"
+          R"(\[\e[38;2;129;229;93m\]s)"
+          R"(\[\e[38;2;240;220;10m\]h)"
+          R"(\[\e[0m\] )";
+  }
+
+  if (PS1Env) {
+    PS1 += &PS1Env[strlen("PS1=")];
+  } else {
+    PS1 += R"(\u@\h:\w> )";
+  }
+
+  return PS1;
+}
+
 int main(int argc, char** argv, char** const envp) {
   // Skip argv[0]
   const bool EmptyArgs = argc == 1;
@@ -69,12 +97,7 @@ int main(int argc, char** argv, char** const envp) {
       Envp.emplace_back(envp[i]);
     }
   }
-
-  std::string PS1 = "PS1=FEXBash-\\u@\\h:\\w> ";
-  if (PS1Env) {
-    PS1 += &PS1Env[strlen("PS1=")];
-  }
-  Envp.emplace_back(PS1.c_str());
+  Envp.emplace_back(EnchantedPS1(PS1Env).c_str());
   Envp.emplace_back(nullptr);
 
   return execve(Argv[0], const_cast<char* const*>(Argv.data()), const_cast<char* const*>(&Envp[0]));
