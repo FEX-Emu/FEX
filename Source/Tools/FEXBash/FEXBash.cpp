@@ -2,7 +2,7 @@
 /*
 $info$
 tags: Bin|FEXBash
-desc: Launches bash under FEX and passes arguments via -c to it
+desc: Wrapper for invoking x86 bash from the rootfs using FEX
 $end_info$
 */
 
@@ -18,7 +18,6 @@ int main(int argc, char** argv, char** const envp) {
   const int ArgCount = argc - 1;
   const bool EmptyArgs = ArgCount == 0;
 
-  std::vector<const char*> Argv;
   // FEX will handle finding bash in the rootfs
   // Use /bin/sh for -c commands and /bin/bash for interactive mode
   const char* BashPath = EmptyArgs ? "/bin/bash" : "/bin/sh";
@@ -39,32 +38,17 @@ int main(int argc, char** argv, char** const envp) {
       std::abort();
     }
   }
-  const char* FEXArgs[] = {
-    FEXPath.c_str(),
-    BashPath,
-    "-c",
-  };
 
-  // Remove -c argument if arguments are empty
-  // Lets us start an emulated bash instance
-  const size_t FEXArgsCount = std::size(FEXArgs) - (EmptyArgs ? 1 : 0);
-
-  Argv.resize(ArgCount + FEXArgsCount);
-
-  // Pass in the FEX arguments
-  for (size_t i = 0; i < FEXArgsCount; ++i) {
-    Argv[i] = FEXArgs[i];
-  }
-
-  // Bring in passed in arguments
-  for (size_t i = 0; i < ArgCount; ++i) {
-    Argv[i + FEXArgsCount] = argv[i + 1];
+  std::vector<const char*> Argv;
+  Argv.emplace_back(FEXPath.c_str());
+  Argv.emplace_back(BashPath);
+  for (int i = 1; i < argc; ++i) {
+    Argv.emplace_back(argv[i]);
   }
 
   // Set --norc when no arguments are passed so PS1 doesn't get overwritten
-  const char* NoRC = "--norc";
   if (EmptyArgs) {
-    Argv.emplace_back(NoRC);
+    Argv.emplace_back("--norc");
   }
 
   Argv.emplace_back(nullptr);
