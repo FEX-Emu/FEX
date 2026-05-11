@@ -2,7 +2,7 @@
 /*
 $info$
 tags: Bin|FEXBash
-desc: Launches bash under FEX and passes arguments via -c to it
+desc: Wrapper for invoking x86 bash from the rootfs using FEX
 $end_info$
 */
 
@@ -13,25 +13,51 @@ $end_info$
 #include <unistd.h>
 #include <vector>
 
-int main(int argc, char** argv, char** const envp) {
-  // Skip argv[0].
-  const int ArgCount = argc - 1;
-  const bool EmptyArgs = ArgCount == 0;
+static std::string EnchantedPS1(const char* PS1Env) {
+  using namespace std::string_view_literals;
+  const char* ColorTerm = getenv("COLORTERM");
+  const bool SupportsTrueColor = isatty(STDIN_FILENO) && ColorTerm && (ColorTerm == "truecolor"sv || ColorTerm == "24bit"sv);
 
-  std::vector<const char*> Argv;
+  std::string PS1 = "PS1=FEXBash ";
+  if (SupportsTrueColor) {
+    // Rainbow FEXBash text matching the FEX logo
+    PS1 = "PS1="
+          R"(\[\e[38;2;251;0;145m\]F)"
+          R"(\[\e[38;2;199;0;198m\]E)"
+          R"(\[\e[38;2;141;68;253m\]X)"
+          R"(\[\e[38;2;31;159;248m\]B)"
+          R"(\[\e[38;2;0;218;181m\]a)"
+          R"(\[\e[38;2;129;229;93m\]s)"
+          R"(\[\e[38;2;240;220;10m\]h)"
+          R"(\[\e[0m\] )";
+  }
+
+  if (PS1Env) {
+    PS1 += &PS1Env[strlen("PS1=")];
+  } else {
+    PS1 += R"(\u@\h:\w> )";
+  }
+
+  return PS1;
+}
+
+int main(int argc, char** argv, char** const envp) {
+  // Skip argv[0]
+  const bool EmptyArgs = argc == 1;
+
   // FEX will handle finding bash in the rootfs
-  // Use /bin/sh for -c commands and /bin/bash for interactive mode
+  // Use /bin/bash for interactive mode and /bin/sh when running a script or when using -c
   const char* BashPath = EmptyArgs ? "/bin/bash" : "/bin/sh";
 
-  std::string FEXPath = std::filesystem::path(argv[0]).parent_path().string() + "/FEX";
+  auto FEXPath = std::filesystem::path(argv[0]).replace_filename("FEX");
 
   // Check if a local FEX to FEXBash exists
   // If it does then it takes priority over the installed one
   if (!std::filesystem::exists(FEXPath)) {
-    char FEXBashPath[PATH_MAX];
-    auto Result = readlink("/proc/self/exe", FEXBashPath, PATH_MAX);
-    if (Result != -1) {
-      FEXPath = std::filesystem::path(&FEXBashPath[0], &FEXBashPath[Result]).parent_path().string() + "/FEX";
+    std::error_code ec;
+    auto FEXBashPath = std::filesystem::read_symlink("/proc/self/exe", ec);
+    if (!ec) {
+      FEXPath = FEXBashPath.replace_filename("FEX");
     }
 
     if (!std::filesystem::exists(FEXPath)) {
@@ -39,32 +65,17 @@ int main(int argc, char** argv, char** const envp) {
       std::abort();
     }
   }
-  const char* FEXArgs[] = {
-    FEXPath.c_str(),
-    BashPath,
-    "-c",
-  };
 
-  // Remove -c argument if arguments are empty
-  // Lets us start an emulated bash instance
-  const size_t FEXArgsCount = std::size(FEXArgs) - (EmptyArgs ? 1 : 0);
-
-  Argv.resize(ArgCount + FEXArgsCount);
-
-  // Pass in the FEX arguments
-  for (size_t i = 0; i < FEXArgsCount; ++i) {
-    Argv[i] = FEXArgs[i];
-  }
-
-  // Bring in passed in arguments
-  for (size_t i = 0; i < ArgCount; ++i) {
-    Argv[i + FEXArgsCount] = argv[i + 1];
+  std::vector<const char*> Argv;
+  Argv.emplace_back(FEXPath.c_str());
+  Argv.emplace_back(BashPath);
+  for (int i = 1; i < argc; ++i) {
+    Argv.emplace_back(argv[i]);
   }
 
   // Set --norc when no arguments are passed so PS1 doesn't get overwritten
-  const char* NoRC = "--norc";
   if (EmptyArgs) {
-    Argv.emplace_back(NoRC);
+    Argv.emplace_back("--norc");
   }
 
   Argv.emplace_back(nullptr);
@@ -86,12 +97,7 @@ int main(int argc, char** argv, char** const envp) {
       Envp.emplace_back(envp[i]);
     }
   }
-
-  std::string PS1 = "PS1=FEXBash-\\u@\\h:\\w> ";
-  if (PS1Env) {
-    PS1 += &PS1Env[strlen("PS1=")];
-  }
-  Envp.emplace_back(PS1.c_str());
+  Envp.emplace_back(EnchantedPS1(PS1Env).c_str());
   Envp.emplace_back(nullptr);
 
   return execve(Argv[0], const_cast<char* const*>(Argv.data()), const_cast<char* const*>(&Envp[0]));
