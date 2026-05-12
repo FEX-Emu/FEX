@@ -131,6 +131,41 @@ __attribute__((naked)) void atomic_load_u128(std::byte* Data) {
                  : "x1", "x2", "x3", "memory");
 }
 
+__attribute__((naked)) void atomic_set_u16(std::byte* Data, uint16_t value) {
+  asm volatile(R"(
+    .word 0x78e13002; // ldsetalh w1, w2, [x0];
+    ret;
+    )" ::
+                 : "memory");
+}
+
+__attribute__((naked)) void atomic_set_u32(std::byte* Data, uint32_t value) {
+  asm volatile(R"(
+    .word 0xb8e13002; // ldsetal w1, w2, [x0];
+    ret;
+    )" ::
+                 : "memory");
+}
+
+__attribute__((naked)) void atomic_set_u64(std::byte* Data, uint64_t value) {
+  asm volatile(R"(
+    .word 0xf8e13002; // ldsetal x1, x2, [x0];
+    ret;
+    )" ::
+                 : "memory");
+}
+__attribute__((naked)) void atomic_set_u128_impl(__uint128_t expected, __uint128_t desired, std::byte* Data) {
+  asm volatile(R"(
+    .word 0x4860fc82; // caspal x0, x1, x2, x3, [x4];
+    ret;
+    )" ::
+                 : "memory");
+}
+
+static inline void atomic_set_u128(std::byte* Data, __uint128_t value) {
+  atomic_set_u128_impl(*reinterpret_cast<__uint128_t*>(Data), value, Data);
+}
+
 static void HandleSIGBUS(int, siginfo_t* info, void* context) {
   FaultArray[reinterpret_cast<uintptr_t>(info->si_addr) & 63] = true;
 
@@ -151,6 +186,13 @@ void TestSIGBUS() {
     FaultArray = FaultOffsets;
     for (size_t i = 0; i < 64; ++i) {
       AccessFunction(AccessArray + i);
+    }
+  };
+
+  auto test_rmw_fault = [](bool* FaultOffsets, auto AccessFunction, std::byte* AccessArray) {
+    FaultArray = FaultOffsets;
+    for (size_t i = 0; i < 64; ++i) {
+      AccessFunction(AccessArray + i, 1);
     }
   };
 
@@ -176,19 +218,50 @@ void TestSIGBUS() {
   bool FaultOffset_64bit[64] {};
   bool FaultOffset_128bit[64] {};
 
+  bool FaultOffset_RMW_16bit[64] {};
+  bool FaultOffset_RMW_32bit[64] {};
+  bool FaultOffset_RMW_64bit[64] {};
+  bool FaultOffset_RMW_128bit[64] {};
+
   test_fault(FaultOffset_16bit, atomic_load_u16, ptr);
   test_fault(FaultOffset_32bit, atomic_load_u32, ptr);
   test_fault(FaultOffset_64bit, atomic_load_u64, ptr);
   test_fault(FaultOffset_128bit, atomic_load_u128, ptr);
 
+  auto TSOFacts = GetTSOEmulationFacts();
+
+  if (TSOFacts.LSE) {
+    test_rmw_fault(FaultOffset_RMW_16bit, atomic_set_u16, ptr);
+    test_rmw_fault(FaultOffset_RMW_32bit, atomic_set_u32, ptr);
+    test_rmw_fault(FaultOffset_RMW_64bit, atomic_set_u64, ptr);
+    test_rmw_fault(FaultOffset_RMW_128bit, atomic_set_u128, ptr);
+  }
+
   munmap(ptr, 4096);
   sigaction(SIGBUS, &act, nullptr);
 
-  fprintf(stdout, "Fault Granularity: Split every 16 bytes\n");
+  const bool RMWIsDifferent = TSOFacts.LSE && (memcmp(FaultOffset_16bit, FaultOffset_RMW_16bit, sizeof(FaultOffset_16bit)) != 0 ||
+                                               memcmp(FaultOffset_32bit, FaultOffset_RMW_32bit, sizeof(FaultOffset_32bit)) != 0 ||
+                                               memcmp(FaultOffset_64bit, FaultOffset_RMW_64bit, sizeof(FaultOffset_64bit)) != 0 ||
+                                               memcmp(FaultOffset_128bit, FaultOffset_RMW_128bit, sizeof(FaultOffset_128bit)) != 0);
+
+  if (!RMWIsDifferent) {
+    fprintf(stdout, "Fault Granularity: Split every 16 bytes\n");
+  } else {
+    fprintf(stdout, "Load/Store Fault Granularity: Split every 16 bytes\n");
+  }
   print_granule(" 16-bit", FaultOffset_16bit);
   print_granule(" 32-bit", FaultOffset_32bit);
   print_granule(" 64-bit", FaultOffset_64bit);
   print_granule("128-bit", FaultOffset_128bit);
+
+  if (RMWIsDifferent) {
+    fprintf(stdout, "RMW Atomic Fault Granularity: Split every 16 bytes\n");
+    print_granule(" 16-bit", FaultOffset_RMW_16bit);
+    print_granule(" 32-bit", FaultOffset_RMW_32bit);
+    print_granule(" 64-bit", FaultOffset_RMW_64bit);
+    print_granule("128-bit", FaultOffset_RMW_128bit);
+  }
 }
 } // namespace SIGBUSTest
 #endif
@@ -330,7 +403,6 @@ int main(int argc, char** argv, char** envp) {
     FEX_CONFIG_OPT(VectorTSOEnabled, VECTORTSOENABLED);
     FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
     FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
-    fprintf(stderr, "Strict: %d\n", StrictInProcessSplitLocks());
 
     fprintf(stdout, "\nConfiguration:\n");
     fprintf(stdout, "\tTSO Emulation:                        %s\n", TSOEnabled() ? "Enabled" : "Disabled");
