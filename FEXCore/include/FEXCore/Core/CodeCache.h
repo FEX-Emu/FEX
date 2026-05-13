@@ -194,11 +194,12 @@ struct MappedCodeCacheFile {
   // If not nullptr, the MappedCodeCacheFile will be unregistered from this on destruction
   AbstractCodeCache* CacheManager;
 
-  std::span<std::byte> MappedFile; // Mapped data of the whole cache file
-  std::span<std::byte> CodeBuffer; // Subspan of cached ARM64 data within MappedFile
-  std::byte* BlockListInFile;      // Pointer to BlockListEntry data within MappedFile
-  uint32_t NumBlocks;              // Number of BlockListEntry objects
-  uint32_t NumCodePages;           // Number of code page entrypoint mappings
+  std::span<std::byte> MappedFile;       // Mapped data of the whole cache file
+  std::span<std::byte> CodeBufferInFile; // Subspan of cached ARM64 data within MappedFile (pre-relocation)
+  std::span<std::byte> CodeBuffer;       // Cached ARM64 data used for execution (post-relocation; owned by MappedCodeCacheFile)
+  std::byte* BlockListInFile;            // Pointer to BlockListEntry data within MappedFile
+  uint32_t NumBlocks;                    // Number of BlockListEntry objects
+  uint32_t NumCodePages;                 // Number of code page entrypoint mappings
 
   struct PageRelocationRange {
     uint32_t Offset; // In bytes from start of file

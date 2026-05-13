@@ -45,6 +45,12 @@ MappedCodeCacheFile::~MappedCodeCacheFile() {
   if (CacheManager) {
     CacheManager->UnregisterMappedCodeBuffer(*this);
   }
+
+#ifndef _WIN32
+  if (CodeBuffer.empty()) {
+    FEXCore::Allocator::munmap(CodeBuffer.data(), CodeBuffer.size_bytes());
+  }
+#endif
 }
 
 void AbstractCodeCache::RegisterMappedCodeBuffer(MappedCodeCacheFile& Code) {
@@ -346,7 +352,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
 
   // Dump the host code (relocated for position-independent serialization)
   std::span CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->Ptr), reinterpret_cast<std::byte*>(CodeBuffer->Ptr) + CTX.LatestOffset);
-  if (!ApplyCodeRelocations(SerializedBaseAddress, CodeBufferData, Relocations, true)) {
+  if (!ApplyCodeRelocations(SerializedBaseAddress, CodeBufferData, Relocations, 0, true)) {
     LOGMAN_THROW_A_FMT(false, "Failed to apply code relocations");
     return false;
   }
@@ -428,7 +434,7 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   NewRelocations.erase(std::remove_if(NewRelocations.begin(), NewRelocations.end(), [](const CPU::Relocation& Reloc) {
     return Reloc.Header.Type != CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL && Reloc.Header.Type != CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE;
   }));
-  (void)ApplyCodeRelocations(Section.FileStartVA, CodeBufferRangeRef, NewRelocations, false);
+  (void)ApplyCodeRelocations(Section.FileStartVA, CodeBufferRangeRef, NewRelocations, 0, false);
 
   if (ValidationCTX->LatestOffset <= CodeBufferRangeRef.size()) {
     // Reference compilation produced fewer bytes than our cache, so validation is going to fail.
@@ -490,11 +496,13 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
 }
 
 bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
-                                     std::span<const FEXCore::CPU::Relocation> EntryRelocations, bool ForStorage) {
+                                     std::span<const FEXCore::CPU::Relocation> EntryRelocations, uint32_t RelocationOffset, bool ForStorage) {
   CPU::Arm64Emitter Emitter(&CTX, Code.data(), Code.size_bytes());
   for (size_t j = 0; j < EntryRelocations.size(); ++j) {
     const FEXCore::CPU::Relocation& Reloc = EntryRelocations[j];
-    Emitter.SetCursorOffset(Reloc.Header.Offset);
+    LOGMAN_THROW_A_FMT(Reloc.Header.Offset >= RelocationOffset, "Invalid relocation offset");
+    LOGMAN_THROW_A_FMT(Reloc.Header.Offset - RelocationOffset < Code.size_bytes(), "Invalid relocation offset");
+    Emitter.SetCursorOffset(Reloc.Header.Offset - RelocationOffset);
 
     switch (Reloc.Header.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
@@ -582,8 +590,20 @@ CodeCache::LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo& F
   Cursor = reinterpret_cast<std::byte*>(AlignUp(reinterpret_cast<uintptr_t>(Cursor), Utils::FEX_PAGE_SIZE));
   auto CodeDataInFile = std::span {Cursor, header.CodeBufferSize};
 
-  // Make code data inaccessible until finalized
-  Allocator::VirtualProtect(CodeDataInFile.data(), header.CodeBufferSize, Allocator::ProtectOptions::None);
+#ifndef _WIN32
+  // Allocate target memory for post-relocation code. This is PROT_NONE until
+  // the first execution, so that contents can be lazily populated in a
+  // frontend-provided segfault handler.
+  void* CodeBufferAllocation = Allocator::mmap(nullptr, header.CodeBufferSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (CodeBufferAllocation == MAP_FAILED) {
+    LogMan::Msg::EFmt("Failed to reserve target memory for code cache");
+    return nullptr;
+  }
+  auto CodeBuffer = std::span {static_cast<std::byte*>(CodeBufferAllocation), header.CodeBufferSize};
+#else
+  // TODO: Implement lazy mapping on Windows
+  auto CodeBuffer = CodeDataInFile;
+#endif
 
   // Group relocations by page
   size_t NumPages = header.CodeBufferSize / Utils::FEX_PAGE_SIZE;
@@ -600,7 +620,7 @@ CodeCache::LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo& F
 
   auto Storage = FEXCore::Allocator::aligned_alloc(alignof(MappedCodeCacheFile), sizeof(MappedCodeCacheFile));
   return fextl::unique_ptr<MappedCodeCacheFile>(
-    new (Storage) MappedCodeCacheFile {this, CacheFile, CodeDataInFile, BlockListStart, header.NumBlocks, header.NumCodePages,
+    new (Storage) MappedCodeCacheFile {this, CacheFile, CodeDataInFile, CodeBuffer, BlockListStart, header.NumBlocks, header.NumCodePages,
                                        std::move(PageRelocationRanges), fextl::vector<bool>(NumPages), FileStartVA});
 }
 
@@ -674,7 +694,7 @@ bool CodeCache::EnableLoadedSection(Core::InternalThreadState* Thread, MappedCod
     }
 
     // Guest code pages
-    auto* Cursor = Code.CodeBuffer.data() + Code.CodeBuffer.size_bytes();
+    auto* Cursor = Code.CodeBufferInFile.data() + Code.CodeBufferInFile.size_bytes();
     fextl::vector<uint64_t> Entrypoints;
     for (uint32_t i = 0; i < Code.NumCodePages; ++i) {
       uint64_t CodePage;
@@ -699,7 +719,12 @@ bool CodeCache::EnableLoadedSection(Core::InternalThreadState* Thread, MappedCod
     }
   }
 
+#ifndef _WIN32
   if (!EnableLazyCodeCaching || EnableCodeCacheValidation) {
+#else
+  // TODO: Implement lazy mapping on Windows
+  if (true) {
+#endif
     auto Range = SelectCodeRangeToFinalize(Code, 0, Code.CodeBuffer.size_bytes() / Utils::FEX_PAGE_SIZE);
     FinalizeCodePages(Code, Range);
   }
@@ -792,6 +817,7 @@ void CodeCache::FinalizeCodePages(MappedCodeCacheFile& Code, std::span<std::byte
   const size_t StartOffset = CodeRange.data() - Code.CodeBuffer.data();
   const auto StartPage = StartOffset / Utils::FEX_PAGE_SIZE;
   const auto EndPage = StartPage + CodeRange.size_bytes() / Utils::FEX_PAGE_SIZE;
+  const size_t Size = CodeRange.size_bytes();
 
   // None of the selected pages should be loaded at all; otherwise, SelectCodeRangeToFinalize returned inconsistent ranges
   LOGMAN_THROW_A_FMT(std::find(Code.LoadedPages.begin() + StartPage, Code.LoadedPages.begin() + EndPage, true) == Code.LoadedPages.begin() + EndPage,
@@ -799,22 +825,59 @@ void CodeCache::FinalizeCodePages(MappedCodeCacheFile& Code, std::span<std::byte
 
   FEXCORE_PROFILE_SCOPED("FinalizeCodePages");
 
-  // Map writeable to allow applying relocations
-  // TODO: Are there any remaining race conditions here?
-  Allocator::VirtualProtect(CodeRange.data(), CodeRange.size_bytes(), Allocator::ProtectOptions::Write);
+#ifndef _WIN32
+  // Atomicity is critical when making the finalized code data visible.
+  // We ensure this by remapping a temporary buffer onto the PROT_NONE
+  // placeholder page in CodeBuffer. Some constraints to keep in mind are:
+  // 1. Pages can't be write-only (readability is implicitly added), so
+  //    we can't change CodeBuffer from PROT_NONE to PROT_WRITE even for just
+  //    a short duration
+  // 2. Naive mremap from CodeBufferInFile to CodeBuffer would leave a gap in
+  //    the former, which would make cleanup overly complicated
+  //
+  // Due to (1), we can't apply relocations in place (CodeBufferInFile); at
+  // least a secondary buffer is needed for execution (CodeBuffer).
+  // Due to (2), a third buffer is temporarily allocated here and freed on
+  // completion. The final code data is computed here and then the memory
+  // is remapped onto CodeBuffer.
+  auto* Staging = reinterpret_cast<std::byte*>(Allocator::VirtualAlloc(nullptr, Size, true));
+  if (!Staging) {
+    ERROR_AND_DIE_FMT("Failed to allocate {} bytes of staging memory for code-cache finalization", Size);
+  }
+
+  // Copy code from the cache file to the staging buffer
+  memcpy(Staging, Code.CodeBufferInFile.data() + StartOffset, Size);
 
   // Apply relocations
+  auto StagingSpan = std::span {Staging, Size};
   for (size_t i = StartPage; i < EndPage; ++i) {
     auto PageRelocations = SpanPageRelocations(Code, i);
-    (void)ApplyCodeRelocations(Code.GuestBase, Code.CodeBuffer, PageRelocations, false);
+    (void)ApplyCodeRelocations(Code.GuestBase, StagingSpan, PageRelocations, static_cast<uint32_t>(StartOffset), false);
     Code.LoadedPages[i] = true;
   }
 
-  ARMEmitter::Emitter::ClearICache(CodeRange.data(), CodeRange.size_bytes());
-  if (!Allocator::VirtualProtect(CodeRange.data(), CodeRange.size_bytes(),
-                                 Allocator::ProtectOptions::Read | Allocator::ProtectOptions::Write | Allocator::ProtectOptions::Exec)) {
-    ERROR_AND_DIE_FMT("VirtualProtect failed");
+  // Atomically make the finalized code data visible by remapping the staging
+  // buffer onto the requested CodeBuffer window. MREMAP_DONTUNMAP is used to
+  // leave the old VA range reserved so that we can cleanly deallocate it
+  // through Allocator.
+  void* RemapResult = ::mremap(Staging, Size, Size, MREMAP_FIXED | MREMAP_MAYMOVE | MREMAP_DONTUNMAP, CodeRange.data());
+  if (RemapResult == MAP_FAILED) {
+    ERROR_AND_DIE_FMT("{}: mremap failed: {}", __FUNCTION__, errno);
   }
+  Allocator::VirtualFree(Staging, Size);
+
+  // Release resident file pages that will no longer be needed. The VA range is left allocated to allow cleanup with a single VirtualFree.
+  Allocator::VirtualDontNeed(Code.CodeBufferInFile.data() + StartOffset, Size);
+#else
+  // TODO: Implement lazy mapping on Windows
+  for (size_t i = StartPage; i < EndPage; ++i) {
+    auto PageRelocations = SpanPageRelocations(Code, i);
+    (void)ApplyCodeRelocations(Code.GuestBase, Code.CodeBuffer, PageRelocations, 0, false);
+    Code.LoadedPages[i] = true;
+  }
+#endif
+
+  ARMEmitter::Emitter::ClearICache(CodeRange.data(), Size);
 }
 
 } // namespace FEXCore::Context
