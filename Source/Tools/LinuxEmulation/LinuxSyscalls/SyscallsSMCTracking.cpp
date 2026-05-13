@@ -280,7 +280,7 @@ LoadCodeCache(FEXCore::Core::InternalThreadState& Thread, VMATracking::VMATracki
   }
 
   auto CacheFileSize = static_cast<std::size_t>(buf.st_size);
-  auto MappedCache = (std::byte*)FEXCore::Allocator::mmap(nullptr, CacheFileSize, PROT_READ | PROT_WRITE, MAP_PRIVATE, CacheFD, 0);
+  auto MappedCache = (std::byte*)FEXCore::Allocator::mmap(nullptr, CacheFileSize, PROT_READ, MAP_PRIVATE, CacheFD, 0);
   close(CacheFD);
   if (!MappedCache || MappedCache == MAP_FAILED) {
     LogMan::Msg::EFmt("Failed to map code cache into memory");
