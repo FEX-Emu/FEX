@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <ucontext.h>
 
+#ifdef ARCHITECTURE_arm64
 namespace {
 struct TSOEmulationFacts {
   bool LSE {}, LSE2 {};
@@ -24,7 +25,6 @@ struct TSOEmulationFacts {
   bool LRCPC1 {}, LRCPC2 {}, LRCPC3 {};
 };
 
-#ifdef ARCHITECTURE_arm64
 bool CheckForHardwareTSO() {
   // Check to see if this is supported.
   auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
@@ -89,14 +89,8 @@ TSOEmulationFacts GetTSOEmulationFacts() {
     .LRCPC3 = ((ISAR1 >> ISAR1_FIELDS::LRCPC) & IDFIELDMASK) >= 0b0011,
   };
 }
-#else
-TSOEmulationFacts GetTSOEmulationFacts() {
-  return {};
-}
-#endif
 } // namespace
 
-#ifdef ARCHITECTURE_arm64
 namespace SIGBUSTest {
 static bool* FaultArray {};
 
@@ -175,7 +169,22 @@ static void HandleSIGBUS(int, siginfo_t* info, void* context) {
   mcontext->pc += 4;
 }
 
-void TestSIGBUS() {
+static bool CalculatedFaultOffsets {};
+static bool FaultOffset_16bit[64] {};
+static bool FaultOffset_32bit[64] {};
+static bool FaultOffset_64bit[64] {};
+static bool FaultOffset_128bit[64] {};
+
+static bool FaultOffset_RMW_16bit[64] {};
+static bool FaultOffset_RMW_32bit[64] {};
+static bool FaultOffset_RMW_64bit[64] {};
+static bool FaultOffset_RMW_128bit[64] {};
+
+void RunFaultTests() {
+  if (CalculatedFaultOffsets) {
+    return;
+  }
+
   struct sigaction act {};
   act.sa_sigaction = HandleSIGBUS;
   act.sa_flags = SA_SIGINFO;
@@ -196,33 +205,6 @@ void TestSIGBUS() {
     }
   };
 
-  auto print_granule = [](const char* size, bool* FaultArray) {
-    std::string output {};
-    for (size_t i = 0; i < 64; ++i) {
-      if (i && (i % 16 == 0)) {
-        output += " ";
-      }
-
-      if (FaultArray[i]) {
-        output += "\e[31m■\e[0m";
-      } else {
-        output += "\e[32m■\e[0m";
-      }
-    }
-
-    fprintf(stdout, "%s: %s\n", size, output.c_str());
-  };
-
-  bool FaultOffset_16bit[64] {};
-  bool FaultOffset_32bit[64] {};
-  bool FaultOffset_64bit[64] {};
-  bool FaultOffset_128bit[64] {};
-
-  bool FaultOffset_RMW_16bit[64] {};
-  bool FaultOffset_RMW_32bit[64] {};
-  bool FaultOffset_RMW_64bit[64] {};
-  bool FaultOffset_RMW_128bit[64] {};
-
   test_fault(FaultOffset_16bit, atomic_load_u16, ptr);
   test_fault(FaultOffset_32bit, atomic_load_u32, ptr);
   test_fault(FaultOffset_64bit, atomic_load_u64, ptr);
@@ -240,6 +222,30 @@ void TestSIGBUS() {
   munmap(ptr, 4096);
   sigaction(SIGBUS, &act, nullptr);
 
+  CalculatedFaultOffsets = true;
+}
+
+void PrintSIGBUSInfo() {
+  RunFaultTests();
+
+  auto print_granule = [](const char* size, bool* FaultArray) {
+    std::string output {};
+    for (size_t i = 0; i < 64; ++i) {
+      if (i && (i % 16 == 0)) {
+        output += " ";
+      }
+
+      if (FaultArray[i]) {
+        output += "\e[31m■\e[0m";
+      } else {
+        output += "\e[32m■\e[0m";
+      }
+    }
+
+    fprintf(stdout, "%s: %s\n", size, output.c_str());
+  };
+
+  auto TSOFacts = GetTSOEmulationFacts();
   const bool RMWIsDifferent = TSOFacts.LSE && (memcmp(FaultOffset_16bit, FaultOffset_RMW_16bit, sizeof(FaultOffset_16bit)) != 0 ||
                                                memcmp(FaultOffset_32bit, FaultOffset_RMW_32bit, sizeof(FaultOffset_32bit)) != 0 ||
                                                memcmp(FaultOffset_64bit, FaultOffset_RMW_64bit, sizeof(FaultOffset_64bit)) != 0 ||
@@ -263,6 +269,30 @@ void TestSIGBUS() {
     print_granule("128-bit", FaultOffset_RMW_128bit);
   }
 }
+
+struct FirstFaultInformation {
+  int32_t LoadStoreFaultAlignment {};
+  int32_t RMWFaultAlignment {};
+};
+
+FirstFaultInformation CalculateFirstFaultInformation() {
+  RunFaultTests();
+  FirstFaultInformation Info {};
+  auto FindFirstFaultOffset = [](bool FaultOffsets[64]) -> int32_t {
+    for (int32_t i = 0; i < 64; ++i) {
+      if (FaultOffsets[i]) {
+        return i;
+      }
+    }
+
+    return -1;
+  };
+
+  Info.LoadStoreFaultAlignment = FindFirstFaultOffset(FaultOffset_16bit) + 1;
+  Info.RMWFaultAlignment = FindFirstFaultOffset(FaultOffset_RMW_16bit) + 1;
+  return Info;
+}
+
 } // namespace SIGBUSTest
 #endif
 
@@ -283,9 +313,8 @@ int main(int argc, char** argv, char** envp) {
 
   Parser.add_option("--current-rootfs").action("store_true").help("Print the directory that contains the FEX rootfs. Mounted in the case of squashfs");
 
-  Parser.add_option("--tso-emulation-info").action("store_true").help("Print how FEX is emulating the x86-TSO memory model.");
-
 #ifdef ARCHITECTURE_arm64
+  Parser.add_option("--tso-emulation-info").action("store_true").help("Print how FEX is emulating the x86-TSO memory model.");
   Parser.add_option("--test-fault-granularity").action("store_true").help("Show SIGBUS fault granularity");
   Parser.add_option("--identification-reg-info").action("store_true").help("Print identification registers");
 #endif
@@ -321,7 +350,7 @@ int main(int argc, char** argv, char** envp) {
 
 #ifdef ARCHITECTURE_arm64
   if (Options.is_set_by_user("test_fault_granularity")) {
-    SIGBUSTest::TestSIGBUS();
+    SIGBUSTest::PrintSIGBUSInfo();
   }
 #endif
 
@@ -345,12 +374,23 @@ int main(int argc, char** argv, char** envp) {
     }
   }
 
+#ifdef ARCHITECTURE_arm64
   if (Options.is_set_by_user("tso_emulation_info")) {
     auto TSOFacts = GetTSOEmulationFacts();
+    FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
+    FEX_CONFIG_OPT(MemcpySetTSOEnabled, MEMCPYSETTSOENABLED);
+    FEX_CONFIG_OPT(VectorTSOEnabled, VECTORTSOENABLED);
+    FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
+    FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
+
     const char* GPRMemoryTSOEmulation {};
     const char* MemcpyMemoryTSOEmulation {};
     const char* VectorMemoryTSOEmulation {};
     const char* UnalignedMemoryLoadStoreTSOEmulation {};
+    const char* SplitLock16BEmulationType {};
+    const char* SplitLock16BConfigurationType {};
+    std::string UnalignedMemoryLoadStoreAlignmentGranularity {};
+    std::string UnalignedRMWAlignmentGranularity {};
 
     if (TSOFacts.HardwareTSO) {
       GPRMemoryTSOEmulation = "\e[32mHardware TSO\e[0m";
@@ -387,33 +427,52 @@ int main(int argc, char** argv, char** envp) {
       UnalignedMemoryLoadStoreTSOEmulation = "\e[31mHalf-Barriers\e[0m";
     }
 
+    const auto FFInfo = SIGBUSTest::CalculateFirstFaultInformation();
+
+    if (FFInfo.RMWFaultAlignment >= 64) {
+      SplitLock16BEmulationType = "\e[32mHardware cacheline unaligned atomics\e[0m";
+      SplitLock16BConfigurationType = "\e[32mTear-free\e[0m";
+    } else {
+      SplitLock16BEmulationType = TSOFacts.LSE ? "\e[31mTearing CAS loops\e[0m" : "\e[31mTearing LL/SC loops\e[0m";
+      SplitLock16BConfigurationType = StrictInProcessSplitLocks() ? "In-process mutex" : "Tearing";
+    }
+
+    if (FFInfo.LoadStoreFaultAlignment != 1) {
+      UnalignedMemoryLoadStoreAlignmentGranularity = fmt::format("\e[32m{}-byte\e[0m", FFInfo.LoadStoreFaultAlignment);
+    } else {
+      UnalignedMemoryLoadStoreAlignmentGranularity = TSOFacts.LSE2 ? "\e[32m16-byte\e[0m" : "\e[31mNatural alignment\e[0m";
+    }
+
+    if (FFInfo.LoadStoreFaultAlignment != FFInfo.RMWFaultAlignment) {
+      if (FFInfo.LoadStoreFaultAlignment != 1) {
+        UnalignedRMWAlignmentGranularity = fmt::format("\e[32m{}-byte\e[0m", FFInfo.RMWFaultAlignment);
+      } else {
+        UnalignedRMWAlignmentGranularity = TSOFacts.LSE2 ? "\e[32m16-byte\e[0m" : "\e[31mNatural alignment\e[0m";
+      }
+    }
+
     fprintf(stdout, "Hardware Features:\n");
     fprintf(stdout, "\tMemory atomics emulation method:      %s\n", TSOFacts.LSE ? "\e[32mLSE\e[0m" : "\e[31mLL/SC\e[0m");
-    fprintf(stdout, "\tUnaligned atomic memory granularity:  %s\n", TSOFacts.LSE2 ? "\e[32m16-byte\e[0m" : "\e[31mNatural alignment\e[0m");
-    ///< TODO: Once TME is supported by hardware this can change.
+    fprintf(stdout, "\tUnaligned atomic memory granularity:  %s\n", UnalignedMemoryLoadStoreAlignmentGranularity.c_str());
+    if (FFInfo.LoadStoreFaultAlignment != FFInfo.RMWFaultAlignment) {
+      fprintf(stdout, "\tUnaligned atomic RMW granularity:     %s\n", UnalignedRMWAlignmentGranularity.c_str());
+    }
     fprintf(stdout, "\tUnaligned memory loadstore emulation: %s\n", UnalignedMemoryLoadStoreTSOEmulation);
-    fprintf(stdout, "\t16-Byte split-lock atomic emulation:  %s\n", TSOFacts.LSE ? "\e[31mTearing CAS loops\e[0m" : "\e[31mTearing LL/SC loops\e[0m");
+    fprintf(stdout, "\t16-Byte split-lock atomic emulation:  %s\n", SplitLock16BEmulationType);
     fprintf(stdout, "\t64-Byte split-lock atomic emulation:  %s\n", TSOFacts.LSE ? "\e[31mTearing CAS loops\e[0m" : "\e[31mTearing LL/SC loops\e[0m");
     fprintf(stdout, "\tGPR memory model emulation:           %s\n", GPRMemoryTSOEmulation);
     fprintf(stdout, "\tMemcpy memory model emulation:        %s\n", MemcpyMemoryTSOEmulation);
     fprintf(stdout, "\tVector memory model emulation:        %s\n", VectorMemoryTSOEmulation);
-
-    FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
-    FEX_CONFIG_OPT(MemcpySetTSOEnabled, MEMCPYSETTSOENABLED);
-    FEX_CONFIG_OPT(VectorTSOEnabled, VECTORTSOENABLED);
-    FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
-    FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
 
     fprintf(stdout, "\nConfiguration:\n");
     fprintf(stdout, "\tTSO Emulation:                        %s\n", TSOEnabled() ? "Enabled" : "Disabled");
     fprintf(stdout, "\tMemcpy TSO Emulation:                 %s\n", TSOEnabled() && MemcpySetTSOEnabled() ? "Enabled" : "Disabled");
     fprintf(stdout, "\tVector TSO Emulation:                 %s\n", TSOEnabled() && VectorTSOEnabled() ? "Enabled" : "Disabled");
     fprintf(stdout, "\tHalf-barrier unaligned TSO emulation: %s\n", TSOEnabled() && HalfBarrierTSOEnabled() ? "Enabled" : "Disabled");
-    fprintf(stdout, "\t16-Byte strict split-lock emulation:  %s\n", StrictInProcessSplitLocks() ? "In-process mutex" : "Tearing");
+    fprintf(stdout, "\t16-Byte strict split-lock emulation:  %s\n", SplitLock16BConfigurationType);
     fprintf(stdout, "\t64-Byte strict split-lock emulation:  %s\n", StrictInProcessSplitLocks() ? "In-process mutex" : "Tearing");
   }
 
-#ifdef ARCHITECTURE_arm64
   if (Options.is_set_by_user("identification_reg_info")) {
     auto Features = FEX::GetCPUFeaturesFromIDRegisters();
     fextl::string features {};
