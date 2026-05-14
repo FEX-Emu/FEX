@@ -1,4 +1,5 @@
 find_package(Clang REQUIRED CONFIG)
+find_package(LLVM REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 # Query clang's global resource directory for system include directories
@@ -12,7 +13,7 @@ endif()
 
 add_library(thunkgenlib STATIC analysis.cpp data_layout.cpp gen.cpp)
 target_include_directories(thunkgenlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(thunkgenlib SYSTEM PUBLIC ${CLANG_INCLUDE_DIRS})
+target_include_directories(thunkgenlib SYSTEM PUBLIC ${CLANG_INCLUDE_DIRS} ${LLVM_INCLUDE_DIRS})
 target_link_libraries(thunkgenlib PUBLIC clang-cpp LLVM)
 target_link_libraries(thunkgenlib PRIVATE OpenSSL::Crypto)
 target_link_libraries(thunkgenlib PRIVATE fmt::fmt)
