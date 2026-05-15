@@ -656,7 +656,7 @@ fextl::string GetDataDirectory(bool Global, const PortableInformation& PortableI
 fextl::string GetConfigDirectory(bool Global, const PortableInformation& PortableInfo) {
   const char* ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
   if (PortableInfo.IsPortable && Global) {
-    return fextl::fmt::format("{}/fex-emu/", PortableInfo.InterpreterPath);
+    return fextl::fmt::format("{}/../share/fex-emu/", PortableInfo.InterpreterPath);
   } else if (ConfigOverride && !Global) {
     fextl::string AppConfigStr = ConfigOverride;
     if (FHU::Filesystem::IsRelative(AppConfigStr)) {
