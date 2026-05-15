@@ -5,6 +5,12 @@ include(${FEX_PROJECT_SOURCE_DIR}/Data/CMake/version_to_variables.cmake)
 set(CMAKE_CXX_STANDARD 20)
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
+# Extra flags for thunkgen's libclang invocation.
+# On non-standard layouts (e.g. NixOS), libclang can't discover system C/C++
+# include directories automatically. Set THUNKGEN_EXTRA_FLAGS in the environment
+# to provide them (e.g. "-idirafter;/path/to/glibc/include").
+separate_arguments(THUNKGEN_SYSTEM_INCLUDES UNIX_COMMAND "$ENV{THUNKGEN_EXTRA_FLAGS}")
+
 if (ENABLE_CLANG_THUNKS)
   set(LD_OVERRIDE "-fuse-ld=lld")
   add_link_options(${LD_OVERRIDE})
@@ -52,6 +58,7 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
     DEPENDS "${SOURCE_FILE}"
     DEPENDS thunkgen
     COMMAND thunkgen "${SOURCE_FILE}" "${NAME}" "-host" "${OUTFILE}" "${X86_DEV_ROOTFS}" ${BITNESS_FLAGS} -- -std=c++20
+      ${THUNKGEN_SYSTEM_INCLUDES}
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
       # Expand include directories to space-separated list of -isystem parameters
