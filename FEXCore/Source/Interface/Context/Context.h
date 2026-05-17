@@ -80,7 +80,7 @@ public:
   FEX_CONFIG_OPT(EnableCodeCacheValidation, ENABLECODECACHEVALIDATION);
 
   uint64_t ComputeCodeMapId(std::string_view Filename, int FD) override;
-  bool SaveData(Core::InternalThreadState&, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress,
+  bool SaveData(std::span<Core::InternalThreadState*> Threads, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress,
                 std::function<void*(size_t)> MapFile) override;
 
   fextl::unique_ptr<MappedCodeCacheFile> LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo&, uint64_t FileStartVA) override;
