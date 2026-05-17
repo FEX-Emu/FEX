@@ -125,6 +125,214 @@ static FEXCore::Core::InternalThreadState* SetupCompileThread(FEXCore::Context::
   return Thread;
 }
 
+bool RelocateMappedImage(HMODULE Module) {
+  const auto* NtHeaders = reinterpret_cast<FEX::Windows::ArchImageNtHeaders*>(RtlImageNtHeader(Module));
+  if (!NtHeaders) {
+    return false;
+  }
+
+  const auto BaseAddress = reinterpret_cast<uintptr_t>(Module);
+  const auto PreferredBase = NtHeaders->OptionalHeader.ImageBase;
+  const auto Delta = static_cast<intptr_t>(BaseAddress - PreferredBase);
+
+  // Wine will automatically relocate all DLLs to their mapped address, but PE relocations must still be applied so
+  // FEXCore can correctly transform them into FEX relocations
+  if (Delta == 0) {
+    return true;
+  }
+
+  ULONG RelocSize = 0;
+  auto* RelocBlock =
+    reinterpret_cast<IMAGE_BASE_RELOCATION*>(RtlImageDirectoryEntryToData(Module, true, IMAGE_DIRECTORY_ENTRY_BASERELOC, &RelocSize));
+
+  if (!RelocBlock || RelocSize == 0) {
+    return true;
+  }
+
+  // Reprotect all sections as RW to apply relocations, saving their prior protections
+  struct SectionPatchState {
+    void* Address;
+    SIZE_T Size;
+    DWORD PreviousProtection;
+  };
+  std::vector<SectionPatchState> SectionStates;
+  SectionStates.reserve(NtHeaders->FileHeader.NumberOfSections);
+
+  auto* SectionHeader = IMAGE_FIRST_SECTION(NtHeaders);
+  const auto* SectionHeaderEnd = SectionHeader + NtHeaders->FileHeader.NumberOfSections;
+  for (; SectionHeader != SectionHeaderEnd; ++SectionHeader) {
+    if (SectionHeader->SizeOfRawData == 0) {
+      continue;
+    }
+
+    const auto SecAddr = reinterpret_cast<void*>(BaseAddress + SectionHeader->VirtualAddress);
+    const SIZE_T SecSize = SectionHeader->Misc.VirtualSize;
+
+    DWORD OldProt = 0;
+    if (!VirtualProtect(SecAddr, SecSize, PAGE_READWRITE, &OldProt)) {
+      for (const auto& State : SectionStates) {
+        DWORD Ignored;
+        VirtualProtect(State.Address, State.Size, State.PreviousProtection, &Ignored);
+      }
+      return false;
+    }
+
+    SectionStates.push_back({SecAddr, SecSize, OldProt});
+  }
+
+  // Apply relocations to all sections
+  bool RelocSuccess = true;
+  const uintptr_t RelocEnd = reinterpret_cast<uintptr_t>(RelocBlock) + RelocSize;
+  const uint32_t ImageSize = NtHeaders->OptionalHeader.SizeOfImage;
+
+  while (reinterpret_cast<uintptr_t>(RelocBlock) < RelocEnd && RelocBlock->SizeOfBlock) {
+    if (RelocBlock->VirtualAddress >= ImageSize) {
+      RelocSuccess = false;
+      break;
+    }
+
+    const auto Count = (RelocBlock->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(USHORT);
+    const auto PageAddress = BaseAddress + RelocBlock->VirtualAddress;
+
+    RelocBlock = LdrProcessRelocationBlock(PageAddress, Count, reinterpret_cast<USHORT*>(RelocBlock + 1), Delta);
+
+    if (!RelocBlock) {
+      RelocSuccess = false;
+      break;
+    }
+  }
+
+  // Restore sections to previous protection states
+  for (const auto& State : SectionStates) {
+    DWORD Ignored;
+    VirtualProtect(State.Address, State.Size, State.PreviousProtection, &Ignored);
+  }
+
+  if (!RelocSuccess) {
+    return false;
+  }
+
+  LogMan::Msg::IFmt("Relocated image {:X} -> {:X}", PreferredBase, BaseAddress);
+  return true;
+}
+
+#ifdef ARCHITECTURE_arm64ec
+void* MapView(HANDLE SectionHandle) {
+  return MapViewOfFile(SectionHandle, FILE_MAP_EXECUTE | FILE_MAP_READ, 0, 0, 0);
+}
+#else
+void* MapView(HANDLE SectionHandle) {
+  void* BaseAddress = nullptr;
+  SIZE_T ViewSize = 0;
+  LARGE_INTEGER Offset {};
+
+  // Map images in the lower 32-bits for WOW64 so relocations can be correctly applied
+  const ULONG_PTR ZeroBits = 0x7fffffff;
+
+  NTSTATUS Status =
+    NtMapViewOfSection(SectionHandle, GetCurrentProcess(), &BaseAddress, ZeroBits, 0, &Offset, &ViewSize, ViewShare, 0, PAGE_EXECUTE_READ);
+
+  if (Status < 0) {
+    return nullptr;
+  }
+
+  return BaseAddress;
+}
+#endif
+
+struct MappedImage {
+  uint64_t BaseAddress;
+  FEXCore::ExecutableFileSectionInfo SectionInfo;
+  ImageInfo Info;
+};
+
+std::vector<MappedImage> TryMapImages(std::unordered_map<FEXCore::CodeMapFileId, ImageInfo>&& Images) {
+  std::vector<MappedImage> Result;
+
+  for (auto& [ID, Info] : Images) {
+    if (!Info.RecompileCode || Info.Contents.Blocks.empty()) {
+      continue;
+    }
+
+    FEX::Windows::ScopedHandle File {CreateFileA(Info.Contents.Filename.c_str(), GENERIC_READ | SYNCHRONIZE,
+                                                 FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr)};
+    if (!File) {
+      LogMan::Msg::EFmt("Couldn't find image: {}", Info.Contents.Filename);
+      continue;
+    }
+
+    FEX::Windows::ScopedHandle Section {CreateFileMappingA(*File, nullptr, SEC_IMAGE | PAGE_EXECUTE_READ, 0, 0, nullptr)};
+    if (!Section) {
+      LogMan::Msg::EFmt("Couldn't create section for image: {}", Info.Contents.Filename);
+      continue;
+    }
+
+    void* Mapping = MapView(*Section);
+    if (!Mapping) {
+      LogMan::Msg::EFmt("Couldn't map section for image: {}", Info.Contents.Filename);
+      continue;
+    }
+
+    if (!RelocateMappedImage(reinterpret_cast<HMODULE>(Mapping))) {
+      LogMan::Msg::EFmt("Failed to apply image relocations");
+      UnmapViewOfFile(Mapping);
+      continue;
+    }
+
+    uint64_t BaseAddress = reinterpret_cast<uint64_t>(Mapping);
+    LogMan::Msg::IFmt("Mapped image: {} @ {:X}", Info.Contents.Filename, BaseAddress);
+
+    InvalidationTracker->HandleImageMap(FEX::Windows::BaseName(Info.Contents.Filename), BaseAddress);
+    auto SectionInfo = ImageTracker->HandleImageMap(Info.Contents.Filename, BaseAddress, Info.Contents.IsExecutable);
+
+    Result.push_back(MappedImage {.BaseAddress = BaseAddress, .SectionInfo = SectionInfo, .Info = std::move(Info)});
+  }
+
+  return Result;
+}
+
+LONG ExceptionHandler(_EXCEPTION_POINTERS* ExceptionInfo) {
+  if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
+    const auto FaultAddress = static_cast<uint64_t>(ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
+    if (OvercommitTracker->HandleAccessViolation(FaultAddress)) {
+      return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+#ifdef ARCHITECTURE_arm64ec
+    ARM64_NT_CONTEXT ArmContext {};
+    auto* Context = &ArmContext;
+#else
+    auto* Context = ExceptionInfo->ContextRecord;
+#endif
+    if (FEX::Windows::JITGuardPage::HandleJITGuardPage(ThisThread, reinterpret_cast<void*>(FaultAddress), Context->X,
+                                                       reinterpret_cast<__uint128_t*>(Context->V), &Context->Pc)) {
+#ifdef ARCHITECTURE_arm64ec
+      auto* ECContext = reinterpret_cast<ARM64EC_NT_CONTEXT*>(ExceptionInfo->ContextRecord);
+      ECContext->X0 = Context->X0;
+      ECContext->X19 = Context->X19;
+      ECContext->X20 = Context->X20;
+      ECContext->X21 = Context->X21;
+      ECContext->X22 = Context->X22;
+      ECContext->X25 = Context->X25;
+      ECContext->X26 = Context->X26;
+      ECContext->X27 = Context->X27;
+      ECContext->Fp = Context->Fp;
+      ECContext->Lr = Context->Lr;
+      ECContext->Sp = Context->Sp;
+      ECContext->Pc = Context->Pc;
+
+      for (size_t i = 0; i < 8; ++i) {
+        memcpy(&reinterpret_cast<__uint128_t*>(ECContext->V)[8 + i], &reinterpret_cast<__uint128_t*>(Context->V)[8 + i], sizeof(uint64_t));
+      }
+#endif
+      return EXCEPTION_CONTINUE_EXECUTION;
+    }
+  }
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+
+} // namespace
+
 // Returns filename of generated cache on success
 static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInfo& Binary, fextl::set<uintptr_t> BlockList, std::string_view OutDir) {
   uint64_t CodeCacheConfigId = 0; // TODO: Make unique to active configuration
