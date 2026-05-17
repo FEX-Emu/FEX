@@ -114,27 +114,17 @@ FEX_DEFAULT_VISIBILITY size_t DetermineVASize() {
   };
 
   for (auto Bits : TLBSizes) {
-    uintptr_t Size = 1ULL << Bits;
-    // Just try allocating
-    // We can't actually determine VA size on ARM safely
-    auto Find = [](uintptr_t Size) -> bool {
-      for (int i = 0; i < 64; ++i) {
-        // Try grabbing a some of the top pages of the range
-        // x86 allocates some high pages in the top end
-        void* Ptr = ::mmap(reinterpret_cast<void*>(Size - FEXCore::Utils::FEX_PAGE_SIZE * i), FEXCore::Utils::FEX_PAGE_SIZE, PROT_NONE,
-                           MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        if (Ptr != (void*)~0ULL) {
-          ::munmap(Ptr, FEXCore::Utils::FEX_PAGE_SIZE);
-          if (Ptr == (void*)(Size - FEXCore::Utils::FEX_PAGE_SIZE * i)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
 
-    if (Find(Size)) {
-      HostVASize = Bits;
+    // We can't actually determine VA size on ARM safely.
+    // Instead, try allocating the page at the top of the range.
+    // If this succeeds OR the page is reported as already existing,
+    // we know we're in valid VA space. Otherwise, we must go lower.
+    void* Addr = reinterpret_cast<void*>((1ULL << Bits) - FEXCore::Utils::FEX_PAGE_SIZE);
+    void* Ptr = ::mmap(Addr, FEXCore::Utils::FEX_PAGE_SIZE, PROT_NONE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (Ptr != (void*)~0ULL) {
+      ::munmap(Ptr, FEXCore::Utils::FEX_PAGE_SIZE);
+    }
+    if (Ptr != (void*)~0ULL || errno == EEXIST) {
       return Bits;
     }
   }
