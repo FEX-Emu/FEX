@@ -380,11 +380,19 @@ static bool SerializeCodeCache(CodeCache& Cache, CodeCacheSerializer<SizeCalc>& 
   return true;
 }
 
-bool CodeCache::SaveData(Core::InternalThreadState& Thread, const ExecutableFileSectionInfo& SourceBinary, uint64_t SerializedBaseAddress,
-                         std::function<void*(size_t)> MapFile) {
+bool CodeCache::SaveData(std::span<Core::InternalThreadState*> Threads, const ExecutableFileSectionInfo& SourceBinary,
+                         uint64_t SerializedBaseAddress, std::function<void*(size_t)> MapFile) {
+  LOGMAN_THROW_A_FMT(!Threads.empty(), "Tried to save code cache without compiler threads");
+
+
   auto CodeBuffer = CTX.GetLatest();
   auto& LookupCache = *CodeBuffer->LookupCache;
-  auto Relocations = Thread.CPUBackend->TakeRelocations(SourceBinary.FileStartVA);
+  fextl::vector<CPU::Relocation> Relocations;
+  for (auto* Thread : Threads) {
+    auto ThreadRelocations = Thread->CPUBackend->TakeRelocations(SourceBinary.FileStartVA);
+    Relocations.insert(Relocations.end(), ThreadRelocations.begin(), ThreadRelocations.end());
+  }
+  std::ranges::sort(Relocations, {}, [](const auto& Relocation) { return Relocation.Header.Offset; });
 
   // Cache contents must be deterministic, so copy the unordered block list and then sort by key
   static_assert(!OrderedContainer<decltype(LookupCache.BlockList)>, "Already deterministic; drop temporary container");

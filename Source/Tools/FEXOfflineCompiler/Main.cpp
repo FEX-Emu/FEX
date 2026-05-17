@@ -234,7 +234,8 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
       size_t MapSize {};
 
       auto Entry = SyscallHandler->LookupExecutableFileSection(Thread, SyscallHandler->VAFileStart).value();
-      CTX->GetCodeCache().SaveData(*Thread, Entry, 0 /* TODO: Use static base address information if available */, [&](size_t TotalSize) -> void* {
+      FEXCore::Core::InternalThreadState* Threads[] = {Thread};
+      CTX->GetCodeCache().SaveData(Threads, Entry, 0 /* TODO: Use static base address information if available */, [&](size_t TotalSize) -> void* {
         if (ftruncate(fd, TotalSize) != 0) {
           return nullptr;
         }
