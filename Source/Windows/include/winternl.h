@@ -457,22 +457,11 @@ typedef enum _MEMORY_INFORMATION_CLASS {
   MemoryPhysicalContiguityInformation,
   MemoryBadInformation,
   MemoryBadInformationAllProcesses,
-#ifdef __WINESRC__
   MemoryWineUnixFuncs = 1000,
   MemoryWineUnixWow64Funcs,
-#endif
-  MemoryFexStatsShm = 2000,
 } MEMORY_INFORMATION_CLASS;
 
 #define SystemEmulationBasicInformation (SYSTEM_INFORMATION_CLASS)62
-
-#define ProcessFexHardwareTso (PROCESSINFOCLASS)2000
-#define ProcessFexUnalignAtomic (PROCESSINFOCLASS)2001
-
-// These match the prctl flag values
-#define FEX_UNALIGN_ATOMIC_EMULATE (1ULL << 0)
-#define FEX_UNALIGN_ATOMIC_BACKPATCH (1ULL << 1)
-#define FEX_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS (1ULL << 2)
 
 typedef enum _KEY_VALUE_INFORMATION_CLASS {
   KeyValueBasicInformation,
@@ -489,12 +478,6 @@ typedef struct _KEY_VALUE_PARTIAL_INFORMATION {
   ULONG DataLength;
   UCHAR Data[1];
 } KEY_VALUE_PARTIAL_INFORMATION, *PKEY_VALUE_PARTIAL_INFORMATION;
-
-typedef struct _MEMORY_FEX_STATS_SHM_INFORMATION {
-  void* shm_base;
-  DWORD map_size;
-  DWORD max_size;
-} MEMORY_FEX_STATS_SHM_INFORMATION, *PMEMORY_FEX_STATS_SHM_INFORMATION;
 
 typedef struct _MEMORY_SECTION_NAME {
   UNICODE_STRING SectionFileName;
