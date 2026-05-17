@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <FEXCore/fextl/functional.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
@@ -12,6 +11,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <mutex>
 #include <optional>
 #include <shared_mutex>
@@ -240,10 +240,11 @@ public:
   virtual uint64_t ComputeCodeMapId(std::string_view Filename, int FD) = 0;
 
   /**
-   * Bundles the current Core state (CodeBuffer, GuestToHostMapping, ...) to a code cache and writes it to the given file descriptor.
+   * Bundles the current Core state (CodeBuffer, GuestToHostMapping, ...) to a code cache and writes it to the mapped cache file.
    * Returns true on success.
    */
-  virtual bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) = 0;
+  virtual bool SaveData(Core::InternalThreadState&, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress,
+                        std::function<void*(size_t)> MapFile) = 0;
 
   /**
    * Function to be called before compiling any code for caching purposes
