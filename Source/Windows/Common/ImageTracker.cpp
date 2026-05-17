@@ -171,8 +171,8 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
     }
 
     auto AOTImage = AOTImages.find(ID);
-    if (AOTImage != AOTImages.end()) {
-      // TODO: CodeCache::EnableLoadedSection
+    if (AOTImage != AOTImages.end() && AOTImage->second.CacheFile) {
+      CTX.GetCodeCache().EnableLoadedSection(nullptr, *AOTImage->second.CacheFile, ImageInfo->SectionInfo);
     }
   }
 
@@ -276,9 +276,16 @@ void ImageTracker::LoadAOTImages(MappedImageInfo& ImageInfo) {
               UniqueId.resize(AnsiLength);
               RtlUnicodeToMultiByteN(UniqueId.data(), AnsiLength, NULL, Info->FileName, Info->FileNameLength);
 
-              AOTImages[UniqueId] = {.Data = static_cast<std::byte*>(LoadAddress)};
-              // TODO: CodeCache::LoadCache, CodeCache::RegisterMappedCodeBuffer
-              LogMan::Msg::IFmt("Loaded cache: {}", UniqueId);
+              auto CacheSpan = std::span {static_cast<std::byte*>(LoadAddress), MappedSize};
+              auto MappedCache = CTX.GetCodeCache().LoadCache(CacheSpan, ImageInfo.Info, ImageInfo.SectionInfo.FileStartVA);
+              if (MappedCache) {
+                CTX.GetCodeCache().RegisterMappedCodeBuffer(*MappedCache);
+                AOTImages[UniqueId] = {.CacheFile = std::move(MappedCache)};
+                LogMan::Msg::IFmt("Loaded cache: {}", UniqueId);
+              } else {
+                NtUnmapViewOfSection(NtCurrentProcess(), LoadAddress);
+                LogMan::Msg::EFmt("Failed to load cache: {}", UniqueId);
+              }
             }
           }
         }
