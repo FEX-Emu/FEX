@@ -26,6 +26,7 @@ void STDMETHODCALLTYPE BTCpuNotifyMemoryFree(void* Address, SIZE_T Size, ULONG F
 NTSTATUS STDMETHODCALLTYPE BTCpuNotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Size, ULONG AllocType, ULONG Prot);
 void STDMETHODCALLTYPE BTCpuNotifyUnmapViewOfSection(void* Address, BOOL After, ULONG Status);
 void STDMETHODCALLTYPE BTCpuNotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status);
+void STDMETHODCALLTYPE BTCpuNotifyProcessExecuteFlagsChange(ULONG Flags);
 BOOLEAN STDMETHODCALLTYPE BTCpuIsProcessorFeaturePresent(UINT Feature);
 void STDMETHODCALLTYPE BTCpuUpdateProcessorInformation(SYSTEM_CPU_INFORMATION* Info);
 }

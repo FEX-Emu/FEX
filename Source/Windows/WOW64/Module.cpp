@@ -1042,6 +1042,11 @@ void BTCpuNotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, 
   }
 }
 
+void BTCpuNotifyProcessExecuteFlagsChange(ULONG Flags) {
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->HandleProcessExecuteFlagsChange(Flags);
+}
+
 BOOLEAN WINAPI BTCpuIsProcessorFeaturePresent(UINT Feature) {
   return CPUFeatures->IsFeaturePresent(Feature) ? TRUE : FALSE;
 }
