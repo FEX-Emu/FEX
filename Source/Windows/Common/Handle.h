@@ -20,9 +20,14 @@ public:
   }
 
   ~ScopedHandle() {
+    reset(INVALID_HANDLE_VALUE);
+  }
+
+  void reset(HANDLE NewHandle = INVALID_HANDLE_VALUE) {
     if (Handle != INVALID_HANDLE_VALUE) {
       NtClose(Handle);
     }
+    Handle = NewHandle;
   }
 
   const HANDLE& operator*() const {
