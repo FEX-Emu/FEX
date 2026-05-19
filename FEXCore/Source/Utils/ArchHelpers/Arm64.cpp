@@ -1991,16 +1991,17 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
     } else if ((Instr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) { // STLXR*
       uint32_t StatusReg = Instr << 11 >> 27;
       // // Emulate exclusive store by validating the address and value against the last unaligned LDAXR*.
-      if (GPRs[AddrReg] != Thread->ExclusiveStore.Addr || Size > Thread->ExclusiveStore.Size) {
+      uint32_t SizeBytes = 1u << Size;
+      if (GPRs[AddrReg] != Thread->ExclusiveStore.Addr || SizeBytes > Thread->ExclusiveStore.Size) {
         if (StatusReg != 31) {
           GPRs[StatusReg] = 1;
         }
         return 4;
       }
       if (std::optional<uint64_t> Prev =
-            DoCAS(Size, DataReg == 31 ? 0 : GPRs[DataReg], Thread->ExclusiveStore.Store, GPRs[AddrReg], StrictSplitLockMutex)) {
+            DoCAS(SizeBytes, DataReg == 31 ? 0 : GPRs[DataReg], Thread->ExclusiveStore.Store, GPRs[AddrReg], StrictSplitLockMutex)) {
         if (StatusReg != 31) {
-          GPRs[StatusReg] = !!memcmp(&Thread->ExclusiveStore.Store, &*Prev, Size);
+          GPRs[StatusReg] = !!memcmp(&Thread->ExclusiveStore.Store, &*Prev, SizeBytes);
         }
         Thread->ExclusiveStore.Size = 0;
         return 4;
