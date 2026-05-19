@@ -776,8 +776,15 @@ void Arm64JITCore::EmitSuspendInterruptCheck() {
   if (CTX->Config.NeedsPendingInterruptFaultCheck) {
     // Trigger a fault if there are any pending interrupts
     // Used only for suspend on WIN32 at the moment
-    strb(ARMEmitter::XReg::zr, STATE,
-         offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
+    constexpr size_t InterruptPageOffset =
+      offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState);
+    if constexpr (InterruptPageOffset <= 32760) {
+      str(ARMEmitter::XReg::zr, STATE, InterruptPageOffset);
+    } else {
+      // Need to use vector 128-bit store for this range.
+      // Doesn't matter which register we use to store.
+      str(ARMEmitter::QReg::q0, STATE, InterruptPageOffset);
+    }
   }
 
 #ifdef ARCHITECTURE_arm64ec
