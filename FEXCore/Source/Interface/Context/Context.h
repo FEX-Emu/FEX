@@ -78,11 +78,17 @@ public:
   bool IsGeneratingCache = false;
 
   FEX_CONFIG_OPT(EnableCodeCaching, ENABLECODECACHINGWIP);
+  FEX_CONFIG_OPT(EnableLazyCodeCaching, ENABLELAZYCODECACHINGWIP);
   FEX_CONFIG_OPT(EnableCodeCacheValidation, ENABLECODECACHEVALIDATION);
 
   uint64_t ComputeCodeMapId(std::string_view Filename, int FD) override;
   bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) override;
-  bool LoadData(Core::InternalThreadState*, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
+
+  fextl::unique_ptr<MappedCodeCacheFile> LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo&, uint64_t FileStartVA) override;
+
+  bool EnableLoadedSection(Core::InternalThreadState*, MappedCodeCacheFile&, const ExecutableFileSectionInfo&) override;
+
+  void FinalizeCodePages(MappedCodeCacheFile&, std::span<std::byte> CodeRange) override;
 
   /**
    * Performs expensive extra validation on the loaded code cache data.
@@ -114,12 +120,14 @@ public:
    * Note that FEX relocations are unrelated to ELF/PE relocations.
    *
    * @param GuestDelta Guest address offset to apply to RIP-relative data
+   * @param RelocationOffset Offset to subtract from relocation target offsets
    * @param ForStorage True for serializing data (producing deterministic output); false for de-serializing it (resolving dynamic symbols)
    *
    * @return Returns true on success
    */
   [[nodiscard]]
-  bool ApplyCodeRelocations(uint64_t GuestDelta, std::span<std::byte> Code, std::span<const CPU::Relocation> Relocations, bool ForStorage);
+  bool ApplyCodeRelocations(uint64_t GuestDelta, std::span<std::byte> Code, std::span<const CPU::Relocation> Relocations,
+                            uint32_t RelocationOffset, bool ForStorage);
 };
 
 class ContextImpl final : public FEXCore::Context::Context, public CPU::CodeBufferManager {
