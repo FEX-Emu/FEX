@@ -42,6 +42,7 @@ struct HostFeatures {
   bool Supports3DNow {};
   bool SupportsSSE4a {};
   bool SupportsMOPS {};
+  bool PreferZVAForVZero {};
 
   // Float exception behaviour
   bool SupportsAFP {};

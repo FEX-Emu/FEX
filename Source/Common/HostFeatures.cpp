@@ -541,6 +541,8 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
   constexpr uint32_t PartNum_Oryon1 = 0x001;
   constexpr uint32_t PartNum_Oryon3 = 0x002;
 
+  constexpr uint32_t Implementer_Ampere = 0xc0;
+
   auto GetMIDRImplementer = [](uint32_t MIDR) -> uint32_t {
     return (MIDR >> 24) & 0xFF;
   };
@@ -592,6 +594,15 @@ static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
       HostFeatures->SupportsTSOImm9 = false;
       break;
     }
+  }
+
+  if (MIDR_Implementer == Implementer_Ampere) {
+    // Ampere Computing CPUs that support CLZero should prefer using `dc zva` for vzero{upper,all} as its faster there.
+    // For Cortex CPUs it doesn't matter one way or the other.
+    // For Oryon CPUs, it is dramatically faster to avoid `dc zva` as it has dramatic stalls around barriers and overlapping `dc zva`.
+    //
+    // Because the `dc zva` optimization was implemented for Ampere, only use that path on the hardware.
+    HostFeatures->PreferZVAForVZero = HostFeatures->SupportsCLZERO;
   }
 }
 
@@ -658,6 +669,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsAVX = true;
   HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX && HostFeatures.SupportsAES;
   HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
+  HostFeatures.PreferZVAForVZero = false;
 
   if (CTR) {
     HostFeatures.DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
