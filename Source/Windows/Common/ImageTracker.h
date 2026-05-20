@@ -56,7 +56,7 @@ private:
   };
 
   struct AOTImageInfo {
-    std::byte* Data;
+    fextl::unique_ptr<FEXCore::MappedCodeCacheFile> CacheFile;
   };
 
   void LoadAOTImages(MappedImageInfo& Info);
