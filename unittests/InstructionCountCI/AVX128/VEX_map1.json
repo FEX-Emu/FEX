@@ -1482,24 +1482,25 @@
       ]
     },
     "vzeroupper": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "Might be able to use DZ ZVA",
         "Map 1 0b01 0x77 L=0"
       ],
       "ExpectedArm64ASM": [
-        "add x0, x28, #0xc0 (192)",
-        "dc zva, x0",
-        "add x0, x28, #0x100 (256)",
-        "dc zva, x0",
-        "add x0, x28, #0x140 (320)",
-        "dc zva, x0",
-        "add x0, x28, #0x180 (384)",
-        "dc zva, x0"
+        "movi v0.2d, #0x0",
+        "stp q0, q0, [x28, #192]",
+        "stp q0, q0, [x28, #224]",
+        "stp q0, q0, [x28, #256]",
+        "stp q0, q0, [x28, #288]",
+        "stp q0, q0, [x28, #320]",
+        "stp q0, q0, [x28, #352]",
+        "stp q0, q0, [x28, #384]",
+        "stp q0, q0, [x28, #416]"
       ]
     },
     "vzeroall": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 25,
       "Comment": [
         "Might be able to use DZ ZVA",
         "Map 1 0b01 0x77 L=1"
@@ -1521,14 +1522,15 @@
         "movi v29.2d, #0x0",
         "movi v30.2d, #0x0",
         "movi v31.2d, #0x0",
-        "add x0, x28, #0xc0 (192)",
-        "dc zva, x0",
-        "add x0, x28, #0x100 (256)",
-        "dc zva, x0",
-        "add x0, x28, #0x140 (320)",
-        "dc zva, x0",
-        "add x0, x28, #0x180 (384)",
-        "dc zva, x0"
+        "movi v0.2d, #0x0",
+        "stp q0, q0, [x28, #192]",
+        "stp q0, q0, [x28, #224]",
+        "stp q0, q0, [x28, #256]",
+        "stp q0, q0, [x28, #288]",
+        "stp q0, q0, [x28, #320]",
+        "stp q0, q0, [x28, #352]",
+        "stp q0, q0, [x28, #384]",
+        "stp q0, q0, [x28, #416]"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x00": {

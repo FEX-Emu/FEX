@@ -568,7 +568,7 @@ DEF_OP(LoadDF) {
 
 DEF_OP(ContextClear) {
   auto Op = IROp->C<IR::IROp_ContextClear>();
-  if (CTX->HostFeatures.SupportsCLZERO) {
+  if (CTX->HostFeatures.PreferZVAForVZero) {
     // We can use CLZero directly when hardware supports it.
     // Provides a fairly generous speed-up on Ampere1A hardware.
     // TODO: When FEAT_MOPS hardware ships, test memset using MOPS.
