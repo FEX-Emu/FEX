@@ -121,6 +121,54 @@ static GetFrameBlockInfoResult GetFrameBlockInfo(FEXCore::Core::CpuStateFrame* F
   return {InlineHeader, nullptr};
 }
 
+static bool IsInvalidLockPrefix(const X86Tables::DecodedInst* DecodedInfo, const X86Tables::X86InstInfo* TableInfo) {
+  if (!(DecodedInfo->Flags & X86Tables::DecodeFlags::FLAG_LOCK)) {
+    return false;
+  }
+
+  if (!TableInfo || !TableInfo->Name) {
+    return true;
+  }
+
+  const std::string_view Name {TableInfo->Name};
+  if (Name == "MOV") {
+    return true;
+  }
+
+  // These ALU encodings have a register destination and a memory/register source,
+  // so LOCK is invalid even if the ModRM source operand names memory.
+  switch (DecodedInfo->OP) {
+  case 0x02:
+  case 0x03:
+  case 0x0A:
+  case 0x0B:
+  case 0x12:
+  case 0x13:
+  case 0x1A:
+  case 0x1B:
+  case 0x22:
+  case 0x23:
+  case 0x2A:
+  case 0x2B:
+  case 0x32:
+  case 0x33: return true;
+  default: break;
+  }
+
+  return false;
+}
+
+static void LogInvalidLockPrefix(uint64_t InstAddress, const X86Tables::DecodedInst* DecodedInfo, const X86Tables::X86InstInfo* TableInfo) {
+  std::array<uint8_t, 8> Bytes {};
+  const auto ByteCount = std::min<size_t>(DecodedInfo->InstSize, Bytes.size());
+  memcpy(Bytes.data(), reinterpret_cast<const void*>(InstAddress), ByteCount);
+
+  LogMan::Msg::EFmt(
+    "Invalid LOCK prefix at 0x{:x}{{'{}'}} flags=0x{:08x} op=0x{:04x} size={} byte_count={} bytes={:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x}",
+    InstAddress, TableInfo && TableInfo->Name ? TableInfo->Name : "UND", DecodedInfo->Flags, DecodedInfo->OP, DecodedInfo->InstSize, ByteCount,
+    Bytes[0], Bytes[1], Bytes[2], Bytes[3], Bytes[4], Bytes[5], Bytes[6], Bytes[7]);
+}
+
 bool ContextImpl::IsAddressInCurrentBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size) {
   auto [_, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
   return InlineTail && (Address + Size > InlineTail->RIP && Address < InlineTail->RIP + InlineTail->GuestSize);
@@ -660,7 +708,15 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
         }
 
-        if (TableInfo && TableInfo->OpcodeDispatcher.OpDispatch) {
+        if (IsInvalidLockPrefix(DecodedInfo, TableInfo)) {
+          LogInvalidLockPrefix(InstAddress, DecodedInfo, TableInfo);
+
+          if (!BlockInstructionsLength) {
+            Thread->OpDispatcher->InvalidOp(DecodedInfo);
+          }
+
+          HadInvalidInst = true;
+        } else if (TableInfo && TableInfo->OpcodeDispatcher.OpDispatch) {
           auto Fn = TableInfo->OpcodeDispatcher.OpDispatch;
           Thread->OpDispatcher->ResetHandledLock();
           Thread->OpDispatcher->ResetDecodeFailure();
