@@ -899,9 +899,19 @@ uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame* Frame, uint64_t 
 }
 
 void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
-  TM.LockBeforeFork();
-  Thread->CTX->LockBeforeFork(Thread);
-  VMATracking.Mutex.lock();
+  while (true) {
+    TM.LockBeforeFork();
+    Thread->CTX->LockBeforeFork(Thread);
+    if (std::try_lock(CodeCachePatchingMutex, VMATracking.Mutex) == -1) {
+      break;
+    }
+
+    // Lock failed: Another thread has temporarily acquired these mutexes.
+    // Release them to a void a deadlock and retry later
+    CTX->UnlockAfterFork(Thread, false);
+    TM.UnlockAfterFork(Thread, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds {10});
+  };
 }
 
 void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
@@ -910,8 +920,10 @@ void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThr
     FM.SetProtectedCodeMapFD(-1);
 
     VMATracking.Mutex.StealAndDropActiveLocks();
+    CodeCachePatchingMutex.StealAndDropActiveLocks();
   } else {
     VMATracking.Mutex.unlock();
+    CodeCachePatchingMutex.unlock();
   }
 
   CTX->UnlockAfterFork(LiveThread, Child);
