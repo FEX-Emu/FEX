@@ -73,8 +73,8 @@ DEF_OP(Break) {
   uint64_t Constant {};
   memcpy(&Constant, &State, sizeof(State));
 
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Constant);
-  str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant);
+  str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
 
   switch (Op->Reason.Signal) {
   case Core::FAULT_SIGILL:
