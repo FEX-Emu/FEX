@@ -624,13 +624,10 @@ void OpDispatchBuilder::FXCH(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FYL2X(OpcodeArgs, bool IsFYL2XP1) {
   if (IsFYL2XP1) {
-    // create an add between top of stack and 1.
-    Ref One = ReducedPrecisionMode ? _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(0x3FF0000000000000)) :
-                                     LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
-    _F80AddValue(0, One);
+    _F80FYL2XP1Stack();
+  } else {
+    _F80FYL2XStack();
   }
-
-  _F80FYL2XStack();
 }
 
 void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {

@@ -2467,7 +2467,7 @@
         "ldrb w20, [x28, #1051]",
         "add x20, x28, x20, lsl #4",
         "ldr q2, [x20, #1056]",
-        "ldr q3, [x28, #3600]",
+        "ldr q3, [x28, #3648]",
         "eor v2.16b, v2.16b, v3.16b",
         "str q2, [x20, #1056]"
       ]
@@ -2481,7 +2481,7 @@
         "ldrb w20, [x28, #1051]",
         "add x20, x28, x20, lsl #4",
         "ldr q2, [x20, #1056]",
-        "ldr q3, [x28, #3600]",
+        "ldr q3, [x28, #3648]",
         "bic v2.16b, v2.16b, v3.16b",
         "str q2, [x20, #1056]"
       ]
@@ -2547,7 +2547,7 @@
         "0xd9 11b 0xe8 /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3376]",
+        "ldr q2, [x28, #3424]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2567,7 +2567,7 @@
         "0xd9 11b 0xe9 /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3392]",
+        "ldr q2, [x28, #3440]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2587,7 +2587,7 @@
         "0xd9 11b 0xea /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3408]",
+        "ldr q2, [x28, #3456]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2607,7 +2607,7 @@
         "0xd9 11b 0xeb /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3424]",
+        "ldr q2, [x28, #3472]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2627,7 +2627,7 @@
         "0xd9 11b 0xec /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3440]",
+        "ldr q2, [x28, #3488]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2647,7 +2647,7 @@
         "0xd9 11b 0xed /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3456]",
+        "ldr q2, [x28, #3504]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2741,7 +2741,7 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",
-        "ldr q3, [x28, #3376]",
+        "ldr q3, [x28, #3424]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
         "strb wzr, [x28, #1050]",
@@ -2772,8 +2772,8 @@
         "str x30, [sp, #-16]!",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x0, [x28, #2104]",
-        "ldr x3, [x28, #2112]",
+        "ldr x0, [x28, #2120]",
+        "ldr x3, [x28, #2128]",
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",
@@ -2835,8 +2835,8 @@
         "str x30, [sp, #-16]!",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x0, [x28, #2120]",
-        "ldr x3, [x28, #2128]",
+        "ldr x0, [x28, #2136]",
+        "ldr x3, [x28, #2144]",
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",
@@ -2884,8 +2884,8 @@
         "str x30, [sp, #-16]!",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x0, [x28, #2136]",
-        "ldr x3, [x28, #2144]",
+        "ldr x0, [x28, #2152]",
+        "ldr x3, [x28, #2160]",
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",
@@ -2894,38 +2894,28 @@
       ]
     },
     "fyl2xp1": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 17,
       "Comment": [
         "0xd9 11b 0xf9 /7"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3376]",
         "ldrb w20, [x28, #1051]",
-        "add x21, x28, x20, lsl #4",
-        "ldr q3, [x21, #1056]",
+        "add w21, w20, #0x1 (1)",
+        "and w21, w21, #0x7",
+        "add x22, x28, x21, lsl #4",
+        "ldr q2, [x22, #1056]",
+        "add x20, x28, x20, lsl #4",
+        "ldr q3, [x20, #1056]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x0, [x28, #2024]",
-        "ldr x3, [x28, #2032]",
+        "ldr x0, [x28, #2104]",
+        "ldr x3, [x28, #2112]",
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",
-        "add w20, w20, #0x1 (1)",
-        "and w20, w20, #0x7",
-        "add x22, x28, x20, lsl #4",
-        "ldr q3, [x22, #1056]",
-        "str x30, [sp, #-16]!",
-        "mov v0.16b, v2.16b",
-        "mov v1.16b, v3.16b",
-        "ldr x0, [x28, #2088]",
-        "ldr x3, [x28, #2096]",
-        "blr x0",
-        "ldr x30, [sp], #16",
-        "mov v3.16b, v0.16b",
-        "strb w20, [x28, #1051]",
-        "str q3, [x22, #1056]",
-        "str q2, [x21, #1056]"
+        "strb w21, [x28, #1051]",
+        "str q2, [x22, #1056]"
       ]
     },
     "fsqrt": {
@@ -3013,8 +3003,8 @@
         "str x30, [sp, #-16]!",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x0, [x28, #2152]",
-        "ldr x3, [x28, #2160]",
+        "ldr x0, [x28, #2168]",
+        "ldr x3, [x28, #2176]",
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",

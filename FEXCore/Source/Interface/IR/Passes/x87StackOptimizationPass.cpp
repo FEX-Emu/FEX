@@ -785,6 +785,12 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         break;
       }
 
+      case OP_F80FYL2XP1STACK: {
+        HandleBinopStack(OP_F64FYL2XP1, false, OP_F80FYL2XP1, 1, 0, 1);
+        StackPop();
+        break;
+      }
+
       case OP_F80ATANSTACK: {
         HandleBinopStack(OP_F64ATAN, false, OP_F80ATAN, 1, 1, 0);
         StackPop();

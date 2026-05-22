@@ -552,7 +552,10 @@ void Dispatcher::EmitDispatcher() {
   EmitF64F2XM1();
   EmitF64Scale();
   EmitF64Atan();
-  EmitF64FYL2X();
+  F64Log2Constants Log2C;
+  EmitF64FYL2X(Log2C);
+  EmitF64FYL2XP1(Log2C);
+  EmitF64Log2Constants(Log2C);
   EmitF64FPREM();
   EmitF64FPREM1();
 
@@ -1607,18 +1610,13 @@ void Dispatcher::EmitF64Atan() {
 
 // JIT-inlined double-precision y * log2(x) for the F64 reduced precision x87 path.
 // Input: VTMP1 = x, VTMP2 = y. Output: VTMP1 = y * log2(x).
-// Algorithm: atanh-based log via s = f/(2+f) with 9-term polynomial, scaled by 1/ln(2),
-// then multiplied by y.
-void Dispatcher::EmitF64FYL2X() {
+// Constants in `C` are shared with EmitF64FYL2XP1 and emitted by EmitF64Log2Constants.
+void Dispatcher::EmitF64FYL2X(F64Log2Constants& C) {
   F64FYL2XHandlerAddress = GetCursorAddress<uint64_t>();
 
   constexpr auto Accum = ARMEmitter::VReg::v2;
 
   ARMEmitter::ForwardLabel Fallback;
-  ARMEmitter::ForwardLabel NoNorm;
-  ARMEmitter::ForwardLabel Sqrt2Label, Log2eLabel;
-  ARMEmitter::ForwardLabel BiasLabel;
-  ARMEmitter::ForwardLabel P0Label, P1Label, P2Label, P3Label, P4Label, P5Label, P6Label, P7Label, P8Label;
 
   str<ARMEmitter::IndexType::PRE>(ARMEmitter::QReg::q2, ARMEmitter::Reg::rsp, -16);
 
@@ -1635,63 +1633,58 @@ void Dispatcher::EmitF64FYL2X() {
   (void)b(ARMEmitter::Condition::CC_EQ, &Fallback);
   fmov(ARMEmitter::Size::i64Bit, TMP3, VTMP2.D());
 
-  // Extract k and normalize mantissa m into [1.0, 2.0).
+  // k = unbiased exponent; m bits = mantissa | (0x3FF << 52).
   sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1023);
   ubfx(ARMEmitter::Size::i64Bit, TMP1, TMP1, 0, 52);
-  ldr(TMP4, &BiasLabel);
+  movz(ARMEmitter::Size::i64Bit, TMP4, 0x3FF0, 48);
   orr(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4);
+
+  // Index = top 6 mantissa bits (bits 51..46 of m).
+  ubfx(ARMEmitter::Size::i64Bit, TMP4, TMP1, 46, 6);
+
+  // Set m as F64 in VTMP1.
   fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP1);
 
-  // If m > sqrt(2), halve m and increment k.
-  ldr(VTMP2.D(), &Sqrt2Label);
-  fcmp(VTMP1.D(), VTMP2.D());
-  (void)b(ARMEmitter::Condition::CC_LE, &NoNorm);
-  fmov(ARMEmitter::ScalarRegSize::i64Bit, VTMP2, 0.5f);
-  fmul(VTMP1.D(), VTMP1.D(), VTMP2.D());
-  add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1);
-  (void)Bind(&NoNorm);
+  // Load (recip, logc) from LUT[index].
+  (void)adr(TMP1, &C.Table);
+  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4, ARMEmitter::ShiftType::LSL, 4);
+  ldp<ARMEmitter::IndexType::OFFSET>(VTMP2.D(), Accum.D(), TMP1, 0);
 
-  // f = m - 1; s = f / (2 + f); TMP1 stashes s, VTMP1 holds s^2.
-  fmov(ARMEmitter::ScalarRegSize::i64Bit, VTMP2, 1.0f);
+  // Stash logc bits in TMP4 so Accum can be reused for the polynomial.
+  fmov(ARMEmitter::Size::i64Bit, TMP4, Accum.D());
+
+  // r = recip * m - 1.
+  fmul(VTMP1.D(), VTMP2.D(), VTMP1.D());
+  ldr(VTMP2.D(), &C.One);
   fsub(VTMP1.D(), VTMP1.D(), VTMP2.D());
-  fmov(ARMEmitter::ScalarRegSize::i64Bit, VTMP2, 2.0f);
-  fadd(VTMP2.D(), VTMP1.D(), VTMP2.D());
-  fdiv(Accum.D(), VTMP1.D(), VTMP2.D());
-  fmul(VTMP1.D(), Accum.D(), Accum.D());
-  fmov(ARMEmitter::Size::i64Bit, TMP1, Accum.D());
 
-  // 9-term Horner from 1/19 down to 1/3.
-  ldr(Accum.D(), &P8Label);
-  ldr(VTMP2.D(), &P7Label);
+  // Horner: poly = a0 + r*(a1 + r*(a2 + ... + r*a7)).
+  ldr(Accum.D(), &C.A7);
+  ldr(VTMP2.D(), &C.A6);
   fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
-  ldr(VTMP2.D(), &P6Label);
+  ldr(VTMP2.D(), &C.A5);
   fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
-  ldr(VTMP2.D(), &P5Label);
+  ldr(VTMP2.D(), &C.A4);
   fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
-  ldr(VTMP2.D(), &P4Label);
+  ldr(VTMP2.D(), &C.A3);
   fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
-  ldr(VTMP2.D(), &P3Label);
+  ldr(VTMP2.D(), &C.A2);
   fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
-  ldr(VTMP2.D(), &P2Label);
+  ldr(VTMP2.D(), &C.A1);
   fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
-  ldr(VTMP2.D(), &P1Label);
-  fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
-  ldr(VTMP2.D(), &P0Label);
+  ldr(VTMP2.D(), &C.A0);
   fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
 
-  // ln(1+f) = 2 * s * (1 + s^2 * P(s^2)).
-  fmul(Accum.D(), VTMP1.D(), Accum.D());
-  fmov(ARMEmitter::ScalarRegSize::i64Bit, VTMP2, 1.0f);
-  fadd(Accum.D(), Accum.D(), VTMP2.D());
-  fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP1);
-  fmul(Accum.D(), VTMP2.D(), Accum.D());
-  fadd(Accum.D(), Accum.D(), Accum.D());
+  // log2(1+r) = r * Accum.
+  fmul(VTMP1.D(), VTMP1.D(), Accum.D());
 
-  // log2(x) = k + ln(1+f)/ln(2); multiply by y.
-  ldr(VTMP1.D(), &Log2eLabel);
-  fmul(VTMP1.D(), Accum.D(), VTMP1.D());
+  // log2(x) = log2(1+r) + log2(center[i]) + k.
+  fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP4);
+  fadd(VTMP1.D(), VTMP1.D(), VTMP2.D());
   scvtf(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP2);
   fadd(VTMP1.D(), VTMP1.D(), VTMP2.D());
+
+  // result = y * log2(x).
   fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP3);
   fmul(VTMP1.D(), VTMP1.D(), VTMP2.D());
 
@@ -1712,33 +1705,267 @@ void Dispatcher::EmitF64FYL2X() {
   blr(TMP1);
   ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
   ret();
+}
 
-  // Constant pool: bias=1.0, sqrt(2), log2(e)=1/ln(2), P8..P0 = 1/19, 1/17, 1/15, ..., 1/3.
+// JIT-inlined double-precision y * log2(1 + x) for the F64 reduced precision x87 path.
+// Input: VTMP1 = x, VTMP2 = y. Output: VTMP1 = y * log2(1 + x).
+// Computes v = 1 + x in F64 and runs the same LUT-based log2 as F64FYL2X.
+// Loses 1-2 ulps of precision near x=0 (FYL2XP1's original purpose) but
+// matches main's lowering and avoids the range-check cliff into a fallback.
+void Dispatcher::EmitF64FYL2XP1(F64Log2Constants& C) {
+  F64FYL2XP1HandlerAddress = GetCursorAddress<uint64_t>();
+
+  constexpr auto Accum = ARMEmitter::VReg::v2;
+
+  ARMEmitter::ForwardLabel Fallback;
+
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::QReg::q2, ARMEmitter::Reg::rsp, -16);
+
+  mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+  str(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+
+  // v = 1 + x in Accum so VTMP1/VTMP2 still hold the original x/y at the fallback.
+  ldr(Accum.D(), &C.One);
+  fadd(Accum.D(), VTMP1.D(), Accum.D());
+
+  // Reject v <= 0, subnormal, NaN, Inf via v's bits in TMP1.
+  fmov(ARMEmitter::Size::i64Bit, TMP1, Accum.D());
+  (void)tbnz(TMP1, 63, &Fallback);
+  lsr(ARMEmitter::Size::i64Bit, TMP2, TMP1, 52);
+  (void)cbz(ARMEmitter::Size::i64Bit, TMP2, &Fallback);
+  cmp(ARMEmitter::Size::i64Bit, TMP2, 0x7FF);
+  (void)b(ARMEmitter::Condition::CC_EQ, &Fallback);
+  fmov(ARMEmitter::Size::i64Bit, TMP3, VTMP2.D());
+
+  // k = unbiased exponent; m bits = mantissa | (0x3FF << 52).
+  sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1023);
+  ubfx(ARMEmitter::Size::i64Bit, TMP1, TMP1, 0, 52);
+  movz(ARMEmitter::Size::i64Bit, TMP4, 0x3FF0, 48);
+  orr(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4);
+
+  // Index = top 6 mantissa bits (bits 51..46 of m).
+  ubfx(ARMEmitter::Size::i64Bit, TMP4, TMP1, 46, 6);
+
+  // Set m as F64 in VTMP1.
+  fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), TMP1);
+
+  // Load (recip, logc) from LUT[index].
+  (void)adr(TMP1, &C.Table);
+  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4, ARMEmitter::ShiftType::LSL, 4);
+  ldp<ARMEmitter::IndexType::OFFSET>(VTMP2.D(), Accum.D(), TMP1, 0);
+
+  // Stash logc bits in TMP4 so Accum can be reused for the polynomial.
+  fmov(ARMEmitter::Size::i64Bit, TMP4, Accum.D());
+
+  // r = recip * m - 1.
+  fmul(VTMP1.D(), VTMP2.D(), VTMP1.D());
+  ldr(VTMP2.D(), &C.One);
+  fsub(VTMP1.D(), VTMP1.D(), VTMP2.D());
+
+  // Horner: poly = a0 + r*(a1 + r*(a2 + ... + r*a7)).
+  ldr(Accum.D(), &C.A7);
+  ldr(VTMP2.D(), &C.A6);
+  fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C.A5);
+  fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C.A4);
+  fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C.A3);
+  fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C.A2);
+  fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C.A1);
+  fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
+  ldr(VTMP2.D(), &C.A0);
+  fmadd(Accum.D(), VTMP1.D(), Accum.D(), VTMP2.D());
+
+  // log2(1+r) = r * Accum.
+  fmul(VTMP1.D(), VTMP1.D(), Accum.D());
+
+  // log2(v) = log2(1+r) + log2(center[i]) + k.
+  fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP4);
+  fadd(VTMP1.D(), VTMP1.D(), VTMP2.D());
+  scvtf(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP2);
+  fadd(VTMP1.D(), VTMP1.D(), VTMP2.D());
+
+  // result = y * log2(v).
+  fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), TMP3);
+  fmul(VTMP1.D(), VTMP1.D(), VTMP2.D());
+
+  ldr(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+  msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::QReg::q2, ARMEmitter::Reg::rsp, 16);
+  ret();
+
+  // Fallback path: VTMP1/VTMP2 still hold the original x/y.
+  (void)Bind(&Fallback);
+  ldr(TMP1.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
+  msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::QReg::q2, ARMEmitter::Reg::rsp, 16);
+  str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64FYL2XP1].ABIHandler));
+  ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[FEXCore::Core::OPINDEX_F64FYL2XP1].Func));
+  blr(TMP1);
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+  ret();
+}
+
+// Shared constants pool for the LUT-based F64 log2 path used by FYL2X and FYL2XP1.
+// Emitted once after both handlers; their forward `ldr`/`adr` references are
+// patched here. Layout: One (1.0), 8 Horner coefficients A0..A7, then a 64-entry
+// LUT of (1/center[i], log2(center[i])) pairs where center[i] = 1 + (i+0.5)/64.
+void Dispatcher::EmitF64Log2Constants(F64Log2Constants& C) {
   Align(16);
-  (void)Bind(&BiasLabel);
-  dc64(0x3FF0'0000'0000'0000ULL);
-  (void)Bind(&Sqrt2Label);
-  dc64(0x3FF6'A09E'667F'3BCDULL);
-  (void)Bind(&Log2eLabel);
-  dc64(0x3FF7'1547'652B'82FEULL);
-  (void)Bind(&P8Label);
-  dc64(0x3FAA'F286'BCA1'AF28ULL);
-  (void)Bind(&P7Label);
-  dc64(0x3FAE'1E1E'1E1E'1E1EULL);
-  (void)Bind(&P6Label);
-  dc64(0x3FB1'1111'1111'1111ULL);
-  (void)Bind(&P5Label);
-  dc64(0x3FB3'B13B'13B1'3B14ULL);
-  (void)Bind(&P4Label);
-  dc64(0x3FB7'45D1'745D'1746ULL);
-  (void)Bind(&P3Label);
-  dc64(0x3FBC'71C7'1C71'C71CULL);
-  (void)Bind(&P2Label);
-  dc64(0x3FC2'4924'9249'2492ULL);
-  (void)Bind(&P1Label);
-  dc64(0x3FC9'9999'9999'999AULL);
-  (void)Bind(&P0Label);
-  dc64(0x3FD5'5555'5555'5555ULL);
+  (void)Bind(&C.One);
+  dc64(0x3FF0000000000000ULL); // 1.0
+  (void)Bind(&C.A0);
+  dc64(0x3FF71547652B82FEULL); // log2(e) * 1/1
+  (void)Bind(&C.A1);
+  dc64(0xBFE71547652B82FEULL); // log2(e) * -1/2
+  (void)Bind(&C.A2);
+  dc64(0x3FDEC709DC3A03FDULL); // log2(e) * 1/3
+  (void)Bind(&C.A3);
+  dc64(0xBFD71547652B82FEULL); // log2(e) * -1/4
+  (void)Bind(&C.A4);
+  dc64(0x3FD2776C50EF9BFEULL); // log2(e) * 1/5
+  (void)Bind(&C.A5);
+  dc64(0xBFCEC709DC3A03FDULL); // log2(e) * -1/6
+  (void)Bind(&C.A6);
+  dc64(0x3FCA61762A7ADED9ULL); // log2(e) * 1/7
+  (void)Bind(&C.A7);
+  dc64(0xBFC71547652B82FEULL); // log2(e) * -1/8
+
+  Align(16);
+  (void)Bind(&C.Table);
+  dc64(0x3FEFC07F01FC07F0ULL);
+  dc64(0x3F86FE50B6EF0851ULL); // i= 0
+  dc64(0x3FEF44659E4A4271ULL);
+  dc64(0x3FA11CD1D5133413ULL); // i= 1
+  dc64(0x3FEECC07B301ECC0ULL);
+  dc64(0x3FAC4DFAB90AAB5FULL); // i= 2
+  dc64(0x3FEE573AC901E574ULL);
+  dc64(0x3FB3AA2FDD27F1C3ULL); // i= 3
+  dc64(0x3FEDE5D6E3F8868AULL);
+  dc64(0x3FB918A16E46335BULL); // i= 4
+  dc64(0x3FED77B654B82C34ULL);
+  dc64(0x3FBE72EC117FA5B2ULL); // i= 5
+  dc64(0x3FED0CB58F6EC074ULL);
+  dc64(0x3FC1DCD197552B7BULL); // i= 6
+  dc64(0x3FECA4B3055EE191ULL);
+  dc64(0x3FC476A9F983F74DULL); // i= 7
+  dc64(0x3FEC3F8F01C3F8F0ULL);
+  dc64(0x3FC70742D4EF027FULL); // i= 8
+  dc64(0x3FEBDD2B899406F7ULL);
+  dc64(0x3FC98EDD077E70DFULL); // i= 9
+  dc64(0x3FEB7D6C3DDA338BULL);
+  dc64(0x3FCC0DB6CDD94DEEULL); // i=10
+  dc64(0x3FEB2036406C80D9ULL);
+  dc64(0x3FCE840BE74E6A4DULL); // i=11
+  dc64(0x3FEAC5701AC5701BULL);
+  dc64(0x3FD0790ADBB03009ULL); // i=12
+  dc64(0x3FEA6D01A6D01A6DULL);
+  dc64(0x3FD1AC05B291F070ULL); // i=13
+  dc64(0x3FEA16D3F97A4B02ULL);
+  dc64(0x3FD2DB10FC4D9AAFULL); // i=14
+  dc64(0x3FE9C2D14EE4A102ULL);
+  dc64(0x3FD406463B1B0449ULL); // i=15
+  dc64(0x3FE970E4F80CB872ULL);
+  dc64(0x3FD52DBDFC4C96B3ULL); // i=16
+  dc64(0x3FE920FB49D0E229ULL);
+  dc64(0x3FD6518FE4677BA7ULL); // i=17
+  dc64(0x3FE8D3018D3018D3ULL);
+  dc64(0x3FD771D2BA7EFB3CULL); // i=18
+  dc64(0x3FE886E5F0ABB04AULL);
+  dc64(0x3FD88E9C72E0B226ULL); // i=19
+  dc64(0x3FE83C977AB2BEDDULL);
+  dc64(0x3FD9A802391E232FULL); // i=20
+  dc64(0x3FE7F405FD017F40ULL);
+  dc64(0x3FDABE18797F1F49ULL); // i=21
+  dc64(0x3FE7AD2208E0ECC3ULL);
+  dc64(0x3FDBD0F2E9E79031ULL); // i=22
+  dc64(0x3FE767DCE434A9B1ULL);
+  dc64(0x3FDCE0A4923A587DULL); // i=23
+  dc64(0x3FE724287F46DEBCULL);
+  dc64(0x3FDDED3FD442364CULL); // i=24
+  dc64(0x3FE6E1F76B4337C7ULL);
+  dc64(0x3FDEF6D67328E220ULL); // i=25
+  dc64(0x3FE6A13CD1537290ULL);
+  dc64(0x3FDFFD799A83FF9BULL); // i=26
+  dc64(0x3FE661EC6A5122F9ULL);
+  dc64(0x3FE0809CF27F703DULL); // i=27
+  dc64(0x3FE623FA77016240ULL);
+  dc64(0x3FE10113B153C8EAULL); // i=28
+  dc64(0x3FE5E75BB8D015E7ULL);
+  dc64(0x3FE18028CF72976AULL); // i=29
+  dc64(0x3FE5AC056B015AC0ULL);
+  dc64(0x3FE1FDE3D30E8126ULL); // i=30
+  dc64(0x3FE571ED3C506B3AULL);
+  dc64(0x3FE27A4C0585CBF8ULL); // i=31
+  dc64(0x3FE5390948F40FEBULL);
+  dc64(0x3FE2F56875EB3F26ULL); // i=32
+  dc64(0x3FE5015015015015ULL);
+  dc64(0x3FE36F3FFB6D9162ULL); // i=33
+  dc64(0x3FE4CAB88725AF6EULL);
+  dc64(0x3FE3E7D9379F7016ULL); // i=34
+  dc64(0x3FE49539E3B2D067ULL);
+  dc64(0x3FE45F3A98A20739ULL); // i=35
+  dc64(0x3FE460CBC7F5CF9AULL);
+  dc64(0x3FE4D56A5B33CEC4ULL); // i=36
+  dc64(0x3FE42D6625D51F87ULL);
+  dc64(0x3FE54A6E8CA5438EULL); // i=37
+  dc64(0x3FE3FB013FB013FBULL);
+  dc64(0x3FE5BE4D0CB51435ULL); // i=38
+  dc64(0x3FE3C995A47BABE7ULL);
+  dc64(0x3FE6310B8F553048ULL); // i=39
+  dc64(0x3FE3991C2C187F63ULL);
+  dc64(0x3FE6A2AF9E5A0F0AULL); // i=40
+  dc64(0x3FE3698DF3DE0748ULL);
+  dc64(0x3FE7133E9B156C7CULL); // i=41
+  dc64(0x3FE33AE45B57BCB2ULL);
+  dc64(0x3FE782BDBFDDA657ULL); // i=42
+  dc64(0x3FE30D190130D190ULL);
+  dc64(0x3FE7F1322182CF16ULL); // i=43
+  dc64(0x3FE2E025C04B8097ULL);
+  dc64(0x3FE85EA0B0B27B26ULL); // i=44
+  dc64(0x3FE2B404AD012B40ULL);
+  dc64(0x3FE8CB0E3B4B3BBEULL); // i=45
+  dc64(0x3FE288B01288B013ULL);
+  dc64(0x3FE9367F6DA0AB2FULL); // i=46
+  dc64(0x3FE25E22708092F1ULL);
+  dc64(0x3FE9A0F8D3B0E050ULL); // i=47
+  dc64(0x3FE23456789ABCDFULL);
+  dc64(0x3FEA0A7EDA4C112DULL); // i=48
+  dc64(0x3FE20B470C67C0D9ULL);
+  dc64(0x3FEA7315D02F20C8ULL); // i=49
+  dc64(0x3FE1E2EF3B3FB874ULL);
+  dc64(0x3FEADAC1E711C833ULL); // i=50
+  dc64(0x3FE1BB4A4046ED29ULL);
+  dc64(0x3FEB418734A9008CULL); // i=51
+  dc64(0x3FE19453808CA29CULL);
+  dc64(0x3FEBA769B39E4964ULL); // i=52
+  dc64(0x3FE16E0689427379ULL);
+  dc64(0x3FEC0C6D447C5DD3ULL); // i=53
+  dc64(0x3FE1485F0E0ACD3BULL);
+  dc64(0x3FEC7095AE91E1C7ULL); // i=54
+  dc64(0x3FE12358E75D3033ULL);
+  dc64(0x3FECD3E6A0CA8907ULL); // i=55
+  dc64(0x3FE0FEF010FEF011ULL);
+  dc64(0x3FED3663B27F31D5ULL); // i=56
+  dc64(0x3FE0DB20A88F4696ULL);
+  dc64(0x3FED9810643D6615ULL); // i=57
+  dc64(0x3FE0B7E6EC259DC8ULL);
+  dc64(0x3FEDF8F02086AF2CULL); // i=58
+  dc64(0x3FE0953F39010954ULL);
+  dc64(0x3FEE59063C8822CEULL); // i=59
+  dc64(0x3FE073260A47F7C6ULL);
+  dc64(0x3FEEB855F8CA88FBULL); // i=60
+  dc64(0x3FE05197F7D73404ULL);
+  dc64(0x3FEF16E281DB7630ULL); // i=61
+  dc64(0x3FE03091B51F5E1AULL);
+  dc64(0x3FEF74AEF0EFAFAEULL); // i=62
+  dc64(0x3FE0101010101010ULL);
+  dc64(0x3FEFD1BE4C7F2AF9ULL); // i=63
 }
 
 void Dispatcher::EmitF64FPREM() {
@@ -2408,6 +2635,7 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     Ptrs.F64ScaleHandler = F64ScaleHandlerAddress;
     Ptrs.F64AtanHandler = F64AtanHandlerAddress;
     Ptrs.F64FYL2XHandler = F64FYL2XHandlerAddress;
+    Ptrs.F64FYL2XP1Handler = F64FYL2XP1HandlerAddress;
     Ptrs.F64FPREMHandler = F64FPREMHandlerAddress;
     Ptrs.F64FPREM1Handler = F64FPREM1HandlerAddress;
 
