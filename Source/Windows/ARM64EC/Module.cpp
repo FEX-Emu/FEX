@@ -846,17 +846,21 @@ NTSTATUS NotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Si
 }
 
 void NotifyUnmapViewOfSection(void* Address, BOOL After, NTSTATUS Status) {
+  static thread_local FEX::Windows::InvalidationTracker::InvalidateContainingSectionResult PendingUnmap {};
+
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
     return;
   }
 
   if (!After) {
     ThreadCreationMutex.lock();
-    auto [Start, Size] = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
-    if (Size) {
-      HandleImageUnmap(Start, Size);
+    PendingUnmap = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+    if (PendingUnmap.SectionSize) {
+      HandleImageUnmap(PendingUnmap.SectionStart, PendingUnmap.SectionSize);
     }
   } else {
+    InvalidationTracker->RefreshInterval(PendingUnmap.SectionStart, PendingUnmap.SectionSize);
+    PendingUnmap = {};
     ThreadCreationMutex.unlock();
   }
 }

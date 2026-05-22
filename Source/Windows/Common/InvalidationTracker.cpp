@@ -194,6 +194,25 @@ InvalidationTracker::InvalidateContainingSectionResult InvalidationTracker::Inva
   return {SectionBase, SectionSize};
 }
 
+void InvalidationTracker::RefreshInterval(uint64_t Address, uint64_t Size) {
+  MEMORY_BASIC_INFORMATION Info;
+  const auto End = Address + Size;
+
+  while (Address < End &&
+         !NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Address), MemoryBasicInformation, &Info, sizeof(Info), nullptr)) {
+    const auto RegionBase = reinterpret_cast<uint64_t>(Info.BaseAddress);
+    const auto RegionEnd = std::min(End, RegionBase + Info.RegionSize);
+    if (Info.State == MEM_COMMIT) {
+      HandleMemoryProtectionNotification(Address, RegionEnd - Address, Info.Protect);
+    }
+
+    if (RegionEnd <= Address) {
+      return;
+    }
+    Address = RegionEnd;
+  }
+}
+
 void InvalidationTracker::InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free) {
   if (!Address) {
     // Match the Windows behaviour when passed a NULL base address.

@@ -31,6 +31,7 @@ public:
     uint64_t SectionSize;
   };
   InvalidateContainingSectionResult InvalidateContainingSection(uint64_t Address, bool Free);
+  void RefreshInterval(uint64_t Address, uint64_t Size);
   void InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free);
   void ReprotectRWXIntervals(uint64_t Address, uint64_t Size);
   bool HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC, uint64_t FaultAddress);

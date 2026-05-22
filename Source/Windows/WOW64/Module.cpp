@@ -1011,13 +1011,17 @@ NTSTATUS BTCpuNotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE
 }
 
 void BTCpuNotifyUnmapViewOfSection(void* Address, BOOL After, ULONG Status) {
+  static thread_local FEX::Windows::InvalidationTracker::InvalidateContainingSectionResult PendingUnmap {};
+
   if (!After) {
     ThreadCreationMutex.lock();
-    auto [Start, Size] = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
-    if (Size) {
-      HandleImageUnmap(Start, Size);
+    PendingUnmap = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+    if (PendingUnmap.SectionSize) {
+      HandleImageUnmap(PendingUnmap.SectionStart, PendingUnmap.SectionSize);
     }
   } else {
+    InvalidationTracker->RefreshInterval(PendingUnmap.SectionStart, PendingUnmap.SectionSize);
+    PendingUnmap = {};
     ThreadCreationMutex.unlock();
   }
 }
