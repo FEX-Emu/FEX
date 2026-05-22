@@ -47,7 +47,7 @@ MappedCodeCacheFile::~MappedCodeCacheFile() {
   }
 
 #ifndef _WIN32
-  if (CodeBuffer.empty()) {
+  if (!CodeBuffer.empty()) {
     FEXCore::Allocator::munmap(CodeBuffer.data(), CodeBuffer.size_bytes());
   }
 #endif
