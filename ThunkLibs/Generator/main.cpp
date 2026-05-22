@@ -92,8 +92,6 @@ int main(int argc, char* const argv[]) {
     }
     AdjustedArgs.push_back("-DGUEST_THUNK_LIBRARY");
     AdjustedArgs.push_back(std::string {"--target="} + platform);
-    AdjustedArgs.push_back("-isystem");
-    AdjustedArgs.push_back(std::string {"/usr/"} + platform + "/include/");
 
     append_x86_rootfs_includes(AdjustedArgs, platform);
 

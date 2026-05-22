@@ -87,11 +87,12 @@ function(generate NAME SOURCE_FILE)
 
   if (BITNESS EQUAL 32)
     set(BITNESS_FLAGS "-for-32bit-guest")
-    set(BITNESS_FLAGS2 "-m32" "--target=i686-linux-gnu" "-isystem" "/usr/i686-linux-gnu/include/")
+    set(BITNESS_FLAGS2 "-m32" "--target=i686-linux-gnu")
   else()
     set(BITNESS_FLAGS "")
-    set(BITNESS_FLAGS2 "--target=x86_64-linux-gnu" "-isystem" "/usr/x86_64-linux-gnu/include/")
+    set(BITNESS_FLAGS2 "--target=x86_64-linux-gnu")
   endif()
+  list(APPEND BITNESS_FLAGS2 "--sysroot" "${X86_DEV_ROOTFS}")
 
   add_custom_command(
     OUTPUT "${OUTFILE}"
