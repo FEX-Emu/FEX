@@ -11,7 +11,7 @@
 namespace FEX::Windows {
 template<typename TReg>
 static inline EXCEPTION_RECORD
-HandleGuestException(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& Fault, const EXCEPTION_RECORD& Src, TReg& Rip, TReg Cx) {
+HandleGuestException(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& Fault, const EXCEPTION_RECORD& Src, TReg& Rip, TReg Rax, TReg Cx) {
   EXCEPTION_RECORD Dst = Src;
   Dst.ExceptionAddress = reinterpret_cast<void*>(Rip);
 
@@ -53,7 +53,7 @@ HandleGuestException(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& F
           Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
           Dst.ExceptionAddress = reinterpret_cast<void*>(Rip);
           Dst.NumberParameters = 1;
-          Dst.ExceptionInformation[0] = Cx; // RCX/ECX
+          Dst.ExceptionInformation[0] = Rax;
           // Note that ExceptionAddress doesn't equal the reported context RIP here, this discrepancy expected and not having it can trigger anti-debug logic.
           return Dst;
         default: LogMan::Msg::EFmt("Unknown interrupt: 0x{:X}", Fault.err_code >> 3); break;
