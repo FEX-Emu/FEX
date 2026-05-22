@@ -8,6 +8,8 @@ constexpr DispatchTableEntry OpDispatch_TwoByteOpTable[] = {
   {0x03, 1, &OpDispatchBuilder::LSLOp},
   {0x06, 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {0x07, 1, &OpDispatchBuilder::PermissionRestrictedOp},
+  {0x08, 2, &OpDispatchBuilder::PermissionRestrictedOp},
+  {0x09, 2, &OpDispatchBuilder::PermissionRestrictedOp},
   {0x0B, 1, &OpDispatchBuilder::INTOp},
   {0x0E, 1, &OpDispatchBuilder::X87EMMS},
 
