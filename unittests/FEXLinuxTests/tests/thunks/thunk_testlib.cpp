@@ -12,7 +12,8 @@ struct Fixture {
   void* lib = []() {
     auto ret = dlopen("libfex_thunk_test.so", RTLD_LAZY);
     if (!ret) {
-      throw std::runtime_error("Failed to open lib\n");
+      auto err = dlerror();
+      throw std::runtime_error(std::string("Failed to open lib: ") + (err ? err : "unknown error"));
     }
     return ret;
   }();
