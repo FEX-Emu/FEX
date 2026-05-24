@@ -79,15 +79,17 @@ TEST(17, "sysret", "sysret", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 TEST(17, "sysret", "sysretd", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 #endif
 TEST(18, "wrmsr", "wrmsr", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(19, "invd", "invd", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(20, "wbinvd", "wbinvd", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 
 // Instructions not implemented
-TEST(19, "monitor", "monitor", X86_TRAPNO_UD, 0, 2, SIGILL);
-TEST(20, "mwait", "mwait", X86_TRAPNO_UD, 0, 2, SIGILL);
-TEST(21, "sysenter", "sysenter", X86_TRAPNO_UD, 0, 2, SIGILL);
+TEST(21, "monitor", "monitor", X86_TRAPNO_UD, 0, 2, SIGILL);
+TEST(22, "mwait", "mwait", X86_TRAPNO_UD, 0, 2, SIGILL);
+TEST(23, "sysenter", "sysenter", X86_TRAPNO_UD, 0, 2, SIGILL);
 #ifdef __clang__
-TEST(22, "sysexit", "sysexit", X86_TRAPNO_UD, 0, 2, SIGILL);
+TEST(24, "sysexit", "sysexit", X86_TRAPNO_UD, 0, 2, SIGILL);
 #else
-TEST(22, "sysexit", "sysexitd", X86_TRAPNO_UD, 0, 2, SIGILL);
+TEST(24, "sysexit", "sysexitd", X86_TRAPNO_UD, 0, 2, SIGILL);
 #endif
 
 // Differs between dr8 and dr0-7 variants.
