@@ -588,6 +588,18 @@ if (BUILD_TESTING)
     execute_process(COMMAND "nproc" OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE TEST_JOB_COUNT)
   endif()
   set(TEST_JOB_FLAG "-j${TEST_JOB_COUNT}")
+  
+  set(TEST_ARGS "--output-on-failure" "--timeout" "302" "--parallel")
+
+  # default tests (ninja test)
+  set(CMAKE_CTEST_ARGUMENTS "${TEST_ARGS}" "--label-exclude" "integration")
+
+  # integration tests (ninja test_integration)
+  add_custom_target(test_integration
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  USES_TERMINAL
+  COMMAND "ctest" "${TEST_ARGS}" "-L" "integration")
+
 endif()
 
 add_subdirectory(External/SoftFloat-3e/)

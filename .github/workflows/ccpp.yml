@@ -89,11 +89,17 @@ jobs:
         target: emitter_tests
 
     # Linux  tests
-    - name: FEX Linux Tests
+    - name: FEX Linux Tests (Portable)
       if: steps.build.outcome == 'success'
       uses: ./.github/workflows/test
       with:
-        target: fex_linux_tests_all
+        target: fex_linux_portable_tests_all
+        
+    - name: FEX Linux Tests (Global)
+      if: steps.build.outcome == 'success'
+      uses: ./.github/workflows/test
+      with:
+        target: fex_linux_global_tests_all
       env:
         FEX_PORTABLE: 0
 

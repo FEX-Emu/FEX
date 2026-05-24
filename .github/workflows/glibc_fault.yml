@@ -89,11 +89,11 @@ jobs:
         target: fexcore_apitests
 
     # Linux tests
-    - name: FEX Linux Tests
+    - name: FEX Linux Tests (Global)
       if: ${{ always() }}
       uses: ./.github/workflows/test
       with:
-        target: fex_linux_tests_all
+        target: fex_linux_global_tests_all
 
     # ASM Tests
     - name: ASM Tests
