@@ -44,13 +44,15 @@ set(DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
 set(HOSTLIBS_DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
 
 if (NOT DATA_DIRECTORY)
-  set(DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu")
+  set(DATA_DIRECTORY "share/fex-emu")
 endif()
 
 include(GNUInstallDirs)
 if (NOT HOSTLIBS_DATA_DIRECTORY)
-  set(HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_FULL_LIBDIR}/fex-emu")
+  set(HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_LIBDIR}/fex-emu")
 endif()
+
+GNUInstallDirs_get_absolute_install_dir(GLOBAL_DATA_DIRECTORY DATA_DIRECTORY)
 
 ## Platform Checks ##
 # Only 64-bit Linux and Windows are supported
@@ -401,7 +403,7 @@ if (NOT TARGET xxHash::xxhash)
 endif()
 
 add_compile_options(-Wno-trigraphs)
-add_compile_definitions(GLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
+add_compile_definitions(GLOBAL_DATA_DIRECTORY="${GLOBAL_DATA_DIRECTORY}/")
 
 if (BUILD_TESTING)
   find_package(Catch2 3 QUIET)
@@ -641,7 +643,7 @@ if (BUILD_THUNKS)
       "-DBUILD_FEX_LINUX_TESTS=${BUILD_FEX_LINUX_TESTS}"
       "-DENABLE_CLANG_THUNKS=${ENABLE_CLANG_THUNKS}"
       "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_64_TOOLCHAIN_FILE}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+      "-DDATA_DIRECTORY=${DATA_DIRECTORY}"
       "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
       "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
       "-DX86_DEV_ROOTFS=${X86_DEV_ROOTFS}"
@@ -659,7 +661,7 @@ if (BUILD_THUNKS)
       "-DBUILD_FEX_LINUX_TESTS=${BUILD_FEX_LINUX_TESTS}"
       "-DENABLE_CLANG_THUNKS=${ENABLE_CLANG_THUNKS}"
       "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_32_TOOLCHAIN_FILE}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+      "-DDATA_DIRECTORY=${DATA_DIRECTORY}"
       "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
       "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
       "-DX86_DEV_ROOTFS=${X86_DEV_ROOTFS}"
@@ -670,7 +672,7 @@ if (BUILD_THUNKS)
   install(
     CODE "message(\"-- Installing: guest-libs\")"
     CODE "
-      execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install
+      execute_process(COMMAND ${CMAKE_COMMAND} --install . --prefix \"\${CMAKE_INSTALL_PREFIX}\"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest)"
     DEPENDS guest-libs
     COMPONENT Runtime)
@@ -678,7 +680,7 @@ if (BUILD_THUNKS)
   install(
     CODE "message(\"-- Installing: guest-libs-32\")"
     CODE "
-      execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install
+      execute_process(COMMAND ${CMAKE_COMMAND} --install . --prefix \"\${CMAKE_INSTALL_PREFIX}\"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32)"
     DEPENDS guest-libs-32
     COMPONENT Runtime)

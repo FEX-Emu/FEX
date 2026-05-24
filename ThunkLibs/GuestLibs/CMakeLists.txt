@@ -38,9 +38,8 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(CMAKE_CXX_STANDARD 20)
 
   # This gets passed in from the main cmake project
-  set(DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
-  if (NOT DATA_DIRECTORY)
-    set(DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu")
+  if(NOT DATA_DIRECTORY)
+    message(FATAL_ERROR "DATA_DIRECTORY must be set")
   endif()
 
   set(TARGET_TYPE SHARED)
