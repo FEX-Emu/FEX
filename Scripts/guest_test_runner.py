@@ -130,9 +130,14 @@ if ResultCode == 0:
     for Try in range(TryCount):
         # Run the test and wait for it to end to get the result
         print(RunnerArgs)
-        Process = subprocess.Popen(RunnerArgs)
-        Process.wait()
-        ResultCode = Process.returncode
+
+        try:
+            Process = subprocess.Popen(RunnerArgs)
+            Process.wait()
+            ResultCode = Process.returncode
+        except Exception as err:
+            print(f"Unexpected Error: {err}")
+            sys.exit(1)
 
         # Break if the expected output is the result code
         if (expected_output[test_name] == ResultCode):
