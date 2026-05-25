@@ -253,8 +253,15 @@ endif()
 if (ENABLE_CCACHE)
   find_program(CCACHE_PROGRAM ccache)
   if(CCACHE_PROGRAM)
-    message(STATUS "CCache enabled")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+    execute_process(COMMAND "${CCACHE_PROGRAM}" --print-version
+     OUTPUT_VARIABLE CCACHE_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+    message(STATUS "Enabling ccache ${CCACHE_VERSION}")
+    if (CCACHE_VERSION VERSION_GREATER_EQUAL "4.8")
+      # Set sloppiness to enable caching even for files that use __DATE__/__TIME__ macros
+      set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM} sloppiness=time_macros")
+    else()
+      set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+    endif()
   endif()
 endif()
 
