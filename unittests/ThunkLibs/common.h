@@ -75,16 +75,17 @@ run_tool(clang::tooling::ToolAction& action, std::string_view code, bool silent 
     args.push_back("-resource-dir");
     args.push_back(CLANG_RESOURCE_DIR);
   }
-  if (guest_abi == GuestABI::X86_64) {
-    args.push_back("-target");
-    args.push_back("x86_64-linux-gnu");
-    args.push_back("-isystem");
-    args.push_back("/usr/x86_64-linux-gnu/include/");
-  } else if (guest_abi == GuestABI::X86_32) {
-    args.push_back("-target");
-    args.push_back("i686-linux-gnu");
-    args.push_back("-isystem");
-    args.push_back("/usr/i686-linux-gnu/include/");
+  if (guest_abi) {
+    args.push_back("--sysroot");
+    args.push_back(X86_DEV_ROOTFS);
+    if (guest_abi == GuestABI::X86_64) {
+      args.push_back("-target");
+      args.push_back("x86_64-linux-gnu");
+    } else if (guest_abi == GuestABI::X86_32) {
+      args.push_back("-m32");
+      args.push_back("-target");
+      args.push_back("i686-linux-gnu");
+    }
   } else {
     args.push_back("-DHOST");
   }
