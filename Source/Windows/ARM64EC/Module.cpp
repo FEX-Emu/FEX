@@ -496,7 +496,7 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
-  Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8);
+  Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8, Args->Context.X0);
   if (Args->Rec.ExceptionCode == EXCEPTION_SINGLE_STEP) {
     Args->Context.Cpsr &= ~(1 << 21); // PSTATE.SS
   } else if (Args->Rec.ExceptionCode == EXCEPTION_BREAKPOINT) {
