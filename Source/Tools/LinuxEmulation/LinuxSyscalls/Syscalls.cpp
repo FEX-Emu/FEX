@@ -60,6 +60,7 @@ $end_info$
 #include <syscall.h>
 #include <sys/mman.h>
 #include <sys/utsname.h>
+#include <thread>
 #include <unistd.h>
 
 namespace FEX::HLE {
