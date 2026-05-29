@@ -22,8 +22,8 @@ CallRetStackInfo GetInfoThread(FEXCore::Core::InternalThreadState* Thread) {
 
 void InitializeThread(FEXCore::Core::InternalThreadState* Thread) {
   // Allocate the call-ret stack with guard pages on both sides
-  const void* CallRetStackAlloc = ::VirtualAlloc(
-    nullptr, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + 2 * FEXCore::Utils::FEX_PAGE_SIZE, MEM_RESERVE, PAGE_NOACCESS);
+  const void* CallRetStackAlloc = ::VirtualAlloc(nullptr, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + 2 * FEXCore::Utils::FEX_PAGE_SIZE,
+                                                 MEM_RESERVE | MEM_TOP_DOWN, PAGE_NOACCESS);
 
   FEXCore::Allocator::VirtualName("FEXMem_CallRetStacks", CallRetStackAlloc,
                                   FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + 2 * FEXCore::Utils::FEX_PAGE_SIZE);
