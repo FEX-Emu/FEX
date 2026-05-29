@@ -63,8 +63,8 @@ private:
   std::shared_mutex IntervalsLock;
   FEXCore::Context::Context& CTX;
   const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads;
-  bool SMCDetectionDisabled {false}; // Protected by IntervalsLock
-  bool DEPDisabled {false};          // Protected by IntervalsLock
+  bool SMCDetectionDisabled {false};                    // Protected by IntervalsLock
+  bool DEPDisabled {false};                             // Protected by IntervalsLock
   FEXCore::IntervalList<uint64_t> DEPPromotedIntervals; // Protected by IntervalsLock
 
   bool MonoBackpatcherDetectionPending {false};
