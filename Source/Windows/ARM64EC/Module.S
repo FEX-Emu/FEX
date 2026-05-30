@@ -18,9 +18,8 @@ check_target_ec:
   // Check if target is in fact x86 code
   ldr x16, [x18, #0x60] // TEB->PEB
   ldr x16, [x16, #0x368] // PEB->EcCodeBitMap
-  lsr x17, x9, #15
-  and x17, x17, #0x1fffffffffff8
-  ldr x16, [x16, x17]
+  lsr x17, x9, #18
+  ldr x16, [x16, x17, lsl #3]
   lsr x17, x9, #12
   lsr x16, x16, x17
   tbnz x16, #0, ExitFunctionEC
