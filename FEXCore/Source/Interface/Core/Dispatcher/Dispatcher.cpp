@@ -153,9 +153,8 @@ void Dispatcher::EmitDispatcher() {
   ldr(TMP1, ARMEmitter::XReg::x18, TEB_PEB_OFFSET);
   ldr(TMP1, TMP1, PEB_EC_CODE_BITMAP_OFFSET);
 
-  lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 15);
-  and_(ARMEmitter::Size::i64Bit, TMP2, TMP2, 0x1fffffffffff8);
-  ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 0);
+  lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 18);
+  ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 3);
   lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 12);
   lsrv(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
   (void)tbz(TMP1, 0, &l_NotECCode);
