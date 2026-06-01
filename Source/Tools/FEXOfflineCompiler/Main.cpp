@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: MIT
+#ifndef _WIN32
 #include "../FEXInterpreter/ELFCodeLoader.h"
+#endif
 #include <DummyHandlers.h>
+#ifndef _WIN32
 #include <PortabilityInfo.h>
 #include <Thunks.h>
+#endif
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeCache.h>
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/HostFeatures.h>
+#include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/HLE/SourcecodeResolver.h>
 
 #include <Common/ArgumentLoader.h>
 #include <Common/Config.h>
@@ -16,15 +23,42 @@
 
 #include <OptionParser.h>
 
+#ifndef _WIN32
+#include <elf.h>
+#endif
 #include <fmt/printf.h>
 #include <libgen.h>
 
+#include <fcntl.h>
 #include <fstream>
 #include <optional>
+#include <ranges>
 
+#ifndef _WIN32
+#include <sys/mman.h>
+#else
+#include <Common/CPUFeatures.h>
+#include <Common/Handle.h>
+#include <Common/ImageTracker.h>
+#include <Common/InvalidationTracker.h>
+#include <Common/JITGuardPage.h>
+#include <Common/Logging.h>
+#include <Common/Module.h>
+#include <Common/OvercommitTracker.h>
+#include <Common/PortabilityInfo.h>
+
+static std::unique_ptr<FEX::Windows::OvercommitTracker> OvercommitTracker;
+#endif
+static FEXCore::Core::InternalThreadState* Thread = nullptr;
+
+#ifdef _WIN32
+class AOTSyscallHandler : public FEXCore::HLE::SyscallHandler {
+#else
 class AOTSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEX::HLE::SyscallMmapInterface {
+#endif
 public:
-  AOTSyscallHandler(FEXCore::HLE::SyscallOSABI SyscallOSABI) {
+  AOTSyscallHandler(FEXCore::Context::Context& CTX, FEXCore::HLE::SyscallOSABI SyscallOSABI)
+    : CTX(CTX) {
     OSABI = SyscallOSABI;
   }
 
@@ -33,24 +67,39 @@ public:
     return 0;
   }
 
+  FEXCore::Context::Context& CTX;
+#ifdef _WIN32
+  FEX::Windows::ImageTracker ImageTracker {CTX, true};
+  const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> ThreadsUnused;
+  FEX::Windows::InvalidationTracker InvalidationTracker {CTX, ThreadsUnused};
+#else
   FEXCore::ExecutableFileInfo FileInfo;
   std::map<uint64_t, uint64_t> FileRanges;
-
+#endif
   uintptr_t VAFileStart = 0;
 
   // These are no-ops implementations of the SyscallHandler API
   std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState*, uint64_t Address) override {
+#ifndef _WIN32
     auto It = FileRanges.upper_bound(Address - VAFileStart);
     LOGMAN_THROW_A_FMT(It != FileRanges.begin(), "Could not find associated file mapping");
     --It;
     LOGMAN_THROW_A_FMT(VAFileStart + It->first + It->second > Address, "Could not find associated file mapping for {:#x}", Address);
     return FEXCore::ExecutableFileSectionInfo {FileInfo, VAFileStart, VAFileStart + It->first, VAFileStart + It->first + It->second};
+#else
+    return ImageTracker.LookupExecutableFileSection(Address);
+#endif
   }
 
   FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override {
+#ifndef _WIN32
     return {0, UINT64_MAX, true};
+#else
+    return InvalidationTracker.QueryExecutableRange(Address);
+#endif
   }
 
+#ifndef _WIN32
   void* GuestMmap(FEXCore::Core::InternalThreadState*, void* addr, size_t Size, int prot, int Flags, int fd, off_t offset) override {
     // Force writeable to allow applying relocations
     auto Ret = mmap(addr, Size, prot | PROT_WRITE, Flags, fd, offset);
@@ -64,6 +113,14 @@ public:
   uint64_t GuestMunmap(FEXCore::Core::InternalThreadState*, void* addr, uint64_t length) override {
     return munmap(addr, length);
   }
+#else
+  virtual void MarkOvercommitRange(uint64_t Start, uint64_t Length) override {
+    OvercommitTracker->MarkRange(Start, Length);
+  }
+  virtual void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) override {
+    OvercommitTracker->UnmarkRange(Start, Length);
+  }
+#endif
 };
 
 static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
@@ -87,8 +144,18 @@ struct std::hash<FEXCore::ExecutableFileInfo> {
   }
 };
 
+// Windows requires O_BINARY, whereas on Linux it's implicit
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 // Placeholder data to ensure the compile thread doesn't de-reference nullptr data
 static FEXCore::Core::CPUState::gdt_segment gdt[32] {};
+#if !defined(_WIN32) || defined(_M_ARM64EC)
+static constexpr size_t DefaultCS {FEXCore::Core::CPUState::DEFAULT_USER_CS};
+#else
+static constexpr size_t DefaultCS {4};
+#endif
 
 static FEXCore::Core::InternalThreadState* SetupCompileThread(FEXCore::Context::Context& CTX, bool Is64Bit) {
   auto Thread = CTX.CreateThread(0, 0);
@@ -96,13 +163,11 @@ static FEXCore::Core::InternalThreadState* SetupCompileThread(FEXCore::Context::
   auto Frame = Thread->CurrentFrame;
   Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &gdt[0];
   Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_LDT] = &gdt[0];
-
-  Frame->State.cs_idx = FEXCore::Core::CPUState::DEFAULT_USER_CS << 3;
+  Frame->State.cs_idx = DefaultCS << 3;
   auto GDT = FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx);
   FEXCore::Core::CPUState::SetGDTBase(GDT, 0);
   FEXCore::Core::CPUState::SetGDTLimit(GDT, 0xFFFFFU);
-  Frame->State.cs_cached =
-    FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
+  Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(*GDT);
 
   if (Is64Bit) {
     GDT->L = 1; // L = Long Mode = 64-bit
@@ -115,7 +180,8 @@ static FEXCore::Core::InternalThreadState* SetupCompileThread(FEXCore::Context::
   return Thread;
 }
 
-bool RelocateMappedImage(HMODULE Module) {
+#ifdef _WIN32
+static bool RelocateMappedImage(HMODULE Module) {
   const auto* NtHeaders = reinterpret_cast<FEX::Windows::ArchImageNtHeaders*>(RtlImageNtHeader(Module));
   if (!NtHeaders) {
     return false;
@@ -207,11 +273,11 @@ bool RelocateMappedImage(HMODULE Module) {
 }
 
 #ifdef ARCHITECTURE_arm64ec
-void* MapView(HANDLE SectionHandle) {
+static void* MapView(HANDLE SectionHandle) {
   return MapViewOfFile(SectionHandle, FILE_MAP_EXECUTE | FILE_MAP_READ, 0, 0, 0);
 }
 #else
-void* MapView(HANDLE SectionHandle) {
+static void* MapView(HANDLE SectionHandle) {
   void* BaseAddress = nullptr;
   SIZE_T ViewSize = 0;
   LARGE_INTEGER Offset {};
@@ -230,58 +296,46 @@ void* MapView(HANDLE SectionHandle) {
 }
 #endif
 
-struct MappedImage {
-  uint64_t BaseAddress;
-  FEXCore::ExecutableFileSectionInfo SectionInfo;
-  ImageInfo Info;
-};
-
-std::vector<MappedImage> TryMapImages(std::unordered_map<FEXCore::CodeMapFileId, ImageInfo>&& Images) {
-  std::vector<MappedImage> Result;
-
-  for (auto& [ID, Info] : Images) {
-    if (!Info.RecompileCode || Info.Contents.Blocks.empty()) {
-      continue;
-    }
-
-    FEX::Windows::ScopedHandle File {CreateFileA(Info.Contents.Filename.c_str(), GENERIC_READ | SYNCHRONIZE,
-                                                 FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr)};
+// Returns the base address of the mapped image
+static std::optional<uint64_t> TryMapImage(FEX::Windows::InvalidationTracker& InvalidationTracker, FEX::Windows::ImageTracker& ImageTracker,
+                                           const FEXCore::CodeMapFileId& ID, FEXCore::ExecutableFileInfo& Info) {
+  {
+    FEX::Windows::ScopedHandle File {CreateFileA(Info.Filename.c_str(), GENERIC_READ | SYNCHRONIZE, FILE_SHARE_READ | FILE_SHARE_DELETE,
+                                                 nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr)};
     if (!File) {
-      LogMan::Msg::EFmt("Couldn't find image: {}", Info.Contents.Filename);
-      continue;
+      LogMan::Msg::EFmt("Couldn't find image: {}", Info.Filename);
+      return std::nullopt;
     }
 
     FEX::Windows::ScopedHandle Section {CreateFileMappingA(*File, nullptr, SEC_IMAGE | PAGE_EXECUTE_READ, 0, 0, nullptr)};
     if (!Section) {
-      LogMan::Msg::EFmt("Couldn't create section for image: {}", Info.Contents.Filename);
-      continue;
+      LogMan::Msg::EFmt("Couldn't create section for image: {}", Info.Filename);
+      return std::nullopt;
     }
 
     void* Mapping = MapView(*Section);
     if (!Mapping) {
-      LogMan::Msg::EFmt("Couldn't map section for image: {}", Info.Contents.Filename);
-      continue;
+      LogMan::Msg::EFmt("Couldn't map section for image: {}", Info.Filename);
+      return std::nullopt;
     }
 
     if (!RelocateMappedImage(reinterpret_cast<HMODULE>(Mapping))) {
       LogMan::Msg::EFmt("Failed to apply image relocations");
       UnmapViewOfFile(Mapping);
-      continue;
+      return std::nullopt;
     }
 
     uint64_t BaseAddress = reinterpret_cast<uint64_t>(Mapping);
-    LogMan::Msg::IFmt("Mapped image: {} @ {:X}", Info.Contents.Filename, BaseAddress);
+    LogMan::Msg::IFmt("Mapped image: {} @ {:X}", Info.Filename, BaseAddress);
 
-    InvalidationTracker->HandleImageMap(FEX::Windows::BaseName(Info.Contents.Filename), BaseAddress);
-    auto SectionInfo = ImageTracker->HandleImageMap(Info.Contents.Filename, BaseAddress, Info.Contents.IsExecutable);
+    InvalidationTracker.HandleImageMap(FEX::Windows::BaseName(Info.Filename), BaseAddress);
+    ImageTracker.HandleImageMap(Info.Filename, BaseAddress, false /* unused during cache generation */);
 
-    Result.push_back(MappedImage {.BaseAddress = BaseAddress, .SectionInfo = SectionInfo, .Info = std::move(Info)});
+    return BaseAddress;
   }
-
-  return Result;
 }
 
-LONG ExceptionHandler(_EXCEPTION_POINTERS* ExceptionInfo) {
+static LONG ExceptionHandler(_EXCEPTION_POINTERS* ExceptionInfo) {
   if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
     if (OvercommitTracker->HandleAccessViolation(FaultAddress)) {
@@ -294,7 +348,7 @@ LONG ExceptionHandler(_EXCEPTION_POINTERS* ExceptionInfo) {
 #else
     auto* Context = ExceptionInfo->ContextRecord;
 #endif
-    if (FEX::Windows::JITGuardPage::HandleJITGuardPage(ThisThread, reinterpret_cast<void*>(FaultAddress), Context->X,
+    if (FEX::Windows::JITGuardPage::HandleJITGuardPage(Thread, reinterpret_cast<void*>(FaultAddress), Context->X,
                                                        reinterpret_cast<__uint128_t*>(Context->V), &Context->Pc)) {
 #ifdef ARCHITECTURE_arm64ec
       auto* ECContext = reinterpret_cast<ARM64EC_NT_CONTEXT*>(ExceptionInfo->ContextRecord);
@@ -321,22 +375,56 @@ LONG ExceptionHandler(_EXCEPTION_POINTERS* ExceptionInfo) {
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
-} // namespace
+struct winsize {
+  int ws_col;
+};
+#endif
 
 // Returns filename of generated cache on success
-static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInfo& Binary, fextl::set<uintptr_t> BlockList, std::string_view OutDir) {
-  uint64_t CodeCacheConfigId = 0; // TODO: Make unique to active configuration
-
+static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInfo& Binary, uint64_t CodeCacheConfigId,
+                                                      fextl::set<uintptr_t> BlockList, std::string_view OutDir) {
+#ifndef _WIN32
   ELFCodeLoader Loader(Binary.Filename.c_str(), -1, "", fextl::vector<fextl::string> {Binary.Filename.c_str()},
                        fextl::vector<fextl::string> {}, nullptr, nullptr, true /* skip interpreter */);
   if (!Loader.ELFWasLoaded()) {
     fmt::print("Invalid or unsupported ELF file.\n");
     return std::nullopt;
   }
-
   const bool Is64Bit = Loader.Is64BitMode();
+#elif defined(_M_ARM64EC)
+  const bool Is64Bit = true;
+#else
+  const bool Is64Bit = false;
+#endif
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Is64Bit ? "1" : "0");
+
+  // Load HostFeatures
+  auto HostFeatures = FEX::FetchHostFeatures();
+
+  auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
+  CTX->GetCodeCache().InitiateCacheGeneration();
+
+#ifdef _WIN32
+  const auto NtDll = GetModuleHandle("ntdll.dll");
+  const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
+  OvercommitTracker = std::make_unique<FEX::Windows::OvercommitTracker>(IsWine);
+
   auto SyscallOSABI = Is64Bit ? FEXCore::HLE::SyscallOSABI::OS_LINUX64 : FEXCore::HLE::SyscallOSABI::OS_LINUX32;
-  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(SyscallOSABI);
+  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(*CTX, SyscallOSABI);
+
+  SyscallHandler->VAFileStart =
+    TryMapImage(SyscallHandler->InvalidationTracker, SyscallHandler->ImageTracker, Binary.FileId, Binary).value_or(0);
+  if (!SyscallHandler->VAFileStart) {
+    return std::nullopt;
+  }
+
+  // Register exception handler for OvercommitTracker
+  AddVectoredExceptionHandler(1, ExceptionHandler);
+#else
+  Loader.CalculateHWCaps(CTX.get());
+
+  auto SyscallOSABI = Is64Bit ? FEXCore::HLE::SyscallOSABI::OS_LINUX64 : FEXCore::HLE::SyscallOSABI::OS_LINUX32;
+  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(*CTX, SyscallOSABI);
 
   // Populate relocations from ELF file
   {
@@ -346,10 +434,12 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
     SyscallHandler->FileInfo.Relocations = Binary.Relocations;
   }
 
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Is64Bit ? "1" : "0");
-
-  // Load HostFeatures
-  auto HostFeatures = FEX::FetchHostFeatures();
+  if (!Is64Bit) {
+    const auto PageSize = sysconf(_SC_PAGESIZE);
+    // Block upper address space
+    FEXCore::Allocator::SetupHooks(PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE);
+  }
+#endif
 
   if (!std::filesystem::exists(Binary.Filename)) {
     fmt::print("File {} does not exist\n", Binary.Filename);
@@ -357,28 +447,21 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
     return /*EXIT_FAILURE*/ std::nullopt;
   }
 
-  auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
-
-  Loader.CalculateHWCaps(CTX.get());
-
   auto SignalDelegation = std::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
+#ifndef _WIN32
   auto ThunkHandler = FEX::HLE::CreateThunkHandler();
   CTX->SetThunkHandler(ThunkHandler.get());
+#endif
 
   if (!CTX->InitCore()) {
     return std::nullopt;
   }
 
-  if (!Is64Bit) {
-    const auto PageSize = sysconf(_SC_PAGESIZE);
-    // Block upper address space
-    FEXCore::Allocator::SetupHooks(PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE);
-  }
+  Thread = SetupCompileThread(*CTX, Is64Bit);
 
-  auto Thread = SetupCompileThread(*CTX, Is64Bit);
-
+#ifndef _WIN32
   {
     auto ElfBase = Loader.LoadMainElfFile(nullptr, SyscallHandler.get(), Thread);
     if (!ElfBase.has_value()) {
@@ -404,12 +487,9 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
       }
     }
   }
-
-  CTX->GetCodeCache().InitiateCacheGeneration();
+#endif
 
   {
-    std::vector<std::unique_ptr<ELFCodeLoader>> LoaderMem;
-
     // Refuse to continue if the block list contains any out-of-bounds blocks.
     // This often indicates a corrupted code map.
     {
@@ -433,13 +513,17 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
 
     auto Filename = fmt::format("{}{}-{:016x}", OutDir, FEXCore::CodeMap::GetBaseFilename(Binary, false), CodeCacheConfigId);
     auto FilenameNew = Filename + ".new";
-    int fd = open(FilenameNew.c_str(), O_CREAT | O_WRONLY, 0644);
+    int fd = open(FilenameNew.c_str(), O_CREAT | O_WRONLY | O_BINARY, 0644);
     {
       auto Entry = SyscallHandler->LookupExecutableFileSection(Thread, SyscallHandler->VAFileStart).value();
+#ifndef _WIN32
       CTX->GetCodeCache().SaveData(*Thread, fd, Entry, 0 /* TODO: Use static base address information if available */);
+#else
+      CTX->GetCodeCache().SaveData(*Thread, fd, Entry, SyscallHandler->VAFileStart);
+#endif
     }
-    std::filesystem::rename(FilenameNew.c_str(), Filename.c_str());
     close(fd);
+    std::filesystem::rename(FilenameNew.c_str(), Filename.c_str());
     return Filename;
   }
 }
@@ -511,10 +595,11 @@ static int GenerateCache(int argc, const char** argv) {
 
   const auto PortableInfo = FEX::ReadPortabilityInformation();
   char* envp[] = {nullptr};
+  FEXCore::Config::Shutdown();
   FEX::Config::LoadConfig("", envp, PortableInfo);
 
   auto NumBlocks = Data.at(ProgramName).size();
-  auto GeneratedCache = GenerateSingleCache(ProgramName, Data.at(ProgramName), OutDir);
+  auto GeneratedCache = GenerateSingleCache(ProgramName, 0 /* TODO: Config id */, Data.at(ProgramName), OutDir);
   if (GeneratedCache) {
     fmt::print("Successfully populated cache {} ({} blocks) via {}\n\n", GeneratedCache.value(), NumBlocks,
                std::filesystem::path {CodeMapPath}.filename().string());
@@ -523,12 +608,18 @@ static int GenerateCache(int argc, const char** argv) {
 }
 
 int main(int argc, char** argv) {
+#ifndef _WIN32
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
+#else
+  FEX::Windows::Logging::Init();
+#endif
 
   std::vector<const char*> Args {argv + 1, argv + argc};
   auto CommandName = std::string {basename(argv[0])} + " " + (argc > 1 ? argv[1] : "");
-  Args[0] = CommandName.c_str();
+  if (!Args.empty()) {
+    Args[0] = CommandName.c_str();
+  }
 
   if (argc >= 2 && argv[1] == std::string_view {"generate"}) {
     return GenerateCache(argc - 1, Args.data());
