@@ -147,6 +147,10 @@ struct fex_gen_type<snd_timer_t> : fexgen::opaque_type {};
 template<>
 struct fex_gen_type<snd_timestamp_t> : fexgen::opaque_type {};
 
+// has empty padding members on musl
+template<>
+struct fex_gen_type<snd_htimestamp_t> : fexgen::assume_compatible_data_layout {};
+
 template<>
 struct fex_gen_type<FILE> : fexgen::opaque_type {};
 
