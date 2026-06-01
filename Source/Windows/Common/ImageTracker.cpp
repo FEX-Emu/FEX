@@ -245,6 +245,11 @@ void ImageTracker::LoadAOTImages(MappedImageInfo& ImageInfo) {
                                    *FileHandle))) {
       void* LoadAddress = nullptr;
       SIZE_T MappedSize = 0;
+      // TODO: Consider NtMapViewOfSectionEx with MEM_EXTENDED_PARAMETER_EC_CODE;
+      //       instead, we're eagerly copying all cache data to a dedicated buffer currently
+      // MEM_EXTENDED_PARAMETER ECParam {};
+      // ECParam.Type = MemExtendedParameterAttributeFlags;
+      // ECParam.ULong64 = MEM_EXTENDED_PARAMETER_EC_CODE;
       if (NT_SUCCESS(NtMapViewOfSection(*SectionHandle, NtCurrentProcess(), &LoadAddress, 0, 0, nullptr, &MappedSize, ViewUnmap,
                                         MEM_RESERVE | MEM_TOP_DOWN, PAGE_EXECUTE_READ))) {
 
