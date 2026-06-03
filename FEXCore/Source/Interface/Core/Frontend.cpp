@@ -342,7 +342,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
   }
 }
 
-bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op, DecodedHeader Options) {
+Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op, DecodedHeader Options) {
   if (Info->Type == FEXCore::X86Tables::TYPE_ARCH_DISPATCHER) [[unlikely]] {
     // Dispatcher Op.
     // TODO: Move this in to `NormalOpHeader`, Dispatch tables have a bug currently where some subtables don't inherit flags correctly.
@@ -354,11 +354,11 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   DecodeInst->TableInfo = Info;
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
   LOGMAN_THROW_A_FMT(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P), "Group Ops "
@@ -390,15 +390,15 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   const bool Has16BitAddressing = !BlockInfo.Is64BitMode && DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
 
   if (Options.w && (Info->Flags & InstFlags::FLAGS_REX_W_0)) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   } else if (!Options.w && (Info->Flags & InstFlags::FLAGS_REX_W_1)) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
   if (Options.L && (Info->Flags & InstFlags::FLAGS_VEX_L_0)) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   } else if (!Options.L && (Info->Flags & InstFlags::FLAGS_VEX_L_1)) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
   const bool UseVEXL = Options.L && !(Info->Flags & InstFlags::FLAGS_VEX_L_IGNORE);
@@ -507,7 +507,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
       MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, Op & 0b111, Is8BitDest, HasREX, false, false);
 
     if (CurrentDest->Data.GPR.GPR == FEXCore::X86State::REG_INVALID) {
-      return false;
+      return DecodedBlockStatus::INVALID_INST;
     }
   }
 
@@ -576,7 +576,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
 
   const auto VEXOperand = Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_SRC_MASK;
   if (VEXOperand == FEXCore::X86Tables::InstFlags::FLAGS_VEX_NO_OPERAND && Options.vvvv) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
   if (VEXOperand == FEXCore::X86Tables::InstFlags::FLAGS_VEX_1ST_SRC) {
@@ -594,11 +594,11 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM) {
     if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_DST) {
       if (!ModRMOperand(DecodeInst->Src[CurrentSrc], DecodeInst->Dest, HasXMMSrc, HasXMMDst, HasMMSrc, HasMMDst, Is8BitSrc, Is8BitDest)) {
-        return false;
+        return DecodedBlockStatus::INVALID_INST;
       }
     } else {
       if (!ModRMOperand(DecodeInst->Dest, DecodeInst->Src[CurrentSrc], HasXMMDst, HasXMMSrc, HasMMDst, HasMMSrc, Is8BitDest, Is8BitSrc)) {
-        return false;
+        return DecodedBlockStatus::INVALID_INST;
       }
     }
     ++CurrentSrc;
@@ -663,19 +663,19 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   LOGMAN_THROW_A_FMT(Bytes == 0, "Inst at 0x{:x}: 0x{:04x} '{}' Had an instruction of size {} with {} remaining", DecodeInst->PC,
                      DecodeInst->OP, DecodeInst->TableInfo->Name ?: "UND", InstructionSize, Bytes);
   DecodeInst->InstSize = InstructionSize;
-  return true;
+  return DecodedBlockStatus::SUCCESS;
 }
 
-bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op) {
+Decoder::DecodedBlockStatus Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op) {
   DecodeInst->OPRaw = DecodeInst->OP = Op;
   DecodeInst->TableInfo = Info;
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
   LOGMAN_THROW_A_FMT(Info->Type != FEXCore::X86Tables::TYPE_REX_PREFIX, "REX PREFIX should have been decoded before this!");
@@ -732,7 +732,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
       };
       uint8_t Field = RegToField[ModRM.reg];
       if (Field == 255) {
-        return false;
+        return DecodedBlockStatus::INVALID_INST;
       }
 
       LocalOp = (Field << 3) | ModRM.rm;
@@ -751,7 +751,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
   } else if (Info->Type == FEXCore::X86Tables::TYPE_VEX_TABLE_PREFIX) {
     if (!VEXTable) {
       // AVX not enabled.
-      return false;
+      return DecodedBlockStatus::INVALID_INST;
     }
 
     uint16_t map_select = 1;
@@ -761,7 +761,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
 
     if ((Byte1 & 0b10000000) == 0) {
       if (!BlockInfo.Is64BitMode) {
-        return false;
+        return DecodedBlockStatus::INVALID_INST;
       }
 
       DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_R;
@@ -772,7 +772,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
       const uint8_t vvvv = ((Byte1 & 0b01111000) >> 3);
       if (!BlockInfo.Is64BitMode && vvvv <= 0b0111) {
         // Invalid on 32-bit, can't use the high registers.
-        return false;
+        return DecodedBlockStatus::INVALID_INST;
       }
       options.vvvv = 15 - vvvv;
       options.L = (Byte1 & 0b100) != 0;
@@ -783,14 +783,14 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
       const uint8_t vvvv = ((Byte2 & 0b01111000) >> 3);
       if (!BlockInfo.Is64BitMode && vvvv <= 0b0111) {
         // Invalid on 32-bit, can't use the high registers.
-        return false;
+        return DecodedBlockStatus::INVALID_INST;
       }
       options.vvvv = 15 - vvvv;
       options.w = (Byte2 & 0b10000000) != 0;
       options.L = (Byte2 & 0b100) != 0;
       if ((Byte1 & 0b01000000) == 0) {
         if (!BlockInfo.Is64BitMode) {
-          return false;
+          return DecodedBlockStatus::INVALID_INST;
         }
         DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
       }
@@ -801,7 +801,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
         DecodeInst->Flags |= DecodeFlags::FLAG_OPTION_AVX_W;
       }
       if (!(map_select >= 1 && map_select <= 3)) {
-        return false;
+        return DecodedBlockStatus::INVALID_INST;
       }
     }
 
@@ -831,14 +831,14 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
   } else if (Info->Type == FEXCore::X86Tables::TYPE_GROUP_EVEX) {
     FEXCORE_TELEMETRY_SET(TYPE_USES_EVEX_OPS, 1);
     // EVEX unsupported
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
   LOGMAN_MSG_A_FMT("Invalid instruction decoding type");
   FEX_UNREACHABLE;
 }
 
-bool Decoder::DecodeInstructionImpl(uint64_t PC) {
+Decoder::DecodedBlockStatus Decoder::DecodeInstructionImpl(uint64_t PC) {
   InstructionSize = 0;
   LastEscapePrefix = 0;
   Instruction.fill(0);
@@ -849,7 +849,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
 
   for (;;) {
     if (InstructionSize >= MAX_INST_SIZE) {
-      return false;
+      return DecodedBlockStatus::INVALID_INST;
     }
     uint8_t Op = ReadByte();
     switch (Op) {
@@ -1035,10 +1035,10 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
   }
 
   if (DecodeInst->Dest.IsGPR()) {
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
-  return true;
+  return DecodedBlockStatus::SUCCESS;
 }
 
 void Decoder::DecodeREXIfValid(int8_t ExpectedOffset) {
@@ -1076,16 +1076,16 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
   // Will be set if DecodeInstructionImpl tries to read non-executable memory
   HitNonExecutableRange = false;
   HitBadRelocation = false;
-  bool ErrorDuringDecoding = !DecodeInstructionImpl(PC);
+  auto ErrorDuringDecoding = DecodeInstructionImpl(PC);
 
-  if (ErrorDuringDecoding || HitNonExecutableRange || HitBadRelocation) [[unlikely]] {
+  if (ErrorDuringDecoding != DecodedBlockStatus::SUCCESS || HitNonExecutableRange || HitBadRelocation) [[unlikely]] {
     // Put an invalid instruction in the stream so the core can raise SIGILL if hit
     // Error while decoding instruction. We don't know the table or instruction size
     DecodeInst->TableInfo = nullptr;
-    auto Result = ErrorDuringDecoding   ? DecodedBlockStatus::INVALID_INST :
-                  DecodeInst->InstSize  ? DecodedBlockStatus::PARTIAL_DECODE_INST :
-                  HitNonExecutableRange ? DecodedBlockStatus::NOEXEC_INST :
-                                          DecodedBlockStatus::BAD_RELOCATION;
+    auto Result = ErrorDuringDecoding != DecodedBlockStatus::SUCCESS ? ErrorDuringDecoding :
+                  DecodeInst->InstSize                               ? DecodedBlockStatus::PARTIAL_DECODE_INST :
+                  HitNonExecutableRange                              ? DecodedBlockStatus::NOEXEC_INST :
+                                                                       DecodedBlockStatus::BAD_RELOCATION;
     DecodeInst->InstSize = 0;
     return Result;
   } else if (!DecodeInst->TableInfo || (DecodeInst->TableInfo->Type == TYPE_INST && !DecodeInst->TableInfo->OpcodeDispatcher.OpDispatch)) {
