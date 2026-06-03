@@ -361,6 +361,11 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
     return DecodedBlockStatus::INVALID_INST;
   }
 
+  if (!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SUPPORTS_LOCK) && (DecodeInst->Flags & DecodeFlags::FLAG_LOCK)) {
+    // Instruction has lock prefix but doesn't support lock.
+    return DecodedBlockStatus::UNIMPLEMENTED_INST;
+  }
+
   LOGMAN_THROW_A_FMT(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P), "Group Ops "
                                                                                                                           "should have "
                                                                                                                           "been decoded "
@@ -658,6 +663,11 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
     }
 
     Bytes = 0;
+  }
+
+  if ((DecodeInst->Flags & DecodeFlags::FLAG_LOCK) && DecodeInst->Dest.IsGPR()) {
+    // Instruction has lock prefix, but the destination isn't memory, this is invalid.
+    return DecodedBlockStatus::UNIMPLEMENTED_INST;
   }
 
   LOGMAN_THROW_A_FMT(Bytes == 0, "Inst at 0x{:x}: 0x{:04x} '{}' Had an instruction of size {} with {} remaining", DecodeInst->PC,
