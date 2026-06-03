@@ -1507,10 +1507,11 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
           EraseBlock = true;
         } else {
           LogMan::Msg::EFmt("{} instruction in entry block: {:X}",
-                            BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST   ? "Invalid" :
-                            BlockIt->BlockStatus == DecodedBlockStatus::NOEXEC_INST    ? "NoExec" :
-                            BlockIt->BlockStatus == DecodedBlockStatus::BAD_RELOCATION ? "BadRelocation" :
-                                                                                         "PartialDecode",
+                            BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST       ? "Invalid" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::NOEXEC_INST        ? "NoExec" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::BAD_RELOCATION     ? "BadRelocation" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::UNIMPLEMENTED_INST ? "Unimplemented" :
+                                                                                             "PartialDecode",
                             OpAddress);
         }
         break;

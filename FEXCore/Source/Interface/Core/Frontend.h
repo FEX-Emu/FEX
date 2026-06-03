@@ -32,6 +32,7 @@ public:
     NOEXEC_INST,
     PARTIAL_DECODE_INST,
     BAD_RELOCATION,
+    UNIMPLEMENTED_INST,
   };
 
   // New Frontend decoding
