@@ -29,3 +29,5 @@ if (ARCHITECTURE_arm64ec)
 elseif (ARCHITECTURE_arm64)
   add_subdirectory(WOW64)
 endif()
+
+add_subdirectory(../Tools/FEXOfflineCompiler ${CMAKE_CURRENT_BINARY_DIR}/FEXOfflineCompiler)
