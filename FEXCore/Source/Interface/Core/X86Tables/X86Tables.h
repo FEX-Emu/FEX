@@ -392,8 +392,11 @@ namespace InstFlags {
   constexpr InstFlagType FLAGS_REX_W_1 = (1ULL << 29);
 
   constexpr InstFlagType FLAGS_CALL = (1ULL << 30);
-
+  constexpr InstFlagType FLAGS_SUPPORTS_LOCK = (1ULL << 31);
+  // Flags [57..32]: Undefined
+  // Flags [60..58]: Dst size
   constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
+  // Flags [63..61]: Src size
   constexpr InstFlagType FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
 
   constexpr InstFlagType SIZE_MASK = 0b111;

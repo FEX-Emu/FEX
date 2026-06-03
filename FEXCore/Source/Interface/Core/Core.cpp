@@ -704,6 +704,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
             if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST ||
                 Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BAD_RELOCATION) {
               Thread->OpDispatcher->InvalidOp(DecodedInfo);
+            } else if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::UNIMPLEMENTED_INST) {
+              Thread->OpDispatcher->UnimplementedOp(DecodedInfo);
             } else {
               Thread->OpDispatcher->NoExecOp(DecodedInfo);
             }

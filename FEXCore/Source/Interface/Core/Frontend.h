@@ -32,6 +32,7 @@ public:
     NOEXEC_INST,
     PARTIAL_DECODE_INST,
     BAD_RELOCATION,
+    UNIMPLEMENTED_INST,
   };
 
   // New Frontend decoding
@@ -91,7 +92,7 @@ private:
 
   FEX_CONFIG_OPT(EnableCodeCacheValidation, ENABLECODECACHEVALIDATION);
 
-  bool DecodeInstructionImpl(uint64_t PC);
+  DecodedBlockStatus DecodeInstructionImpl(uint64_t PC);
   DecodedBlockStatus DecodeInstruction(uint64_t PC);
 
   void BranchTargetInMultiblockRange();
@@ -110,8 +111,8 @@ private:
     InstructionSize += Size;
   }
 
-  bool NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op, DecodedHeader Options = {});
-  bool NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op);
+  DecodedBlockStatus NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op, DecodedHeader Options = {});
+  DecodedBlockStatus NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op);
 
   void DecodeREXIfValid(int8_t ExpectedOffset = -1);
 

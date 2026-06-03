@@ -13,6 +13,8 @@ std::optional<CapturedHandlerState> from_handler;
 // Number of bytes to skip to resume from the signal handler
 int capturing_handler_skip = 0;
 
+void* capturing_handler_goto = 0;
+
 // Number of times the signal handler has caught a signal
 int capturing_handler_calls = 0;
 
@@ -25,7 +27,11 @@ static void CapturingHandler(int signal, siginfo_t* siginfo, void* context) {
 #else
 #define FEX_IP_REG REG_EIP
 #endif
-  _context->uc_mcontext.gregs[FEX_IP_REG] += capturing_handler_skip;
+  if (capturing_handler_goto) {
+    _context->uc_mcontext.gregs[FEX_IP_REG] = reinterpret_cast<greg_t>(capturing_handler_goto);
+  } else {
+    _context->uc_mcontext.gregs[FEX_IP_REG] += capturing_handler_skip;
+  }
 #undef FEX_IP_REG
   capturing_handler_calls++;
 }
