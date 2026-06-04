@@ -22,6 +22,16 @@ $end_info$
 namespace FEX::HLE::x64 {
 void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
+
+  REGISTER_SYSCALL_IMPL_X64(gettimeofday, [](FEXCore::Core::CpuStateFrame* Frame, timeval* tv, struct timezone* tz) -> uint64_t {
+    FaultSafeUserMemAccess::VerifyIsWritableOrNull(tv, sizeof(*tv));
+    FaultSafeUserMemAccess::VerifyIsWritableOrNull(tz, sizeof(*tz));
+
+    // Passed through glibc to ensure vdso is used if possible.
+    uint64_t Result = ::gettimeofday(tv, tz);
+    SYSCALL_ERRNO();
+  });
+
   REGISTER_SYSCALL_IMPL_X64(time, [](FEXCore::Core::CpuStateFrame* Frame, time_t* tloc) -> uint64_t {
     FaultSafeUserMemAccess::VerifyIsWritableOrNull(tloc, sizeof(time_t));
     uint64_t Result = ::time(tloc);

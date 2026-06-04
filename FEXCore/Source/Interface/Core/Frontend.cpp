@@ -124,9 +124,9 @@ uint8_t Decoder::ReadByte() {
 }
 
 std::optional<uint8_t> Decoder::PeekByte(uint8_t Offset) {
-  uint64_t ByteAddress = reinterpret_cast<uint64_t>(InstStream + InstructionSize + Offset);
+  uint64_t ByteAddress = reinterpret_cast<uint64_t>(InstStream.InstStream + InstructionSize + Offset);
   if (CheckRangeExecutable(ByteAddress, 1)) {
-    return InstStream[InstructionSize + Offset];
+    return InstStream.AdjustedInstStream[InstructionSize + Offset];
   } else {
     return std::nullopt;
   }
@@ -136,9 +136,9 @@ std::pair<uint64_t, bool> Decoder::ReadData(uint8_t Size) {
   LOGMAN_THROW_A_FMT(Size != 0 && Size <= sizeof(uint64_t), "Unknown data size to read");
 
   uint64_t Res = 0;
-  uint64_t Address = reinterpret_cast<uint64_t>(InstStream + InstructionSize);
+  uint64_t Address = reinterpret_cast<uint64_t>(InstStream.InstStream + InstructionSize);
   if (CheckRangeExecutable(Address, Size)) {
-    std::memcpy(&Res, &InstStream[InstructionSize], Size);
+    std::memcpy(&Res, &InstStream.AdjustedInstStream[InstructionSize], Size);
   } else {
     HitNonExecutableRange = true;
     // See PeekByte, this specific case may cause some executable memory to read as 0 but it doesn't matter as the entire instruction will be rolled back anyway.
@@ -1341,7 +1341,7 @@ void Decoder::AddBranchTarget(uint64_t Target) {
   }
 }
 
-const uint8_t* Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, uint64_t EntryPoint, uint64_t RIP) {
+const Decoder::DecodeStream Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, uint64_t EntryPoint, uint64_t RIP) {
   constexpr uint64_t VSyscall_Base = 0xFFFF'FFFF'FF60'0000ULL;
   constexpr uint64_t VSyscall_End = VSyscall_Base + 0x1000;
 
@@ -1352,10 +1352,16 @@ const uint8_t* Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, u
     // Offset 0x400: vtime
     // Offset 0x800: vgetcpu
     uint64_t Offset = RIP - VSyscall_Base;
-    return VSyscallData + Offset;
+    return DecodeStream {
+      .InstStream = _InstStream - EntryPoint + RIP,
+      .AdjustedInstStream = VSyscallData + Offset,
+    };
   }
 
-  return _InstStream - EntryPoint + RIP;
+  return DecodeStream {
+    .InstStream = _InstStream - EntryPoint + RIP,
+    .AdjustedInstStream = _InstStream - EntryPoint + RIP,
+  };
 }
 
 bool Decoder::CheckIfCacheable(FEXCore::Core::InternalThreadState& Thread, const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst) {
@@ -1383,7 +1389,6 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
 
   EntryPoint = PC;
   BlockInfo.EntryPoints = {PC};
-  InstStream = _InstStream;
 
   uint64_t TotalInstructions {};
 

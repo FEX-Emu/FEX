@@ -645,6 +645,11 @@ public:
 
     if (Is64BitMode()) {
       AuxVariables.emplace_back(auxv_t {4, 0x38}); // AT_PHENT
+
+      // 64-bit vsyscall entry points are hardcoded to a single page at 0xffffffffff600000.
+      // FEX can't actually map anything there so it is a hardcoded quirk, similar to how the kernel traps these executions.
+      // Just track it as a mapped anonymous executable page.
+      Handler->AddVirtualPage(Thread, 0xFFFFFFFFFF600000ULL, FEXCore::Utils::FEX_PAGE_SIZE, PROT_READ | PROT_EXEC);
     } else {
       AuxVariables.emplace_back(auxv_t {4, 0x20}); // AT_PHENT
 

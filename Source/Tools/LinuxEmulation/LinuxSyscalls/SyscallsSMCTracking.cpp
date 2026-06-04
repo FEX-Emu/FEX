@@ -721,6 +721,12 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
   return VolatileMetadata;
 }
 
+void SyscallHandler::AddVirtualPage(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot) {
+  auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(VMATracking.Mutex, Thread);
+  VMATracking.TrackVMARange(CTX, nullptr, addr, 0, length, VMATracking::VMAFlags::fromFlags(MAP_ANONYMOUS | MAP_PRIVATE),
+                            VMATracking::VMAProt::fromProt(prot));
+}
+
 void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length) {
   uint64_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
   VMATracking.DeleteVMARange(CTX, reinterpret_cast<uintptr_t>(addr), Size);

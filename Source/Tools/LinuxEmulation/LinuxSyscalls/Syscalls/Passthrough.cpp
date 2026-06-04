@@ -437,7 +437,6 @@ namespace x64 {
     REGISTER_SYSCALL_IMPL_X64(getsockopt, SyscallPassthrough5<SYSCALL_DEF(getsockopt)>);
     REGISTER_SYSCALL_IMPL_X64(wait4, SyscallPassthrough4<SYSCALL_DEF(wait4)>);
     REGISTER_SYSCALL_IMPL_X64(semop, SyscallPassthrough3<SYSCALL_DEF(semop)>);
-    REGISTER_SYSCALL_IMPL_X64(gettimeofday, SyscallPassthrough2<SYSCALL_DEF(gettimeofday)>);
     REGISTER_SYSCALL_IMPL_X64(getrlimit, SyscallPassthrough2<SYSCALL_DEF(getrlimit)>);
     REGISTER_SYSCALL_IMPL_X64(getrusage, SyscallPassthrough2<SYSCALL_DEF(getrusage)>);
     REGISTER_SYSCALL_IMPL_X64(sysinfo, SyscallPassthrough1<SYSCALL_DEF(sysinfo)>);
