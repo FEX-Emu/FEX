@@ -64,6 +64,11 @@ public:
   uint64_t GuestMunmap(FEXCore::Core::InternalThreadState*, void* addr, uint64_t length) override {
     return munmap(addr, length);
   }
+
+  void AddVirtualPage(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot) override {
+    LogMan::Msg::AFmt("Can't Track mmap through here");
+    FEX_UNREACHABLE;
+  }
 };
 
 static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
