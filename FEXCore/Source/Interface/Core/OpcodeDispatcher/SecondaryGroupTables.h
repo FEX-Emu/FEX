@@ -69,12 +69,12 @@ constexpr DispatchTableEntry OpDispatch_SecondaryGroupTables[] = {
 
   // GROUP 9
   {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::RDRANDOp, false>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::RDRANDOp, true>},
 
   {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::RDRANDOp, false>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::RDRANDOp, true>},
 
   {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F2, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
 

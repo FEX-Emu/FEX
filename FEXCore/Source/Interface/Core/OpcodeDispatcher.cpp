@@ -5068,8 +5068,7 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
   StoreResultGPR_WithOpSize(Op, Op->Dest, Result, DstSize);
 }
 
-template<bool Reseed>
-void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
+void OpDispatchBuilder::RDRANDOp(OpcodeArgs, bool Reseed) {
   if (!CTX->HostFeatures.SupportsRAND) {
     UnimplementedOp(Op);
     return;
@@ -5093,9 +5092,6 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
     CFInverted = true;
   }
 }
-
-template void OpDispatchBuilder::RDRANDOp<true>(OpcodeArgs);
-template void OpDispatchBuilder::RDRANDOp<false>(OpcodeArgs);
 
 void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
   const auto GPRSize = GetGPROpSize();

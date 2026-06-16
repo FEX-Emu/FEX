@@ -9,13 +9,13 @@ namespace FEXCore::IR {
 constexpr auto OpDispatchTableGenH0F3A = []() consteval {
   constexpr auto OpDispatchTableGenH0F3AREX = []<uint16_t REX>() consteval {
     constexpr DispatchTableEntry Table[] = {
-      {OPD(REX, PF_3A_66, 0x08), 1, &OpDispatchBuilder::VectorRound<OpSize::i32Bit>},
-      {OPD(REX, PF_3A_66, 0x09), 1, &OpDispatchBuilder::VectorRound<OpSize::i64Bit>},
-      {OPD(REX, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i32Bit>},
-      {OPD(REX, PF_3A_66, 0x0B), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i64Bit>},
-      {OPD(REX, PF_3A_66, 0x0C), 1, &OpDispatchBuilder::VectorBlend<OpSize::i32Bit>},
-      {OPD(REX, PF_3A_66, 0x0D), 1, &OpDispatchBuilder::VectorBlend<OpSize::i64Bit>},
-      {OPD(REX, PF_3A_66, 0x0E), 1, &OpDispatchBuilder::VectorBlend<OpSize::i16Bit>},
+      {OPD(REX, PF_3A_66, 0x08), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorRound, OpSize::i32Bit>},
+      {OPD(REX, PF_3A_66, 0x09), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorRound, OpSize::i64Bit>},
+      {OPD(REX, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::InsertScalarRound, OpSize::i32Bit>},
+      {OPD(REX, PF_3A_66, 0x0B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::InsertScalarRound, OpSize::i64Bit>},
+      {OPD(REX, PF_3A_66, 0x0C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorBlend, OpSize::i32Bit>},
+      {OPD(REX, PF_3A_66, 0x0D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorBlend, OpSize::i64Bit>},
+      {OPD(REX, PF_3A_66, 0x0E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorBlend, OpSize::i16Bit>},
 
       {OPD(REX, PF_3A_NONE, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
       {OPD(REX, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
@@ -24,10 +24,10 @@ constexpr auto OpDispatchTableGenH0F3A = []() consteval {
       {OPD(REX, PF_3A_66, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i16Bit>},
       {OPD(REX, PF_3A_66, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i32Bit>},
 
-      {OPD(REX, PF_3A_66, 0x20), 1, &OpDispatchBuilder::PINSROp<OpSize::i8Bit>},
+      {OPD(REX, PF_3A_66, 0x20), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PINSROp, OpSize::i8Bit>},
       {OPD(REX, PF_3A_66, 0x21), 1, &OpDispatchBuilder::InsertPSOp},
-      {OPD(REX, PF_3A_66, 0x40), 1, &OpDispatchBuilder::DPPOp<OpSize::i32Bit>},
-      {OPD(REX, PF_3A_66, 0x41), 1, &OpDispatchBuilder::DPPOp<OpSize::i64Bit>},
+      {OPD(REX, PF_3A_66, 0x40), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::DPPOp, OpSize::i32Bit>},
+      {OPD(REX, PF_3A_66, 0x41), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::DPPOp, OpSize::i64Bit>},
       {OPD(REX, PF_3A_66, 0x42), 1, &OpDispatchBuilder::MPSADBWOp},
       {OPD(REX, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
 
@@ -65,7 +65,7 @@ constexpr auto OpDispatch_H0F3ATableIgnoreREX = OpDispatchTableGenH0F3A();
 
 constexpr DispatchTableEntry OpDispatch_H0F3ATableNeedsREX0[] = {
   {OPD(0, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i32Bit>},
-  {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PINSROp, OpSize::i32Bit>},
 };
 
 #undef PF_3A_NONE

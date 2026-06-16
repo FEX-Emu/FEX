@@ -34,7 +34,7 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> H0F3A_ArchSelect_LUT = {{
   // ENTRY_1_3A_66_22
   {
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
-    {"PINSRQ",          TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR, 1, { .OpDispatch = &IR::OpDispatchBuilder::PINSROp<IR::OpSize::i64Bit> }},
+    {"PINSRQ",          TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR, 1, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PINSROp, IR::OpSize::i64Bit> }},
   },
 }};
 
