@@ -122,8 +122,8 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VMOVHPOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
-    Ref Src1 = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i128Bit});
-    Ref Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags, {.Align = OpSize::i64Bit});
+    Ref Src1 = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i128Bit, .AllowUpperGarbage = true});
+    Ref Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags, {.Align = OpSize::i64Bit, .AllowUpperGarbage = true});
     Ref Result = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, Src1, Src2);
 
     StoreResultFPR(Op, Result);
