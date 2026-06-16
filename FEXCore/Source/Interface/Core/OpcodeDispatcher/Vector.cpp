@@ -1011,7 +1011,7 @@ Ref OpDispatchBuilder::PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVector
 }
 
 void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
-  uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
+  uint8_t Shuffle = Op->Src[1].Literal();
   const auto Size = OpSizeFromSrc(Op);
   const auto TBLIndex = FEXCore::IR::INDEXED_NAMED_VECTOR_PSHUFLW;
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
@@ -1531,7 +1531,7 @@ void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSHUFWOp(OpcodeArgs, bool Low) {
-  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  uint16_t Shuffle = Op->Src[1].Literal();
   const auto Size = OpSizeFromSrc(Op);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   const auto IndexedVectorConstant = Low ? FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
@@ -1769,7 +1769,7 @@ Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) 
 }
 
 void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
-  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  uint16_t Shuffle = Op->Src[1].Literal();
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   StoreResultFPR(Op, Single128Bit4ByteVectorShuffle(Src, Shuffle));
 }
@@ -3074,7 +3074,7 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
 
   Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
   Ref Dest = LoadSourceFPR_WithOpSize(Op, Op->Dest, DstSize, Op->Flags);
-  const uint8_t CompType = Op->Src[1].Data.Literal.Value;
+  const uint8_t CompType = Op->Src[1].Literal();
 
   Ref Result = VFCMPOpImpl(OpSizeFromSrc(Op), ElementSize, Dest, Src, CompType & 0b111);
 
