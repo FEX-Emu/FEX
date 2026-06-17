@@ -2194,7 +2194,7 @@ void OpDispatchBuilder::PSRLDOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = PSRLDOpImpl(Op, ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSRLDOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -2222,7 +2222,7 @@ void OpDispatchBuilder::PSRLI(OpcodeArgs, IR::OpSize ElementSize) {
 
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Shift = _VUShrI(Size, ElementSize, Dest, ShiftConstant);
-  StoreResultFPR(Op, Shift);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Shift);
 }
 
 void OpDispatchBuilder::VPSRLIOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -2263,7 +2263,7 @@ void OpDispatchBuilder::PSLLI(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSLLIOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -2292,7 +2292,7 @@ void OpDispatchBuilder::PSLL(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = PSLLImpl(Op, ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSLLOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -2321,7 +2321,7 @@ void OpDispatchBuilder::PSRAOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = PSRAOpImpl(Op, ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSRAOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -2353,7 +2353,7 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   if (Shift < IR::OpSizeToSize(Size)) {
     Result = _VExtr(Size, OpSize::i8Bit, Result, Dest, Shift);
   }
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
@@ -2405,7 +2405,7 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
     Result = _VExtr(Size, OpSize::i8Bit, Dest, Result, IR::OpSizeToSize(Size) - Shift);
   }
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
@@ -2451,7 +2451,7 @@ void OpDispatchBuilder::PSRAIOp(OpcodeArgs, IR::OpSize ElementSize) {
 
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Result = _VSShrI(Size, ElementSize, Dest, Shift);
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSRAIOp(OpcodeArgs, IR::OpSize ElementSize) {
