@@ -872,7 +872,10 @@ public:
   void VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
   void PTestOpImpl(OpSize Size, Ref Dest, Ref Src);
   void PTestOp(OpcodeArgs);
+
+  void AVXPHMINPOSUWOp(OpcodeArgs);
   void PHMINPOSUWOp(OpcodeArgs);
+
   void DPPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void MPSADBWOp(OpcodeArgs);

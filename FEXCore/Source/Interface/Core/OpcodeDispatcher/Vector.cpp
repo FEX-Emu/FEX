@@ -4420,6 +4420,11 @@ Ref OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
 
 void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   Ref Result = PHMINPOSUWOpImpl(Op);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
+}
+
+void OpDispatchBuilder::AVXPHMINPOSUWOp(OpcodeArgs) {
+  Ref Result = PHMINPOSUWOpImpl(Op);
   StoreResultFPR(Op, Result);
 }
 
