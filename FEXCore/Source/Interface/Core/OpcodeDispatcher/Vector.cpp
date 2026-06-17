@@ -2706,8 +2706,11 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElem
       // VCVTPS2PD path
       Result = _VMov(OpSize::i128Bit, Result);
     }
+
+    StoreResultFPR(Op, Result);
+  } else {
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
   }
-  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
