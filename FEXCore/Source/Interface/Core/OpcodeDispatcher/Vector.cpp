@@ -3315,7 +3315,7 @@ Ref OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand
 
 void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
   Ref Result = PALIGNROpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], false);
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
