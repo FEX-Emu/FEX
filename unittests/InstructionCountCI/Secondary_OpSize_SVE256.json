@@ -10,23 +10,29 @@
   },
   "Instructions": {
     "pmulhuw xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "SVE-256bit changes behaviour slightly",
         "0x66 0x0f 0xe4"
       ],
       "ExpectedArm64ASM": [
-        "umulh z16.h, p6/m, z16.h, z17.h"
+        "movprfx z2, z16",
+        "umulh z2.h, p6/m, z2.h, z17.h",
+        "mov z1.q, q2",
+        "mov z16.b, p6/m, z1.b"
       ]
     },
     "pmulhw xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "SVE-256bit changes behaviour slightly",
         "0x66 0x0f 0xe5"
       ],
       "ExpectedArm64ASM": [
-        "smulh z16.h, p6/m, z16.h, z17.h"
+        "movprfx z2, z16",
+        "smulh z2.h, p6/m, z2.h, z17.h",
+        "mov z1.q, q2",
+        "mov z16.b, p6/m, z1.b"
       ]
     }
   }
