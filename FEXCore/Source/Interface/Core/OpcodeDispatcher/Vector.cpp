@@ -3315,7 +3315,7 @@ Ref OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand
 
 void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
   Ref Result = PALIGNROpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], false);
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
@@ -3345,7 +3345,7 @@ void OpDispatchBuilder::PACKUSOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VSQXTUNPair(OpSizeFromSrc(Op), ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPACKUSOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -3369,7 +3369,7 @@ void OpDispatchBuilder::PACKSSOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VSQXTNPair(OpSizeFromSrc(Op), ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPACKSSOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -3412,7 +3412,7 @@ void OpDispatchBuilder::PMULLOp(OpcodeArgs, IR::OpSize ElementSize, bool Signed)
   Ref Src2 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Res = PMULLOpImpl(OpSizeFromSrc(Op), ElementSize, Signed, Src1, Src2);
 
-  StoreResultFPR(Op, Res);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Res);
 }
 
 void OpDispatchBuilder::VPMULLOp(OpcodeArgs, IR::OpSize ElementSize, bool Signed) {
@@ -3464,7 +3464,7 @@ void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = ADDSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VADDSUBPOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -4772,11 +4772,12 @@ Ref OpDispatchBuilder::MPSADBWOpImpl(IR::OpSize SrcSize, Ref Src1, Ref Src2, uin
 void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
   const uint8_t Select = Op->Src[1].Literal();
   const auto SrcSize = OpSizeFromSrc(Op);
+
   Ref Src1 = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
-
   Ref Result = MPSADBWOpImpl(SrcSize, Src1, Src2, Select);
-  StoreResultFPR(Op, Result);
+
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VMPSADBWOp(OpcodeArgs) {
