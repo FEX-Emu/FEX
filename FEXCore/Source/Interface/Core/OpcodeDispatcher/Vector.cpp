@@ -870,7 +870,7 @@ void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
   Ref Src2 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   Ref Result = PSHUFBOpImpl(SrcSize, Src1, Src2, GeneratePSHUFBMask(SrcSize));
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSHUFBOp(OpcodeArgs) {
@@ -1455,7 +1455,7 @@ void OpDispatchBuilder::PSHUFWOp(OpcodeArgs, bool Low) {
 
   Ref Dest = PShufWLane(Size, IndexedVectorConstant, Low, Src, Shuffle);
 
-  StoreResultFPR(Op, Dest);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Dest);
 }
 
 Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) {
@@ -1687,7 +1687,7 @@ Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) 
 void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
   uint16_t Shuffle = Op->Src[1].Literal();
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
-  StoreResultFPR(Op, Single128Bit4ByteVectorShuffle(Src, Shuffle));
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Single128Bit4ByteVectorShuffle(Src, Shuffle));
 }
 
 void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs, IR::OpSize ElementSize, bool Low) {
@@ -1941,7 +1941,7 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs, IR::OpSize ElementSize) {
   uint8_t Shuffle = Op->Src[1].Literal();
 
   Ref Result = SHUFOpImpl(Op, OpSizeFromDst(Op), ElementSize, Src1Node, Src2Node, Shuffle);
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VSHUFOp(OpcodeArgs, IR::OpSize ElementSize) {
