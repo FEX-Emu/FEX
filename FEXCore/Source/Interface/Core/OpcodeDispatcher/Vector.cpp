@@ -2171,7 +2171,7 @@ void OpDispatchBuilder::PSIGN(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Res = PSIGNImpl(Op, ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Res);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Res);
 }
 
 void OpDispatchBuilder::VPSIGN(OpcodeArgs, IR::OpSize ElementSize) {
