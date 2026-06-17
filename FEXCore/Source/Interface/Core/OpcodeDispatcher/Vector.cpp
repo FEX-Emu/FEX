@@ -102,14 +102,14 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
       Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
       Ref Dest = LoadSourceFPR_WithOpSize(Op, Op->Dest, OpSize::i128Bit, Op->Flags);
       auto Result = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, Dest, Src);
-      StoreResultFPR(Op, Result);
+      StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
     } else {
       // If the destination is a GPR then the source is memory
       // xmm1[127:64] = src
       Ref Src = MakeSegmentAddress(Op, Op->Src[0]);
       Ref Dest = LoadSourceFPR_WithOpSize(Op, Op->Dest, OpSize::i128Bit, Op->Flags);
       auto Result = _VLoadVectorElement(OpSize::i128Bit, OpSize::i64Bit, Dest, 1, Src);
-      StoreResultFPR(Op, Result);
+      StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
     }
   } else {
     // In this case memory is the destination and the high bits of the XMM are source
@@ -141,13 +141,13 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
       Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i128Bit});
       Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags, {.Align = OpSize::i128Bit});
       auto Result = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, 1, Dest, Src);
-      StoreResultFPR_WithOpSize(Op, Op->Dest, Result, OpSize::i128Bit, OpSize::i128Bit);
+      StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result, OpSize::i128Bit);
     } else {
       const auto DstSize = OpSizeFromDst(Op);
       Ref Src = MakeSegmentAddress(Op, Op->Src[0]);
       Ref Dest = LoadSourceFPR_WithOpSize(Op, Op->Dest, DstSize, Op->Flags);
       auto Result = _VLoadVectorElement(OpSize::i128Bit, OpSize::i64Bit, Dest, 0, Src);
-      StoreResultFPR(Op, Result);
+      StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
     }
   } else {
     Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i64Bit});
