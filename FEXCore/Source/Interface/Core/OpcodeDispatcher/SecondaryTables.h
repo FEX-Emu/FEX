@@ -70,7 +70,7 @@ constexpr DispatchTableEntry OpDispatch_TwoByteOpTable[] = {
   {0x58, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, OpSize::i32Bit>},
   {0x59, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, OpSize::i32Bit>},
   {0x5A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, OpSize::i64Bit, OpSize::i32Bit, false>},
-  {0x5B, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Int_To_Float, OpSize::i32Bit, false>},
+  {0x5B, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Int_To_Float, OpSize::i32Bit, false, false>},
   {0x5C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, OpSize::i32Bit>},
   {0x5D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, OpSize::i32Bit>},
   {0x5E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFDIV, OpSize::i32Bit>},
@@ -163,7 +163,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryRepModTables[] = {
   {0x58, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorScalarInsertALUOp, IR::OP_VFADDSCALARINSERT, OpSize::i32Bit>},
   {0x59, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorScalarInsertALUOp, IR::OP_VFMULSCALARINSERT, OpSize::i32Bit>},
   {0x5A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::InsertScalar_CVT_Float_To_Float, OpSize::i64Bit, OpSize::i32Bit>},
-  {0x5B, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i32Bit, false>},
+  {0x5B, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i32Bit, false, false>},
   {0x5C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorScalarInsertALUOp, IR::OP_VFSUBSCALARINSERT, OpSize::i32Bit>},
   {0x5D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorScalarInsertALUOp, IR::OP_VFMINSCALARINSERT, OpSize::i32Bit>},
   {0x5E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorScalarInsertALUOp, IR::OP_VFDIVSCALARINSERT, OpSize::i32Bit>},
@@ -177,7 +177,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryRepModTables[] = {
   {0xBD, 1, &OpDispatchBuilder::LZCNT},
   {0xC2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::InsertScalarFCMPOp, OpSize::i32Bit>},
   {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<true>},
-  {0xE6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Int_To_Float, OpSize::i32Bit, true>},
+  {0xE6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Int_To_Float, OpSize::i32Bit, true, false>},
 };
 
 constexpr DispatchTableEntry OpDispatch_SecondaryRepNEModTables[] = {
@@ -204,7 +204,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryRepNEModTables[] = {
   {0xD0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ADDSUBPOp, OpSize::i32Bit>},
   {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
   {0xC2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::InsertScalarFCMPOp, OpSize::i64Bit>},
-  {0xE6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i64Bit, true>},
+  {0xE6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i64Bit, true, false>},
   {0xF0, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
 };
 
@@ -230,7 +230,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryOpSizeModTables[] = {
   {0x58, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, OpSize::i64Bit>},
   {0x59, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, OpSize::i64Bit>},
   {0x5A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, OpSize::i32Bit, OpSize::i64Bit, false>},
-  {0x5B, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i32Bit, true>},
+  {0x5B, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i32Bit, true, false>},
   {0x5C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, OpSize::i64Bit>},
   {0x5D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, OpSize::i64Bit>},
   {0x5E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFDIV, OpSize::i64Bit>},
@@ -289,7 +289,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryOpSizeModTables[] = {
   {0xE3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, OpSize::i16Bit>},
   {0xE4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PMULHW, false>},
   {0xE5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PMULHW, true>},
-  {0xE6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i64Bit, false>},
+  {0xE6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i64Bit, false, false>},
   {0xE7, 1, &OpDispatchBuilder::MOVVectorNTOp},
   {0xE8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, OpSize::i8Bit>},
   {0xE9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, OpSize::i16Bit>},

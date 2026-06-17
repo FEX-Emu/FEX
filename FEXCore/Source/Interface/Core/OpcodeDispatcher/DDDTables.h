@@ -5,9 +5,9 @@
 namespace FEXCore::IR {
 constexpr DispatchTableEntry OpDispatch_DDDTable[] = {
   {0x0C, 1, &OpDispatchBuilder::PI2FWOp},
-  {0x0D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Int_To_Float, OpSize::i32Bit, false>},
+  {0x0D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Int_To_Float, OpSize::i32Bit, false, false>},
   {0x1C, 1, &OpDispatchBuilder::PF2IWOp},
-  {0x1D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i32Bit, false>},
+  {0x1D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i32Bit, false, false>},
 
   {0x86, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRECPPRECISION, OpSize::i32Bit>},
   {0x87, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::RSqrt3DNowOp, false>},

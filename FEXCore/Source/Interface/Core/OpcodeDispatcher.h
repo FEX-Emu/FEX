@@ -523,9 +523,9 @@ public:
   void PSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
   void MOVDDUPOp(OpcodeArgs);
   void CVTFPR_To_GPR(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
-  void Vector_CVT_Int_To_Float(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen);
+  void Vector_CVT_Int_To_Float(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen, bool IsAVX);
   void Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize, bool IsAVX);
-  void Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
+  void Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode, bool IsAVX);
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
   void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
   void MASKMOVOp(OpcodeArgs);
