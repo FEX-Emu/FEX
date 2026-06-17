@@ -4277,7 +4277,8 @@ void OpDispatchBuilder::VectorBlend(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Dest = VectorBlendImpl(OpSize::i128Bit, ElementSize, Dest, Src, Select);
-  StoreResultFPR(Op, Dest);
+
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Dest);
 }
 
 void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize) {
@@ -4297,7 +4298,7 @@ void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize) 
 
   auto Result = _VBSL(Size, Mask, Src, Dest);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize) {
