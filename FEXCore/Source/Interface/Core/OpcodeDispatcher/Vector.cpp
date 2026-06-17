@@ -2505,7 +2505,7 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
   Ref Res = _VDupElement(OpSize::i128Bit, OpSizeFromSrc(Op), Src, 0);
 
-  StoreResultFPR(Op, Res);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Res);
 }
 
 void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
