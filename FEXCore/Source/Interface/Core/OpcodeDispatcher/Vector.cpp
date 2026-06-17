@@ -2020,7 +2020,7 @@ Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, IR::OpSize ElementSize, const X86
 
 void OpDispatchBuilder::PINSROp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Result = PINSROpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
