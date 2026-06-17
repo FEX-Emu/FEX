@@ -2616,9 +2616,14 @@ Ref OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, IR::OpSize SrcEle
   return _Vector_SToF(Size, ElementSize, Src);
 }
 
-void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen) {
+void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen, bool IsAVX) {
   Ref Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
-  StoreResultFPR(Op, Result);
+
+  if (IsAVX) {
+    StoreResultFPR(Op, Result);
+  } else {
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
+  }
 }
 
 Ref OpDispatchBuilder::Vector_CVT_Float_To_Int32Impl(OpcodeArgs, IR::OpSize DstSize, Ref Src, IR::OpSize SrcSize, IR::OpSize SrcElementSize,
@@ -2658,12 +2663,17 @@ Ref OpDispatchBuilder::Vector_CVT_Float_To_Int32Impl(OpcodeArgs, IR::OpSize DstS
   }
 }
 
-void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode) {
+void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode, bool IsAVX) {
   const auto DstSize = OpSizeFromDst(Op);
 
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = Vector_CVT_Float_To_Int32Impl(Op, DstSize, Src, OpSizeFromSrc(Op), SrcElementSize, HostRoundingMode, true);
-  StoreResultFPR_WithOpSize(Op, Op->Dest, Result, DstSize);
+
+  if (IsAVX) {
+    StoreResultFPR(Op, Result);
+  } else {
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
+  }
 }
 
 Ref OpDispatchBuilder::Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
