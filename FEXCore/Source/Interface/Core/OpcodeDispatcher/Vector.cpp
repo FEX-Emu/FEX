@@ -780,7 +780,7 @@ void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   auto ALUOp = _VZip(Size, ElementSize, Dest, Src);
-  StoreResultFPR(Op, ALUOp);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, ALUOp);
 }
 
 void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -809,7 +809,7 @@ void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   auto ALUOp = _VZip2(Size, ElementSize, Dest, Src);
-  StoreResultFPR(Op, ALUOp);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, ALUOp);
 }
 
 void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize) {
