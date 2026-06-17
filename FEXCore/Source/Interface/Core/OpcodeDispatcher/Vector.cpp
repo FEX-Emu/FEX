@@ -3715,7 +3715,7 @@ void OpDispatchBuilder::PMULHW(OpcodeArgs, bool Signed) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = PMULHWOpImpl(Op, Signed, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPMULHWOp(OpcodeArgs, bool Signed) {
@@ -3767,7 +3767,7 @@ void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = PMULHRSWOpImpl(OpSizeFromSrc(Op), Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
