@@ -3788,7 +3788,7 @@ void OpDispatchBuilder::HSUBP(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src1 = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = HSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VHSUBPOp(OpcodeArgs, IR::OpSize ElementSize) {
