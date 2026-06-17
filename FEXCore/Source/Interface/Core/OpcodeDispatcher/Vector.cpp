@@ -3345,7 +3345,7 @@ void OpDispatchBuilder::PACKUSOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VSQXTUNPair(OpSizeFromSrc(Op), ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPACKUSOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -3369,7 +3369,7 @@ void OpDispatchBuilder::PACKSSOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VSQXTNPair(OpSizeFromSrc(Op), ElementSize, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPACKSSOp(OpcodeArgs, IR::OpSize ElementSize) {
