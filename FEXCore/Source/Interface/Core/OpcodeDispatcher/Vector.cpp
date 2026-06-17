@@ -3951,9 +3951,9 @@ void OpDispatchBuilder::PSADBW(OpcodeArgs) {
 
   Ref Src1 = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
-
   Ref Result = PSADBWOpImpl(Size, Src1, Src2);
-  StoreResultFPR(Op, Result);
+
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPSADBWOp(OpcodeArgs) {
