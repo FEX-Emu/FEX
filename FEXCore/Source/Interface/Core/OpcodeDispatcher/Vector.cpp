@@ -259,7 +259,7 @@ void OpDispatchBuilder::VectorXOROp(OpcodeArgs) {
   // Special case for vector xor with itself being the optimal way for x86 to zero vector registers.
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
     const auto ZeroRegister = LoadZeroVector(Size);
-    StoreResultFPR(Op, ZeroRegister);
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, ZeroRegister);
     return;
   }
 
