@@ -4421,6 +4421,11 @@ Ref OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
 
 void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   Ref Result = PHMINPOSUWOpImpl(Op);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
+}
+
+void OpDispatchBuilder::AVXPHMINPOSUWOp(OpcodeArgs) {
+  Ref Result = PHMINPOSUWOpImpl(Op);
   StoreResultFPR(Op, Result);
 }
 
@@ -4603,9 +4608,9 @@ Ref OpDispatchBuilder::DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t
 void OpDispatchBuilder::DPPOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
-
   Ref Result = DPPOpImpl(OpSizeFromDst(Op), Dest, Src, Op->Src[1].Literal(), ElementSize);
-  StoreResultFPR(Op, Result);
+
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
