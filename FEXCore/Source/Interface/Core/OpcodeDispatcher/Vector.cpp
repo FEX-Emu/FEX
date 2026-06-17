@@ -30,7 +30,7 @@ void OpDispatchBuilder::MOVVectorAlignedOp(OpcodeArgs) {
     return;
   }
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
-  StoreResultFPR(Op, Src);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src);
 }
 
 void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
@@ -39,7 +39,7 @@ void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
     return;
   }
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
-  StoreResultFPR(Op, Src, OpSize::i8Bit);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src);
 }
 
 void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs, bool IsAVX) {

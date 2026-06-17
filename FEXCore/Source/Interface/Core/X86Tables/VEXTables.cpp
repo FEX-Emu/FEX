@@ -671,7 +671,7 @@ namespace AVX256 {
     {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMAX, OpSize::i16Bit>},
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorXOROp},
 
-    {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
+    {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
     {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i16Bit>},
     {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i32Bit>},
     {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i64Bit>},
