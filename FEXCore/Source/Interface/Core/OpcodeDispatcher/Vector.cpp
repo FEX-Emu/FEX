@@ -42,7 +42,7 @@ void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
   StoreResultFPR(Op, Src, OpSize::i8Bit);
 }
 
-void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs, bool IsAVX) {
   const auto Size = OpSizeFromDst(Op);
 
   if (Op->Dest.IsGPR() && Size >= OpSize::i128Bit) {
@@ -50,10 +50,19 @@ void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
     Ref SrcAddr = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.LoadData = false});
     auto Src = _VLoadNonTemporal(Size, SrcAddr, 0);
 
-    StoreResultFPR(Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
+    if (IsAVX) {
+      StoreResultFPR(Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
+    } else {
+      StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
+    }
   } else if (Op->Dest.IsGPR()) {
     Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit, .AccessType = MemoryAccessType::STREAM});
-    StoreResultFPR(Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
+
+    if (IsAVX) {
+      StoreResultFPR(Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
+    } else {
+      StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
+    }
   } else {
     LOGMAN_THROW_A_FMT(!Op->Dest.IsGPR(), "Destination can't be GPR for non-temporal stores");
     Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit, .AccessType = MemoryAccessType::STREAM});

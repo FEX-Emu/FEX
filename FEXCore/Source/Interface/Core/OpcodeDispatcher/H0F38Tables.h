@@ -52,7 +52,7 @@ constexpr DispatchTableEntry OpDispatch_H0F38Table[] = {
   {OPD(PF_38_66, 0x25), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ExtendVectorElements, OpSize::i32Bit, OpSize::i64Bit, true>},
   {OPD(PF_38_66, 0x28), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PMULLOp, OpSize::i32Bit, true>},
   {OPD(PF_38_66, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, OpSize::i64Bit>},
-  {OPD(PF_38_66, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
+  {OPD(PF_38_66, 0x2A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVVectorNTOp, false>},
   {OPD(PF_38_66, 0x2B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PACKUSOp, OpSize::i32Bit>},
   {OPD(PF_38_66, 0x30), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ExtendVectorElements, OpSize::i8Bit, OpSize::i16Bit, false>},
   {OPD(PF_38_66, 0x31), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ExtendVectorElements, OpSize::i8Bit, OpSize::i32Bit, false>},
