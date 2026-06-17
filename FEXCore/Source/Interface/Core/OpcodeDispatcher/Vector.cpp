@@ -3818,7 +3818,8 @@ void OpDispatchBuilder::PHSUB(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src1 = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = PHSUBOpImpl(OpSizeFromSrc(Op), Src1, Src2, ElementSize);
-  StoreResultFPR(Op, Result);
+
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPHSUBOp(OpcodeArgs, IR::OpSize ElementSize) {
@@ -3885,7 +3886,8 @@ void OpDispatchBuilder::PHSUBS(OpcodeArgs) {
   Ref Src1 = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = PHSUBSOpImpl(OpSizeFromSrc(Op), Src1, Src2);
-  StoreResultFPR(Op, Result);
+
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPHSUBSWOp(OpcodeArgs) {
