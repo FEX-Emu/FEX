@@ -250,7 +250,7 @@ void OpDispatchBuilder::VectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSi
 
   DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Dest, Src));
 
-  StoreResultFPR(Op, ALUOp);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, ALUOp);
 }
 
 void OpDispatchBuilder::VectorXOROp(OpcodeArgs) {
@@ -298,7 +298,7 @@ void OpDispatchBuilder::VectorALUROp(OpcodeArgs, IROps IROp, IR::OpSize ElementS
 
   DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Src, Dest));
 
-  StoreResultFPR(Op, ALUOp);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, ALUOp);
 }
 
 Ref OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, IR::OpSize ElementSize,
