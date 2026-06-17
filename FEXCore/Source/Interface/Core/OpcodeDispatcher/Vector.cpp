@@ -631,11 +631,11 @@ void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize Element
   // unnecessary sign extension on the element to be operated on.
   // In the event of a memory operand, we load the exact element size.
   const auto Size = OpSizeFromSrc(Op);
-
   Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[0], Size, Op->Flags);
 
   DeriveOp(ALUOp, IROp, _VFSqrt(Size, ElementSize, Src));
-  StoreResultFPR(Op, ALUOp);
+
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, ALUOp);
 }
 
 void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
