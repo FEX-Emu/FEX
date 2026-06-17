@@ -4019,7 +4019,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs, IR::OpSize ElementSize) {
   const uint64_t Mode = Op->Src[1].Literal();
   Src = VectorRoundImpl(OpSizeFromDst(Op), ElementSize, Src, Mode);
 
-  StoreResultFPR(Op, Src);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src);
 }
 
 void OpDispatchBuilder::AVXVectorRound(OpcodeArgs, IR::OpSize ElementSize) {
