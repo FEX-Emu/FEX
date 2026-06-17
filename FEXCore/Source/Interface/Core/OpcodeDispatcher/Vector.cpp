@@ -3851,7 +3851,7 @@ void OpDispatchBuilder::PHADDS(OpcodeArgs) {
   Ref Src2 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   Ref Result = PHADDSOpImpl(OpSizeFromSrc(Op), Src1, Src2);
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPHADDSWOp(OpcodeArgs) {
