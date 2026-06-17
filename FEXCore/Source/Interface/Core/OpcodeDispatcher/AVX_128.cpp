@@ -1484,12 +1484,12 @@ void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs, IR::OpSize ElementSize) {
   auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
   RefPair Result {};
-  Result.Low = VectorBlend(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, Selector);
+  Result.Low = VectorBlendImpl(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, Selector);
 
   if (Is128Bit) {
     Result = AVX128_Zext(Result.Low);
   } else {
-    Result.High = VectorBlend(OpSize::i128Bit, ElementSize, Src1.High, Src2.High, (Selector >> SelectorShift));
+    Result.High = VectorBlendImpl(OpSize::i128Bit, ElementSize, Src1.High, Src2.High, (Selector >> SelectorShift));
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);

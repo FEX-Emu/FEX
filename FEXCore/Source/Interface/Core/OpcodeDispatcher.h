@@ -470,8 +470,7 @@ public:
   void AAMOp(OpcodeArgs);
   void AADOp(OpcodeArgs);
   void XLATOp(OpcodeArgs);
-  template<bool Reseed>
-  void RDRANDOp(OpcodeArgs);
+  void RDRANDOp(OpcodeArgs, bool Reseed);
 
   enum class Segment {
     FS,
@@ -501,8 +500,7 @@ public:
   void VectorALUROp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void VectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void RSqrt3DNowOp(OpcodeArgs, bool Duplicate);
-  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
-  void VectorUnaryDuplicateOp(OpcodeArgs);
+  void VectorUnaryDuplicateOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
   void MOVQOp(OpcodeArgs, VectorOpType VectorType);
   void MOVQMMXOp(OpcodeArgs);
@@ -524,36 +522,24 @@ public:
   void PSLLDQ(OpcodeArgs);
   void PSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
   void MOVDDUPOp(OpcodeArgs);
-  template<IR::OpSize DstElementSize>
-  void CVTGPR_To_FPR(OpcodeArgs);
-  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
-  void CVTFPR_To_GPR(OpcodeArgs);
-  template<IR::OpSize SrcElementSize, bool Widen>
-  void Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
-  void Scalar_CVT_Float_To_Float(OpcodeArgs);
+  void CVTFPR_To_GPR(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
+  void Vector_CVT_Int_To_Float(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen);
   void Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize, bool IsAVX);
-  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
-  void Vector_CVT_Float_To_Int(OpcodeArgs);
+  void Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
-  void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs);
+  void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
   void MASKMOVOp(OpcodeArgs);
   void MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType);
   void TZCNT(OpcodeArgs);
   void LZCNT(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void VFCMPOp(OpcodeArgs);
+  void VFCMPOp(OpcodeArgs, IR::OpSize ElementSize);
   void SHUFOp(OpcodeArgs, IR::OpSize ElementSize);
-  template<IR::OpSize ElementSize>
-  void PINSROp(OpcodeArgs);
+  void PINSROp(OpcodeArgs, IR::OpSize ElementSize);
   void InsertPSOp(OpcodeArgs);
   void PExtrOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void PSIGN(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void VPSIGN(OpcodeArgs);
+  void PSIGN(OpcodeArgs, IR::OpSize ElementSize);
+  void VPSIGN(OpcodeArgs, IR::OpSize ElementSize);
 
   // BMI1 Ops
   void ANDNBMIOp(OpcodeArgs);
@@ -576,53 +562,32 @@ public:
   // AVX Ops
   void AVXVectorXOROp(OpcodeArgs);
 
-  template<IR::OpSize ElementSize>
-  void AVXVectorRound(OpcodeArgs);
+  void AVXVectorRound(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
-  void AVXScalar_CVT_Float_To_Float(OpcodeArgs);
+  void VectorScalarInsertALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void AVXVectorScalarInsertALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
-  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
-  void VectorScalarInsertALUOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
-  void AVXVectorScalarInsertALUOp(OpcodeArgs);
-
-  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
-  void VectorScalarUnaryInsertALUOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
-  void AVXVectorScalarUnaryInsertALUOp(OpcodeArgs);
+  void VectorScalarUnaryInsertALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void AVXVectorScalarUnaryInsertALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
   void InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<IR::OpSize DstElementSize>
-  void InsertCVTGPR_To_FPR(OpcodeArgs);
-  template<IR::OpSize DstElementSize>
-  void AVXInsertCVTGPR_To_FPR(OpcodeArgs);
+  void InsertCVTGPR_To_FPR(OpcodeArgs, IR::OpSize DstElementSize);
+  void AVXInsertCVTGPR_To_FPR(OpcodeArgs, IR::OpSize DstElementSize);
 
-  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
-  void InsertScalar_CVT_Float_To_Float(OpcodeArgs);
-  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
-  void AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs);
+  void InsertScalar_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize);
+  void AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize);
 
   RoundMode TranslateRoundType(uint8_t Mode);
 
-  template<IR::OpSize ElementSize>
-  void InsertScalarRound(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVXInsertScalarRound(OpcodeArgs);
+  void InsertScalarRound(OpcodeArgs, IR::OpSize ElementSize);
+  void AVXInsertScalarRound(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void InsertScalarFCMPOp(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVXInsertScalarFCMPOp(OpcodeArgs);
+  void InsertScalarFCMPOp(OpcodeArgs, IR::OpSize ElementSize);
+  void AVXInsertScalarFCMPOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize DstElementSize>
-  void AVXCVTGPR_To_FPR(OpcodeArgs);
+  void AVXVFCMPOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void AVXVFCMPOp(OpcodeArgs);
-
-  template<IR::OpSize ElementSize>
-  void VADDSUBPOp(OpcodeArgs);
+  void VADDSUBPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VAESDecOp(OpcodeArgs);
   void VAESDecLastOp(OpcodeArgs);
@@ -638,20 +603,17 @@ public:
 
   void VBROADCASTOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void VDPPOp(OpcodeArgs);
+  void VDPPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VEXTRACT128Op(OpcodeArgs);
 
-  template<IROps IROp, IR::OpSize ElementSize>
-  void VHADDPOp(OpcodeArgs);
+  void VHADDPOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void VHSUBPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
 
-  template<IR::OpSize ElementSize, bool IsStore>
-  void VMASKMOVOp(OpcodeArgs);
+  void VMASKMOVOp(OpcodeArgs, IR::OpSize ElementSize, bool IsStore);
 
   void VMOVHPOp(OpcodeArgs);
   void VMOVLPOp(OpcodeArgs);
@@ -669,7 +631,6 @@ public:
   void VMPSADBWOp(OpcodeArgs);
 
   void VPACKSSOp(OpcodeArgs, IR::OpSize ElementSize);
-
   void VPACKUSOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPALIGNROp(OpcodeArgs);
@@ -690,8 +651,7 @@ public:
   void VPERMILImmOp(OpcodeArgs, IR::OpSize ElementSize);
 
   Ref VPERMILRegOpImpl(OpSize DstSize, IR::OpSize ElementSize, Ref Src, Ref Indices);
-  template<IR::OpSize ElementSize>
-  void VPERMILRegOp(OpcodeArgs);
+  void VPERMILRegOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPHADDSWOp(OpcodeArgs);
 
@@ -705,21 +665,15 @@ public:
   void VPMADDUBSWOp(OpcodeArgs);
   void VPMADDWDOp(OpcodeArgs);
 
-  template<bool IsStore>
-  void VPMASKMOVOp(OpcodeArgs);
+  void VPMASKMOVOp(OpcodeArgs, bool IsStore);
 
   void VPMULHRSWOp(OpcodeArgs);
-
-  template<bool Signed>
-  void VPMULHWOp(OpcodeArgs);
-
-  template<IR::OpSize ElementSize, bool Signed>
-  void VPMULLOp(OpcodeArgs);
+  void VPMULHWOp(OpcodeArgs, bool Signed);
+  void VPMULLOp(OpcodeArgs, IR::OpSize ElementSize, bool Signed);
 
   void VPSADBWOp(OpcodeArgs);
 
   void VPSHUFBOp(OpcodeArgs);
-
   void VPSHUFWOp(OpcodeArgs, IR::OpSize ElementSize, bool Low);
 
   void VPSLLOp(OpcodeArgs, IR::OpSize ElementSize);
@@ -728,7 +682,6 @@ public:
   void VPSLLVOp(OpcodeArgs);
 
   void VPSRAOp(OpcodeArgs, IR::OpSize ElementSize);
-
   void VPSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPSRAVDOp(OpcodeArgs);
@@ -736,17 +689,14 @@ public:
 
   void VPSRLDOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPSRLDQOp(OpcodeArgs);
+  void VPSRLIOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize);
-
   void VPUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize);
-
-  void VPSRLIOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VSHUFOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void VTESTPOp(OpcodeArgs);
+  void VTESTPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VZEROOp(OpcodeArgs);
 
@@ -830,32 +780,25 @@ public:
   void XSaveOp(OpcodeArgs);
 
   void PAlignrOp(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void UCOMISxOp(OpcodeArgs);
+  void UCOMISxOp(OpcodeArgs, IR::OpSize ElementSize);
   void LDMXCSR(OpcodeArgs);
   void STMXCSR(OpcodeArgs);
 
-  template<IR::OpSize ElementSize>
-  void PACKUSOp(OpcodeArgs);
+  void PACKUSOp(OpcodeArgs, IR::OpSize ElementSize);
+  void PACKSSOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void PACKSSOp(OpcodeArgs);
-
-  template<IR::OpSize ElementSize, bool Signed>
-  void PMULLOp(OpcodeArgs);
+  void PMULLOp(OpcodeArgs, IR::OpSize ElementSize, bool Signed);
 
   template<bool ToXMM>
   void MOVQ2DQ(OpcodeArgs);
 
-  template<IR::OpSize ElementSize>
-  void ADDSUBPOp(OpcodeArgs);
+  void ADDSUBPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void PFNACCOp(OpcodeArgs);
   void PFPNACCOp(OpcodeArgs);
   void PSWAPDOp(OpcodeArgs);
 
-  template<uint8_t CompType>
-  void VPFCMPOp(OpcodeArgs);
+  void VPFCMPOp(OpcodeArgs, uint8_t CompType);
   void PI2FWOp(OpcodeArgs);
   void PF2IWOp(OpcodeArgs);
 
@@ -864,16 +807,12 @@ public:
   void PMADDWD(OpcodeArgs);
   void PMADDUBSW(OpcodeArgs);
 
-  template<bool Signed>
-  void PMULHW(OpcodeArgs);
-
+  void PMULHW(OpcodeArgs, bool Signed);
   void PMULHRSW(OpcodeArgs);
 
   void MOVBEOp(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void HSUBP(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void PHSUB(OpcodeArgs);
+  void HSUBP(OpcodeArgs, IR::OpSize ElementSize);
+  void PHSUB(OpcodeArgs, IR::OpSize ElementSize);
 
   void PHADDS(OpcodeArgs);
   void PHSUBS(OpcodeArgs);
@@ -920,25 +859,20 @@ public:
   };
 
   RefVSIB LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags);
-  template<OpSize AddrElementSize>
-  void VPGATHER(OpcodeArgs);
+  void VPGATHER(OpcodeArgs, OpSize AddrElementSize);
 
-  template<IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed>
-  void ExtendVectorElements(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void VectorRound(OpcodeArgs);
+  void ExtendVectorElements(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed);
 
-  Ref VectorBlend(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Selector);
+  void VectorRound(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void VectorBlend(OpcodeArgs);
+  Ref VectorBlendImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Selector);
+  void VectorBlend(OpcodeArgs, IR::OpSize ElementSize);
 
   void VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
   void PTestOpImpl(OpSize Size, Ref Dest, Ref Src);
   void PTestOp(OpcodeArgs);
   void PHMINPOSUWOp(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void DPPOp(OpcodeArgs);
+  void DPPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void MPSADBWOp(OpcodeArgs);
   void PCLMULQDQOp(OpcodeArgs);
