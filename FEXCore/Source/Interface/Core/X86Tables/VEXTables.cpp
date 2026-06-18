@@ -499,8 +499,8 @@ namespace AVX256 {
     {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXInsertCVTGPR_To_FPR, OpSize::i32Bit>},
     {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXInsertCVTGPR_To_FPR, OpSize::i64Bit>},
 
-    {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVVectorNTOp, true>},
+    {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVVectorNTOp, true>},
 
     {OPD(1, 0b10, 0x2C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::CVTFPR_To_GPR, OpSize::i32Bit, false>},
     {OPD(1, 0b11, 0x2C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::CVTFPR_To_GPR, OpSize::i64Bit, false>},
@@ -660,7 +660,7 @@ namespace AVX256 {
     {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Int_To_Float, OpSize::i32Bit, true, true>},
     {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i64Bit, true, true>},
 
-    {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVVectorNTOp, true>},
 
     {OPD(1, 0b01, 0xE8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQSUB, OpSize::i8Bit>},
     {OPD(1, 0b01, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQSUB, OpSize::i16Bit>},
@@ -671,7 +671,7 @@ namespace AVX256 {
     {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMAX, OpSize::i16Bit>},
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorXOROp},
 
-    {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
+    {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
     {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i16Bit>},
     {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i32Bit>},
     {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i64Bit>},
@@ -726,7 +726,7 @@ namespace AVX256 {
 
     {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPMULLOp, OpSize::i32Bit, true>},
     {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, OpSize::i64Bit>},
-    {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVVectorNTOp, true>},
     {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPACKUSOp, OpSize::i32Bit>},
     {OPD(2, 0b01, 0x2C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VMASKMOVOp, OpSize::i32Bit, false>},
     {OPD(2, 0b01, 0x2D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VMASKMOVOp, OpSize::i64Bit, false>},
