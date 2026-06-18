@@ -606,7 +606,7 @@ void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src2 = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
   Ref Result = InsertScalarFCMPOpImpl(DstSize, OpSizeFromDst(Op), ElementSize, Src1, Src2, CompType & 0b111, false);
-  StoreResultFPR_WithOpSize(Op, Op->Dest, Result, DstSize);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs, IR::OpSize ElementSize) {
