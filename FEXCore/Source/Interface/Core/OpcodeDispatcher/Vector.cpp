@@ -205,12 +205,12 @@ void OpDispatchBuilder::MOVScalarOpImpl(OpcodeArgs, IR::OpSize ElementSize) {
     Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
     Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     auto Result = _VInsElement(OpSize::i128Bit, ElementSize, 0, 0, Dest, Src);
-    StoreResultFPR(Op, Result);
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
   } else if (Op->Dest.IsGPR()) {
     // MOVSS/SD xmm1, mem32/mem64
     // xmm1[127:0] <- zext(mem32/mem64)
     Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[0], ElementSize, Op->Flags);
-    StoreResultFPR(Op, Src);
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src);
   } else {
     // MOVSS/SD mem32/mem64, xmm1
     Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
