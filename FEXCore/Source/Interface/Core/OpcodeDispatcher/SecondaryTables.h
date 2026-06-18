@@ -151,8 +151,8 @@ constexpr DispatchTableEntry OpDispatch_TwoByteOpTable[] = {
 
 constexpr DispatchTableEntry OpDispatch_SecondaryRepModTables[] = {
   {0x10, 2, &OpDispatchBuilder::MOVSSOp},
-  {0x12, 1, &OpDispatchBuilder::VMOVSLDUPOp},
-  {0x16, 1, &OpDispatchBuilder::VMOVSHDUPOp},
+  {0x12, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VMOVSLDUPOp, false>},
+  {0x16, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VMOVSHDUPOp, false>},
   {0x2A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::InsertCVTGPR_To_FPR, OpSize::i32Bit>},
   {0x2B, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVVectorNTOp, false>},
   {0x2C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::CVTFPR_To_GPR, OpSize::i32Bit, false>},

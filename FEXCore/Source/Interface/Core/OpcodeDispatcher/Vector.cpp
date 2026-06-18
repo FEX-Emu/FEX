@@ -185,18 +185,28 @@ void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
   }
 }
 
-void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs) {
+void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs, bool IsAVX) {
   const auto SrcSize = OpSizeFromSrc(Op);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VTrn2(SrcSize, OpSize::i32Bit, Src, Src);
-  StoreResultFPR(Op, Result);
+
+  if (IsAVX) {
+    StoreResultFPR(Op, Result);
+  } else {
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
+  }
 }
 
-void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs) {
+void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs, bool IsAVX) {
   const auto SrcSize = OpSizeFromSrc(Op);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VTrn(SrcSize, OpSize::i32Bit, Src, Src);
-  StoreResultFPR(Op, Result);
+
+  if (IsAVX) {
+    StoreResultFPR(Op, Result);
+  } else {
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
+  }
 }
 
 void OpDispatchBuilder::MOVScalarOpImpl(OpcodeArgs, IR::OpSize ElementSize) {
