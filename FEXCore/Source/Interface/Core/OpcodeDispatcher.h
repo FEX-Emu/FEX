@@ -619,8 +619,8 @@ public:
   void VMOVLPOp(OpcodeArgs);
 
   void VMOVDDUPOp(OpcodeArgs);
-  void VMOVSHDUPOp(OpcodeArgs);
-  void VMOVSLDUPOp(OpcodeArgs);
+  void VMOVSHDUPOp(OpcodeArgs, bool IsAVX);
+  void VMOVSLDUPOp(OpcodeArgs, bool IsAVX);
 
   void VMOVSDOp(OpcodeArgs);
   void VMOVSSOp(OpcodeArgs);

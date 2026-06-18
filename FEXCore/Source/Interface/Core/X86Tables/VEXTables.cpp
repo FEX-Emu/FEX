@@ -474,7 +474,7 @@ namespace AVX256 {
 
     {OPD(1, 0b00, 0x12), 1, &OpDispatchBuilder::VMOVLPOp},
     {OPD(1, 0b01, 0x12), 1, &OpDispatchBuilder::VMOVLPOp},
-    {OPD(1, 0b10, 0x12), 1, &OpDispatchBuilder::VMOVSLDUPOp},
+    {OPD(1, 0b10, 0x12), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VMOVSLDUPOp, true>},
     {OPD(1, 0b11, 0x12), 1, &OpDispatchBuilder::VMOVDDUPOp},
     {OPD(1, 0b00, 0x13), 1, &OpDispatchBuilder::VMOVLPOp},
     {OPD(1, 0b01, 0x13), 1, &OpDispatchBuilder::VMOVLPOp},
@@ -487,7 +487,7 @@ namespace AVX256 {
 
     {OPD(1, 0b00, 0x16), 1, &OpDispatchBuilder::VMOVHPOp},
     {OPD(1, 0b01, 0x16), 1, &OpDispatchBuilder::VMOVHPOp},
-    {OPD(1, 0b10, 0x16), 1, &OpDispatchBuilder::VMOVSHDUPOp},
+    {OPD(1, 0b10, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VMOVSHDUPOp, true>},
     {OPD(1, 0b00, 0x17), 1, &OpDispatchBuilder::VMOVHPOp},
     {OPD(1, 0b01, 0x17), 1, &OpDispatchBuilder::VMOVHPOp},
 
