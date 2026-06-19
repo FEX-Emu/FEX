@@ -31,10 +31,10 @@ constexpr auto OpDispatchTableGenH0F3A = []() consteval {
       {OPD(REX, PF_3A_66, 0x42), 1, &OpDispatchBuilder::MPSADBWOp},
       {OPD(REX, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
 
-      {OPD(REX, PF_3A_66, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
-      {OPD(REX, PF_3A_66, 0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
-      {OPD(REX, PF_3A_66, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
-      {OPD(REX, PF_3A_66, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
+      {OPD(REX, PF_3A_66, 0x60), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPESTRMOp, false>},
+      {OPD(REX, PF_3A_66, 0x61), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPESTRIOp, false>},
+      {OPD(REX, PF_3A_66, 0x62), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPISTRMOp, false>},
+      {OPD(REX, PF_3A_66, 0x63), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPISTRIOp, false>},
 
       {OPD(REX, PF_3A_NONE, 0xCC), 1, &OpDispatchBuilder::SHA1RNDS4Op},
       {OPD(REX, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},

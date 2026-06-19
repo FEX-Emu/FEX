@@ -635,10 +635,10 @@ public:
 
   void VPALIGNROp(OpcodeArgs);
 
-  void VPCMPESTRIOp(OpcodeArgs);
-  void VPCMPESTRMOp(OpcodeArgs);
-  void VPCMPISTRIOp(OpcodeArgs);
-  void VPCMPISTRMOp(OpcodeArgs);
+  void VPCMPESTRIOp(OpcodeArgs, bool IsAVX);
+  void VPCMPESTRMOp(OpcodeArgs, bool IsAVX);
+  void VPCMPISTRIOp(OpcodeArgs, bool IsAVX);
+  void VPCMPISTRMOp(OpcodeArgs, bool IsAVX);
 
   void VCVTPH2PSOp(OpcodeArgs);
   void VCVTPS2PHOp(OpcodeArgs);
@@ -1381,7 +1381,7 @@ private:
   Ref PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                     const X86Tables::DecodedOperand& Imm, bool IsAVX);
 
-  void PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask);
+  void PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask, bool IsAVX);
 
   Ref PHADDSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
