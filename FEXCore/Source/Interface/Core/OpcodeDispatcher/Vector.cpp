@@ -3461,10 +3461,8 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
 
   // This instruction is a bit special in that if the source is MMX then it zexts to 128bit
   if constexpr (ToXMM) {
-    const auto Index = Op->Dest.Data.GPR.GPR - FEXCore::X86State::REG_XMM_0;
-
     Src = VZeroExtendOperand(OpSize::i128Bit, Op->Src[0], Src);
-    StoreXMMRegister(Index, Src);
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src);
   } else {
     // This is simple, just store the result
     StoreResultFPR(Op, Src);
