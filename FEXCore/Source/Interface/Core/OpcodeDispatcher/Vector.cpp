@@ -5540,7 +5540,7 @@ void OpDispatchBuilder::Extrq_imm(OpcodeArgs) {
   const Ref MaskVector = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _Constant(Mask));
   Result = _VAnd(OpSize::i128Bit, OpSize::i64Bit, Result, MaskVector);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::Insertq_imm(OpcodeArgs) {
@@ -5568,7 +5568,7 @@ void OpDispatchBuilder::Insertq_imm(OpcodeArgs) {
   Dest = _VAnd(OpSize::i64Bit, OpSize::i64Bit, Dest, MaskVector);
   const Ref Result = _VOr(OpSize::i64Bit, OpSize::i64Bit, Dest, Src);
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::Extrq(OpcodeArgs) {
@@ -5593,7 +5593,7 @@ void OpDispatchBuilder::Extrq(OpcodeArgs) {
 
   Result = _VAnd(OpSize::i128Bit, OpSize::i64Bit, Result, GenerateMask(MaskWidthBits));
 
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::Insertq(OpcodeArgs) {
@@ -5625,7 +5625,7 @@ void OpDispatchBuilder::Insertq(OpcodeArgs) {
 
   Ref Result = _VAnd(OpSize::i64Bit, OpSize::i64Bit, Dest, DstMask);
   Result = _VOr(OpSize::i64Bit, OpSize::i64Bit, Result, SrcData);
-  StoreResultFPR(Op, Result);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 } // namespace FEXCore::IR
