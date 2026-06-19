@@ -502,7 +502,7 @@ void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
   auto NewGPR = Pop(OperandSize, SP);
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, SP, OperandSize);
+  StoreGPRRegister(X86State::REG_RSP, SP, GPRSize);
 
   // Store what we loaded to RBP
   StoreGPRRegister(X86State::REG_RBP, NewGPR, OperandSize);
