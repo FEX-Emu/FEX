@@ -3455,12 +3455,11 @@ void OpDispatchBuilder::VPMULLOp(OpcodeArgs, IR::OpSize ElementSize, bool Signed
   StoreResultFPR(Op, Result);
 }
 
-template<bool ToXMM>
-void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
+void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs, bool ToXMM) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   // This instruction is a bit special in that if the source is MMX then it zexts to 128bit
-  if constexpr (ToXMM) {
+  if (ToXMM) {
     Src = VZeroExtendOperand(OpSize::i128Bit, Op->Src[0], Src);
     StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src);
   } else {
@@ -3468,9 +3467,6 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
     StoreResultFPR(Op, Src);
   }
 }
-
-template void OpDispatchBuilder::MOVQ2DQ<false>(OpcodeArgs);
-template void OpDispatchBuilder::MOVQ2DQ<true>(OpcodeArgs);
 
 Ref OpDispatchBuilder::ADDSUBPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2) {
   if (CTX->HostFeatures.SupportsFCMA) {
