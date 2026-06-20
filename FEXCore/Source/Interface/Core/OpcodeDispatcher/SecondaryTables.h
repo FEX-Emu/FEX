@@ -176,7 +176,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryRepModTables[] = {
   {0xBC, 1, &OpDispatchBuilder::TZCNT},
   {0xBD, 1, &OpDispatchBuilder::LZCNT},
   {0xC2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::InsertScalarFCMPOp, OpSize::i32Bit>},
-  {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<true>},
+  {0xD6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQ2DQ, true>},
   {0xE6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Int_To_Float, OpSize::i32Bit, true, false>},
 };
 
@@ -202,7 +202,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryRepNEModTables[] = {
   {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, OpSize::i32Bit>},
   {0x7D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::HSUBP, OpSize::i32Bit>},
   {0xD0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ADDSUBPOp, OpSize::i32Bit>},
-  {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
+  {0xD6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQ2DQ, false>},
   {0xC2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::InsertScalarFCMPOp, OpSize::i64Bit>},
   {0xE6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Int, OpSize::i64Bit, true, false>},
   {0xF0, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},

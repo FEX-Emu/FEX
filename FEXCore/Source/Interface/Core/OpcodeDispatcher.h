@@ -789,8 +789,7 @@ public:
 
   void PMULLOp(OpcodeArgs, IR::OpSize ElementSize, bool Signed);
 
-  template<bool ToXMM>
-  void MOVQ2DQ(OpcodeArgs);
+  void MOVQ2DQ(OpcodeArgs, bool ToXMM);
 
   void ADDSUBPOp(OpcodeArgs, IR::OpSize ElementSize);
 
