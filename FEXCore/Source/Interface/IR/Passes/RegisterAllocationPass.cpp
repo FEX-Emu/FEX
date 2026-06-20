@@ -781,7 +781,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   IR->GetHeader()->PostRA = true;
 }
 
-fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass(const FEXCore::CPUIDEmu* CPUID) {
+fextl::unique_ptr<IR::Pass> CreateRegisterAllocationPass(const CPUIDEmu* CPUID) {
   return fextl::make_unique<ConstrainedRAPass>(CPUID);
 }
 } // namespace FEXCore::IR

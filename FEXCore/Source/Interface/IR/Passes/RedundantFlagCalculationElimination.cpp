@@ -747,7 +747,7 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   }
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination() {
+fextl::unique_ptr<Pass> CreateDeadFlagCalculationEliminination() {
   return fextl::make_unique<DeadFlagCalculationEliminination>();
 }
 

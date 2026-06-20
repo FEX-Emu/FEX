@@ -1225,7 +1225,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
   return;
 }
 
-fextl::unique_ptr<Pass> CreateX87StackOptimizationPass(const FEXCore::HostFeatures& Features, OpSize GPROpSize) {
+fextl::unique_ptr<Pass> CreateX87StackOptimizationPass(const HostFeatures& Features, OpSize GPROpSize) {
   return fextl::make_unique<X87StackOptimization>(Features, GPROpSize);
 }
 } // namespace FEXCore::IR

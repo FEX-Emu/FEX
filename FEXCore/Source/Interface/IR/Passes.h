@@ -8,23 +8,18 @@ class CPUIDEmu;
 struct HostFeatures;
 } // namespace FEXCore
 
-namespace FEXCore::Utils {
-class IntrusivePooledAllocator;
-}
-
 namespace FEXCore::IR {
 class Pass;
-class RegisterAllocationPass;
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
-fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(const FEXCore::CPUIDEmu* CPUID);
-fextl::unique_ptr<FEXCore::IR::Pass> CreateX87StackOptimizationPass(const FEXCore::HostFeatures&, OpSize GPROpSize);
+fextl::unique_ptr<Pass> CreateDeadFlagCalculationEliminination();
+fextl::unique_ptr<Pass> CreateRegisterAllocationPass(const CPUIDEmu* CPUID);
+fextl::unique_ptr<Pass> CreateX87StackOptimizationPass(const HostFeatures&, OpSize GPROpSize);
 
 namespace Validation {
-  fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();
+  fextl::unique_ptr<Pass> CreateIRValidation();
 } // namespace Validation
 
 namespace Debug {
-  fextl::unique_ptr<FEXCore::IR::Pass> CreateIRDumper();
+  fextl::unique_ptr<Pass> CreateIRDumper();
 }
 } // namespace FEXCore::IR
