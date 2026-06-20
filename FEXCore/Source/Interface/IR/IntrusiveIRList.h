@@ -186,12 +186,12 @@ public:
   }
 
   [[nodiscard]]
-  unsigned PostRA() const {
+  bool PostRA() const {
     return GetHeader()->PostRA;
   }
 
   [[nodiscard]]
-  unsigned SpillSlots() const {
+  uint32_t SpillSlots() const {
     return GetHeader()->SpillSlots;
   }
 
