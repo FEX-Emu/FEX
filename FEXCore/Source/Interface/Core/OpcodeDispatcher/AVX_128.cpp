@@ -1260,26 +1260,26 @@ void OpDispatchBuilder::AVX128_VAESKeyGenAssist(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VPCMPESTRI(OpcodeArgs) {
-  PCMPXSTRXOpImpl(Op, true, false);
+  PCMPXSTRXOpImpl(Op, true, false, true);
 
   ///< Does not zero anything.
 }
 
 void OpDispatchBuilder::AVX128_VPCMPESTRM(OpcodeArgs) {
-  PCMPXSTRXOpImpl(Op, true, true);
+  PCMPXSTRXOpImpl(Op, true, true, true);
 
   ///< Zero the upper 128-bits of hardcoded YMM0
   AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);
 }
 
 void OpDispatchBuilder::AVX128_VPCMPISTRI(OpcodeArgs) {
-  PCMPXSTRXOpImpl(Op, false, false);
+  PCMPXSTRXOpImpl(Op, false, false, true);
 
   ///< Does not zero anything.
 }
 
 void OpDispatchBuilder::AVX128_VPCMPISTRM(OpcodeArgs) {
-  PCMPXSTRXOpImpl(Op, false, true);
+  PCMPXSTRXOpImpl(Op, false, true, true);
 
   ///< Zero the upper 128-bits of hardcoded YMM0
   AVX128_StoreXMMRegister(0, LoadZeroVector(OpSize::i128Bit), true);

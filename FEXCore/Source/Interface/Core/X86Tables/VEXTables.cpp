@@ -855,10 +855,10 @@ namespace AVX256 {
     {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorVariableBlend, OpSize::i64Bit>},
     {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorVariableBlend, OpSize::i8Bit>},
 
-    {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
-    {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
-    {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
-    {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
+    {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPESTRMOp, true>},
+    {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPESTRIOp, true>},
+    {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPISTRMOp, true>},
+    {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPISTRIOp, true>},
 
     {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
   };
