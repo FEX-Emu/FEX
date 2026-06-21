@@ -195,7 +195,7 @@
       ]
     },
     "cmpss xmm0, xmm1, 5": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0xf3 0x0f 0xc2"
       ],
@@ -205,12 +205,11 @@
         "mov v0.16b, v16.16b",
         "mov v0.s[0], v2.s[0]",
         "mov v2.16b, v0.16b",
-        "mov z1.q, q2",
-        "mov z16.b, p6/m, z1.b"
+        "mov z16.b, p6/m, z2.b"
       ]
     },
     "cmpss xmm0, xmm1, 6": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0xf3 0x0f 0xc2"
       ],
@@ -220,8 +219,7 @@
         "mov v0.16b, v16.16b",
         "mov v0.s[0], v2.s[0]",
         "mov v2.16b, v0.16b",
-        "mov z1.q, q2",
-        "mov z16.b, p6/m, z1.b"
+        "mov z16.b, p6/m, z2.b"
       ]
     },
     "cmpss xmm0, xmm1, 7": {

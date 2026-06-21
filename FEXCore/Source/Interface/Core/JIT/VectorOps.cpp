@@ -2980,9 +2980,14 @@ DEF_OP(VInsElement) {
   auto Reg = GetVReg(Op->DestVector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    // Broadcast our source value across a temporary,
-    // then combine with the destination.
-    dup(SubRegSize, VTMP2.Z(), SrcVector.Z(), SrcIdx);
+    // Broadcast our source value across a temporary, then combine
+    // with the destination.
+    //
+    // We don't need to perform the dup if we're just merging a 128-bit vector into
+    // into an equivalent position since we have a predicate set up already.
+    if (!(ElementSize == IR::OpSize::i128Bit && SrcIdx == DestIdx)) {
+      dup(SubRegSize, VTMP2.Z(), SrcVector.Z(), SrcIdx);
+    }
 
     // We don't need to move the data unnecessarily if
     // DestVector just so happens to also be the IR op
@@ -2995,10 +3000,12 @@ DEF_OP(VInsElement) {
 
     if (ElementSize == IR::OpSize::i128Bit) {
       if (DestIdx == 0) {
-        mov(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), PRED_TMP_16B.Merging(), VTMP2.Z());
+        const auto Source = SrcIdx == 0 ? SrcVector : VTMP2;
+        mov(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), PRED_TMP_16B.Merging(), Source.Z());
       } else {
+        const auto Source = SrcIdx == 1 ? SrcVector : VTMP2;
         not_(Predicate, PRED_TMP_32B.Zeroing(), PRED_TMP_16B);
-        mov(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), Predicate.Merging(), VTMP2.Z());
+        mov(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), Predicate.Merging(), Source.Z());
       }
     } else {
       const auto UpperBound = 16 >> FEXCore::ilog2(IR::OpSizeToSize(ElementSize));
