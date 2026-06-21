@@ -343,11 +343,12 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
     // 32bit
     uint64_t Addr = GPRs[AddressReg];
 
+    // Lower register must be even, so only upper register can be 31.
     uint32_t DesiredLower = GPRs[DesiredReg1];
-    uint32_t DesiredUpper = GPRs[DesiredReg2];
+    uint32_t DesiredUpper = DesiredReg2 == 31 ? 0 : GPRs[DesiredReg2];
 
     uint32_t ExpectedLower = GPRs[ExpectedReg1];
-    uint32_t ExpectedUpper = GPRs[ExpectedReg2];
+    uint32_t ExpectedUpper = ExpectedReg2 == 31 ? 0 : GPRs[ExpectedReg2];
 
     // Cross-cacheline CAS doesn't work on ARM
     // It isn't even guaranteed to work on x86
@@ -1352,7 +1353,9 @@ static std::optional<uint64_t> DoCAS(uint32_t Size, uint64_t Desired, uint64_t E
 }
 
 static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg, uint32_t* StrictSplitLockMutex) {
-  std::optional<uint64_t> Res = DoCAS(Size, GPRs[DesiredReg], GPRs[ExpectedReg], GPRs[AddressReg], StrictSplitLockMutex);
+  uint64_t Desired = DesiredReg == 31 ? 0 : GPRs[DesiredReg];
+  uint64_t Expected = ExpectedReg == 31 ? 0 : GPRs[ExpectedReg];
+  std::optional<uint64_t> Res = DoCAS(Size, Desired, Expected, GPRs[AddressReg], StrictSplitLockMutex);
   if (!Res.has_value()) {
     return false;
   }
@@ -1383,6 +1386,8 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSp
   uint64_t Addr = GPRs[AddressReg];
 
   uint8_t Op = (Instr >> 12) & 0xF;
+
+  uint64_t Source = SourceReg == 31 ? 0 : GPRs[SourceReg];
 
   if (Size == 2) {
     auto NOPExpected = [](uint16_t SrcVal, uint16_t) -> uint16_t {
@@ -1420,7 +1425,7 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSp
     default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op); return false;
     }
 
-    auto Res = DoCAS16<true>(GPRs[SourceReg],
+    auto Res = DoCAS16<true>(Source,
                              0, // Unused
                              Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
     // If we passed and our destination register is not zero
@@ -1465,7 +1470,7 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSp
     default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op); return false;
     }
 
-    auto Res = DoCAS32<true>(GPRs[SourceReg],
+    auto Res = DoCAS32<true>(Source,
                              0, // Unused
                              Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
     // If we passed and our destination register is not zero
@@ -1510,7 +1515,7 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSp
     default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op); return false;
     }
 
-    auto Res = DoCAS64<true>(GPRs[SourceReg],
+    auto Res = DoCAS64<true>(Source,
                              0, // Unused
                              Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
     // If we passed and our destination register is not zero
@@ -1572,9 +1577,11 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset, ui
   uint64_t Addr = GPRs[AddressReg] + Offset;
 
   constexpr bool DoRetry = false;
+  uint64_t Data = DataReg == 31 ? 0 : GPRs[DataReg];
+
   if (Size == 2) {
     DoCAS16<DoRetry>(
-      GPRs[DataReg],
+      Data,
       0, // Unused
       Addr,
       [](uint16_t SrcVal, uint16_t) -> uint16_t {
@@ -1589,7 +1596,7 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset, ui
     return true;
   } else if (Size == 4) {
     DoCAS32<DoRetry>(
-      GPRs[DataReg],
+      Data,
       0, // Unused
       Addr,
       [](uint32_t SrcVal, uint32_t) -> uint32_t {
@@ -1604,7 +1611,7 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset, ui
     return true;
   } else if (Size == 8) {
     DoCAS64<DoRetry>(
-      GPRs[DataReg],
+      Data,
       0, // Unused
       Addr,
       [](uint64_t SrcVal, uint64_t) -> uint64_t {
@@ -1834,6 +1841,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
     return Desired;
   };
 
+  uint64_t Source = DataSourceReg == 31 ? 0 : GPRs[DataSourceReg];
   if (Size == 2) {
     using AtomicType = uint16_t;
     CASDesiredFn<AtomicType> DesiredFunction {};
@@ -1852,7 +1860,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
     default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", FEXCore::ToUnderlying(AtomicOp)); return false;
     }
 
-    auto Res = DoCAS16<DoRetry>(GPRs[DataSourceReg],
+    auto Res = DoCAS16<DoRetry>(Source,
                                 0, // Unused
                                 Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
 
@@ -1879,7 +1887,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
     default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", FEXCore::ToUnderlying(AtomicOp)); return false;
     }
 
-    auto Res = DoCAS32<DoRetry>(GPRs[DataSourceReg],
+    auto Res = DoCAS32<DoRetry>(Source,
                                 0, // Unused
                                 Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
 
@@ -1906,7 +1914,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
     default: LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", FEXCore::ToUnderlying(AtomicOp)); return false;
     }
 
-    auto Res = DoCAS64<DoRetry>(GPRs[DataSourceReg],
+    auto Res = DoCAS64<DoRetry>(Source,
                                 0, // Unused
                                 Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
     if (AtomicFetch && ResultReg != 31) {
