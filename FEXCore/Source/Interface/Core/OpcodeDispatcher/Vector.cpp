@@ -5009,15 +5009,48 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   StoreResultFPR(Op, Result);
 }
 
-Ref OpDispatchBuilder::VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector) {
-  const std::array Sources {Src1, Src2};
+Ref OpDispatchBuilder::VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint64_t Selector) {
+  const auto IsWordElements = ElementSize == OpSize::i16Bit;
+  const auto Is256Bit = VecSize == OpSize::i256Bit;
 
-  Ref Result = ZeroRegister;
+  const auto ElementsPerLane = uint32_t(IR::NumElements(OpSize::i128Bit, ElementSize));
+
+  // PBLENDW uses the same immediate size for 128-bit and 256-bit
+  // while all the others double in size.
+  const auto MaskSize = Is256Bit && !IsWordElements ? ElementsPerLane * 2 : ElementsPerLane;
+  const auto Mask = (1U << MaskSize) - 1;
+
+  // Now, we determine which mask portion has the higher population count.
+  // we use this to determine which source we use as the base to insert into.
+  //
+  // For example each even bit in a mask that is set, means that element in Src2
+  // will be inserted into the destination. If that bit is not set, then it's
+  // the element in Src1 that will be inserted instead.
+  //
+  // If we have more bits incoming from a particular source, then we can reappropriate
+  // that source as the destination and only perform inserts from the other source
+  // where necessary, which reduces the overall amount of element insertions that
+  // need to take place.
+  //
+  // In the event we tie, then we can just use Src1 and only perform incoming insertions
+  // that come from Src2.
+  const auto NumSrc2Bits = uint32_t(std::popcount(Selector & Mask));
+  const auto NumSrc1Bits = MaskSize - NumSrc2Bits;
+  const auto IsUsingSrc1 = NumSrc1Bits >= NumSrc2Bits;
+  Ref Result = IsUsingSrc1 ? Src1 : Src2;
+  Ref Source = IsUsingSrc1 ? Src2 : Src1;
+
   const auto NumElements = IR::NumElements(VecSize, ElementSize);
   for (int i = 0; i < NumElements; i++) {
     const auto SelectorIndex = (Selector >> i) & 1;
+    if (IsUsingSrc1 && SelectorIndex == 0) {
+      continue;
+    }
+    if (!IsUsingSrc1 && SelectorIndex != 0) {
+      continue;
+    }
 
-    Result = _VInsElement(VecSize, ElementSize, i, i, Result, Sources[SelectorIndex]);
+    Result = _VInsElement(VecSize, ElementSize, i, i, Result, Source);
   }
 
   return Result;
@@ -5044,8 +5077,7 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
     return;
   }
 
-  const auto ZeroRegister = LoadZeroVector(DstSize);
-  Ref Result = VBLENDOpImpl(DstSize, OpSize::i64Bit, Src1, Src2, ZeroRegister, Selector);
+  Ref Result = VBLENDOpImpl(DstSize, OpSize::i64Bit, Src1, Src2, Selector);
   StoreResultFPR(Op, Result);
 }
 
@@ -5085,11 +5117,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
     return;
   }
 
-  const auto ZeroRegister = LoadZeroVector(DstSize);
-  Ref Result = VBLENDOpImpl(DstSize, OpSize::i32Bit, Src1, Src2, ZeroRegister, Selector);
-  if (!Is256Bit) {
-    Result = _VMov(OpSize::i128Bit, Result);
-  }
+  Ref Result = VBLENDOpImpl(DstSize, OpSize::i32Bit, Src1, Src2, Selector);
   StoreResultFPR(Op, Result);
 }
 
@@ -5117,11 +5145,7 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
   // imm for the helper function to use.
   const auto NewSelector = Selector << 8 | Selector;
 
-  const auto ZeroRegister = LoadZeroVector(DstSize);
-  Ref Result = VBLENDOpImpl(DstSize, OpSize::i16Bit, Src1, Src2, ZeroRegister, NewSelector);
-  if (Is128Bit) {
-    Result = _VMov(OpSize::i128Bit, Result);
-  }
+  Ref Result = VBLENDOpImpl(DstSize, OpSize::i16Bit, Src1, Src2, NewSelector);
   StoreResultFPR(Op, Result);
 }
 
