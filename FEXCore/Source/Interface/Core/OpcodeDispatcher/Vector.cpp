@@ -1793,6 +1793,15 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
   const uint8_t ShiftAmount = std::popcount(SelectionMask);
 
   if (Is256Bit) {
+    if (ElementSize == OpSize::i64Bit) {
+      if (Shuffle == 0) {
+        return _VTrn(DstSize, ElementSize, Src1, Src2);
+      }
+      if (Shuffle == 0b1111) {
+        return _VTrn2(DstSize, ElementSize, Src1, Src2);
+      }
+    }
+
     for (uint8_t Element = 0; Element < NumElements; ++Element) {
       const auto SrcIndex1 = Shuffle & SelectionMask;
 
