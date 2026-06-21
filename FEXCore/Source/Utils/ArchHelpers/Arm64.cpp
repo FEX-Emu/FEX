@@ -1947,8 +1947,24 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
   uint32_t* StrictSplitLockMutex {CTX->Config.StrictInProcessSplitLocks ? &CTX->StrictSplitLockMutex : nullptr};
 
   if (!IsJIT) [[unlikely]] {
-    if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
-        (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
+    if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
+      if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs, StrictSplitLockMutex)) {
+        // Skip this instruction now
+        return 4;
+      } else {
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+        return std::nullopt;
+      }
+    } else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
+      if (ArchHelpers::Arm64::HandleCASAL(GPRs, Instr, StrictSplitLockMutex)) {
+        // Skip this instruction now
+        return 4;
+      } else {
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+        return std::nullopt;
+      }
+    } else if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
+               (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
       if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
         // Skip this instruction now
         return 4;
