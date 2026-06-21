@@ -247,6 +247,7 @@ public:
   struct TrackingEmpty {
     // RIP stepping handling
     virtual void AddSingleStepTarget(uint64_t GuestRIP) {}
+    virtual void AddSingleStepTargetRange(uint64_t RIPBegin, uint64_t RipEnd) {}
     virtual void AllTargetSingleStep() {}
     virtual void RemoveSingleStepTarget(uint64_t GuestRIP) {}
     virtual bool IsSingleStepTarget(uint64_t GuestRIP) {
@@ -269,6 +270,10 @@ public:
       SingleStepTargets.emplace(GuestRIP);
     }
 
+    virtual void AddSingleStepTargetRange(uint64_t RIPBegin, uint64_t RIPEnd) override {
+      SingleStepRanges.emplace_back(Range {RIPBegin, RIPEnd});
+    }
+
     void RemoveSingleStepTarget(uint64_t GuestRIP) override {
       SingleStepTargets.erase(GuestRIP);
     }
@@ -278,7 +283,7 @@ public:
     }
 
     bool IsSingleStepTarget(uint64_t GuestRIP) override {
-      return SingleStepEverything || SingleStepTargets.contains(GuestRIP);
+      return SingleStepEverything || SingleStepTargets.contains(GuestRIP) || IsInRange(GuestRIP);
     }
 
     void AddWriteWatchPoint(uint64_t Ptr) override {
@@ -302,6 +307,14 @@ public:
     fextl::set<uint64_t> SingleStepTargets {};
     fextl::set<uint64_t> WatchWriteTargets {};
     fextl::set<uint64_t> WatchReadTargets {};
+    struct Range {
+      uint64_t Begin, End;
+    };
+    fextl::vector<Range> SingleStepRanges {};
+
+    bool IsInRange(uint64_t RIP) {
+      return std::ranges::any_of(SingleStepRanges, [RIP](const auto& range) { return RIP >= range.Begin && RIP <= range.End; });
+    }
 
     static bool ContainsRange(const fextl::set<uint64_t>& Set, uint64_t Ptr, size_t Size) {
       for (auto it = Set.lower_bound(Ptr); it != Set.end(); --it) {
