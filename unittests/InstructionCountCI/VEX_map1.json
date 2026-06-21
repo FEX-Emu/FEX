@@ -2615,14 +2615,12 @@
       ]
     },
     "vpinsrw xmm0, xmm0, eax, 000b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 1 0b01 0xC4 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov v2.16b, v16.16b",
-        "mov v2.h[0], w4",
-        "mov v16.16b, v2.16b"
+        "mov v16.h[0], w4"
       ]
     },
     "vpinsrw xmm0, xmm1, eax, 000b": {
