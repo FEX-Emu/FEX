@@ -2064,19 +2064,14 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs, IR::OpSize ElementSize) {
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
-void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
-  Ref Result = PINSROpImpl(Op, OpSize::i8Bit, Op->Src[0], Op->Src[1], Op->Src[2]);
+void OpDispatchBuilder::VPINSRBWOp(OpcodeArgs, IR::OpSize ElementSize) {
+  Ref Result = PINSROpImpl(Op, ElementSize, Op->Src[0], Op->Src[1], Op->Src[2]);
   StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::VPINSRDQOp(OpcodeArgs) {
   const auto SrcSize = OpSizeFromSrc(Op);
   Ref Result = PINSROpImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
-  StoreResultFPR(Op, Result);
-}
-
-void OpDispatchBuilder::VPINSRWOp(OpcodeArgs) {
-  Ref Result = PINSROpImpl(Op, OpSize::i16Bit, Op->Src[0], Op->Src[1], Op->Src[2]);
   StoreResultFPR(Op, Result);
 }
 

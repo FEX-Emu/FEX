@@ -658,9 +658,8 @@ public:
   void VPHSUBOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPHSUBSWOp(OpcodeArgs);
 
-  void VPINSRBOp(OpcodeArgs);
+  void VPINSRBWOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPINSRDQOp(OpcodeArgs);
-  void VPINSRWOp(OpcodeArgs);
 
   void VPMADDUBSWOp(OpcodeArgs);
   void VPMADDWDOp(OpcodeArgs);
