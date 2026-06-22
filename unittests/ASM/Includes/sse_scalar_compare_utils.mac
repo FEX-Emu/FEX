@@ -1,0 +1,56 @@
+%ifndef SSE_SCALAR_COMPARE_UTILS_INC
+%define SSE_SCALAR_COMPARE_UTILS_INC
+
+; We load the same initial data into two registers, since we need to
+; execute the SSE and AVX version of the instruction test.
+;
+; This takes a ymm index and a memory index
+%macro load_initial_data_test 2
+  %assign sse_reg %1
+  %assign avx_reg %1+1
+
+  vmovaps ymm %+ sse_reg, [rel .data + (%2 * 32)]
+  vmovaps ymm %+ avx_reg, [rel .data + (%2 * 32)]
+%endmacro
+
+; Loads all of our initial data at once
+%macro load_all_initial_data 0
+  %assign mem_idx 0
+  %assign reg_idx 0
+  %rep 8
+    load_initial_data_test reg_idx, mem_idx
+    %assign mem_idx mem_idx+1
+    %assign reg_idx reg_idx+2
+  %endrep
+%endmacro
+
+; Runs a series of 16 tests with the comparison immediate incrementing
+; after each test pair being run.
+;
+; Takes the stem of the scalar instruction and the initial type of comparison to perform.
+; e.g. perform_compare_tests cmpss, 0 will run cmpss and vcmpss tests starting at comparison
+;      immediate 0 and go up to and including 7
+%macro perform_compare_tests 2
+  %assign reg_sse 0
+  %assign reg_avx 1
+  %assign scalar_idx 0
+  %assign cmp_idx %2
+
+  %ifidni %1, cmpss
+    %assign mem_size 4
+  %else
+    %assign mem_size 8
+  %endif
+
+  %rep 8
+    %1  xmm %+ reg_sse,                 [rel .scalar_data + (scalar_idx * mem_size)], cmp_idx
+    v%1 xmm %+ reg_avx, xmm %+ reg_avx, [rel .scalar_data + (scalar_idx * mem_size)], cmp_idx
+
+    %assign reg_sse reg_sse+2
+    %assign reg_avx reg_avx+2
+    %assign scalar_idx scalar_idx+1
+    %assign cmp_idx cmp_idx+1
+  %endrep
+%endmacro
+
+%endif
