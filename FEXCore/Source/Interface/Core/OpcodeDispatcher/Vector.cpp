@@ -1784,16 +1784,16 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
   const uint8_t SelectionMask = NumElements - 1;
   const uint8_t ShiftAmount = std::popcount(SelectionMask);
 
-  const auto SingleLane = [&](Ref LHS, Ref RHS) -> Ref {
-    if (LHS == RHS && Shuffle == 0) {
+  const auto SingleLane = [&](Ref LHS, Ref RHS, uint32_t LaneShuffle) -> Ref {
+    if (LHS == RHS && LaneShuffle == 0) {
       // TODO: We can optimize significantly more shuffles when we know the sources match.
       // Special case broadcast element 0.
-      return _VDupElement(DstSize, ElementSize, LHS, Shuffle & SelectionMask);
+      return _VDupElement(DstSize, ElementSize, LHS, LaneShuffle & SelectionMask);
     }
     if (ElementSize == OpSize::i32Bit) {
       // We can shuffle optimally in a lot of cases.
       // TODO: We can optimize more of these cases.
-      switch (Shuffle) {
+      switch (LaneShuffle) {
       case 0b01'00'01'00:
         // Combining of low 64-bits.
         // Dest[63:0]   = Src1[63:0]
@@ -1833,7 +1833,7 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
       case 0b11'10'10'10:
       case 0b11'10'11'11: {
         // Bottom elements duplicated, Top 64-bits inserted
-        auto DupLHS = _VDupElement(OpSize::i128Bit, ElementSize, LHS, Shuffle & 0b11);
+        auto DupLHS = _VDupElement(OpSize::i128Bit, ElementSize, LHS, LaneShuffle & 0b11);
         return _VZip2(OpSize::i128Bit, OpSize::i64Bit, DupLHS, RHS);
       }
       case 0b01'00'00'00:
@@ -1841,7 +1841,7 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
       case 0b01'00'10'10:
       case 0b01'00'11'11: {
         // Bottom elements duplicated, Bottom 64-bits inserted
-        auto DupLHS = _VDupElement(OpSize::i128Bit, ElementSize, LHS, Shuffle & 0b11);
+        auto DupLHS = _VDupElement(OpSize::i128Bit, ElementSize, LHS, LaneShuffle & 0b11);
         return _VZip(OpSize::i128Bit, OpSize::i64Bit, DupLHS, RHS);
       }
       case 0b00'00'01'00:
@@ -1849,7 +1849,7 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
       case 0b10'10'01'00:
       case 0b11'11'01'00: {
         // Top elements duplicated, Bottom 64-bits inserted
-        auto DupRHS = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (Shuffle >> 4) & 0b11);
+        auto DupRHS = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (LaneShuffle >> 4) & 0b11);
         return _VZip(OpSize::i128Bit, OpSize::i64Bit, LHS, DupRHS);
       }
       case 0b00'00'11'10:
@@ -1857,7 +1857,7 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
       case 0b10'10'11'10:
       case 0b11'11'11'10: {
         // Top elements duplicated, Top 64-bits inserted
-        auto DupRHS = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (Shuffle >> 4) & 0b11);
+        auto DupRHS = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (LaneShuffle >> 4) & 0b11);
         return _VZip2(OpSize::i128Bit, OpSize::i64Bit, LHS, DupRHS);
       }
       case 0b01'00'01'11: {
@@ -1906,18 +1906,18 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
       case 0b11'11'10'10:
       case 0b11'11'11'11: {
         // Duplicate element in upper and lower across each 64-bit segment.
-        auto DupSrc1 = _VDupElement(OpSize::i128Bit, ElementSize, LHS, Shuffle & 0b11);
-        auto DupSrc2 = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (Shuffle >> 4) & 0b11);
+        auto DupSrc1 = _VDupElement(OpSize::i128Bit, ElementSize, LHS, LaneShuffle & 0b11);
+        auto DupSrc2 = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (LaneShuffle >> 4) & 0b11);
         return _VZip(OpSize::i128Bit, OpSize::i64Bit, DupSrc1, DupSrc2);
       }
       default:
         // Use a TBL2 operation to handle this implementation.
-        auto LookupIndexes =
-          LoadAndCacheIndexedNamedVectorConstant(OpSize::i128Bit, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS, Shuffle * 16);
+        auto LookupIndexes = LoadAndCacheIndexedNamedVectorConstant(
+          OpSize::i128Bit, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS, LaneShuffle * 16);
         return _VTBL2(OpSize::i128Bit, LHS, RHS, LookupIndexes);
       }
     } else {
-      switch (Shuffle & 0b11) {
+      switch (LaneShuffle & 0b11) {
       case 0b00:
         // Low 64-bits of each source interleaved.
         return _VZip(OpSize::i128Bit, ElementSize, LHS, RHS);
@@ -1937,14 +1937,13 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
 
     Ref Result = LHS;
     for (uint8_t Element = 0; Element < NumElements; ++Element) {
-      const auto SrcIndex = Shuffle & SelectionMask;
+      const auto SrcIndex = LaneShuffle & SelectionMask;
       Result = _VInsElement(OpSize::i128Bit, ElementSize, Element, SrcIndex, Result, Srcs[Element]);
-      Shuffle >>= ShiftAmount;
+      LaneShuffle >>= ShiftAmount;
     }
     return Result;
   };
 
-  Ref Dest = Src1;
   if (Is256Bit) {
     if (ElementSize == OpSize::i64Bit) {
       if (Shuffle == 0) {
@@ -1955,24 +1954,21 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
       }
     }
 
-    for (uint8_t Element = 0; Element < NumElements; ++Element) {
-      const auto SrcIndex1 = Shuffle & SelectionMask;
+    auto UpperLaneLHS = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src1, 1);
+    auto UpperLaneRHS = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src2, 1);
 
-      // AVX differs the behavior of VSHUFPD and VSHUFPS.
-      // The same immediate bits are used for both lanes with VSHUFPS,
-      // but VSHUFPD uses different immediate bits for each lane.
-      const auto SrcIndex2 = ElementSize == OpSize::i32Bit ? SrcIndex1 : ((Shuffle >> 2) & SelectionMask);
+    // VSHUFPS uses the full immediate for each lane, where as VSHUFPD
+    // uses pairs for each operation.
+    const auto LowerShuffle = ElementSize == OpSize::i32Bit ? Shuffle : Shuffle & 0b11;
+    const auto UpperShuffle = ElementSize == OpSize::i32Bit ? Shuffle : (Shuffle >> 2) & 0b11;
 
-      Ref Insert = _VInsElement(DstSize, ElementSize, Element, SrcIndex1, Dest, Srcs[Element]);
-      Dest = _VInsElement(DstSize, ElementSize, Element + NumElements, SrcIndex2 + NumElements, Insert, Srcs[Element]);
+    auto Lower = SingleLane(Src1, Src2, LowerShuffle);
+    auto Upper = SingleLane(UpperLaneLHS, UpperLaneRHS, UpperShuffle);
 
-      Shuffle >>= ShiftAmount;
-    }
+    return _VInsElement(OpSize::i256Bit, OpSize::i128Bit, 1, 0, Lower, Upper);
   } else {
-    Dest = SingleLane(Src1, Src2);
+    return SingleLane(Src1, Src2, Shuffle);
   }
-
-  return Dest;
 }
 
 void OpDispatchBuilder::SHUFOp(OpcodeArgs, IR::OpSize ElementSize) {
