@@ -5178,15 +5178,7 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Result {};
 
   if (ElementSize == OpSize::i64Bit) {
-    Result = LoadZeroVector(DstSize);
-
-    Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b0001, Result, Src);
-    Result = _VInsElement(DstSize, ElementSize, 1, (Selector & 0b0010) >> 1, Result, Src);
-
-    if (Is256Bit) {
-      Result = _VInsElement(DstSize, ElementSize, 2, ((Selector & 0b0100) >> 2) + 2, Result, Src);
-      Result = _VInsElement(DstSize, ElementSize, 3, ((Selector & 0b1000) >> 3) + 2, Result, Src);
-    }
+    Result = SHUFOpImpl(Op, DstSize, ElementSize, Src, Src, Selector);
   } else {
     if (Is256Bit) {
       auto UpperLane = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src, 1);
