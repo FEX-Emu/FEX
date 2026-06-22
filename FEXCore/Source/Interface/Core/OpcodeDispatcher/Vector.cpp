@@ -5175,9 +5175,11 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs, IR::OpSize ElementSize) {
   const auto Selector = Op->Src[1].Literal() & 0xFF;
 
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
-  Ref Result = LoadZeroVector(DstSize);
+  Ref Result {};
 
   if (ElementSize == OpSize::i64Bit) {
+    Result = LoadZeroVector(DstSize);
+
     Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b0001, Result, Src);
     Result = _VInsElement(DstSize, ElementSize, 1, (Selector & 0b0010) >> 1, Result, Src);
 
@@ -5186,16 +5188,15 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs, IR::OpSize ElementSize) {
       Result = _VInsElement(DstSize, ElementSize, 3, ((Selector & 0b1000) >> 3) + 2, Result, Src);
     }
   } else {
-    Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b00000011, Result, Src);
-    Result = _VInsElement(DstSize, ElementSize, 1, (Selector & 0b00001100) >> 2, Result, Src);
-    Result = _VInsElement(DstSize, ElementSize, 2, (Selector & 0b00110000) >> 4, Result, Src);
-    Result = _VInsElement(DstSize, ElementSize, 3, (Selector & 0b11000000) >> 6, Result, Src);
-
     if (Is256Bit) {
-      Result = _VInsElement(DstSize, ElementSize, 4, (Selector & 0b00000011) + 4, Result, Src);
-      Result = _VInsElement(DstSize, ElementSize, 5, ((Selector & 0b00001100) >> 2) + 4, Result, Src);
-      Result = _VInsElement(DstSize, ElementSize, 6, ((Selector & 0b00110000) >> 4) + 4, Result, Src);
-      Result = _VInsElement(DstSize, ElementSize, 7, ((Selector & 0b11000000) >> 6) + 4, Result, Src);
+      auto UpperLane = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src, 1);
+
+      auto Upper = Single128Bit4ByteVectorShuffle(UpperLane, Selector);
+      auto Lower = Single128Bit4ByteVectorShuffle(Src, Selector);
+
+      Result = _VInsElement(OpSize::i256Bit, OpSize::i128Bit, 1, 0, Lower, Upper);
+    } else {
+      Result = Single128Bit4ByteVectorShuffle(Src, Selector);
     }
   }
 
