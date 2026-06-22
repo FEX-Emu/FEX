@@ -1781,10 +1781,170 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
     Srcs[i] = Src2;
   }
 
-  Ref Dest = Src1;
   const uint8_t SelectionMask = NumElements - 1;
   const uint8_t ShiftAmount = std::popcount(SelectionMask);
 
+  const auto SingleLane = [&](Ref LHS, Ref RHS) -> Ref {
+    if (LHS == RHS && Shuffle == 0) {
+      // TODO: We can optimize significantly more shuffles when we know the sources match.
+      // Special case broadcast element 0.
+      return _VDupElement(DstSize, ElementSize, LHS, Shuffle & SelectionMask);
+    }
+    if (ElementSize == OpSize::i32Bit) {
+      // We can shuffle optimally in a lot of cases.
+      // TODO: We can optimize more of these cases.
+      switch (Shuffle) {
+      case 0b01'00'01'00:
+        // Combining of low 64-bits.
+        // Dest[63:0]   = Src1[63:0]
+        // Dest[127:64] = Src2[63:0]
+        return _VZip(OpSize::i128Bit, OpSize::i64Bit, LHS, RHS);
+      case 0b11'10'11'10:
+        // Combining of high 64-bits.
+        // Dest[63:0]   = Src1[127:64]
+        // Dest[127:64] = Src2[127:64]
+        return _VZip2(OpSize::i128Bit, OpSize::i64Bit, LHS, RHS);
+      case 0b11'10'01'00:
+        // Mixing Low and high elements
+        // Dest[63:0]   = Src1[63:0]
+        // Dest[127:64] = Src2[127:64]
+        return _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, LHS, RHS);
+      case 0b01'00'11'10:
+        // Mixing Low and high elements, inverse of above
+        // Dest[63:0]   = Src1[127:64]
+        // Dest[127:64] = Src2[63:0]
+        return _VExtr(OpSize::i128Bit, OpSize::i8Bit, RHS, LHS, 8);
+      case 0b10'00'10'00:
+        // Mixing even elements.
+        // Dest[31:0]   = Src1[31:0]
+        // Dest[63:32]  = Src1[95:64]
+        // Dest[95:64]  = Src2[31:0]
+        // Dest[127:96] = Src2[95:64]
+        return _VUnZip(OpSize::i128Bit, ElementSize, LHS, RHS);
+      case 0b11'01'11'01:
+        // Mixing odd elements.
+        // Dest[31:0]   = Src1[63:32]
+        // Dest[63:32]  = Src1[127:96]
+        // Dest[95:64]  = Src2[63:32]
+        // Dest[127:96] = Src2[127:96]
+        return _VUnZip2(OpSize::i128Bit, ElementSize, LHS, RHS);
+      case 0b11'10'00'00:
+      case 0b11'10'01'01:
+      case 0b11'10'10'10:
+      case 0b11'10'11'11: {
+        // Bottom elements duplicated, Top 64-bits inserted
+        auto DupLHS = _VDupElement(OpSize::i128Bit, ElementSize, LHS, Shuffle & 0b11);
+        return _VZip2(OpSize::i128Bit, OpSize::i64Bit, DupLHS, RHS);
+      }
+      case 0b01'00'00'00:
+      case 0b01'00'01'01:
+      case 0b01'00'10'10:
+      case 0b01'00'11'11: {
+        // Bottom elements duplicated, Bottom 64-bits inserted
+        auto DupLHS = _VDupElement(OpSize::i128Bit, ElementSize, LHS, Shuffle & 0b11);
+        return _VZip(OpSize::i128Bit, OpSize::i64Bit, DupLHS, RHS);
+      }
+      case 0b00'00'01'00:
+      case 0b01'01'01'00:
+      case 0b10'10'01'00:
+      case 0b11'11'01'00: {
+        // Top elements duplicated, Bottom 64-bits inserted
+        auto DupRHS = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (Shuffle >> 4) & 0b11);
+        return _VZip(OpSize::i128Bit, OpSize::i64Bit, LHS, DupRHS);
+      }
+      case 0b00'00'11'10:
+      case 0b01'01'11'10:
+      case 0b10'10'11'10:
+      case 0b11'11'11'10: {
+        // Top elements duplicated, Top 64-bits inserted
+        auto DupRHS = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (Shuffle >> 4) & 0b11);
+        return _VZip2(OpSize::i128Bit, OpSize::i64Bit, LHS, DupRHS);
+      }
+      case 0b01'00'01'11: {
+        // TODO: This doesn't generate optimal code.
+        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
+        // With RA fixes this would be 2 instructions.
+        // Odd elements inverted, Low 64-bits inserted
+        auto InsLHS = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 0, 3, LHS, LHS);
+        return _VZip(OpSize::i128Bit, OpSize::i64Bit, InsLHS, RHS);
+      }
+      case 0b11'10'01'11: {
+        // TODO: This doesn't generate optimal code.
+        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
+        // With RA fixes this would be 2 instructions.
+        // Odd elements inverted, Top 64-bits inserted
+        auto InsLHS = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 0, 3, LHS, LHS);
+        return _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, InsLHS, RHS);
+      }
+      case 0b01'00'00'01: {
+        // Lower 32-bit elements inverted, low 64-bits inserted
+        auto RevLHS = _VRev64(OpSize::i128Bit, OpSize::i32Bit, LHS);
+        return _VZip(OpSize::i128Bit, OpSize::i64Bit, RevLHS, RHS);
+      }
+      case 0b11'10'00'01: {
+        // TODO: This doesn't generate optimal code.
+        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
+        // With RA fixes this would be 2 instructions.
+        // Lower 32-bit elements inverted, Top 64-bits inserted
+        auto RevLHS = _VRev64(OpSize::i128Bit, OpSize::i32Bit, LHS);
+        return _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, RevLHS, RHS);
+      }
+      case 0b00'00'00'00:
+      case 0b00'00'01'01:
+      case 0b00'00'10'10:
+      case 0b00'00'11'11:
+      case 0b01'01'00'00:
+      case 0b01'01'01'01:
+      case 0b01'01'10'10:
+      case 0b01'01'11'11:
+      case 0b10'10'00'00:
+      case 0b10'10'01'01:
+      case 0b10'10'10'10:
+      case 0b10'10'11'11:
+      case 0b11'11'00'00:
+      case 0b11'11'01'01:
+      case 0b11'11'10'10:
+      case 0b11'11'11'11: {
+        // Duplicate element in upper and lower across each 64-bit segment.
+        auto DupSrc1 = _VDupElement(OpSize::i128Bit, ElementSize, LHS, Shuffle & 0b11);
+        auto DupSrc2 = _VDupElement(OpSize::i128Bit, ElementSize, RHS, (Shuffle >> 4) & 0b11);
+        return _VZip(OpSize::i128Bit, OpSize::i64Bit, DupSrc1, DupSrc2);
+      }
+      default:
+        // Use a TBL2 operation to handle this implementation.
+        auto LookupIndexes =
+          LoadAndCacheIndexedNamedVectorConstant(OpSize::i128Bit, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS, Shuffle * 16);
+        return _VTBL2(OpSize::i128Bit, LHS, RHS, LookupIndexes);
+      }
+    } else {
+      switch (Shuffle & 0b11) {
+      case 0b00:
+        // Low 64-bits of each source interleaved.
+        return _VZip(OpSize::i128Bit, ElementSize, LHS, RHS);
+      case 0b01:
+        // Upper 64-bits of Src1 in lower bits
+        // Lower 64-bits of Src2 in upper bits.
+        return _VExtr(OpSize::i128Bit, OpSize::i8Bit, RHS, LHS, 8);
+      case 0b10:
+        // Lower 32-bits of Src1 in lower bits.
+        // Upper 64-bits of Src2 in upper bits.
+        return _VInsElement(OpSize::i128Bit, ElementSize, 1, 1, LHS, RHS);
+      case 0b11:
+        // Upper 64-bits of each source interleaved.
+        return _VZip2(OpSize::i128Bit, ElementSize, LHS, RHS);
+      }
+    }
+
+    Ref Result = LHS;
+    for (uint8_t Element = 0; Element < NumElements; ++Element) {
+      const auto SrcIndex = Shuffle & SelectionMask;
+      Result = _VInsElement(OpSize::i128Bit, ElementSize, Element, SrcIndex, Result, Srcs[Element]);
+      Shuffle >>= ShiftAmount;
+    }
+    return Result;
+  };
+
+  Ref Dest = Src1;
   if (Is256Bit) {
     if (ElementSize == OpSize::i64Bit) {
       if (Shuffle == 0) {
@@ -1809,161 +1969,7 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize Ele
       Shuffle >>= ShiftAmount;
     }
   } else {
-    if (Src1 == Src2 && Shuffle == 0) {
-      // TODO: We can optimize significantly more shuffles when we know the sources match.
-      // Special case broadcast element 0.
-      return _VDupElement(DstSize, ElementSize, Src1, Shuffle & SelectionMask);
-    }
-    if (ElementSize == OpSize::i32Bit) {
-      // We can shuffle optimally in a lot of cases.
-      // TODO: We can optimize more of these cases.
-      switch (Shuffle) {
-      case 0b01'00'01'00:
-        // Combining of low 64-bits.
-        // Dest[63:0]   = Src1[63:0]
-        // Dest[127:64] = Src2[63:0]
-        return _VZip(DstSize, OpSize::i64Bit, Src1, Src2);
-      case 0b11'10'11'10:
-        // Combining of high 64-bits.
-        // Dest[63:0]   = Src1[127:64]
-        // Dest[127:64] = Src2[127:64]
-        return _VZip2(DstSize, OpSize::i64Bit, Src1, Src2);
-      case 0b11'10'01'00:
-        // Mixing Low and high elements
-        // Dest[63:0]   = Src1[63:0]
-        // Dest[127:64] = Src2[127:64]
-        return _VInsElement(DstSize, OpSize::i64Bit, 1, 1, Src1, Src2);
-      case 0b01'00'11'10:
-        // Mixing Low and high elements, inverse of above
-        // Dest[63:0]   = Src1[127:64]
-        // Dest[127:64] = Src2[63:0]
-        return _VExtr(DstSize, OpSize::i8Bit, Src2, Src1, 8);
-      case 0b10'00'10'00:
-        // Mixing even elements.
-        // Dest[31:0]   = Src1[31:0]
-        // Dest[63:32]  = Src1[95:64]
-        // Dest[95:64]  = Src2[31:0]
-        // Dest[127:96] = Src2[95:64]
-        return _VUnZip(DstSize, ElementSize, Src1, Src2);
-      case 0b11'01'11'01:
-        // Mixing odd elements.
-        // Dest[31:0]   = Src1[63:32]
-        // Dest[63:32]  = Src1[127:96]
-        // Dest[95:64]  = Src2[63:32]
-        // Dest[127:96] = Src2[127:96]
-        return _VUnZip2(DstSize, ElementSize, Src1, Src2);
-      case 0b11'10'00'00:
-      case 0b11'10'01'01:
-      case 0b11'10'10'10:
-      case 0b11'10'11'11: {
-        // Bottom elements duplicated, Top 64-bits inserted
-        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1, Shuffle & 0b11);
-        return _VZip2(DstSize, OpSize::i64Bit, DupSrc1, Src2);
-      }
-      case 0b01'00'00'00:
-      case 0b01'00'01'01:
-      case 0b01'00'10'10:
-      case 0b01'00'11'11: {
-        // Bottom elements duplicated, Bottom 64-bits inserted
-        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1, Shuffle & 0b11);
-        return _VZip(DstSize, OpSize::i64Bit, DupSrc1, Src2);
-      }
-      case 0b00'00'01'00:
-      case 0b01'01'01'00:
-      case 0b10'10'01'00:
-      case 0b11'11'01'00: {
-        // Top elements duplicated, Bottom 64-bits inserted
-        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2, (Shuffle >> 4) & 0b11);
-        return _VZip(DstSize, OpSize::i64Bit, Src1, DupSrc2);
-      }
-      case 0b00'00'11'10:
-      case 0b01'01'11'10:
-      case 0b10'10'11'10:
-      case 0b11'11'11'10: {
-        // Top elements duplicated, Top 64-bits inserted
-        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2, (Shuffle >> 4) & 0b11);
-        return _VZip2(DstSize, OpSize::i64Bit, Src1, DupSrc2);
-      }
-      case 0b01'00'01'11: {
-        // TODO: This doesn't generate optimal code.
-        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
-        // With RA fixes this would be 2 instructions.
-        // Odd elements inverted, Low 64-bits inserted
-        Src1 = _VInsElement(DstSize, OpSize::i32Bit, 0, 3, Src1, Src1);
-        return _VZip(DstSize, OpSize::i64Bit, Src1, Src2);
-      }
-      case 0b11'10'01'11: {
-        // TODO: This doesn't generate optimal code.
-        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
-        // With RA fixes this would be 2 instructions.
-        // Odd elements inverted, Top 64-bits inserted
-        Src1 = _VInsElement(DstSize, OpSize::i32Bit, 0, 3, Src1, Src1);
-        return _VInsElement(DstSize, OpSize::i64Bit, 1, 1, Src1, Src2);
-      }
-      case 0b01'00'00'01: {
-        // Lower 32-bit elements inverted, low 64-bits inserted
-        Src1 = _VRev64(DstSize, OpSize::i32Bit, Src1);
-        return _VZip(DstSize, OpSize::i64Bit, Src1, Src2);
-      }
-      case 0b11'10'00'01: {
-        // TODO: This doesn't generate optimal code.
-        // RA doesn't understand that Src1 is dead after VInsElement due to SRA class differences.
-        // With RA fixes this would be 2 instructions.
-        // Lower 32-bit elements inverted, Top 64-bits inserted
-        Src1 = _VRev64(DstSize, OpSize::i32Bit, Src1);
-        return _VInsElement(DstSize, OpSize::i64Bit, 1, 1, Src1, Src2);
-      }
-      case 0b00'00'00'00:
-      case 0b00'00'01'01:
-      case 0b00'00'10'10:
-      case 0b00'00'11'11:
-      case 0b01'01'00'00:
-      case 0b01'01'01'01:
-      case 0b01'01'10'10:
-      case 0b01'01'11'11:
-      case 0b10'10'00'00:
-      case 0b10'10'01'01:
-      case 0b10'10'10'10:
-      case 0b10'10'11'11:
-      case 0b11'11'00'00:
-      case 0b11'11'01'01:
-      case 0b11'11'10'10:
-      case 0b11'11'11'11: {
-        // Duplicate element in upper and lower across each 64-bit segment.
-        auto DupSrc1 = _VDupElement(DstSize, ElementSize, Src1, Shuffle & 0b11);
-        auto DupSrc2 = _VDupElement(DstSize, ElementSize, Src2, (Shuffle >> 4) & 0b11);
-        return _VZip(DstSize, OpSize::i64Bit, DupSrc1, DupSrc2);
-      }
-      default:
-        // Use a TBL2 operation to handle this implementation.
-        auto LookupIndexes =
-          LoadAndCacheIndexedNamedVectorConstant(DstSize, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS, Shuffle * 16);
-        return _VTBL2(DstSize, Src1, Src2, LookupIndexes);
-      }
-    } else {
-      switch (Shuffle & 0b11) {
-      case 0b00:
-        // Low 64-bits of each source interleaved.
-        return _VZip(DstSize, ElementSize, Src1, Src2);
-      case 0b01:
-        // Upper 64-bits of Src1 in lower bits
-        // Lower 64-bits of Src2 in upper bits.
-        return _VExtr(DstSize, OpSize::i8Bit, Src2, Src1, 8);
-      case 0b10:
-        // Lower 32-bits of Src1 in lower bits.
-        // Upper 64-bits of Src2 in upper bits.
-        return _VInsElement(DstSize, ElementSize, 1, 1, Src1, Src2);
-      case 0b11:
-        // Upper 64-bits of each source interleaved.
-        return _VZip2(DstSize, ElementSize, Src1, Src2);
-      }
-    }
-
-    for (uint8_t Element = 0; Element < NumElements; ++Element) {
-      const auto SrcIndex = Shuffle & SelectionMask;
-      Dest = _VInsElement(DstSize, ElementSize, Element, SrcIndex, Dest, Srcs[Element]);
-      Shuffle >>= ShiftAmount;
-    }
+    Dest = SingleLane(Src1, Src2);
   }
 
   return Dest;
