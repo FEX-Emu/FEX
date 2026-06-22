@@ -891,7 +891,7 @@ Ref OpDispatchBuilder::PSHUFBOpImpl(IR::OpSize SrcSize, Ref Src1, Ref Src2, Ref 
     return Low;
   }
 
-  Ref HighSrc1 = _VInsElement(SrcSize, OpSize::i128Bit, 0, 1, Src1, Src1);
+  Ref HighSrc1 = _VDupElement(SrcSize, OpSize::i128Bit, Src1, 1);
   Ref High = _VTBL1(SanitizedSrcSize, HighSrc1, MaskedIndices);
   return _VInsElement(SrcSize, OpSize::i128Bit, 1, 0, Low, High);
 }

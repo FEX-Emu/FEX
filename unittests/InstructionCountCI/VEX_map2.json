@@ -25,7 +25,7 @@
       ]
     },
     "vpshufb ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "Map 2 0b01 0x00 256-bit"
       ],
@@ -33,9 +33,7 @@
         "mov z2.b, #-113",
         "and z2.d, z18.d, z2.d",
         "tbl v3.16b, {v17.16b}, v2.16b",
-        "mov z1.q, z17.q[1]",
-        "mov z4.d, z17.d",
-        "mov z4.b, p6/m, z1.b",
+        "mov z4.q, z17.q[1]",
         "tbl v2.16b, {v4.16b}, v2.16b",
         "mov z1.q, q2",
         "mov z16.d, z3.d",
