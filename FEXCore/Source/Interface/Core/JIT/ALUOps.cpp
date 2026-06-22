@@ -523,7 +523,7 @@ DEF_OP(AndWithFlags) {
 }
 
 DEF_OP(AndShift) {
-  auto Op = IROp->C<IR::IROp_XorShift>();
+  auto Op = IROp->C<IR::IROp_AndShift>();
 
   and_(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
 }
@@ -721,7 +721,7 @@ DEF_OP(Extr) {
 }
 
 DEF_OP(PDep) {
-  auto Op = IROp->C<IR::IROp_PExt>();
+  auto Op = IROp->C<IR::IROp_PDep>();
   const auto EmitSize = ConvertSize48(IROp);
 
   const auto Dest = GetReg(Node);

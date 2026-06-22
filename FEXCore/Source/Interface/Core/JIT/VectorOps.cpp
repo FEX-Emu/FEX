@@ -4435,7 +4435,7 @@ DEF_OP(VFNMLA) {
   // - SVE    - FMLS
   // - ASIMD  - FMLS
   // - Scalar - FMSUB
-  const auto Op = IROp->C<IR::IROp_VFMLA>();
+  const auto Op = IROp->C<IR::IROp_VFNMLA>();
   const auto OpSize = IROp->Size;
 
   const auto SubRegSize = ConvertSubRegSize248(IROp);
@@ -4503,7 +4503,7 @@ DEF_OP(VFNMLS) {
   // - ASIMD  - FMLS (With Negated addend)
   // - Scalar - FNMADD
 
-  const auto Op = IROp->C<IR::IROp_VFMLS>();
+  const auto Op = IROp->C<IR::IROp_VFNMLS>();
   const auto OpSize = IROp->Size;
 
   const auto SubRegSize = ConvertSubRegSize248(IROp);
