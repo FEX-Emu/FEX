@@ -3339,8 +3339,8 @@ Ref OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand
     return Low;
   }
 
-  Ref HighSrc1 = _VInsElement(DstSize, OpSize::i128Bit, 0, 1, Src1Node, Src1Node);
-  Ref HighSrc2 = _VInsElement(DstSize, OpSize::i128Bit, 0, 1, Src2Node, Src2Node);
+  Ref HighSrc1 = _VDupElement(DstSize, OpSize::i128Bit, Src1Node, 1);
+  Ref HighSrc2 = _VDupElement(DstSize, OpSize::i128Bit, Src2Node, 1);
   Ref High = _VExtr(SanitizedDstSize, OpSize::i8Bit, HighSrc1, HighSrc2, Index);
   return _VInsElement(DstSize, OpSize::i128Bit, 1, 0, Low, High);
 }
