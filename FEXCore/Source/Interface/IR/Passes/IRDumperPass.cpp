@@ -67,7 +67,7 @@ void IRDumper::Run(IREmitter* IREmit) {
   }
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateIRDumper() {
+fextl::unique_ptr<Pass> CreateIRDumper() {
   return fextl::make_unique<IRDumper>();
 }
 } // namespace FEXCore::IR::Debug

@@ -271,7 +271,7 @@ void IRValidation::Run(IREmitter* IREmit) {
   }
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation() {
+fextl::unique_ptr<Pass> CreateIRValidation() {
   return fextl::make_unique<IRValidation>();
 }
 } // namespace FEXCore::IR::Validation
