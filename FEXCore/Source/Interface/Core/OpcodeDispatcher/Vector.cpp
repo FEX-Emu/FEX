@@ -1764,7 +1764,7 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs, IR::OpSize ElementSize, bool Low) 
   StoreResultFPR(Op, Result);
 }
 
-Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle) {
+Ref OpDispatchBuilder::SHUFOpImpl(IR::OpSize DstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle) {
   // Since 256-bit variants and up don't lane cross, we can construct
   // everything in terms of the 128-variant, as each lane is essentially
   // its own 128-bit segment.
@@ -1976,7 +1976,7 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src2Node = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   uint8_t Shuffle = Op->Src[1].Literal();
 
-  Ref Result = SHUFOpImpl(Op, OpSizeFromDst(Op), ElementSize, Src1Node, Src2Node, Shuffle);
+  Ref Result = SHUFOpImpl(OpSizeFromDst(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
@@ -1985,7 +1985,7 @@ void OpDispatchBuilder::VSHUFOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src2Node = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   uint8_t Shuffle = Op->Src[2].Literal();
 
-  Ref Result = SHUFOpImpl(Op, OpSizeFromDst(Op), ElementSize, Src1Node, Src2Node, Shuffle);
+  Ref Result = SHUFOpImpl(OpSizeFromDst(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResultFPR(Op, Result);
 }
 
@@ -5178,7 +5178,7 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Result {};
 
   if (ElementSize == OpSize::i64Bit) {
-    Result = SHUFOpImpl(Op, DstSize, ElementSize, Src, Src, Selector);
+    Result = SHUFOpImpl(DstSize, ElementSize, Src, Src, Selector);
   } else {
     if (Is256Bit) {
       auto UpperLane = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src, 1);
