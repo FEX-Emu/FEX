@@ -5023,7 +5023,7 @@ Ref OpDispatchBuilder::VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, 
   // Now, we determine which mask portion has the higher population count.
   // we use this to determine which source we use as the base to insert into.
   //
-  // For example each even bit in a mask that is set, means that element in Src2
+  // For example each bit in a mask that is set means that element in Src2
   // will be inserted into the destination. If that bit is not set, then it's
   // the element in Src1 that will be inserted instead.
   //
