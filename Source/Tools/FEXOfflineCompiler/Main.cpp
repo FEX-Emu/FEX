@@ -419,7 +419,7 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
 #ifdef _WIN32
   OvercommitTracker = std::make_unique<FEX::Windows::OvercommitTracker>(IsWine);
 
-  auto SyscallOSABI = Is64Bit ? FEXCore::HLE::SyscallOSABI::OS_LINUX64 : FEXCore::HLE::SyscallOSABI::OS_LINUX32;
+  auto SyscallOSABI = FEXCore::HLE::SyscallOSABI::OS_GENERIC;
   auto SyscallHandler = std::make_unique<AOTSyscallHandler>(*CTX, SyscallOSABI);
 
   SyscallHandler->VAFileStart =
