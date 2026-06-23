@@ -5301,8 +5301,6 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     IntermediateResult = _VPCMPISTRX(Src1, Src2, Control);
   }
 
-  Ref ZeroConst = Constant(0);
-
   if (IsMask) {
     // For the masked variant of the instructions, if control[6] is set, then we
     // need to expand the intermediate result into a byte or word mask (depending
@@ -5342,6 +5340,8 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
       }
     }
   } else {
+    Ref ZeroConst = Constant(0);
+
     // For the indexed variant of the instructions, if control[6] is set, then we
     // store the index of the most significant bit into ECX. If it's not set,
     // then we store the least significant bit.

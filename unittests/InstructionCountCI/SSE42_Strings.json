@@ -53,10 +53,10 @@
         "blr x3",
         "ldp xzr, x30, [sp], #16",
         "mov w20, w0",
-        "mov w27, #0x0",
         "uxth w0, w20",
         "fmov s16, w0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
@@ -79,10 +79,10 @@
         "blr x3",
         "ldp xzr, x30, [sp], #16",
         "mov w20, w0",
-        "mov w27, #0x0",
         "uxth w0, w20",
         "fmov s16, w0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
@@ -105,7 +105,6 @@
         "blr x3",
         "ldp xzr, x30, [sp], #16",
         "mov w20, w0",
-        "mov w27, #0x0",
         "movi v2.2d, #0x0",
         "sbfx x21, x20, #0, #1",
         "mov v2.b[0], w21",
@@ -141,6 +140,7 @@
         "mov v16.16b, v2.16b",
         "mov v16.b[15], w21",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
@@ -163,7 +163,6 @@
         "blr x3",
         "ldp xzr, x30, [sp], #16",
         "mov w20, w0",
-        "mov w27, #0x0",
         "movi v2.2d, #0x0",
         "sbfx x21, x20, #0, #1",
         "mov v2.h[0], w21",
@@ -183,6 +182,7 @@
         "mov v16.16b, v2.16b",
         "mov v16.h[7], w21",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
@@ -263,10 +263,10 @@
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
-        "mov w27, #0x0",
         "uxth w0, w20",
         "fmov s16, w0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
@@ -287,10 +287,10 @@
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
-        "mov w27, #0x0",
         "uxth w0, w20",
         "fmov s16, w0",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
@@ -311,7 +311,6 @@
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
-        "mov w27, #0x0",
         "movi v2.2d, #0x0",
         "sbfx x21, x20, #0, #1",
         "mov v2.b[0], w21",
@@ -347,6 +346,7 @@
         "mov v16.16b, v2.16b",
         "mov v16.b[15], w21",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
@@ -367,7 +367,6 @@
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
-        "mov w27, #0x0",
         "movi v2.2d, #0x0",
         "sbfx x21, x20, #0, #1",
         "mov v2.h[0], w21",
@@ -387,6 +386,7 @@
         "mov v16.16b, v2.16b",
         "mov v16.h[7], w21",
         "mov w26, #0x1",
+        "mov w27, #0x0",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
