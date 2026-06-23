@@ -3551,14 +3551,33 @@
         "mov v16.d[0], v0.d[0]"
       ]
     },
-    "vcvtps2pd xmm0, xmm1": {
+    "vcvtps2pd xmm0, [rax]": {
       "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b00 0x5a 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcvtl v2.2d, v17.2s",
-        "mov v16.16b, v2.16b"
+        "ldr d2, [x4]",
+        "fcvtl v16.2d, v2.2s"
+      ]
+    },
+    "vcvtps2pd xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 1 0b00 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fcvtl v16.2d, v17.2s"
+      ]
+    },
+    "vcvtps2pd ymm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 1 0b00 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "zip1 z16.s, z17.s, z17.s",
+        "fcvtlt z16.d, p7/m, z16.s"
       ]
     },
     "vcvtpd2ps xmm0, [rax]": {
@@ -3569,6 +3588,17 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
         "fcvtn v16.2s, v2.2d"
+      ]
+    },
+    "vcvtpd2ps xmm0, ymm1": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 1 0b01 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fcvtnt z2.s, p7/m, z17.d",
+        "uzp2 z2.s, z2.s, z2.s",
+        "mov v16.16b, v2.16b"
       ]
     },
     "vcvtpd2ps xmm0, yword [rax]": {

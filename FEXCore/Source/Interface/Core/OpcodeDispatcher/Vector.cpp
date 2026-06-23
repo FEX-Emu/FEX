@@ -2744,9 +2744,6 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElem
     if (!IsFloatSrc && !Is128Bit) {
       // VCVTPD2PS path
       Result = _VMov(OpSize::i128Bit, Result);
-    } else if (IsFloatSrc && Is128Bit) {
-      // VCVTPS2PD path
-      Result = _VMov(OpSize::i128Bit, Result);
     }
 
     StoreResultFPR(Op, Result);
