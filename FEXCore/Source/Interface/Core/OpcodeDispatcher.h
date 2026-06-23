@@ -596,7 +596,7 @@ public:
 
   void VANDNOp(OpcodeArgs);
 
-  Ref VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector);
+  Ref VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint64_t Selector);
   void VBLENDPDOp(OpcodeArgs);
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
