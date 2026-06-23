@@ -38,6 +38,7 @@
     "pcmpestrm xmm0, xmm1, 0_0_00_00_00b": {
       "ExpectedInstructionCount": 17,
       "Comment": [
+        "Bit mask (8-bit)",
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
@@ -60,9 +61,136 @@
         "msr nzcv, x20"
       ]
     },
+    "pcmpestrm xmm0, xmm1, 0_0_00_00_01b": {
+      "ExpectedInstructionCount": 17,
+      "Comment": [
+        "Bit mask (16-bit)",
+        "0x66 0x0f 0x3A 0x60"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x3, [x28, #2328]",
+        "ldr x0, [x28, #2336]",
+        "stp x0, x30, [sp, #-16]!",
+        "mov x0, x4",
+        "mov x1, x5",
+        "mov w2, #0x1",
+        "mov v0.16b, v16.16b",
+        "mov v1.16b, v17.16b",
+        "blr x3",
+        "ldp xzr, x30, [sp], #16",
+        "mov w20, w0",
+        "mov w27, #0x0",
+        "uxth w0, w20",
+        "fmov s16, w0",
+        "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
+        "msr nzcv, x20"
+      ]
+    },
+    "pcmpestrm xmm0, xmm1, 0_1_00_00_00b": {
+      "ExpectedInstructionCount": 49,
+      "Comment": [
+        "Expanded mask (8-bit)",
+        "0x66 0x0f 0x3A 0x60"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x3, [x28, #2328]",
+        "ldr x0, [x28, #2336]",
+        "stp x0, x30, [sp, #-16]!",
+        "mov x0, x4",
+        "mov x1, x5",
+        "mov w2, #0x40",
+        "mov v0.16b, v16.16b",
+        "mov v1.16b, v17.16b",
+        "blr x3",
+        "ldp xzr, x30, [sp], #16",
+        "mov w20, w0",
+        "mov w27, #0x0",
+        "movi v2.2d, #0x0",
+        "sbfx x21, x20, #0, #1",
+        "mov v2.b[0], w21",
+        "sbfx x21, x20, #1, #1",
+        "mov v2.b[1], w21",
+        "sbfx x21, x20, #2, #1",
+        "mov v2.b[2], w21",
+        "sbfx x21, x20, #3, #1",
+        "mov v2.b[3], w21",
+        "sbfx x21, x20, #4, #1",
+        "mov v2.b[4], w21",
+        "sbfx x21, x20, #5, #1",
+        "mov v2.b[5], w21",
+        "sbfx x21, x20, #6, #1",
+        "mov v2.b[6], w21",
+        "sbfx x21, x20, #7, #1",
+        "mov v2.b[7], w21",
+        "sbfx x21, x20, #8, #1",
+        "mov v2.b[8], w21",
+        "sbfx x21, x20, #9, #1",
+        "mov v2.b[9], w21",
+        "sbfx x21, x20, #10, #1",
+        "mov v2.b[10], w21",
+        "sbfx x21, x20, #11, #1",
+        "mov v2.b[11], w21",
+        "sbfx x21, x20, #12, #1",
+        "mov v2.b[12], w21",
+        "sbfx x21, x20, #13, #1",
+        "mov v2.b[13], w21",
+        "sbfx x21, x20, #14, #1",
+        "mov v2.b[14], w21",
+        "sbfx x21, x20, #15, #1",
+        "mov v16.16b, v2.16b",
+        "mov v16.b[15], w21",
+        "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
+        "msr nzcv, x20"
+      ]
+    },
+    "pcmpestrm xmm0, xmm1, 0_1_00_00_01b": {
+      "ExpectedInstructionCount": 33,
+      "Comment": [
+        "Expanded mask (16-bit)",
+        "0x66 0x0f 0x3A 0x60"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x3, [x28, #2328]",
+        "ldr x0, [x28, #2336]",
+        "stp x0, x30, [sp, #-16]!",
+        "mov x0, x4",
+        "mov x1, x5",
+        "mov w2, #0x41",
+        "mov v0.16b, v16.16b",
+        "mov v1.16b, v17.16b",
+        "blr x3",
+        "ldp xzr, x30, [sp], #16",
+        "mov w20, w0",
+        "mov w27, #0x0",
+        "movi v2.2d, #0x0",
+        "sbfx x21, x20, #0, #1",
+        "mov v2.h[0], w21",
+        "sbfx x21, x20, #1, #1",
+        "mov v2.h[1], w21",
+        "sbfx x21, x20, #2, #1",
+        "mov v2.h[2], w21",
+        "sbfx x21, x20, #3, #1",
+        "mov v2.h[3], w21",
+        "sbfx x21, x20, #4, #1",
+        "mov v2.h[4], w21",
+        "sbfx x21, x20, #5, #1",
+        "mov v2.h[5], w21",
+        "sbfx x21, x20, #6, #1",
+        "mov v2.h[6], w21",
+        "sbfx x21, x20, #7, #1",
+        "mov v16.16b, v2.16b",
+        "mov v16.h[7], w21",
+        "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
+        "msr nzcv, x20"
+      ]
+    },
     "pcmpestri xmm0, xmm1, 0_0_00_00_00b": {
       "ExpectedInstructionCount": 21,
       "Comment": [
+        "8-bit",
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
@@ -89,9 +217,40 @@
         "msr nzcv, x20"
       ]
     },
+    "pcmpestri xmm0, xmm1, 0_0_00_00_01b": {
+      "ExpectedInstructionCount": 21,
+      "Comment": [
+        "16-bit",
+        "0x66 0x0f 0x3A 0x61"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x3, [x28, #2328]",
+        "ldr x0, [x28, #2336]",
+        "stp x0, x30, [sp, #-16]!",
+        "mov x0, x4",
+        "mov x1, x5",
+        "mov w2, #0x1",
+        "mov v0.16b, v16.16b",
+        "mov v1.16b, v17.16b",
+        "blr x3",
+        "ldp xzr, x30, [sp], #16",
+        "mov w20, w0",
+        "mov w27, #0x0",
+        "uxth w21, w20",
+        "mov w22, #0x8",
+        "rbit w0, w21",
+        "clz w23, w0",
+        "cmp x21, #0x0 (0)",
+        "csel x7, x22, x23, eq",
+        "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
+        "msr nzcv, x20"
+      ]
+    },
     "pcmpistrm xmm0, xmm1, 0_0_00_00_00b": {
       "ExpectedInstructionCount": 15,
       "Comment": [
+        "Bit mask (8-bit)",
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
@@ -112,9 +271,130 @@
         "msr nzcv, x20"
       ]
     },
+    "pcmpistrm xmm0, xmm1, 0_0_00_00_01b": {
+      "ExpectedInstructionCount": 15,
+      "Comment": [
+        "Bit mask (16-bit)",
+        "0x66 0x0f 0x3A 0x62"
+      ],
+      "ExpectedArm64ASM": [
+        "str x30, [sp, #-16]!",
+        "mov v0.16b, v16.16b",
+        "mov v1.16b, v17.16b",
+        "mov w0, #0x1",
+        "ldr x1, [x28, #2344]",
+        "ldr x3, [x28, #2352]",
+        "blr x1",
+        "ldr x30, [sp], #16",
+        "mov w20, w0",
+        "mov w27, #0x0",
+        "uxth w0, w20",
+        "fmov s16, w0",
+        "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
+        "msr nzcv, x20"
+      ]
+    },
+    "pcmpistrm xmm0, xmm1, 0_1_00_00_00b": {
+      "ExpectedInstructionCount": 47,
+      "Comment": [
+        "Expanded mask (8-bit)",
+        "0x66 0x0f 0x3A 0x62"
+      ],
+      "ExpectedArm64ASM": [
+        "str x30, [sp, #-16]!",
+        "mov v0.16b, v16.16b",
+        "mov v1.16b, v17.16b",
+        "mov w0, #0x40",
+        "ldr x1, [x28, #2344]",
+        "ldr x3, [x28, #2352]",
+        "blr x1",
+        "ldr x30, [sp], #16",
+        "mov w20, w0",
+        "mov w27, #0x0",
+        "movi v2.2d, #0x0",
+        "sbfx x21, x20, #0, #1",
+        "mov v2.b[0], w21",
+        "sbfx x21, x20, #1, #1",
+        "mov v2.b[1], w21",
+        "sbfx x21, x20, #2, #1",
+        "mov v2.b[2], w21",
+        "sbfx x21, x20, #3, #1",
+        "mov v2.b[3], w21",
+        "sbfx x21, x20, #4, #1",
+        "mov v2.b[4], w21",
+        "sbfx x21, x20, #5, #1",
+        "mov v2.b[5], w21",
+        "sbfx x21, x20, #6, #1",
+        "mov v2.b[6], w21",
+        "sbfx x21, x20, #7, #1",
+        "mov v2.b[7], w21",
+        "sbfx x21, x20, #8, #1",
+        "mov v2.b[8], w21",
+        "sbfx x21, x20, #9, #1",
+        "mov v2.b[9], w21",
+        "sbfx x21, x20, #10, #1",
+        "mov v2.b[10], w21",
+        "sbfx x21, x20, #11, #1",
+        "mov v2.b[11], w21",
+        "sbfx x21, x20, #12, #1",
+        "mov v2.b[12], w21",
+        "sbfx x21, x20, #13, #1",
+        "mov v2.b[13], w21",
+        "sbfx x21, x20, #14, #1",
+        "mov v2.b[14], w21",
+        "sbfx x21, x20, #15, #1",
+        "mov v16.16b, v2.16b",
+        "mov v16.b[15], w21",
+        "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
+        "msr nzcv, x20"
+      ]
+    },
+    "pcmpistrm xmm0, xmm1, 0_1_00_00_01b": {
+      "ExpectedInstructionCount": 31,
+      "Comment": [
+        "Expanded mask (16-bit)",
+        "0x66 0x0f 0x3A 0x62"
+      ],
+      "ExpectedArm64ASM": [
+        "str x30, [sp, #-16]!",
+        "mov v0.16b, v16.16b",
+        "mov v1.16b, v17.16b",
+        "mov w0, #0x41",
+        "ldr x1, [x28, #2344]",
+        "ldr x3, [x28, #2352]",
+        "blr x1",
+        "ldr x30, [sp], #16",
+        "mov w20, w0",
+        "mov w27, #0x0",
+        "movi v2.2d, #0x0",
+        "sbfx x21, x20, #0, #1",
+        "mov v2.h[0], w21",
+        "sbfx x21, x20, #1, #1",
+        "mov v2.h[1], w21",
+        "sbfx x21, x20, #2, #1",
+        "mov v2.h[2], w21",
+        "sbfx x21, x20, #3, #1",
+        "mov v2.h[3], w21",
+        "sbfx x21, x20, #4, #1",
+        "mov v2.h[4], w21",
+        "sbfx x21, x20, #5, #1",
+        "mov v2.h[5], w21",
+        "sbfx x21, x20, #6, #1",
+        "mov v2.h[6], w21",
+        "sbfx x21, x20, #7, #1",
+        "mov v16.16b, v2.16b",
+        "mov v16.h[7], w21",
+        "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
+        "msr nzcv, x20"
+      ]
+    },
     "pcmpistri xmm0, xmm1, 0_0_00_00_00b": {
       "ExpectedInstructionCount": 19,
       "Comment": [
+        "8-bit",
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
@@ -130,6 +410,34 @@
         "mov w27, #0x0",
         "uxth w21, w20",
         "mov w22, #0x10",
+        "rbit w0, w21",
+        "clz w23, w0",
+        "cmp x21, #0x0 (0)",
+        "csel x7, x22, x23, eq",
+        "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
+        "msr nzcv, x20"
+      ]
+    },
+    "pcmpistri xmm0, xmm1, 0_0_00_00_01b": {
+      "ExpectedInstructionCount": 19,
+      "Comment": [
+        "16-bit",
+        "0x66 0x0f 0x3A 0x63"
+      ],
+      "ExpectedArm64ASM": [
+        "str x30, [sp, #-16]!",
+        "mov v0.16b, v16.16b",
+        "mov v1.16b, v17.16b",
+        "mov w0, #0x1",
+        "ldr x1, [x28, #2344]",
+        "ldr x3, [x28, #2352]",
+        "blr x1",
+        "ldr x30, [sp], #16",
+        "mov w20, w0",
+        "mov w27, #0x0",
+        "uxth w21, w20",
+        "mov w22, #0x8",
         "rbit w0, w21",
         "clz w23, w0",
         "cmp x21, #0x0 (0)",
