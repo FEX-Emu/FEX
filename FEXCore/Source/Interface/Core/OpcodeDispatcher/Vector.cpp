@@ -1954,8 +1954,9 @@ Ref OpDispatchBuilder::SHUFOpImpl(IR::OpSize DstSize, IR::OpSize ElementSize, Re
       }
     }
 
+    const auto SameSources = Src1 == Src2;
     auto UpperLaneLHS = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src1, 1);
-    auto UpperLaneRHS = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src2, 1);
+    auto UpperLaneRHS = SameSources ? UpperLaneLHS : _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src2, 1);
 
     // VSHUFPS uses the full immediate for each lane, where as VSHUFPD
     // uses pairs for each operation.
