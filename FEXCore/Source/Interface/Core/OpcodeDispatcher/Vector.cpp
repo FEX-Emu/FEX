@@ -4990,18 +4990,37 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   const auto Selector = Op->Src[1].Literal();
   Ref Result {};
 
-  // If we're just broadcasting one element in particular across the vector
-  // then this can be done fairly simply without any individual inserts.
-  if (Selector == 0x00 || Selector == 0x55 || Selector == 0xAA || Selector == 0xFF) {
+  switch (Selector) {
+  case 0b00'00'00'00:
+  case 0b01'01'01'01:
+  case 0b10'10'10'10:
+  case 0b11'11'11'11: {
+    // If we're just broadcasting one element in particular across the vector
+    // then this can be done fairly simply without any individual inserts.
     const auto Index = Selector & 0b11;
     Result = _VDupElement(DstSize, OpSize::i64Bit, Src, Index);
-  } else {
+    break;
+  }
+
+  case 0b10'10'00'00: {
+    Result = _VTrn(DstSize, OpSize::i64Bit, Src, Src);
+    break;
+  }
+  case 0b11'11'01'01: {
+    Result = _VTrn2(DstSize, OpSize::i64Bit, Src, Src);
+    break;
+  }
+
+  default: {
     Result = LoadZeroVector(DstSize);
     for (size_t i = 0; i < IR::NumElements(DstSize, IR::OpSize::i64Bit); i++) {
       const auto SrcIndex = (Selector >> (i * 2)) & 0b11;
       Result = _VInsElement(DstSize, OpSize::i64Bit, i, SrcIndex, Result, Src);
     }
+    break;
   }
+  }
+
   StoreResultFPR(Op, Result);
 }
 
