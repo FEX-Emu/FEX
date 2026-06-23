@@ -5026,7 +5026,8 @@ Ref OpDispatchBuilder::VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, 
 void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
   const auto Is256Bit = DstSize == OpSize::i256Bit;
-  const auto Selector = Op->Src[2].Literal();
+  const auto SelectorMask = Is256Bit ? 0b1111U : 0b11U;
+  const auto Selector = Op->Src[2].Literal() & SelectorMask;
 
   Ref Src1 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
@@ -5037,7 +5038,7 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
     return;
   }
   // Only the first four bits of the 8-bit immediate are used, so only check them.
-  if (((Selector & 0b11) == 0b11 && !Is256Bit) || (Selector & 0b1111) == 0b1111) {
+  if ((Selector == 0b11 && !Is256Bit) || Selector == 0b1111) {
     Ref Result = Is256Bit ? Src2 : _VMov(OpSize::i128Bit, Src2);
     StoreResultFPR(Op, Result);
     return;
@@ -5051,7 +5052,8 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
 void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
   const auto Is256Bit = DstSize == OpSize::i256Bit;
-  const auto Selector = Op->Src[2].Literal();
+  const auto SelectorMask = Is256Bit ? 0b1111'1111U : 0b1111U;
+  const auto Selector = Op->Src[2].Literal() & SelectorMask;
 
   Ref Src1 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
@@ -5078,7 +5080,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   // are the first four bits. We do a bitwise check here to catch cases where
   // silliness is going on and the upper bits are being set even when they'll
   // be ignored
-  if ((Selector & 0xF) == 0xF && !Is256Bit) {
+  if (Selector == 0xF && !Is256Bit) {
     StoreResultFPR(Op, _VMov(OpSize::i128Bit, Src2));
     return;
   }
