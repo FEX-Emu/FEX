@@ -1725,46 +1725,39 @@ void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
 void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs, IR::OpSize ElementSize, bool Low) {
   const auto SrcSize = OpSizeFromSrc(Op);
   const auto Is256Bit = SrcSize == OpSize::i256Bit;
-  auto Shuffle = Op->Src[1].Literal();
+  const auto Shuffle = Op->Src[1].Literal();
 
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+  Ref Result {};
 
-  // Note/TODO: With better immediate facilities or vector loading in our IR
-  //            much of this can be reduced to setting up a table index register
-  //            and then using TBL
-  //
-  //            SVE has the INDEX instruction that works essentially like
-  //            std::iota (setting a range to an initial value and progressively
-  //            incrementing each successive element), so it's well suited for this.
-  //            It's just a matter of exposing these facilities in a way that works
-  //            well together.
-  //
-  //            Should be much nicer than doing repeated inserts in any case.
+  if (ElementSize == OpSize::i16Bit) {
+    // Note/TODO: Ideally we would handle both lanes at once instead of
+    //            doing the 256-bit case as two separate 128-bit operations.
+    const auto ShuffleConst =
+      Low ? IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW : IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
 
-  const size_t BaseElement = Low ? 0 : 4;
-  Ref Result = Src;
-  if (Is256Bit) {
-    for (size_t i = 0; i < 4; i++) {
-      const auto Index = Shuffle & 0b11;
-      const auto UpperLaneOffset = IR::NumElements(OpSize::i128Bit, ElementSize);
+    if (Is256Bit) {
+      auto UpperLane = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src, 1);
 
-      const auto LowDstIndex = BaseElement + i;
-      const auto LowSrcIndex = BaseElement + Index;
+      auto ResultHi = PShufWLane(OpSize::i128Bit, ShuffleConst, Low, UpperLane, Shuffle);
+      auto ResultLo = PShufWLane(OpSize::i128Bit, ShuffleConst, Low, Src, Shuffle);
 
-      const auto HighDstIndex = BaseElement + UpperLaneOffset + i;
-      const auto HighSrcIndex = BaseElement + UpperLaneOffset + Index;
-
-      // Take care of both lanes per iteration
-      Result = _VInsElement(SrcSize, ElementSize, LowDstIndex, LowSrcIndex, Result, Src);
-      Result = _VInsElement(SrcSize, ElementSize, HighDstIndex, HighSrcIndex, Result, Src);
-
-      Shuffle >>= 2;
+      Result = _VInsElement(SrcSize, OpSize::i128Bit, 1, 0, ResultLo, ResultHi);
+    } else {
+      Result = PShufWLane(SrcSize, ShuffleConst, Low, Src, Shuffle);
+      Result = _VMov(OpSize::i128Bit, Result);
     }
   } else {
-    for (size_t i = 0; i < 4; i++) {
-      const auto Index = Shuffle & 0b11;
-      Result = _VInsElement(SrcSize, ElementSize, BaseElement + i, BaseElement + Index, Result, Src);
-      Shuffle >>= 2;
+    if (Is256Bit) {
+      auto UpperLane = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src, 1);
+
+      auto ResultHi = Single128Bit4ByteVectorShuffle(UpperLane, Shuffle);
+      auto ResultLo = Single128Bit4ByteVectorShuffle(Src, Shuffle);
+
+      Result = _VInsElement(SrcSize, OpSize::i128Bit, 1, 0, ResultLo, ResultHi);
+    } else {
+      Result = Single128Bit4ByteVectorShuffle(Src, Shuffle);
+      Result = _VMov(OpSize::i128Bit, Result);
     }
   }
 
