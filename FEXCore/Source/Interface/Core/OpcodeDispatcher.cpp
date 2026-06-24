@@ -2547,7 +2547,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
       Value = _Lshr(std::max(OpSize::i32Bit, GetOpSize(Value)), Value, BitSelect.Ref());
     }
 
-    // OF/SF/ZF/AF/PF undefined.
+    // OF/SF/AF/PF undefined. ZF must be preserved.
     SetCFDirect(Value, 0, true);
   }
 }
