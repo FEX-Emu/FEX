@@ -1399,13 +1399,13 @@ void OpDispatchBuilder::AVX128_VSHUF(OpcodeArgs, IR::OpSize ElementSize) {
   auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
   RefPair Result {};
-  Result.Low = SHUFOpImpl(Op, OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, Shuffle);
+  Result.Low = SHUFOpImpl(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, Shuffle);
 
   if (Is128Bit) {
     Result.High = LoadZeroVector(OpSize::i128Bit);
   } else {
     const uint8_t ShiftAmount = ElementSize == OpSize::i32Bit ? 0 : 2;
-    Result.High = SHUFOpImpl(Op, OpSize::i128Bit, ElementSize, Src1.High, Src2.High, Shuffle >> ShiftAmount);
+    Result.High = SHUFOpImpl(OpSize::i128Bit, ElementSize, Src1.High, Src2.High, Shuffle >> ShiftAmount);
   }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
