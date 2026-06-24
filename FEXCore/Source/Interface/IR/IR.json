@@ -717,7 +717,7 @@
         "HasSideEffects": true
       },
       "CacheLineClean GPR:$Addr": {
-        "Desc": ["Does a 64 byte cacheline cleanat the address specified",
+        "Desc": ["Does a 64 byte cacheline clean at the address specified",
                  "Only cleans the data cachelines. Doesn't do any zeroing",
                  "Skips the invalidation step of the CacheLineClear operation"
                 ],

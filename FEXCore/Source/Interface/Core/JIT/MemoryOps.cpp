@@ -2400,11 +2400,12 @@ DEF_OP(CacheLineClear) {
 
   // Clear dcache only
   // icache doesn't matter here since the guest application shouldn't be calling clflush on JIT code.
+  // check host cacheline size again x86_64 size to ensure at least 64 bytes are cleaned
   if (CTX->HostFeatures.DCacheLineSize >= 64U) {
     dc(ARMEmitter::DataCacheOperation::CIVAC, MemReg);
   } else {
     auto CurrentWorkingReg = MemReg.X();
-    for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
+    for (size_t i = 0; i < std::max(1U, 64U / CTX->HostFeatures.DCacheLineSize); ++i) {
       dc(ARMEmitter::DataCacheOperation::CIVAC, TMP1);
       add(ARMEmitter::Size::i64Bit, TMP1, CurrentWorkingReg, CTX->HostFeatures.DCacheLineSize);
       CurrentWorkingReg = TMP1;
@@ -2428,11 +2429,12 @@ DEF_OP(CacheLineClean) {
   auto MemReg = GetReg(Op->Addr);
 
   // Clean dcache only
+  // check host cacheline size again x86_64 size to ensure at least 64 bytes are cleaned
   if (CTX->HostFeatures.DCacheLineSize >= 64U) {
     dc(ARMEmitter::DataCacheOperation::CVAC, MemReg);
   } else {
     auto CurrentWorkingReg = MemReg.X();
-    for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
+    for (size_t i = 0; i < std::max(1U, 64U / CTX->HostFeatures.DCacheLineSize); ++i) {
       dc(ARMEmitter::DataCacheOperation::CVAC, TMP1);
       add(ARMEmitter::Size::i64Bit, TMP1, CurrentWorkingReg, CTX->HostFeatures.DCacheLineSize);
       CurrentWorkingReg = TMP1;
