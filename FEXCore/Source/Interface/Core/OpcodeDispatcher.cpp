@@ -2427,9 +2427,10 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     auto BitSelect = (Size == (LshrSize * 8)) ? Src : Src.And(Mask);
     auto LshrOpSize = IR::SizeToOpSize(LshrSize);
 
-    // OF/SF/AF/PF undefined. ZF must be preserved. We choose to preserve OF/SF
-    // too since we just use an rmif to insert into CF directly. We could
-    // optimize perhaps.
+    // AMD: OF/SF/ZF/AF/PF undefined.
+    // Intel: OF/SF/AF/PF undefined. ZF must be preserved.
+    // We choose to preserve ZF/OF/SF since we just use an rmif
+    // to insert into CF directly. We could optimize perhaps.
     //
     // Set CF before the action to save a move, except for complements where we
     // can reuse the invert.
@@ -2547,7 +2548,10 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
       Value = _Lshr(std::max(OpSize::i32Bit, GetOpSize(Value)), Value, BitSelect.Ref());
     }
 
-    // OF/SF/AF/PF undefined. ZF must be preserved.
+    // AMD: OF/SF/ZF/AF/PF undefined.
+    // Intel: OF/SF/AF/PF undefined. ZF must be preserved.
+    // We choose to preserve ZF/OF/SF since we just use an rmif
+    // to insert into CF directly. We could optimize perhaps.
     SetCFDirect(Value, 0, true);
   }
 }
