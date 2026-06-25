@@ -5012,9 +5012,15 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   }
 
   default: {
-    Result = LoadZeroVector(DstSize);
+    Result = Src;
     for (size_t i = 0; i < IR::NumElements(DstSize, IR::OpSize::i64Bit); i++) {
+      // If we have a matching index, then we don't need to perform an insert,
+      // since all we'd be doing is inserting the same data.
       const auto SrcIndex = (Selector >> (i * 2)) & 0b11;
+      if (i == SrcIndex) {
+        continue;
+      }
+
       Result = _VInsElement(DstSize, OpSize::i64Bit, i, SrcIndex, Result, Src);
     }
     break;
