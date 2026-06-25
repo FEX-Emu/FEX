@@ -529,6 +529,24 @@
         "mov z16.d, d17"
       ]
     },
+    "vpermq ymm0, ymm1, 10100000b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 3 0b01 0x00 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "trn1 z16.d, z17.d, z17.d"
+      ]
+    },
+    "vpermq ymm0, ymm1, 11110101b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 3 0b01 0x00 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "trn2 z16.d, z17.d, z17.d"
+      ]
+    },
     "vpermq ymm0, ymm1, 01010101b": {
       "ExpectedInstructionCount": 1,
       "Comment": [
@@ -563,6 +581,24 @@
       ],
       "ExpectedArm64ASM": [
         "mov z16.d, d17"
+      ]
+    },
+    "vpermpd ymm0, ymm1, 10100000b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 3 0b01 0x00 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "trn1 z16.d, z17.d, z17.d"
+      ]
+    },
+    "vpermpd ymm0, ymm1, 11110101b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 3 0b01 0x00 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "trn2 z16.d, z17.d, z17.d"
       ]
     },
     "vpermpd ymm0, ymm1, 01010101b": {
