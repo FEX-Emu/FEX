@@ -10,6 +10,7 @@ add_library(CommonWindows STATIC
   Allocator.cpp
   CPUFeatures.cpp
   EnvironmentVariablesHandling.cpp
+  FEXUnixLib.cpp
   SHMStats.cpp
   InvalidationTracker.cpp
   ImageTracker.cpp
