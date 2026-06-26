@@ -572,12 +572,8 @@ void BTCpuProcessInit() {
   GetTLS().Wow64Info().CpuFlags = WOW64_CPUFLAGS_SOFTWARE;
 
   FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
-  if (TSOEnabled()) {
-    BOOL Enable = TRUE;
-    NTSTATUS Status = NtSetInformationProcess(NtCurrentProcess(), ProcessFexHardwareTso, &Enable, sizeof(Enable));
-    if (Status == STATUS_SUCCESS) {
-      CTX->SetHardwareTSOSupport(true);
-    }
+  if (TSOEnabled() && FEX::Windows::UnixLib::TryEnableHardwareTSO()) {
+    CTX->SetHardwareTSOSupport(true);
   }
 
   FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);

@@ -7,7 +7,6 @@
 #include <winternl.h>
 #include <libloaderapi.h>
 #include "FEXUnixLib.h"
-#include "../UnixLib/FEXUnixLib.h"
 
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 
@@ -82,6 +81,22 @@ bool Init(HMODULE NtDll) {
 
 static bool UnixLibAvailable() {
   return UnixLibHandle != 0;
+}
+
+bool TryEnableHardwareTSO() {
+  if (UnixLibAvailable()) {
+    // UnixLib path.
+    FEXUnixLib_SetHardwareTSOControlArgs Args {
+      .Enable = true,
+    };
+
+    return Call(FEXUnixLibFunctions::SetHardwareTSOControl, &Args) == STATUS_SUCCESS;
+  }
+
+  // Legacy Proton path.
+  bool Enable = TRUE;
+  NTSTATUS Status = NtSetInformationProcess(NtCurrentProcess(), ProcessFexHardwareTso, &Enable, sizeof(Enable));
+  return Status == STATUS_SUCCESS;
 }
 
 } // namespace FEX::Windows::UnixLib
