@@ -4990,6 +4990,37 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   const auto Selector = Op->Src[1].Literal();
   Ref Result {};
 
+  // Determines if we have any sort of pattern where we have
+  // a sequence of 0baa'bb'cc'dd where three of these match
+  // with one another alongside a lone outlier.
+  //
+  // In the event that three element subselectors match, then
+  // the operation can be reduced down to a broadcast and a
+  // single insert. We return the insertion index, the selector of the unique
+  // elemenet, followed by any element that would be fine to broadcast from.
+  using BroadcastIndices = std::optional<std::tuple<uint32_t, uint32_t, uint32_t>>;
+  const auto BroadcastableInsert = [Selector]() -> BroadcastIndices {
+    const auto a = (Selector >> 6) & 0b11;
+    const auto b = (Selector >> 4) & 0b11;
+    const auto c = (Selector >> 2) & 0b11;
+    const auto d = Selector & 0b11;
+
+    if (a == b && b == c && a != d) {
+      return std::make_tuple(0, d, a);
+    }
+    if (a == b && b == d && a != c) {
+      return std::make_tuple(1, c, a);
+    }
+    if (a == c && c == d && a != b) {
+      return std::make_tuple(2, b, a);
+    }
+    if (b == c && c == d && b != a) {
+      return std::make_tuple(3, a, b);
+    }
+
+    return std::nullopt;
+  };
+
   switch (Selector) {
   case 0b00'00'00'00:
   case 0b01'01'01'01:
@@ -5012,6 +5043,14 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   }
 
   default: {
+    // See if we have an easily broadcastable permutation.
+    if (const auto Indices = BroadcastableInsert()) {
+      const auto [DstIdx, InsertIdx, BroadcastIdx] = *Indices;
+      Result = _VDupElement(DstSize, OpSize::i64Bit, Src, BroadcastIdx);
+      Result = _VInsElement(DstSize, OpSize::i64Bit, DstIdx, InsertIdx, Result, Src);
+      break;
+    }
+
     Result = Src;
     for (size_t i = 0; i < IR::NumElements(DstSize, IR::OpSize::i64Bit); i++) {
       // If we have a matching index, then we don't need to perform an insert,
