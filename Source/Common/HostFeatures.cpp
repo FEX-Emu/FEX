@@ -766,6 +766,7 @@ FEXCore::HostFeatures FetchHostFeatures() {
   FetchHostFeatures(Features, HostFeatures, true, CTR, MIDR);
 
   HostFeatures.SupportsCPUIndexInTPIDRRO = false;
+  HostFeatures.HostType = FEXCore::HostFeatures::HostTypeEnum::Linux;
   return HostFeatures;
 }
 } // namespace FEX
