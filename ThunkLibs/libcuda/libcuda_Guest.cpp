@@ -56,7 +56,7 @@ struct override_entry {
   void* ptr;
 };
 
-constexpr static std::array<override_entry, 2> proc_override = {
+const static std::array<override_entry, 2> proc_override = {
   {{"cuGetProcAddress", (void*)cuGetProcAddress_v2}, {"cuGetProcAddress_v2", (void*)cuGetProcAddress_v2}}};
 
 CUresult cuGetProcAddress_v2(const char* symbol, void** pfn, int cudaVersion, cuuint64_t flags, CUdriverProcAddressQueryResult* symbolStatus) {

@@ -17,7 +17,7 @@ struct override_entry {
   void* ptr;
 };
 
-constexpr static std::array<override_entry, 2> proc_override = {
+const static std::array<override_entry, 2> proc_override = {
   {{"cuCtxCreate_v2", (void*)FEXFN_IMPL(cuCtxCreate_v2)}, {"cuGetExportTable", (void*)FEXFN_IMPL(cuGetExportTable)}}};
 
 static CUresult FEXFN_IMPL(cuGetProcAddress_v2)(const char* symbol, guest_layout<void**> pfn, int cudaVersion, cuuint64_t flags,
