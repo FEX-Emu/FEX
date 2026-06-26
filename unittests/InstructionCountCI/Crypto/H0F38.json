@@ -143,6 +143,16 @@
         "crc32cb w4, w4, w6"
       ]
     },
+    "crc32 eax, bh": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xf0"
+      ],
+      "ExpectedArm64ASM": [
+        "lsr w20, w6, #8",
+        "crc32cb w4, w4, w20"
+      ]
+    },
     "crc32 eax, bx": {
       "ExpectedInstructionCount": 1,
       "Comment": [
