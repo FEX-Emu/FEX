@@ -458,8 +458,16 @@ typedef enum _MEMORY_INFORMATION_CLASS {
   MemoryBadInformation,
   MemoryBadInformationAllProcesses,
 #ifdef __WINESRC__
+  // Older Wine behaviour
   MemoryWineUnixFuncs = 1000,
   MemoryWineUnixWow64Funcs,
+
+  // Newer Wine behaviour
+  MemoryWineLoadUnixLib = 1000,
+  MemoryWineLoadUnixLibWow64,
+  MemoryWineLoadUnixLibByName,
+  MemoryWineLoadUnixLibByNameWow64,
+  MemoryWineUnloadUnixLib,
 #endif
   MemoryFexStatsShm = 2000,
 } MEMORY_INFORMATION_CLASS;
