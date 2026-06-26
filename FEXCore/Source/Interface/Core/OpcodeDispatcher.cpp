@@ -5055,20 +5055,20 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  const auto GPRSize = GetGPROpSize();
+  const auto SrcSize = OpSizeFromSrc(Op);
 
   // Destination GPR size is always 4 or 8 bytes depending on widening
   const auto DstSize = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? OpSize::i64Bit : OpSize::i32Bit;
-  Ref Dest = LoadSourceGPR_WithOpSize(Op, Op->Dest, GPRSize, Op->Flags);
+  Ref Dest = LoadSourceGPR_WithOpSize(Op, Op->Dest, DstSize, Op->Flags);
 
   // Incoming memory is 8, 16, 32, or 64
   Ref Src {};
   if (Op->Src[0].IsGPR()) {
-    Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], GPRSize, Op->Flags);
+    Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
   } else {
     Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
   }
-  auto Result = _CRC32(Dest, Src, OpSizeFromSrc(Op));
+  auto Result = _CRC32(Dest, Src, SrcSize);
   StoreResultGPR_WithOpSize(Op, Op->Dest, Result, DstSize);
 }
 
