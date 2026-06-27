@@ -4648,11 +4648,13 @@ Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& 
   const uint8_t DstMask = Mask & 0xF;
 
   const auto DstSize = OpSizeFromDst(Op);
+  Ref ZeroVec = LoadZeroVector(DstSize);
+  if (SrcMask == 0 || DstMask == 0) {
+    return ZeroVec;
+  }
 
   Ref Src1V = LoadSourceFPR(Op, Src1, Op->Flags);
   Ref Src2V = LoadSourceFPR(Op, Src2, Op->Flags);
-
-  Ref ZeroVec = LoadZeroVector(DstSize);
 
   // First step is to do an FMUL
   Ref Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
