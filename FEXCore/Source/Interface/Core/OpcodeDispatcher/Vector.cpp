@@ -5064,6 +5064,18 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
     break;
   }
 
+  case 0b00'00'01'01:
+  case 0b00'00'10'10:
+  case 0b00'00'11'11:
+  case 0b01'01'11'11:
+  case 0b10'10'11'11:
+  case 0b11'11'00'00: {
+    auto Top = _VDupElement(DstSize, OpSize::i64Bit, Src, (Selector >> 6) & 0b11);
+    auto Bottom = _VDupElement(DstSize, OpSize::i64Bit, Src, Selector & 0b11);
+    Result = _VInsElement(DstSize, OpSize::i128Bit, 1, 0, Bottom, Top);
+    break;
+  }
+
   default: {
     // See if we have an easily broadcastable permutation.
     if (const auto Indices = BroadcastableInsert()) {
