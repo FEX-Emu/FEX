@@ -4997,7 +4997,7 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   // In the event that three element subselectors match, then
   // the operation can be reduced down to a broadcast and a
   // single insert. We return the insertion index, the selector of the unique
-  // elemenet, followed by any element that would be fine to broadcast from.
+  // element, followed by any element that would be fine to broadcast from.
   using BroadcastIndices = std::optional<std::tuple<uint32_t, uint32_t, uint32_t>>;
   const auto BroadcastableInsert = [Selector]() -> BroadcastIndices {
     const auto a = (Selector >> 6) & 0b11;
