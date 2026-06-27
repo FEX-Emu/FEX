@@ -33,3 +33,17 @@ runs:
     - name: Install
       shell: bash
       run: DESTDIR="$PWD"/install cmake --build build_${{ inputs.target }} -t install
+
+    - name: Configure UnixLib
+      shell: bash
+      run: |
+        cmake -S Source/Windows/UnixLib -B build_unixlib_${{ inputs.target }} -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -G Ninja -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-unix -DCMAKE_INSTALL_PREFIX=/usr
+
+    - name: Build UnixLib
+      shell: bash
+      run: cmake --build build_unixlib_${{ inputs.target }}
+
+    - name: Install UnixLib
+      shell: bash
+      run: DESTDIR="$PWD"/install cmake --build build_unixlib_${{ inputs.target }} -t install
