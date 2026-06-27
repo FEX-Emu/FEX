@@ -5038,6 +5038,23 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
     break;
   }
 
+  case 0b01'01'00'00: {
+    Result = _VZip(DstSize, OpSize::i64Bit, Src, Src);
+    break;
+  }
+  case 0b11'11'10'10: {
+    Result = _VZip2(DstSize, OpSize::i64Bit, Src, Src);
+    break;
+  }
+  case 0b10'00'10'00: {
+    Result = _VUnZip(DstSize, OpSize::i64Bit, Src, Src);
+    break;
+  }
+  case 0b11'01'11'01: {
+    Result = _VUnZip2(DstSize, OpSize::i64Bit, Src, Src);
+    break;
+  }
+
   case 0b10'10'00'00: {
     Result = _VTrn(DstSize, OpSize::i64Bit, Src, Src);
     break;

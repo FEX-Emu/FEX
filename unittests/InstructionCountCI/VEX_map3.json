@@ -421,6 +421,42 @@
         "trn2 z16.d, z17.d, z17.d"
       ]
     },
+    "vpermq ymm0, ymm1, 01010000b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 3 0b01 0x00 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "zip1 z16.d, z17.d, z17.d"
+      ]
+    },
+    "vpermq ymm0, ymm1, 11111010b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 3 0b01 0x00 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "zip2 z16.d, z17.d, z17.d"
+      ]
+    },
+    "vpermq ymm0, ymm1, 10001000b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 3 0b01 0x00 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "uzp1 z16.d, z17.d, z17.d"
+      ]
+    },
+    "vpermq ymm0, ymm1, 11011101b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 3 0b01 0x00 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "uzp2 z16.d, z17.d, z17.d"
+      ]
+    },
     "vpermq ymm0, ymm1, 01010101b": {
       "ExpectedInstructionCount": 1,
       "Comment": [
