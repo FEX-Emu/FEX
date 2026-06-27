@@ -4679,8 +4679,12 @@ Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& 
 
   // Now using the destination mask we choose where the result ends up
   // It can duplicate and zero results
-  Ref Result = ZeroVec;
+  if (DstMask == 0b1111) {
+    // Full broadcast
+    return _VDupElement(DstSize, ElementSize, Temp, 0);
+  }
 
+  Ref Result = ZeroVec;
   for (size_t i = 0; i < IR::NumElements(DstSize, ElementSize); ++i) {
     const auto Bit = 1U << (i % 4);
 
@@ -4688,7 +4692,6 @@ Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& 
       Result = _VInsElement(DstSize, ElementSize, i, 0, Result, Temp);
     }
   }
-
   return Result;
 }
 
