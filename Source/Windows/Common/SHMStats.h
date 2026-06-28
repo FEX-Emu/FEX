@@ -23,7 +23,6 @@ public:
 
 private:
   uint32_t FrontendAllocateSlots(uint32_t NewSize) override;
-  bool UsingNTQueryPath {};
 };
 
 } // namespace FEX::Windows
