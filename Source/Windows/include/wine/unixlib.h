@@ -9,6 +9,10 @@
 extern "C" {
 #endif
 
+constexpr NTSTATUS STATUS_SUCCESS = 0;
+constexpr NTSTATUS STATUS_NOT_SUPPORTED = 0xC00000BB;
+constexpr NTSTATUS STATUS_INTERNAL_ERROR = 0xC00000E5;
+
 typedef UINT64 unixlib_handle_t;
 
 extern NTSTATUS(WINAPI* __wine_set_unix_env)(const char*, const char*);

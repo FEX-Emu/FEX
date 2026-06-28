@@ -29,6 +29,7 @@ $end_info$
 
 #include "Windows/Common/Allocator.h"
 #include "Windows/Common/EnvironmentVariablesHandling.h"
+#include "Windows/Common/FEXUnixLib.h"
 #include "Common/CallRetStack.h"
 #include "Common/JITGuardPage.h"
 #include "Common/Config.h"
@@ -599,6 +600,7 @@ NTSTATUS ProcessInit() {
   FEX::Windows::SetupEnvironmentVariableValues(NtDll);
 
   FEX::Windows::Allocator::SetupHooks(NtDll);
+  FEX::Windows::UnixLib::Init(NtDll);
 
   {
     auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine);
