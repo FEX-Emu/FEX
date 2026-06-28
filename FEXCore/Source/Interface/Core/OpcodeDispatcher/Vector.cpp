@@ -3357,8 +3357,8 @@ void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::UCOMISxOp(OpcodeArgs, IR::OpSize ElementSize) {
-  const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : ElementSize;
-  Ref Src1 = LoadSourceFPR_WithOpSize(Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
+  const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : ElementSize;
+  Ref Src1 = LoadSourceFPR_WithOpSize(Op, Op->Dest, OpSize::i128Bit, Op->Flags);
   Ref Src2 = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
 
   Comiss(ElementSize, Src1, Src2);
