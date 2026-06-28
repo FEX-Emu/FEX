@@ -650,6 +650,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
+          Thread->OpDispatcher->StartNewBlock();
           Thread->OpDispatcher->_ThreadRemoveCodeEntry();
           Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_InlineEntrypointOffset(GPRSize, InstAddress - GuestRIP));
 
@@ -657,6 +658,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
           Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
           Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
+          Thread->OpDispatcher->StartNewBlock();
         }
 
         if (TableInfo && TableInfo->OpcodeDispatcher.OpDispatch) {
