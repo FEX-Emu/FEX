@@ -53,14 +53,14 @@ int main(int argc, char** argv, char** const envp) {
 
   // Check if a local FEX to FEXBash exists
   // If it does then it takes priority over the installed one
-  if (!std::filesystem::exists(FEXPath)) {
+  if (!std::filesystem::is_regular_file(FEXPath)) {
     std::error_code ec;
     auto FEXBashPath = std::filesystem::read_symlink("/proc/self/exe", ec);
     if (!ec) {
       FEXPath = FEXBashPath.replace_filename("FEX");
     }
 
-    if (!std::filesystem::exists(FEXPath)) {
+    if (!std::filesystem::is_regular_file(FEXPath)) {
       fmt::print(stderr, "Could not locate FEX executable\n");
       std::abort();
     }
