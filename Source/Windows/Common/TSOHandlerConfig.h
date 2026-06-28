@@ -24,7 +24,7 @@ public:
     uint64_t Flags = (StrictInProcessSplitLocks() ? FEX_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
                      (KernelUnalignedAtomicBackpatching() ? FEX_UNALIGN_ATOMIC_BACKPATCH : 0) | FEX_UNALIGN_ATOMIC_EMULATE;
 
-    if (NtSetInformationProcess(NtCurrentProcess(), ProcessFexUnalignAtomic, &Flags, sizeof(Flags)) == STATUS_SUCCESS) {
+    if (UnixLib::SetKernelUnalignedAtomicControl(Flags)) {
       LogMan::Msg::IFmt("FEX: Kernel unaligned atomics enabled!");
     }
   }
