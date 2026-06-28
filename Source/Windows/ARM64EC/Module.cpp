@@ -629,11 +629,6 @@ NTSTATUS ProcessInit() {
   const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
   Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
 
-  FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
-  if (TSOEnabled() && FEX::Windows::UnixLib::TryEnableHardwareTSO()) {
-    CTX->SetHardwareTSOSupport(true);
-  }
-
   FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
   FEX_CONFIG_OPT(StartupSleep, STARTUPSLEEP);
   FEX_CONFIG_OPT(StartupSleepProcName, STARTUPSLEEPPROCNAME);

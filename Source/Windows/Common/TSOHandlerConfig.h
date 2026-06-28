@@ -5,6 +5,8 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 
+#include "Windows/Common/FEXUnixLib.h"
+
 namespace FEX::Windows {
 class TSOHandlerConfig final {
 public:
@@ -15,12 +17,8 @@ public:
       UnalignedHandlerType = FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::NonAtomic;
     }
 
-    if (TSOEnabled()) {
-      BOOL Enable = TRUE;
-      NTSTATUS Status = NtSetInformationProcess(NtCurrentProcess(), ProcessFexHardwareTso, &Enable, sizeof(Enable));
-      if (Status == STATUS_SUCCESS) {
-        CTX.SetHardwareTSOSupport(true);
-      }
+    if (TSOEnabled() && FEX::Windows::UnixLib::TryEnableHardwareTSO()) {
+      CTX.SetHardwareTSOSupport(true);
     }
 
     uint64_t Flags = (StrictInProcessSplitLocks() ? FEX_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS : 0) |
