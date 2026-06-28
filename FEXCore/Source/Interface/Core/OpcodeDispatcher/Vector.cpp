@@ -736,6 +736,19 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
 
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
+  const auto F32Handler = [this](Ref Input, IR::OpSize VecSize) {
+    // Shift all the sign bits to the bottom of their respective elements.
+    Input = _VUShrI(VecSize, OpSize::i32Bit, Input, 31);
+    // Load the specific 128-bit movmskps shift elements operator.
+    auto ConstantUSHL = LoadAndCacheNamedVectorConstant(VecSize, NAMED_VECTOR_MOVMSKPS_SHIFT);
+    // Shift the sign bits in to specific locations.
+    Input = _VUShl(VecSize, OpSize::i32Bit, Input, ConstantUSHL, false);
+    // Add across the vector so the sign bits will end up in bits [3:0]
+    Input = _VAddV(VecSize, OpSize::i32Bit, Input);
+    // Extract to a GPR.
+    return _VExtractToGPR(VecSize, OpSize::i32Bit, Input, 0);
+  };
+
   if (Size == OpSize::i128Bit && ElementSize == OpSize::i64Bit) {
     // UnZip2 the 64-bit elements as 32-bit to get the sign bits closer.
     // Sign bits are now in bit positions 31 and 63 after this.
@@ -750,17 +763,15 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
     GPR = _Lshr(OpSize::i64Bit, GPR, Constant(62));
     StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize());
   } else if (Size == OpSize::i128Bit && ElementSize == OpSize::i32Bit) {
-    // Shift all the sign bits to the bottom of their respective elements.
-    Src = _VUShrI(Size, OpSize::i32Bit, Src, 31);
-    // Load the specific 128-bit movmskps shift elements operator.
-    auto ConstantUSHL = LoadAndCacheNamedVectorConstant(Size, NAMED_VECTOR_MOVMSKPS_SHIFT);
-    // Shift the sign bits in to specific locations.
-    Src = _VUShl(Size, OpSize::i32Bit, Src, ConstantUSHL, false);
-    // Add across the vector so the sign bits will end up in bits [3:0]
-    Src = _VAddV(Size, OpSize::i32Bit, Src);
-    // Extract to a GPR.
-    Ref GPR = _VExtractToGPR(Size, OpSize::i32Bit, Src, 0);
+    Ref GPR = F32Handler(Src, Size);
     StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize());
+  } else if (Size == OpSize::i256Bit && ElementSize == OpSize::i32Bit) {
+    Ref UpperLane = _VDupElement(Size, OpSize::i128Bit, Src, 1);
+
+    Ref Lower = F32Handler(Src, OpSize::i128Bit);
+    Ref Upper = F32Handler(UpperLane, OpSize::i128Bit);
+    Ref Result = _Orlshl(OpSize::i64Bit, Lower, Upper, 4);
+    StoreResultGPR_WithOpSize(Op, Op->Dest, Result, GetGPROpSize());
   } else {
     Ref CurrentVal = Constant(0);
 
