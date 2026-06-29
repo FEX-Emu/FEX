@@ -2015,8 +2015,8 @@ void OpDispatchBuilder::VHADDPOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize)
 
   Ref Dest = Res;
   if (Is256Bit) {
-    Dest = _VInsElement(SrcSize, OpSize::i64Bit, 1, 2, Res, Res);
-    Dest = _VInsElement(SrcSize, OpSize::i64Bit, 2, 1, Dest, Res);
+    auto Shuffle = LoadAndCacheNamedVectorConstant(SrcSize, NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP);
+    Dest = _VTBL1(SrcSize, Dest, Shuffle);
   }
 
   StoreResultFPR(Op, Dest);
@@ -3395,8 +3395,8 @@ void OpDispatchBuilder::VPACKUSOp(OpcodeArgs, IR::OpSize ElementSize) {
 
   if (Is256Bit) {
     // We do a little cheeky 64-bit swapping to interleave the result.
-    Ref Swapped = _VInsElement(DstSize, OpSize::i64Bit, 2, 1, Result, Result);
-    Result = _VInsElement(DstSize, OpSize::i64Bit, 1, 2, Swapped, Result);
+    auto Shuffle = LoadAndCacheNamedVectorConstant(DstSize, NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP);
+    Result = _VTBL1(DstSize, Result, Shuffle);
   }
   StoreResultFPR(Op, Result);
 }
@@ -3419,8 +3419,8 @@ void OpDispatchBuilder::VPACKSSOp(OpcodeArgs, IR::OpSize ElementSize) {
 
   if (Is256Bit) {
     // We do a little cheeky 64-bit swapping to interleave the result.
-    Ref Swapped = _VInsElement(DstSize, OpSize::i64Bit, 2, 1, Result, Result);
-    Result = _VInsElement(DstSize, OpSize::i64Bit, 1, 2, Swapped, Result);
+    auto Shuffle = LoadAndCacheNamedVectorConstant(DstSize, NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP);
+    Result = _VTBL1(DstSize, Result, Shuffle);
   }
   StoreResultFPR(Op, Result);
 }
@@ -3832,8 +3832,8 @@ void OpDispatchBuilder::VHSUBPOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Result = HSUBPOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
   Ref Dest = Result;
   if (Is256Bit) {
-    Dest = _VInsElement(DstSize, OpSize::i64Bit, 1, 2, Result, Result);
-    Dest = _VInsElement(DstSize, OpSize::i64Bit, 2, 1, Dest, Result);
+    auto Shuffle = LoadAndCacheNamedVectorConstant(DstSize, NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP);
+    Dest = _VTBL1(DstSize, Dest, Shuffle);
   }
 
   StoreResultFPR(Op, Dest);
@@ -3861,8 +3861,8 @@ void OpDispatchBuilder::VPHSUBOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = PHSUBOpImpl(OpSizeFromSrc(Op), Src1, Src2, ElementSize);
   if (Is256Bit) {
-    Ref Inserted = _VInsElement(DstSize, OpSize::i64Bit, 1, 2, Result, Result);
-    Result = _VInsElement(DstSize, OpSize::i64Bit, 2, 1, Inserted, Result);
+    auto Shuffle = LoadAndCacheNamedVectorConstant(DstSize, NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP);
+    Result = _VTBL1(DstSize, Result, Shuffle);
   }
   StoreResultFPR(Op, Result);
 }
@@ -3896,8 +3896,8 @@ void OpDispatchBuilder::VPHADDSWOp(OpcodeArgs) {
   Ref Dest = Result;
 
   if (Is256Bit) {
-    Dest = _VInsElement(SrcSize, OpSize::i64Bit, 1, 2, Result, Result);
-    Dest = _VInsElement(SrcSize, OpSize::i64Bit, 2, 1, Dest, Result);
+    auto Shuffle = LoadAndCacheNamedVectorConstant(SrcSize, NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP);
+    Dest = _VTBL1(SrcSize, Dest, Shuffle);
   }
 
   StoreResultFPR(Op, Dest);
@@ -3931,8 +3931,8 @@ void OpDispatchBuilder::VPHSUBSWOp(OpcodeArgs) {
 
   Ref Dest = Result;
   if (Is256Bit) {
-    Dest = _VInsElement(DstSize, OpSize::i64Bit, 1, 2, Result, Result);
-    Dest = _VInsElement(DstSize, OpSize::i64Bit, 2, 1, Dest, Result);
+    auto Shuffle = LoadAndCacheNamedVectorConstant(DstSize, NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP);
+    Dest = _VTBL1(DstSize, Dest, Shuffle);
   }
 
   StoreResultFPR(Op, Dest);
