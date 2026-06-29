@@ -485,43 +485,22 @@
       ]
     },
     "vmovmskps rax, ymm0": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map 1 0b00 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, v16.s[0]",
-        "lsr w20, w20, #31",
-        "mov w21, v16.s[1]",
-        "lsr w21, w21, #31",
-        "orr x20, x20, x21, lsl #1",
-        "mov w21, v16.s[2]",
-        "lsr w21, w21, #31",
-        "orr x20, x20, x21, lsl #2",
-        "mov w21, v16.s[3]",
-        "lsr w21, w21, #31",
-        "orr x20, x20, x21, lsl #3",
-        "not p0.b, p7/z, p6.b",
-        "compact z0.d, p0, z16.d",
-        "mov w21, v16.s[0]",
-        "lsr w21, w21, #31",
-        "orr x20, x20, x21, lsl #4",
-        "not p0.b, p7/z, p6.b",
-        "compact z0.d, p0, z16.d",
-        "mov w21, v16.s[1]",
-        "lsr w21, w21, #31",
-        "orr x20, x20, x21, lsl #5",
-        "not p0.b, p7/z, p6.b",
-        "compact z0.d, p0, z16.d",
-        "mov w21, v16.s[2]",
-        "lsr w21, w21, #31",
-        "orr x20, x20, x21, lsl #6",
-        "not p0.b, p7/z, p6.b",
-        "compact z0.d, p0, z16.d",
-        "mov w21, v16.s[3]",
-        "lsr w21, w21, #31",
-        "orr x20, x20, x21, lsl #7",
-        "mov w4, w20"
+        "mov z2.q, z16.q[1]",
+        "ushr v3.4s, v16.4s, #31",
+        "index z4.s, #0, #1",
+        "ushl v3.4s, v3.4s, v4.4s",
+        "addv s3, v3.4s",
+        "mov w20, v3.s[0]",
+        "ushr v2.4s, v2.4s, #31",
+        "ushl v2.4s, v2.4s, v4.4s",
+        "addv s2, v2.4s",
+        "mov w21, v2.s[0]",
+        "orr x4, x20, x21, lsl #4"
       ]
     },
     "vmovmskpd rax, xmm0": {
@@ -537,27 +516,21 @@
       ]
     },
     "vmovmskpd rax, ymm0": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 1 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, v16.d[0]",
-        "lsr x20, x20, #63",
-        "mov x21, v16.d[1]",
-        "lsr x21, x21, #63",
-        "orr x20, x20, x21, lsl #1",
-        "not p0.b, p7/z, p6.b",
-        "compact z0.d, p0, z16.d",
-        "mov x21, v16.d[0]",
-        "lsr x21, x21, #63",
-        "orr x20, x20, x21, lsl #2",
-        "not p0.b, p7/z, p6.b",
-        "compact z0.d, p0, z16.d",
-        "mov x21, v16.d[1]",
-        "lsr x21, x21, #63",
-        "orr x20, x20, x21, lsl #3",
-        "mov w4, w20"
+        "mov z2.q, z16.q[1]",
+        "uzp2 v3.4s, v16.4s, v16.4s",
+        "mov x20, v3.d[0]",
+        "bfi x20, x20, #31, #32",
+        "lsr x20, x20, #62",
+        "uzp2 v2.4s, v2.4s, v2.4s",
+        "mov x21, v2.d[0]",
+        "bfi x21, x21, #31, #32",
+        "lsr x21, x21, #62",
+        "orr x4, x20, x21, lsl #2"
       ]
     },
     "vsqrtps xmm0, xmm1": {

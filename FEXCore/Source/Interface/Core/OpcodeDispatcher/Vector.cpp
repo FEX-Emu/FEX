@@ -732,51 +732,51 @@ void OpDispatchBuilder::MOVQMMXOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
   const auto Size = OpSizeFromSrc(Op);
-  const auto NumElements = IR::NumElements(Size, ElementSize);
-
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
-  if (Size == OpSize::i128Bit && ElementSize == OpSize::i64Bit) {
+  const auto F32Handler = [this](Ref Input, OpSize VecSize) {
+    // Shift all the sign bits to the bottom of their respective elements.
+    Input = _VUShrI(VecSize, OpSize::i32Bit, Input, 31);
+    // Load the specific 128-bit movmskps shift elements operator.
+    auto ConstantUSHL = LoadAndCacheNamedVectorConstant(VecSize, NAMED_VECTOR_MOVMSKPS_SHIFT);
+    // Shift the sign bits in to specific locations.
+    Input = _VUShl(VecSize, OpSize::i32Bit, Input, ConstantUSHL, false);
+    // Add across the vector so the sign bits will end up in bits [3:0]
+    Input = _VAddV(VecSize, OpSize::i32Bit, Input);
+    // Extract to a GPR.
+    return _VExtractToGPR(VecSize, OpSize::i32Bit, Input, 0);
+  };
+
+  const auto F64Handler = [this](Ref Input, OpSize VecSize) {
     // UnZip2 the 64-bit elements as 32-bit to get the sign bits closer.
     // Sign bits are now in bit positions 31 and 63 after this.
-    Src = _VUnZip2(Size, OpSize::i32Bit, Src, Src);
-
+    Input = _VUnZip2(VecSize, OpSize::i32Bit, Input, Input);
     // Extract the low 64-bits to GPR in one move.
-    Ref GPR = _VExtractToGPR(Size, OpSize::i64Bit, Src, 0);
+    Ref GPR = _VExtractToGPR(VecSize, OpSize::i64Bit, Input, 0);
     // BFI the sign bit in 31 in to 62.
     // Inserting the full lower 32-bits offset 31 so the sign bit ends up at offset 63.
     GPR = _Bfi(OpSize::i64Bit, 32, 31, GPR, GPR);
     // Shift right to only get the two sign bits we care about.
-    GPR = _Lshr(OpSize::i64Bit, GPR, Constant(62));
-    StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize());
-  } else if (Size == OpSize::i128Bit && ElementSize == OpSize::i32Bit) {
-    // Shift all the sign bits to the bottom of their respective elements.
-    Src = _VUShrI(Size, OpSize::i32Bit, Src, 31);
-    // Load the specific 128-bit movmskps shift elements operator.
-    auto ConstantUSHL = LoadAndCacheNamedVectorConstant(Size, NAMED_VECTOR_MOVMSKPS_SHIFT);
-    // Shift the sign bits in to specific locations.
-    Src = _VUShl(Size, OpSize::i32Bit, Src, ConstantUSHL, false);
-    // Add across the vector so the sign bits will end up in bits [3:0]
-    Src = _VAddV(Size, OpSize::i32Bit, Src);
-    // Extract to a GPR.
-    Ref GPR = _VExtractToGPR(Size, OpSize::i32Bit, Src, 0);
+    return _Lshr(OpSize::i64Bit, GPR, Constant(62));
+  };
+
+  if (Size == OpSize::i128Bit) {
+    Ref GPR = ElementSize == OpSize::i32Bit ? F32Handler(Src, Size) : F64Handler(Src, Size);
     StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize());
   } else {
-    Ref CurrentVal = Constant(0);
+    Ref UpperLane = _VDupElement(Size, OpSize::i128Bit, Src, 1);
+    Ref Result {};
 
-    for (unsigned i = 0; i < NumElements; ++i) {
-      // Extract the top bit of the element
-      Ref Tmp = _VExtractToGPR(Size, ElementSize, Src, i);
-      Tmp = _Bfe(ElementSize, 1, IR::OpSizeAsBits(ElementSize) - 1, Tmp);
-
-      // Shift it to the correct location and or it with the current value
-      if (i != 0) {
-        CurrentVal = _Orlshl(OpSize::i64Bit, CurrentVal, Tmp, i);
-      } else {
-        CurrentVal = Tmp;
-      }
+    if (ElementSize == OpSize::i32Bit) {
+      Ref Lower = F32Handler(Src, OpSize::i128Bit);
+      Ref Upper = F32Handler(UpperLane, OpSize::i128Bit);
+      Result = _Orlshl(OpSize::i64Bit, Lower, Upper, 4);
+    } else {
+      Ref Lower = F64Handler(Src, OpSize::i128Bit);
+      Ref Upper = F64Handler(UpperLane, OpSize::i128Bit);
+      Result = _Orlshl(OpSize::i64Bit, Lower, Upper, 2);
     }
-    StoreResultGPR(Op, CurrentVal);
+    StoreResultGPR_WithOpSize(Op, Op->Dest, Result, GetGPROpSize());
   }
 }
 
