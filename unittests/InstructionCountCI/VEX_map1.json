@@ -100,7 +100,6 @@
     "vmovss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
       "Comment": [
-        "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b10 0x10 128-bit"
       ],
       "ExpectedArm64ASM": [
@@ -121,7 +120,6 @@
     "vmovsd xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 2,
       "Comment": [
-        "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b11 0x10 128-bit"
       ],
       "ExpectedArm64ASM": [
@@ -179,7 +177,6 @@
       "Comment": [
         "vmovss xmm2, xmm1, xmm0",
         "Need to manually encode since nasm won't encode this",
-        "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b10 0x11 128-bit"
       ],
       "ExpectedArm64ASM": [
@@ -201,7 +198,6 @@
       "Comment": [
         "vmovsd xmm2, xmm1, xmm0",
         "Need to manually encode since nasm won't encode this",
-        "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b11 0x11 128-bit"
       ],
       "ExpectedArm64ASM": [
@@ -212,7 +208,6 @@
     "vmovlps xmm0, xmm1, [rax]": {
       "ExpectedInstructionCount": 3,
       "Comment": [
-        "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b00 0x12 128-bit"
       ],
       "ExpectedArm64ASM": [
@@ -224,7 +219,6 @@
     "vmovlpd xmm0, xmm1, [rax]": {
       "ExpectedInstructionCount": 3,
       "Comment": [
-        "Insert in to first element could be more optimal, which is the common case.",
         "Map 1 0b01 0x12 128-bit"
       ],
       "ExpectedArm64ASM": [
