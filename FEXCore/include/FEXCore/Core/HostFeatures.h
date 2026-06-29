@@ -48,6 +48,15 @@ struct HostFeatures {
   bool SupportsAFP {};
   bool SupportsFloatExceptions {};
 
+  // Changes code generation slightly.
+  enum class HostTypeEnum {
+    Unknown,
+    Linux,
+    Wow64,
+    Arm64ec,
+  };
+  HostTypeEnum HostType {};
+
   // Flag if this is InstCountCI
   bool IsInstCountCI {};
 

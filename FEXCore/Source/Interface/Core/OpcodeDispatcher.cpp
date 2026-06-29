@@ -4778,35 +4778,36 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   case 0xCD: { // INT imm8
     uint8_t Literal = Op->Src[0].Literal();
 
-#ifndef _WIN32
-    constexpr uint8_t SYSCALL_LITERAL = 0x80;
-    if (Literal == SYSCALL_LITERAL) {
-      if (Is64BitMode) [[unlikely]] {
-        LogMan::Msg::EFmt("[Unsupported] Trying to execute 32-bit syscall from a 64-bit process.");
-        UnhandledOp(Op);
+    if (CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Linux) {
+      constexpr uint8_t SYSCALL_LITERAL = 0x80;
+      if (Literal == SYSCALL_LITERAL) {
+        if (Is64BitMode) [[unlikely]] {
+          LogMan::Msg::EFmt("[Unsupported] Trying to execute 32-bit syscall from a 64-bit process.");
+          UnhandledOp(Op);
+          return;
+        }
+        // Syscall on linux
+        SyscallOp(Op, false);
         return;
       }
-      // Syscall on linux
-      SyscallOp(Op, false);
-      return;
-    }
-#else
-    constexpr uint8_t SYSCALL_LITERAL = 0x2E;
-    if (Literal == SYSCALL_LITERAL) {
-      // Can be used for both 64-bit and 32-bit syscalls on windows
-      SyscallOp(Op, false);
-      return;
-    }
-#endif
+    } else if (CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Wow64 ||
+               CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec) {
+      constexpr uint8_t SYSCALL_LITERAL = 0x2E;
+      if (Literal == SYSCALL_LITERAL) {
+        // Can be used for both 64-bit and 32-bit syscalls on windows
+        SyscallOp(Op, false);
+        return;
+      }
 
-#ifdef ARCHITECTURE_arm64ec
-    // This is used when QueryPerformanceCounter is called on recent Windows versions, it causes CNTVCT to be written into RAX.
-    constexpr uint8_t GET_CNTVCT_LITERAL = 0x81;
-    if (Literal == GET_CNTVCT_LITERAL) {
-      StoreGPRRegister(X86State::REG_RAX, _CycleCounter(false));
-      return;
+      if (CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec) {
+        // This is used when QueryPerformanceCounter is called on recent Windows versions, it causes CNTVCT to be written into RAX.
+        constexpr uint8_t GET_CNTVCT_LITERAL = 0x81;
+        if (Literal == GET_CNTVCT_LITERAL) {
+          StoreGPRRegister(X86State::REG_RAX, _CycleCounter(false));
+          return;
+        }
+      }
     }
-#endif
 
     Reason.ErrorRegister = Literal << 3 | (0b010);
     Reason.Signal = Core::FAULT_SIGSEGV;

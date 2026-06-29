@@ -56,7 +56,7 @@ public:
   }
 };
 
-FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
+FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostFeatures::HostTypeEnum HostType) {
   HKEY Key = OpenProcessorKey(0);
   if (!Key) {
     ERROR_AND_DIE_FMT("Couldn't detect CPU features");
@@ -82,6 +82,13 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
   HostFeatures.SupportsSVE256 = false;
 
   HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine;
+
+  HostFeatures.HostType = HostType;
+
+  if (HostType == FEXCore::HostFeatures::HostTypeEnum::Wow64) {
+    // AVX is unsupported for WOW64
+    HostFeatures.SupportsAVX = false;
+  }
   return HostFeatures;
 }
 

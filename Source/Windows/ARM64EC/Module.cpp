@@ -603,7 +603,7 @@ NTSTATUS ProcessInit() {
   FEX::Windows::UnixLib::Init(NtDll);
 
   {
-    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine);
+    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine, FEXCore::HostFeatures::HostTypeEnum::Arm64ec);
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
