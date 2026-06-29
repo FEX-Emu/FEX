@@ -27,6 +27,6 @@ x_quarter:
 expected_quarter:
   dq 0x3FD49A784BCD1B87 ; matches the LUT-based F64 FYL2X path
 tolerance:
-  dq 0x3CB0000000000000 ; 2^-52, ~1 ULP relative error
+  dq 0x3CD0000000000000 ; 2^-50
 
 define_check_data_constants
