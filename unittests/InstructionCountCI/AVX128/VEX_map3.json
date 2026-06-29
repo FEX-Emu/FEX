@@ -2079,7 +2079,7 @@
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x1D 128-bit"
@@ -2089,11 +2089,12 @@
         "and x0, x20, #0xffffffffff3fffff",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
-        "msr fpcr, x20"
+        "msr fpcr, x20",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x1D 128-bit"
@@ -2104,11 +2105,12 @@
         "orr x0, x0, #0x800000",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
-        "msr fpcr, x20"
+        "msr fpcr, x20",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x1D 128-bit"
@@ -2119,11 +2121,12 @@
         "orr x0, x0, #0x400000",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
-        "msr fpcr, x20"
+        "msr fpcr, x20",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x1D 128-bit"
@@ -2133,17 +2136,19 @@
         "orr x0, x20, #0xc00000",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
-        "msr fpcr, x20"
+        "msr fpcr, x20",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "host mode rounding",
         "Map 3 0b01 0x1D 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcvtn v16.4h, v17.4s"
+        "fcvtn v16.4h, v17.4s",
+        "stp xzr, xzr, [x28, #192]"
       ]
     },
     "vcvtps2ph xmm0, ymm1, 00000000b": {
