@@ -1050,49 +1050,54 @@
       ]
     },
     "vpshufd xmm0, xmm1, 00b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "dup v2.4s, v17.s[0]",
-        "mov v16.16b, v2.16b"
+        "dup v16.4s, v17.s[0]"
       ]
     },
     "vpshufd xmm0, xmm1, 01b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2688]",
         "ldr q2, [x0, #16]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "vpshufd xmm0, xmm1, 10b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2688]",
         "ldr q2, [x0, #32]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "vpshufd xmm0, xmm1, 11b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b01 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2688]",
         "ldr q2, [x0, #48]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
+      ]
+    },
+    "vpshufd xmm0, xmm1, 11100100b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 1 0b01 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.16b, v17.16b"
       ]
     },
     "vpshufd ymm0, ymm1, 00b": {
@@ -1161,51 +1166,69 @@
         "mov z16.b, p0/m, z1.b"
       ]
     },
+    "vpshufd ymm0, ymm1, 11100100b": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b01 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.q, z17.q[1]",
+        "mov z1.q, q2",
+        "mov z16.d, z17.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z16.b, p0/m, z1.b"
+      ]
+    },
     "vpshufhw xmm0, xmm1, 00b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "dup v2.8h, v17.h[4]",
-        "trn1 v2.2d, v17.2d, v2.2d",
-        "mov v16.16b, v2.16b"
+        "trn1 v16.2d, v17.2d, v2.2d"
       ]
     },
     "vpshufhw xmm0, xmm1, 01b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2680]",
         "ldr q2, [x0, #16]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "vpshufhw xmm0, xmm1, 10b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2680]",
         "ldr q2, [x0, #32]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "vpshufhw xmm0, xmm1, 11b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b10 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2680]",
         "ldr q2, [x0, #48]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
+      ]
+    },
+    "vpshufhw xmm0, xmm1, 11100100b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 1 0b10 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.16b, v17.16b"
       ]
     },
     "vpshufhw ymm0, ymm1, 00b": {
@@ -1276,51 +1299,69 @@
         "mov z16.b, p0/m, z1.b"
       ]
     },
+    "vpshufhw ymm0, ymm1, 11100100b": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b10 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.q, z17.q[1]",
+        "mov z1.q, q2",
+        "mov z16.d, z17.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z16.b, p0/m, z1.b"
+      ]
+    },
     "vpshuflw xmm0, xmm1, 00b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "dup v2.8h, v17.h[0]",
-        "trn2 v2.2d, v2.2d, v17.2d",
-        "mov v16.16b, v2.16b"
+        "trn2 v16.2d, v2.2d, v17.2d"
       ]
     },
     "vpshuflw xmm0, xmm1, 01b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2672]",
         "ldr q2, [x0, #16]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "vpshuflw xmm0, xmm1, 10b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2672]",
         "ldr q2, [x0, #32]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
       ]
     },
     "vpshuflw xmm0, xmm1, 11b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b11 0x70 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr x0, [x28, #2672]",
         "ldr q2, [x0, #48]",
-        "tbl v2.16b, {v17.16b}, v2.16b",
-        "mov v16.16b, v2.16b"
+        "tbl v16.16b, {v17.16b}, v2.16b"
+      ]
+    },
+    "vpshuflw xmm0, xmm1, 11100100b": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 1 0b11 0x70 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov v16.16b, v17.16b"
       ]
     },
     "vpshuflw ymm0, ymm1, 00b": {
@@ -1387,6 +1428,19 @@
         "tbl v3.16b, {v17.16b}, v3.16b",
         "mov z1.q, q2",
         "mov z16.d, z3.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z16.b, p0/m, z1.b"
+      ]
+    },
+    "vpshuflw ymm0, ymm1, 11100100b": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b11 0x70 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.q, z17.q[1]",
+        "mov z1.q, q2",
+        "mov z16.d, z17.d",
         "not p0.b, p7/z, p6.b",
         "mov z16.b, p0/m, z1.b"
       ]
