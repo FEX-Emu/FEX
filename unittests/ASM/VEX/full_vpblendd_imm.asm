@@ -2,26 +2,40 @@
 {
   "HostFeatures": ["AVX"],
   "RegData": {
-    "RAX": "0x00000000724dcd86"
+    "RAX": "0x00000000724dcd86",
+    "RBX": "0x00000000464d0036"
   }
 }
 %endif
 
 mov rax, 0
+mov rbx, 0
 
 %assign i 0
 %rep 256
 
 ; vpblendd all the immediate encodings
+
+; 256-bit
+vpxor ymm0, ymm0
 vmovaps  ymm1,       [rel .random_data2 + ((i * 32) % 4096)]
 vpblendd ymm0, ymm1, [rel .random_data  + ((i * 32) % 4096)], i
 vmovaps              [rel .data_result + (i * 32)], ymm0
+
+; 128-bit
+vpxor xmm3, xmm3
+vmovaps  xmm2,       [rel .random_data2 + ((i * 16) % 4096)]
+vpblendd xmm3, xmm2, [rel .random_data  + ((i * 16) % 4096)], i
+vmovaps              [rel .data_result2 + (i * 16)], xmm3
 
 ; CRC32 (by 64) the results
 crc32 rax, qword [rel .data_result + (i * 32) + 0]
 crc32 rax, qword [rel .data_result + (i * 32) + 8]
 crc32 rax, qword [rel .data_result + (i * 32) + 16]
 crc32 rax, qword [rel .data_result + (i * 32) + 24]
+
+crc32 rbx, qword [rel .data_result2 + (i * 16) + 0]
+crc32 rbx, qword [rel .data_result2 + (i * 16) + 8]
 %assign i i+1
 %endrep
 
@@ -30,6 +44,9 @@ hlt
 align 32
 .data_result:
 times 256 dq 0, 0, 0, 0
+
+.data_result2:
+times 256 dq 0, 0
 
 align 32
 ; 8192-bytes of random data
