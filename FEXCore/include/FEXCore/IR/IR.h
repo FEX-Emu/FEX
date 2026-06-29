@@ -34,6 +34,12 @@ enum NamedVectorConstant : uint8_t {
   NAMED_VECTOR_MOVMASKB,
   NAMED_VECTOR_MOVMASKB_UPPER,
 
+  // Used to swap [0, 1, 2, 3] into [0, 2, 1, 3] in lieu
+  // of Q operations introduced in SVE2.1. Can be removed when
+  // such operations become available.
+  NAMED_VECTOR_256_MID_ELEMENT_SWAP,
+  NAMED_VECTOR_256_MID_ELEMENT_SWAP_UPPER,
+
   NAMED_VECTOR_X87_ONE,
   NAMED_VECTOR_X87_LOG2_10,
   NAMED_VECTOR_X87_LOG2_E,
