@@ -3970,14 +3970,13 @@
       ]
     },
     "vmovd dword [rax], xmm0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 1 0b01 0x7e 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "mov v0.s[0], v16.s[0]",
-        "mov v2.16b, v0.16b",
+        "movi v2.2d, #0x0",
+        "mov v2.s[0], v16.s[0]",
         "str s2, [x4]"
       ]
     },

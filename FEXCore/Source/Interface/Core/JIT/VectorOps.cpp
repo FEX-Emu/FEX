@@ -1036,24 +1036,28 @@ DEF_OP(VMov) {
 
   const auto Dst = GetVReg(Node);
   const auto Source = GetVReg(Op->Source);
+  const auto Sub64BitHandler = [&](ARMEmitter::SubRegSize InsertSize) {
+    if (Dst != Source) {
+      movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
+      ins(InsertSize, Dst, 0, Source, 0);
+    } else {
+      movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+      ins(InsertSize, VTMP1, 0, Source, 0);
+      mov(Dst.Q(), VTMP1.Q());
+    }
+  };
 
   switch (OpSize) {
   case IR::OpSize::i8Bit: {
-    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
-    ins(ARMEmitter::SubRegSize::i8Bit, VTMP1, 0, Source, 0);
-    mov(Dst.Q(), VTMP1.Q());
+    Sub64BitHandler(ARMEmitter::SubRegSize::i8Bit);
     break;
   }
   case IR::OpSize::i16Bit: {
-    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
-    ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 0, Source, 0);
-    mov(Dst.Q(), VTMP1.Q());
+    Sub64BitHandler(ARMEmitter::SubRegSize::i16Bit);
     break;
   }
   case IR::OpSize::i32Bit: {
-    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
-    ins(ARMEmitter::SubRegSize::i32Bit, VTMP1, 0, Source, 0);
-    mov(Dst.Q(), VTMP1.Q());
+    Sub64BitHandler(ARMEmitter::SubRegSize::i32Bit);
     break;
   }
   case IR::OpSize::i64Bit: {
