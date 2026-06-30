@@ -4446,7 +4446,7 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegClass Class, const X86Tables::De
   if (ShouldLoad) {
     if (OpSize == OpSize::f80Bit) {
       Ref MemSrc = LoadEffectiveAddress(this, A, GetGPROpSize(), true);
-      if (CTX->HostFeatures.SupportsSVE128 || CTX->HostFeatures.SupportsSVE256) {
+      if (CTX->HostFeatures.SupportsSVE()) {
         Result = _LoadMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, MemSrc);
       } else {
         // For X87 extended doubles, Split the load.
@@ -4585,7 +4585,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(RegClass Class, FEXCore::X86Table
 
   if (OpSize == OpSize::f80Bit) {
     Ref MemStoreDst = LoadEffectiveAddress(this, A, GetGPROpSize(), true);
-    if (CTX->HostFeatures.SupportsSVE128 || CTX->HostFeatures.SupportsSVE256) {
+    if (CTX->HostFeatures.SupportsSVE()) {
       _StoreMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, Src, MemStoreDst);
     } else {
       // For X87 extended doubles, split before storing

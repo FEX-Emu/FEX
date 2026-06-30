@@ -659,7 +659,7 @@ void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Regi
   }
 #endif
 
-  if (SetPredRegs && (EmitterCTX->HostFeatures.SupportsSVE256 || EmitterCTX->HostFeatures.SupportsSVE128)) {
+  if (SetPredRegs && EmitterCTX->HostFeatures.SupportsSVE()) {
     // Set up predicate registers.
     // We don't bother spilling these in SpillStaticRegs,
     // since all that matters is we restore them on a fill.

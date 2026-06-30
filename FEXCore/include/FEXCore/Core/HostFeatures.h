@@ -5,13 +5,20 @@
 #include <cstdint>
 
 namespace FEXCore {
+
+/**
+ * @brief Backend features that change how codegen is generated from IR
+ *
+ * Specifically things that affect the IR->Codegen process
+ * Not the x86->IR process
+ */
 struct HostFeatures {
-  /**
-   * @brief Backend features that change how codegen is generated from IR
-   *
-   * Specifically things that affect the IR->Codegen process
-   * Not the x86->IR process
-   */
+  // Whether or not the host supports any kind of SVE implementation.
+  [[nodiscard]]
+  bool SupportsSVE() const {
+    return SupportsSVE128 || SupportsSVE256;
+  }
+
   uint32_t DCacheLineSize {};
   uint32_t ICacheLineSize {};
   bool SupportsCacheMaintenanceOps {};

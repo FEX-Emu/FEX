@@ -188,7 +188,7 @@ private:
 
   void Store80BitToMem(const IROp_StoreStackMem* Op, Ref StackNode, Ref AddrNode, Ref Offset, OpSize Align, MemOffsetType OffsetType,
                        uint8_t OffsetScale) {
-    if (Features.SupportsSVE128 || Features.SupportsSVE256) {
+    if (Features.SupportsSVE()) {
       AddressMode A {.Base = AddrNode,
                      .Index = Op->Offset.IsInvalid() ? nullptr : Offset,
                      .IndexType = MemOffsetType::SXTX,
