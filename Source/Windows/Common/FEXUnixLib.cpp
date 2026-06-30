@@ -9,6 +9,7 @@
 #include <winternl.h>
 #include <libloaderapi.h>
 #include "FEXUnixLib.h"
+#include "Priv.h"
 
 #define PR_SET_VMA 0x53564d41
 #define PR_SET_VMA_ANON_NAME 0
@@ -94,14 +95,14 @@ bool Init(HMODULE NtDll) {
 
   auto TryNewWineMethod = []() {
 #ifdef ARCHITECTURE_arm64ec
-    constexpr auto Name = "libarm64ecfex";
+    auto Name = InitUnicodeString(L"libarm64ecfex");
 #else
-    constexpr auto Name = "libwow64fex";
+    auto Name = InitUnicodeString(L"libwow64fex");
 #endif
 
     // Not supported in Proton at all, but supported in upstream WINE.
     uint64_t Result[2];
-    if (NtQueryVirtualMemory(NtCurrentProcess(), Name, MemoryWineLoadUnixLibByName, Result, sizeof(Result), nullptr)) {
+    if (NtQueryVirtualMemory(NtCurrentProcess(), &Name, MemoryWineLoadUnixLibByName, Result, sizeof(Result), nullptr)) {
       return false;
     }
 
