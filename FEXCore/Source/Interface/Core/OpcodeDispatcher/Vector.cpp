@@ -1745,7 +1745,6 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs, IR::OpSize ElementSize, bool Low) 
       Result = _VInsElement(SrcSize, OpSize::i128Bit, 1, 0, ResultLo, ResultHi);
     } else {
       Result = PShufWLane(SrcSize, ShuffleConst, Low, Src, Shuffle);
-      Result = _VMov(OpSize::i128Bit, Result);
     }
   } else {
     if (Is256Bit) {
@@ -1757,8 +1756,13 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs, IR::OpSize ElementSize, bool Low) 
       Result = _VInsElement(SrcSize, OpSize::i128Bit, 1, 0, ResultLo, ResultHi);
     } else {
       Result = Single128Bit4ByteVectorShuffle(Src, Shuffle);
-      Result = _VMov(OpSize::i128Bit, Result);
     }
+  }
+
+  if (!Is256Bit && Shuffle == 0b11'10'01'00) {
+    // Necessary in the event of an identity shuffle, since the register
+    // remains untouched in this case, and we need to truncate.
+    Result = _VMov(OpSize::i128Bit, Result);
   }
 
   StoreResultFPR(Op, Result);
