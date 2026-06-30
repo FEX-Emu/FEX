@@ -107,6 +107,7 @@ private:
   uint64_t F64ScaleHandlerAddress {};
   uint64_t F64AtanHandlerAddress {};
   uint64_t F64FYL2XHandlerAddress {};
+  uint64_t F64FYL2XP1HandlerAddress {};
   uint64_t F64FPREMHandlerAddress {};
   uint64_t F64FPREM1HandlerAddress {};
 
@@ -120,13 +121,23 @@ private:
   void EmitF32ToExtF80();
   void EmitF64ToExtF80();
 
+  // Shared label set for the LUT-based F64 log2 path used by both FYL2X and
+  // FYL2XP1. The pool is emitted once via EmitF64Log2Constants.
+  struct F64Log2Constants {
+    ARMEmitter::ForwardLabel One;
+    ARMEmitter::ForwardLabel A0, A1, A2, A3, A4, A5, A6, A7;
+    ARMEmitter::ForwardLabel Table;
+  };
+
   void EmitF64Sin();
   void EmitF64Cos();
   void EmitF64Tan();
   void EmitF64F2XM1();
   void EmitF64Scale();
   void EmitF64Atan();
-  void EmitF64FYL2X();
+  void EmitF64FYL2X(F64Log2Constants& C);
+  void EmitF64FYL2XP1(F64Log2Constants& C);
+  void EmitF64Log2Constants(F64Log2Constants& C);
   void EmitF64FPREM();
   void EmitF64FPREM1();
 

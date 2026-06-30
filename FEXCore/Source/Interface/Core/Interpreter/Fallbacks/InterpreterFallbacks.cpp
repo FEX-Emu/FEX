@@ -72,6 +72,8 @@ void InterpreterOps::FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint
                                 reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80DIV>::handle)};
   Info[Core::OPINDEX_F80FYL2X] = {ABIHandlers[FABI_F80_I16_F80_F80_PTR],
                                   reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80FYL2X>::handle)};
+  Info[Core::OPINDEX_F80FYL2XP1] = {ABIHandlers[FABI_F80_I16_F80_F80_PTR],
+                                    reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80FYL2XP1>::handle)};
   Info[Core::OPINDEX_F80ATAN] = {ABIHandlers[FABI_F80_I16_F80_F80_PTR],
                                  reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80ATAN>::handle)};
   Info[Core::OPINDEX_F80FPREM1] = {ABIHandlers[FABI_F80_I16_F80_F80_PTR],
@@ -97,6 +99,8 @@ void InterpreterOps::FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint
                                    reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64FPREM1>::handle)};
   Info[Core::OPINDEX_F64FYL2X] = {ABIHandlers[FABI_F64_F64_F64_PTR],
                                   reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64FYL2X>::handle)};
+  Info[Core::OPINDEX_F64FYL2XP1] = {ABIHandlers[FABI_F64_F64_F64_PTR],
+                                    reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64FYL2XP1>::handle)};
   Info[Core::OPINDEX_F64SCALE] = {ABIHandlers[FABI_F64_F64_F64_PTR],
                                   reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64SCALE>::handle)};
 
@@ -254,6 +258,7 @@ bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInf
     COMMON_BINARY_X87_OP(MUL)
     COMMON_BINARY_X87_OP(DIV)
     COMMON_BINARY_X87_OP(FYL2X)
+    COMMON_BINARY_X87_OP(FYL2XP1)
     COMMON_BINARY_X87_OP(ATAN)
     COMMON_BINARY_X87_OP(FPREM1)
     COMMON_BINARY_X87_OP(FPREM)
@@ -268,6 +273,7 @@ bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInf
 
     // Double Precision Binary
     COMMON_BINARY_F64_OP(FYL2X)
+    COMMON_BINARY_F64_OP(FYL2XP1)
     COMMON_BINARY_F64_OP(ATAN)
     COMMON_BINARY_F64_OP(FPREM1)
     COMMON_BINARY_F64_OP(FPREM)
