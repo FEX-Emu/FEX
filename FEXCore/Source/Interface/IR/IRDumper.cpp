@@ -208,6 +208,10 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, NamedVectorCon
         return "movmaskb";
       case NamedVectorConstant::NAMED_VECTOR_MOVMASKB_UPPER:
         return "movmaskb_upper";
+      case NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP:
+        return "v256_mid_element_swap";
+      case NamedVectorConstant::NAMED_VECTOR_256_MID_ELEMENT_SWAP_UPPER:
+        return "v256_mid_element_swap_upper";
       case NamedVectorConstant::NAMED_VECTOR_ZERO:
         return "vectorzero";
       case NamedVectorConstant::NAMED_VECTOR_X87_ONE:
