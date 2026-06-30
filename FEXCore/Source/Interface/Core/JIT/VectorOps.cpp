@@ -1095,16 +1095,21 @@ DEF_OP(VAddP) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
-    // SVE ADDP is a destructive operation, so we need a temporary
-    movprfx(VTMP1.Z(), VectorLower.Z());
+    // SVE ADDP is a destructive operation, so we need a temporary if
+    // the destination and the lower vector don't alias.
+    auto LHS = Dst;
+    if (Dst != VectorLower) {
+      movprfx(VTMP1.Z(), VectorLower.Z());
+      LHS = VTMP1;
+    }
 
     // Unlike Adv. SIMD's version of ADDP, which acts like it concats the
     // upper vector onto the end of the lower vector and then performs
     // pairwise addition, the SVE version actually interleaves the
     // results of the pairwise addition (gross!), so we need to undo that.
-    addp(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), VectorUpper.Z());
-    uzp1(SubRegSize, Dst.Z(), VTMP1.Z(), VTMP1.Z());
-    uzp2(SubRegSize, VTMP2.Z(), VTMP1.Z(), VTMP1.Z());
+    addp(SubRegSize, LHS.Z(), Pred, LHS.Z(), VectorUpper.Z());
+    uzp1(SubRegSize, Dst.Z(), LHS.Z(), LHS.Z());
+    uzp2(SubRegSize, VTMP2.Z(), LHS.Z(), LHS.Z());
 
     // Merge upper half with lower half.
     splice<ARMEmitter::OpType::Destructive>(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), PRED_TMP_16B, Dst.Z(), VTMP2.Z());
@@ -1298,16 +1303,21 @@ DEF_OP(VFAddP) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
-    // SVE FADDP is a destructive operation, so we need a temporary
-    movprfx(VTMP1.Z(), VectorLower.Z());
+    // SVE FADDP is a destructive operation, so we need a temporary if
+    // the destination and the lower vector don't alias.
+    auto LHS = Dst;
+    if (Dst != VectorLower) {
+      movprfx(VTMP1.Z(), VectorLower.Z());
+      LHS = VTMP1;
+    }
 
     // Unlike Adv. SIMD's version of FADDP, which acts like it concats the
     // upper vector onto the end of the lower vector and then performs
     // pairwise addition, the SVE version actually interleaves the
     // results of the pairwise addition (gross!), so we need to undo that.
-    faddp(SubRegSize, VTMP1.Z(), Pred, VTMP1.Z(), VectorUpper.Z());
-    uzp1(SubRegSize, Dst.Z(), VTMP1.Z(), VTMP1.Z());
-    uzp2(SubRegSize, VTMP2.Z(), VTMP1.Z(), VTMP1.Z());
+    faddp(SubRegSize, LHS.Z(), Pred, LHS.Z(), VectorUpper.Z());
+    uzp1(SubRegSize, Dst.Z(), LHS.Z(), LHS.Z());
+    uzp2(SubRegSize, VTMP2.Z(), LHS.Z(), LHS.Z());
 
     // Merge upper half with lower half.
     splice<ARMEmitter::OpType::Destructive>(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), PRED_TMP_16B, Dst.Z(), VTMP2.Z());
