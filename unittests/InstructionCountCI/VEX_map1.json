@@ -631,14 +631,13 @@
       ]
     },
     "vrcpps ymm0, ymm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b00 0x53 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmov z0.s, #0x70 (1.0000)",
-        "fdiv z0.s, p7/m, z0.s, z17.s",
-        "mov z16.d, z0.d"
+        "fmov z16.s, #0x70 (1.0000)",
+        "fdiv z16.s, p7/m, z16.s, z17.s"
       ]
     },
     "vrcpss xmm0, xmm1, xmm2": {

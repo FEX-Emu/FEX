@@ -1536,9 +1536,14 @@ DEF_OP(VFRecp) {
       return;
     }
 
-    fmov(SubRegSize.Vector, VTMP1.Z(), 1.0);
-    fdiv(SubRegSize.Vector, VTMP1.Z(), Pred, VTMP1.Z(), Vector.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    if (Dst != Vector) {
+      fmov(SubRegSize.Vector, Dst.Z(), 1.0);
+      fdiv(SubRegSize.Vector, Dst.Z(), Pred, Dst.Z(), Vector.Z());
+    } else {
+      fmov(SubRegSize.Vector, VTMP1.Z(), 1.0);
+      fdiv(SubRegSize.Vector, VTMP1.Z(), Pred, VTMP1.Z(), Vector.Z());
+      mov(Dst.Z(), VTMP1.Z());
+    }
   } else {
     if (IsScalar) {
       if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
