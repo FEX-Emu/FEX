@@ -228,7 +228,12 @@ bool InitializeServerSocket(bool abstract) {
   if (abstract) {
     ServerSocketName = FEXServerClient::GetServerSocketName();
   } else {
-    ServerSocketName = FEXServerClient::GetServerSocketPath();
+    ServerSocketName = FEXServerClient::GetServerSocketPath(false);
+    if (ServerSocketName.size() > sizeof(sockaddr_un::sun_path) - 1) {
+      LogMan::Msg::EFmt("Socket path '{}' too large for Unix domain sockets. Moving to tmp", ServerSocketName);
+      ServerSocketName = FEXServerClient::GetServerSocketPath(true);
+    }
+
     // Unlink the socket file if it exists
     // We are being asked to create a daemon, not error check
     // We don't care if this failed or not
