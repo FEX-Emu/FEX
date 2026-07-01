@@ -137,21 +137,31 @@ fextl::string GetServerSocketName() {
   return ServerSocketPath;
 }
 
-fextl::string GetServerSocketPath() {
+fextl::string GetServerSocketPath(bool ForceTmp) {
   fextl::string name {};
+  fextl::string Folder {};
 #ifndef FEX_STEAM_SUPPORT
   FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
 
-  name = ServerSocketPath();
+  if (!ForceTmp) {
+    name = ServerSocketPath();
 
-  if (name.starts_with("/")) {
-    return name;
+    if (name.starts_with("/")) {
+      return name;
+    }
   }
 
-  auto Folder = GetTempFolder();
+  Folder = GetTempFolder();
 #else
-  // Under Steam the FEXServer's socket is a game-specific directory.
-  auto Folder = GetServerLockFolder();
+  if (ForceTmp) {
+    // If we're forcing temporary directory usage then the server socket path has exceeded sun_path 108 byte limit.
+    // Let's be a bit nice and put some more metadata in the server socket path.
+    const auto SteamID = getenv("SteamAppId") ?: "";
+    return fextl::fmt::format("{}/{}.FEXServer.Socket", GetTempFolder(), SteamID);
+  } else {
+    // Under Steam the FEXServer's socket is a game-specific directory.
+    Folder = GetServerLockFolder();
+  }
 #endif
 
   if (name.empty()) {
@@ -203,7 +213,11 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
 
   // Try again with a path-based socket, since abstract sockets will fail if we have been
   // placed in a new netns as part of a sandbox.
-  auto ServerSocketPath = GetServerSocketPath();
+  auto ServerSocketPath = GetServerSocketPath(false);
+  if (ServerSocketPath.size() > sizeof(sockaddr_un::sun_path) - 1) {
+    LogMan::Msg::EFmt("Socket path '{}' too large for Unix domain sockets. Moving to tmp", ServerSocketPath);
+    ServerSocketPath = FEXServerClient::GetServerSocketPath(true);
+  }
 
   addr.sun_family = AF_UNIX;
   SizeOfSocketString = std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1);
