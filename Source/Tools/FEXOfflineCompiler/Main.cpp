@@ -404,14 +404,19 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Is64Bit ? "1" : "0");
 
   // Load HostFeatures
+#ifndef _WIN32
   auto HostFeatures = FEX::FetchHostFeatures();
+#else
+  const auto NtDll = GetModuleHandle("ntdll.dll");
+  const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
+  auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(
+    IsWine, Is64Bit ? FEXCore::HostFeatures::HostTypeEnum::Arm64ec : FEXCore::HostFeatures::HostTypeEnum::Wow64);
+#endif
 
   auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   CTX->GetCodeCache().InitiateCacheGeneration();
 
 #ifdef _WIN32
-  const auto NtDll = GetModuleHandle("ntdll.dll");
-  const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   OvercommitTracker = std::make_unique<FEX::Windows::OvercommitTracker>(IsWine);
 
   auto SyscallOSABI = Is64Bit ? FEXCore::HLE::SyscallOSABI::OS_LINUX64 : FEXCore::HLE::SyscallOSABI::OS_LINUX32;
