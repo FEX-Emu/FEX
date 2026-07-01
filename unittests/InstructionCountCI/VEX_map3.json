@@ -3329,17 +3329,16 @@
       ]
     },
     "vdpps ymm0, ymm1, ymm2, 11111111b": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "Map 3 0b01 0x40 128-bit"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
         "fmul z3.s, z17.s, z18.s",
-        "movprfx z0, z3",
-        "faddp z0.s, p7/m, z0.s, z2.s",
-        "uzp1 z3.s, z0.s, z0.s",
-        "uzp2 z1.s, z0.s, z0.s",
+        "faddp z3.s, p7/m, z3.s, z2.s",
+        "uzp1 z3.s, z3.s, z3.s",
+        "uzp2 z1.s, z3.s, z3.s",
         "splice z3.d, p6, z3.d, z1.d",
         "movprfx z0, z3",
         "faddp z0.s, p7/m, z0.s, z2.s",

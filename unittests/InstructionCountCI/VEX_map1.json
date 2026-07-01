@@ -4202,7 +4202,7 @@
       ]
     },
     "vpmovmskb rax, ymm0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 17,
       "Comment": [
         "Map 1 0b01 0xd7 256-bit"
       ],
@@ -4217,10 +4217,9 @@
         "mov z3.d, z0.d",
         "msr nzcv, x0",
         "and z2.d, z3.d, z2.d",
-        "movprfx z0, z2",
-        "addp z0.b, p7/m, z0.b, z2.b",
-        "uzp1 z2.b, z0.b, z0.b",
-        "uzp2 z1.b, z0.b, z0.b",
+        "addp z2.b, p7/m, z2.b, z2.b",
+        "uzp1 z2.b, z2.b, z2.b",
+        "uzp2 z1.b, z2.b, z2.b",
         "splice z2.d, p6, z2.d, z1.d",
         "addp v2.16b, v2.16b, v2.16b",
         "addp v2.8b, v2.8b, v2.8b",
