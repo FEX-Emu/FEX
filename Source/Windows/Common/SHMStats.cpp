@@ -19,13 +19,10 @@ uint32_t StatAlloc::FrontendAllocateSlots(uint32_t NewSize) {
     return CurrentSize;
   }
 
-  auto Result = UnixLib::AllocateSHMSlots(Base, std::min(CurrentSize * 2, MAX_STATS_SIZE), MAX_STATS_SIZE);
+  auto Result = UnixLib::AllocateSHMSlots(Base, std::min(NewSize, MAX_STATS_SIZE), MAX_STATS_SIZE);
 
-  if (Result.SHMBase) {
-    CurrentSize = Result.MappedSize;
-  }
-
-  return CurrentSize;
+  // Return the new size allocated, if it happened to change.
+  return Result.MappedSize;
 }
 
 StatAlloc::StatAlloc(FEXCore::SHMStats::AppType AppType) {
