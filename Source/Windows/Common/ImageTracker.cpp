@@ -233,36 +233,30 @@ void ImageTracker::LoadAOTImages(MappedImageInfo& ImageInfo) {
   const auto AnsiPath = fmt::format("\\??\\{}cache\\{}-{:016x}", FEX::Config::GetCacheDirectory(), ID, CodeCacheConfigId);
 
   IO_STATUS_BLOCK IOSB;
-  {
-    {
-      ScopedUnicodeString CurrentFileName(AnsiPath.c_str());
+  ScopedUnicodeString CurrentFileName(AnsiPath.c_str());
 
-      {
-        OBJECT_ATTRIBUTES FileAttr;
-        InitializeObjectAttributes(&FileAttr, &*CurrentFileName, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
+  OBJECT_ATTRIBUTES FileAttr;
+  InitializeObjectAttributes(&FileAttr, &*CurrentFileName, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
 
-        ScopedHandle FileHandle;
-        if (NT_SUCCESS(NtOpenFile(&*FileHandle, GENERIC_READ | SYNCHRONIZE, &FileAttr, &IOSB, FILE_SHARE_READ, FILE_SYNCHRONOUS_IO_NONALERT))) {
-          ScopedHandle SectionHandle;
-          if (NT_SUCCESS(NtCreateSection(&*SectionHandle, SECTION_MAP_EXECUTE | SECTION_MAP_READ, nullptr, nullptr, PAGE_EXECUTE_READ,
-                                         SEC_COMMIT, *FileHandle))) {
-            void* LoadAddress = nullptr;
-            SIZE_T MappedSize = 0;
-            if (NT_SUCCESS(NtMapViewOfSection(*SectionHandle, NtCurrentProcess(), &LoadAddress, 0, 0, nullptr, &MappedSize, ViewUnmap,
-                                              MEM_RESERVE | MEM_TOP_DOWN, PAGE_EXECUTE_READ))) {
+  ScopedHandle FileHandle;
+  if (NT_SUCCESS(NtOpenFile(&*FileHandle, GENERIC_READ | SYNCHRONIZE, &FileAttr, &IOSB, FILE_SHARE_READ, FILE_SYNCHRONOUS_IO_NONALERT))) {
+    ScopedHandle SectionHandle;
+    if (NT_SUCCESS(NtCreateSection(&*SectionHandle, SECTION_MAP_EXECUTE | SECTION_MAP_READ, nullptr, nullptr, PAGE_EXECUTE_READ, SEC_COMMIT,
+                                   *FileHandle))) {
+      void* LoadAddress = nullptr;
+      SIZE_T MappedSize = 0;
+      if (NT_SUCCESS(NtMapViewOfSection(*SectionHandle, NtCurrentProcess(), &LoadAddress, 0, 0, nullptr, &MappedSize, ViewUnmap,
+                                        MEM_RESERVE | MEM_TOP_DOWN, PAGE_EXECUTE_READ))) {
 
-              auto CacheSpan = std::span {static_cast<std::byte*>(LoadAddress), MappedSize};
-              auto MappedCache = CTX.GetCodeCache().LoadCache(CacheSpan, ImageInfo.Info, ImageInfo.SectionInfo.FileStartVA);
-              if (MappedCache) {
-                CTX.GetCodeCache().RegisterMappedCodeBuffer(*MappedCache);
-                AOTImages[ID] = {.CacheFile = std::move(MappedCache)};
-                LogMan::Msg::IFmt("Loaded cache: {}", ID);
-              } else {
-                NtUnmapViewOfSection(NtCurrentProcess(), LoadAddress);
-                LogMan::Msg::EFmt("Failed to load cache: {}", ID);
-              }
-            }
-          }
+        auto CacheSpan = std::span {static_cast<std::byte*>(LoadAddress), MappedSize};
+        auto MappedCache = CTX.GetCodeCache().LoadCache(CacheSpan, ImageInfo.Info, ImageInfo.SectionInfo.FileStartVA);
+        if (MappedCache) {
+          CTX.GetCodeCache().RegisterMappedCodeBuffer(*MappedCache);
+          AOTImages[ID] = {.CacheFile = std::move(MappedCache)};
+          LogMan::Msg::IFmt("Loaded cache: {}", ID);
+        } else {
+          NtUnmapViewOfSection(NtCurrentProcess(), LoadAddress);
+          LogMan::Msg::EFmt("Failed to load cache: {}", ID);
         }
       }
     }
