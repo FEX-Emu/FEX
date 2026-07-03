@@ -1,10 +1,10 @@
 black>=26.3.1
 darker==2.1.1
 PyGithub==2.6.1
-cryptography>=46.0.7
+cryptography>=48.0.1
 urllib3>=2.7.0
 requests>=2.33.0
 idna>=3.15
 certifi>=2024.7.4
 PyNaCl>=1.6.2
-PyJWT>=2.12.1
+PyJWT>=2.13.0
