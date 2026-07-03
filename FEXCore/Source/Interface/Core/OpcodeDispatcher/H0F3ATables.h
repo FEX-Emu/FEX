@@ -37,7 +37,7 @@ constexpr auto OpDispatchTableGenH0F3A = []() consteval {
       {OPD(REX, PF_3A_66, 0x63), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPISTRIOp, false>},
 
       {OPD(REX, PF_3A_NONE, 0xCC), 1, &OpDispatchBuilder::SHA1RNDS4Op},
-      {OPD(REX, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
+      {OPD(REX, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AESKeyGenAssist, false>},
 
     };
     return std::to_array(Table);

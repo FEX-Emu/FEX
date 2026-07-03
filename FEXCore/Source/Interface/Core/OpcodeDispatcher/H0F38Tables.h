@@ -79,7 +79,7 @@ constexpr DispatchTableEntry OpDispatch_H0F38Table[] = {
   {OPD(PF_38_NONE, 0xCC), 1, &OpDispatchBuilder::SHA256MSG1Op},
   {OPD(PF_38_NONE, 0xCD), 1, &OpDispatchBuilder::SHA256MSG2Op},
 
-  {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
+  {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AESImcOp, false>},
   {OPD(PF_38_66, 0xDC), 1, &OpDispatchBuilder::AESEncOp},
   {OPD(PF_38_66, 0xDD), 1, &OpDispatchBuilder::AESEncLastOp},
   {OPD(PF_38_66, 0xDE), 1, &OpDispatchBuilder::AESDecOp},

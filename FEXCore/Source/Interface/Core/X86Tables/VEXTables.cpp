@@ -808,7 +808,7 @@ namespace AVX256 {
     {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 3, 1>},  // VFMADDSUB
     {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 2, 3, 1>}, // VFMSUBADD
 
-    {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
+    {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AESImcOp, true>},
     {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::VAESEncOp},
     {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::VAESEncLastOp},
     {OPD(2, 0b01, 0xDE), 1, &OpDispatchBuilder::VAESDecOp},
@@ -860,7 +860,7 @@ namespace AVX256 {
     {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPISTRMOp, true>},
     {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPCMPISTRIOp, true>},
 
-    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
+    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AESKeyGenAssist, true>},
   };
 #undef OPD
 
