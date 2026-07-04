@@ -4751,10 +4751,26 @@
       ]
     },
     "vaesenc ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "Map 2 0b01 0xdc 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z3.q, z17.q[1]",
+        "mov z4.q, z18.q[1]",
+        "mov v0.16b, v17.16b",
+        "aese v0.16b, v2.16b",
+        "aesmc v0.16b, v0.16b",
+        "eor v5.16b, v0.16b, v18.16b",
+        "mov v0.16b, v3.16b",
+        "aese v0.16b, v2.16b",
+        "aesmc v0.16b, v0.16b",
+        "eor v2.16b, v0.16b, v4.16b",
+        "mov z1.q, q2",
+        "mov z16.d, z5.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z16.b, p0/m, z1.b"
       ]
     },
     "vaesenclast xmm0, xmm1, xmm2": {
@@ -4770,10 +4786,24 @@
       ]
     },
     "vaesenclast ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "Map 2 0b01 0xdd 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z3.q, z17.q[1]",
+        "mov z4.q, z18.q[1]",
+        "mov v0.16b, v17.16b",
+        "aese v0.16b, v2.16b",
+        "eor v5.16b, v0.16b, v18.16b",
+        "mov v0.16b, v3.16b",
+        "aese v0.16b, v2.16b",
+        "eor v2.16b, v0.16b, v4.16b",
+        "mov z1.q, q2",
+        "mov z16.d, z5.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z16.b, p0/m, z1.b"
       ]
     },
     "vaesdec xmm0, xmm1, xmm2": {
@@ -4790,10 +4820,26 @@
       ]
     },
     "vaesdec ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "Map 2 0b01 0xde 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z3.q, z17.q[1]",
+        "mov z4.q, z18.q[1]",
+        "mov v0.16b, v17.16b",
+        "aesd v0.16b, v2.16b",
+        "aesimc v0.16b, v0.16b",
+        "eor v5.16b, v0.16b, v18.16b",
+        "mov v0.16b, v3.16b",
+        "aesd v0.16b, v2.16b",
+        "aesimc v0.16b, v0.16b",
+        "eor v2.16b, v0.16b, v4.16b",
+        "mov z1.q, q2",
+        "mov z16.d, z5.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z16.b, p0/m, z1.b"
       ]
     },
     "vaesdeclast xmm0, xmm1, xmm2": {
@@ -4809,10 +4855,24 @@
       ]
     },
     "vaesdeclast ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "Map 2 0b01 0xdf 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z3.q, z17.q[1]",
+        "mov z4.q, z18.q[1]",
+        "mov v0.16b, v17.16b",
+        "aesd v0.16b, v2.16b",
+        "eor v5.16b, v0.16b, v18.16b",
+        "mov v0.16b, v3.16b",
+        "aesd v0.16b, v2.16b",
+        "eor v2.16b, v0.16b, v4.16b",
+        "mov z1.q, q2",
+        "mov z16.d, z5.d",
+        "not p0.b, p7/z, p6.b",
+        "mov z16.b, p0/m, z1.b"
       ]
     },
     "andn eax, ebx, ecx": {

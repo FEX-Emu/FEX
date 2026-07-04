@@ -1,11 +1,3 @@
-# AES unsupported in 256-bit SVE currently
-Test_VEX/vaesdec.asm
-Test_VEX/vaesdeclast.asm
-Test_VEX/vaesdec256.asm
-Test_VEX/vaesdeclast256.asm
-Test_VEX/vaesenc256.asm
-Test_VEX/vaesenclast256.asm
-
 # Simulator can't handle self-modifying code
 Test_SelfModifyingCode/Delinking.asm
 Test_SelfModifyingCode/DifferentBlock.asm
