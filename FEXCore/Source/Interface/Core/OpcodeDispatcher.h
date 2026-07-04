@@ -839,12 +839,12 @@ public:
   void SHA256MSG2Op(OpcodeArgs);
   void SHA256RNDS2Op(OpcodeArgs);
 
-  void AESImcOp(OpcodeArgs);
+  void AESImcOp(OpcodeArgs, bool IsAVX);
   void AESEncOp(OpcodeArgs);
   void AESEncLastOp(OpcodeArgs);
   void AESDecOp(OpcodeArgs);
   void AESDecLastOp(OpcodeArgs);
-  void AESKeyGenAssist(OpcodeArgs);
+  void AESKeyGenAssist(OpcodeArgs, bool IsAVX);
 
   void VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
   void VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
