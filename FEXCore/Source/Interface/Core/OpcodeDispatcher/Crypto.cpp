@@ -327,8 +327,8 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Literal());
 
-  auto Res = _PCLMUL(OpSize::i128Bit, Dest, Src, Selector & 0b1'0001);
-  StoreResultFPR(Op, Res);
+  auto Result = _PCLMUL(OpSize::i128Bit, Dest, Src, Selector & 0b1'0001);
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
 void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
