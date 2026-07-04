@@ -208,14 +208,25 @@ void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
-  const auto Is128Bit = DstSize == OpSize::i128Bit;
-
-  // TODO: Handle 256-bit VAESENC.
-  LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENC unimplemented");
+  const auto Is256Bit = DstSize == OpSize::i256Bit;
 
   Ref State = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
-  Ref Result = _VAESEnc(DstSize, State, Key, LoadZeroVector(DstSize));
+  Ref ZeroVec = LoadZeroVector(DstSize);
+
+  Ref Result {};
+  if (Is256Bit) {
+    // TODO: Handle as one operation once vixl supports it.
+    auto UpperState = _VDupElement(DstSize, OpSize::i128Bit, State, 1);
+    auto UpperKey = _VDupElement(DstSize, OpSize::i128Bit, Key, 1);
+
+    auto Lower = _VAESEnc(OpSize::i128Bit, State, Key, ZeroVec);
+    auto Upper = _VAESEnc(OpSize::i128Bit, UpperState, UpperKey, ZeroVec);
+
+    Result = _VInsElement(DstSize, OpSize::i128Bit, 1, 0, Lower, Upper);
+  } else {
+    Result = _VAESEnc(DstSize, State, Key, ZeroVec);
+  }
 
   StoreResultFPR(Op, Result);
 }
@@ -233,14 +244,25 @@ void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
-  const auto Is128Bit = DstSize == OpSize::i128Bit;
-
-  // TODO: Handle 256-bit VAESENCLAST.
-  LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENCLAST unimplemented");
+  const auto Is256Bit = DstSize == OpSize::i256Bit;
 
   Ref State = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
-  Ref Result = _VAESEncLast(DstSize, State, Key, LoadZeroVector(DstSize));
+  Ref ZeroVec = LoadZeroVector(DstSize);
+
+  Ref Result {};
+  if (Is256Bit) {
+    // TODO: Handle as one operation once vixl supports it.
+    auto UpperState = _VDupElement(DstSize, OpSize::i128Bit, State, 1);
+    auto UpperKey = _VDupElement(DstSize, OpSize::i128Bit, Key, 1);
+
+    auto Lower = _VAESEncLast(OpSize::i128Bit, State, Key, ZeroVec);
+    auto Upper = _VAESEncLast(OpSize::i128Bit, UpperState, UpperKey, ZeroVec);
+
+    Result = _VInsElement(DstSize, OpSize::i128Bit, 1, 0, Lower, Upper);
+  } else {
+    Result = _VAESEncLast(DstSize, State, Key, ZeroVec);
+  }
 
   StoreResultFPR(Op, Result);
 }
@@ -258,14 +280,25 @@ void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
-  const auto Is128Bit = DstSize == OpSize::i128Bit;
-
-  // TODO: Handle 256-bit VAESDEC.
-  LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDEC unimplemented");
+  const auto Is256Bit = DstSize == OpSize::i256Bit;
 
   Ref State = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
-  Ref Result = _VAESDec(DstSize, State, Key, LoadZeroVector(DstSize));
+  Ref ZeroVec = LoadZeroVector(DstSize);
+
+  Ref Result {};
+  if (Is256Bit) {
+    // TODO: Handle as one operation once vixl supports it.
+    auto UpperState = _VDupElement(DstSize, OpSize::i128Bit, State, 1);
+    auto UpperKey = _VDupElement(DstSize, OpSize::i128Bit, Key, 1);
+
+    auto Lower = _VAESDec(OpSize::i128Bit, State, Key, ZeroVec);
+    auto Upper = _VAESDec(OpSize::i128Bit, UpperState, UpperKey, ZeroVec);
+
+    Result = _VInsElement(DstSize, OpSize::i128Bit, 1, 0, Lower, Upper);
+  } else {
+    Result = _VAESDec(DstSize, State, Key, ZeroVec);
+  }
 
   StoreResultFPR(Op, Result);
 }
@@ -283,14 +316,25 @@ void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
-  const auto Is128Bit = DstSize == OpSize::i128Bit;
-
-  // TODO: Handle 256-bit VAESDECLAST.
-  LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDECLAST unimplemented");
+  const auto Is256Bit = DstSize == OpSize::i256Bit;
 
   Ref State = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
-  Ref Result = _VAESDecLast(DstSize, State, Key, LoadZeroVector(DstSize));
+  Ref ZeroVec = LoadZeroVector(DstSize);
+
+  Ref Result {};
+  if (Is256Bit) {
+    // TODO: Handle as one operation once vixl supports it.
+    auto UpperState = _VDupElement(DstSize, OpSize::i128Bit, State, 1);
+    auto UpperKey = _VDupElement(DstSize, OpSize::i128Bit, Key, 1);
+
+    auto Lower = _VAESDecLast(OpSize::i128Bit, State, Key, ZeroVec);
+    auto Upper = _VAESDecLast(OpSize::i128Bit, UpperState, UpperKey, ZeroVec);
+
+    Result = _VInsElement(DstSize, OpSize::i128Bit, 1, 0, Lower, Upper);
+  } else {
+    Result = _VAESDecLast(DstSize, State, Key, ZeroVec);
+  }
 
   StoreResultFPR(Op, Result);
 }
