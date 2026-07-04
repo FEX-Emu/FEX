@@ -3937,31 +3937,41 @@
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 00000b": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 3 0b01 0x44 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "pmullb z16.q, z17.d, z18.d"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 00001b": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 3 0b01 0x44 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "trn2 z0.d, z17.d, z17.d",
+        "pmullb z16.q, z0.d, z18.d"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 10000b": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 3 0b01 0x44 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "trn2 z0.d, z18.d, z18.d",
+        "pmullb z16.q, z17.d, z0.d"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 10001b": {
-      "ExpectedInstructionCount": -1,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 3 0b01 0x44 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "pmullt z16.q, z17.d, z18.d"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00000000b": {
