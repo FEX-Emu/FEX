@@ -324,24 +324,62 @@ DEF_OP(PCLMUL) {
   const auto Op = IROp->C<IR::IROp_PCLMUL>();
   const auto OpSize = IROp->Size;
 
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+
   const auto Dst = GetVReg(Node);
   const auto Src1 = GetVReg(Op->Src1);
   const auto Src2 = GetVReg(Op->Src2);
 
-  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
-
-  switch (Op->Selector) {
-  case 0b00000000: pmull(ARMEmitter::SubRegSize::i128Bit, Dst.D(), Src1.D(), Src2.D()); break;
-  case 0b00000001:
-    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), Src1.Q(), 1);
-    pmull(ARMEmitter::SubRegSize::i128Bit, Dst.D(), VTMP1.D(), Src2.D());
-    break;
-  case 0b00010000:
-    dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), Src2.Q(), 1);
-    pmull(ARMEmitter::SubRegSize::i128Bit, Dst.D(), VTMP1.D(), Src1.D());
-    break;
-  case 0b00010001: pmull2(ARMEmitter::SubRegSize::i128Bit, Dst.Q(), Src1.Q(), Src2.Q()); break;
-  default: LOGMAN_MSG_A_FMT("Unknown PCLMUL selector: {}", Op->Selector); break;
+  if (HostSupportsSVE256 && Is256Bit) {
+    switch (Op->Selector) {
+    case 0b00000000: {
+      pmullb(ARMEmitter::SubRegSize::i128Bit, Dst.Z(), Src1.Z(), Src2.Z());
+      break;
+    }
+    case 0b00000001: {
+      trn2(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), Src1.Z(), Src1.Z());
+      pmullb(ARMEmitter::SubRegSize::i128Bit, Dst.Z(), VTMP1.Z(), Src2.Z());
+      break;
+    }
+    case 0b00010000:
+      trn2(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), Src2.Z(), Src2.Z());
+      pmullb(ARMEmitter::SubRegSize::i128Bit, Dst.Z(), Src1.Z(), VTMP1.Z());
+      break;
+    case 0b00010001: {
+      pmullt(ARMEmitter::SubRegSize::i128Bit, Dst.Z(), Src1.Z(), Src2.Z());
+      break;
+    }
+    default: {
+      LOGMAN_MSG_A_FMT("Unknown PCLMUL selector: {}", Op->Selector);
+      break;
+    }
+    }
+  } else {
+    switch (Op->Selector) {
+    case 0b00000000: {
+      pmull(ARMEmitter::SubRegSize::i128Bit, Dst.D(), Src1.D(), Src2.D());
+      break;
+    }
+    case 0b00000001: {
+      dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), Src1.Q(), 1);
+      pmull(ARMEmitter::SubRegSize::i128Bit, Dst.D(), VTMP1.D(), Src2.D());
+      break;
+    }
+    case 0b00010000: {
+      dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), Src2.Q(), 1);
+      pmull(ARMEmitter::SubRegSize::i128Bit, Dst.D(), VTMP1.D(), Src1.D());
+      break;
+    }
+    case 0b00010001: {
+      pmull2(ARMEmitter::SubRegSize::i128Bit, Dst.Q(), Src1.Q(), Src2.Q());
+      break;
+    }
+    default: {
+      LOGMAN_MSG_A_FMT("Unknown PCLMUL selector: {}", Op->Selector);
+      break;
+    }
+    }
   }
 }
 
