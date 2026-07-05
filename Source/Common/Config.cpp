@@ -186,6 +186,7 @@ public:
   explicit MainLoader(FEXCore::Config::LayerType Type, std::optional<fextl::string> AppName = std::nullopt);
   explicit MainLoader(fextl::string ConfigFile, std::optional<fextl::string> AppName = std::nullopt);
   explicit MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigFile);
+  explicit MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigFile, std::optional<fextl::string> AppName = std::nullopt);
 
   void Load() override;
 
@@ -252,6 +253,11 @@ MainLoader::MainLoader(fextl::string ConfigFile, std::optional<fextl::string> Ap
 
 MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigFile)
   : OptionMapper(Type)
+  , Config {ConfigFile} {}
+
+MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigFile, std::optional<fextl::string> AppName)
+  : OptionMapper(Type)
+  , AppName {AppName}
   , Config {ConfigFile} {}
 
 void MainLoader::Load() {
@@ -349,8 +355,8 @@ fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(const fextl::string* F
   }
 }
 
-fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(std::string_view AppConfig) {
-  return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_USER_OVERRIDE, AppConfig);
+fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(std::string_view AppConfig, std::optional<fextl::string> AppName) {
+  return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_USER_OVERRIDE, AppConfig, AppName);
 }
 
 fextl::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type) {
@@ -510,7 +516,7 @@ void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInfo
     }
 
     if (FHU::Filesystem::Exists(AppConfigStr)) {
-      FEXCore::Config::AddLayer(CreateUserOverrideLayer(AppConfigStr));
+      FEXCore::Config::AddLayer(CreateUserOverrideLayer(AppConfigStr, ProgramName.empty() ? std::nullopt : std::optional {ProgramName}));
     }
   }
 
