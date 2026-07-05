@@ -125,6 +125,7 @@ FEX_DEFAULT_VISIBILITY size_t DetermineVASize() {
       ::munmap(Ptr, FEXCore::Utils::FEX_PAGE_SIZE);
     }
     if (Ptr != (void*)~0ULL || errno == EEXIST) {
+      HostVASize = Bits;
       return Bits;
     }
   }
