@@ -38,8 +38,6 @@ namespace FEXCore::Allocator {
 MMAP_Hook mmap {::mmap};
 MUNMAP_Hook munmap {::munmap};
 
-uint64_t HostVASize {};
-
 using GLIBC_MALLOC_Hook = void* (*)(size_t, const void* caller);
 using GLIBC_REALLOC_Hook = void* (*)(void*, size_t, const void* caller);
 using GLIBC_FREE_Hook = void (*)(void*, const void* caller);
@@ -104,9 +102,11 @@ void ClearHooks() {
 }
 #pragma GCC diagnostic pop
 
-FEX_DEFAULT_VISIBILITY size_t DetermineVASize() {
-  if (HostVASize) {
-    return HostVASize;
+FEX_DEFAULT_VISIBILITY size_t GetHostVABits() {
+  static uint64_t HostVABits = 0;
+
+  if (HostVABits) {
+    return HostVABits;
   }
 
   static constexpr std::array<uintptr_t, 7> TLBSizes = {
@@ -125,7 +125,7 @@ FEX_DEFAULT_VISIBILITY size_t DetermineVASize() {
       ::munmap(Ptr, FEXCore::Utils::FEX_PAGE_SIZE);
     }
     if (Ptr != (void*)~0ULL || errno == EEXIST) {
-      HostVASize = Bits;
+      HostVABits = Bits;
       return Bits;
     }
   }
@@ -274,7 +274,7 @@ fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
 }
 
 fextl::vector<MemoryRegion> Setup48BitAllocatorIfExists(size_t PageSize) {
-  size_t Bits = FEXCore::Allocator::DetermineVASize();
+  size_t Bits = FEXCore::Allocator::GetHostVABits();
   if (Bits < 48) {
     return {};
   }

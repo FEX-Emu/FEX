@@ -12,7 +12,7 @@ struct InternalThreadState;
 }
 
 namespace FEXCore::Allocator {
-FEX_DEFAULT_VISIBILITY size_t DetermineVASize();
+FEX_DEFAULT_VISIBILITY size_t GetHostVABits();
 
 #ifdef GLIBC_ALLOCATOR_FAULT
 // Glibc hooks should only fault once we are in main.

@@ -803,16 +803,16 @@ VDSOMapping LoadVDSOThunks(FEXCore::Core::InternalThreadState* Thread, bool Is64
       lseek(VDSOFD, 0, SEEK_SET);
       Mapping.VDSOSize = FEXCore::AlignUp(Mapping.VDSOSize, FEXCore::Utils::FEX_PAGE_SIZE);
 
-      auto VASize = FEXCore::Allocator::DetermineVASize();
+      auto VABits = FEXCore::Allocator::GetHostVABits();
       uint64_t VDSOHint {};
       if (Is64Bit) {
-        if (VASize > 47) {
+        if (VABits > 47) {
           // If VA size is at least as large as minimum x86 specification, then set to max.
-          VASize = 47;
+          VABits = 47;
         }
 
         // Calculate the highest point the vdso could go.
-        VDSOHint = (1ULL << VASize) - Mapping.VDSOSize;
+        VDSOHint = (1ULL << VABits) - Mapping.VDSOSize;
       } else {
         VDSOHint = 0x1'0000'0000ULL - Mapping.VDSOSize;
       }

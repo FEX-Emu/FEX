@@ -187,7 +187,7 @@ private:
 };
 
 void OSAllocator_64Bit::DetermineVASize() {
-  size_t Bits = FEXCore::Allocator::DetermineVASize();
+  size_t Bits = FEXCore::Allocator::GetHostVABits();
   uintptr_t Size = 1ULL << Bits;
 
   UPPER_BOUND = Size;

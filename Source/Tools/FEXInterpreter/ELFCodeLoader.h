@@ -454,16 +454,16 @@ public:
     // On the upside, this more accurately emulates how the kernel allocates stack space for the application when hinting at the location.
     //
     void* StackPointerBase {};
-    auto VASize = FEXCore::Allocator::DetermineVASize();
+    auto VABits = FEXCore::Allocator::GetHostVABits();
     uint64_t StackHint {};
     if (Is64BitMode()) {
-      if (VASize > 47) {
+      if (VABits > 47) {
         // If VA size is at least as large as minimum x86 specification, then set to max.
-        VASize = 47;
+        VABits = 47;
       }
 
       // Calculate the highest point the stack could go.
-      StackHint = (1ULL << VASize) - FULL_STACK_SIZE;
+      StackHint = (1ULL << VABits) - FULL_STACK_SIZE;
     } else {
       // Needs to be under the 4GB VA space.
       StackHint = 0x1'0000'0000ULL - FULL_STACK_SIZE;
@@ -557,8 +557,8 @@ public:
       if (Is64BitMode()) {
         // Ensure that if we are running on a 36-bit VA system, we don't try hinting that an ELF should
         // live way outside the VA space.
-        uint64_t HostVASize = 1ULL << FEXCore::Allocator::DetermineVASize();
-        ELFLoadHint = std::min(HostVASize, TASK_SIZE_64) / 3 * 2;
+        uint64_t HostVABits = 1ULL << FEXCore::Allocator::GetHostVABits();
+        ELFLoadHint = std::min(HostVABits, TASK_SIZE_64) / 3 * 2;
       } else {
         ELFLoadHint = TASK_SIZE_32 / 3 * 2;
       }
