@@ -95,6 +95,10 @@ struct TLS {
     return reinterpret_cast<std::atomic<uint32_t>&>(TEB->TlsSlots[FEXCore::ToUnderlying(Slot::CONTROL_WORD)]);
   }
 
+  uint32_t* ControlWordAddress() const {
+    return reinterpret_cast<uint32_t*>(&TEB->TlsSlots[FEXCore::ToUnderlying(Slot::CONTROL_WORD)]);
+  }
+
   CONTEXT*& EntryContext() const {
     return reinterpret_cast<CONTEXT*&>(TEB->TlsSlots[FEXCore::ToUnderlying(Slot::ENTRY_CONTEXT)]);
   }
@@ -822,8 +826,7 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
   }
 
   // Spin until the JIT is interrupted
-  while (TLS.ControlWord().load() & ControlBits::IN_JIT)
-    ;
+  FEXCore::Utils::SpinWaitLock::WaitBitMaskPred(TLS.ControlWordAddress(), ControlBits::IN_JIT, 0U, std::equal_to<>());
 
   // The JIT has now been interrupted and the context stored in the thread's CPU area is up-to-date
   if (Err = NtSuspendThread(*ThreadDup, Count); Err) {

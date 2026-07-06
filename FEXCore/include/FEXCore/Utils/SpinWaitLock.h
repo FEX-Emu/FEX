@@ -144,6 +144,21 @@ static inline void WaitPred(T* Futex, T ComparisonValue) {
   }
 }
 
+template<typename T, typename Pred>
+static inline void WaitBitMaskPred(T* Futex, T BitMask, T ComparisonValue, Pred Predicate) {
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
+  T Result = AtomicFutex.load();
+
+  while (!Predicate(Result & BitMask, ComparisonValue)) {
+    Result = LoadExclusive(Futex);
+    if (Predicate(Result & BitMask, ComparisonValue)) {
+      return;
+    }
+
+    Result = WFELoadAtomic(Futex);
+  }
+}
+
 template<typename T, typename TT>
 static inline bool Wait(T* Futex, TT ExpectedValue, const std::chrono::nanoseconds& Timeout) {
   auto AtomicFutex = std::atomic_ref<T>(*Futex);
@@ -209,6 +224,16 @@ static inline void WaitPred(T* Futex, T ComparisonValue) {
   T Result = AtomicFutex.load();
 
   while (!Pred {}(Result, ComparisonValue)) {
+    Result = AtomicFutex.load();
+  }
+}
+
+template<typename T, typename Pred>
+static inline void WaitBitMaskPred(T* Futex, T BitMask, T ComparisonValue, Pred Predicate) {
+  auto AtomicFutex = std::atomic_ref<T>(*Futex);
+  T Result = AtomicFutex.load();
+
+  while (!Predicate(Result & BitMask, ComparisonValue)) {
     Result = AtomicFutex.load();
   }
 }
