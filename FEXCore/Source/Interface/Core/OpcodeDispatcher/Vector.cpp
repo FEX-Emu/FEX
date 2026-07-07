@@ -5108,15 +5108,12 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
 }
 
 Ref OpDispatchBuilder::VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint64_t Selector) {
-  const auto IsWordElements = ElementSize == OpSize::i16Bit;
-  const auto Is256Bit = VecSize == OpSize::i256Bit;
+  if (VecSize == OpSize::i256Bit) {
+    return _VBlendImm(VecSize, ElementSize, Src1, Src2, Selector);
+  }
 
   const auto ElementsPerLane = uint32_t(IR::NumElements(OpSize::i128Bit, ElementSize));
-
-  // PBLENDW uses the same immediate size for 128-bit and 256-bit
-  // while all the others double in size.
-  const auto MaskSize = Is256Bit && !IsWordElements ? ElementsPerLane * 2 : ElementsPerLane;
-  const auto Mask = (1U << MaskSize) - 1;
+  const auto Mask = (1U << ElementsPerLane) - 1;
 
   // Now, we determine which mask portion has the higher population count.
   // we use this to determine which source we use as the base to insert into.
@@ -5133,7 +5130,7 @@ Ref OpDispatchBuilder::VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, 
   // In the event we tie, then we can just use Src1 and only perform incoming insertions
   // that come from Src2.
   const auto NumSrc2Bits = uint32_t(std::popcount(Selector & Mask));
-  const auto NumSrc1Bits = MaskSize - NumSrc2Bits;
+  const auto NumSrc1Bits = ElementsPerLane - NumSrc2Bits;
   const auto IsUsingSrc1 = NumSrc1Bits >= NumSrc2Bits;
   Ref Result = IsUsingSrc1 ? Src1 : Src2;
   Ref Source = IsUsingSrc1 ? Src2 : Src1;

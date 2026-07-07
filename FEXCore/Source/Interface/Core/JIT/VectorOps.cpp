@@ -4631,6 +4631,81 @@ DEF_OP(VFNMLS) {
   }
 }
 
+DEF_OP(VBlendImm) {
+  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "Host must support SVE to use {}", __func__);
+
+  auto Op = IROp->C<IR::IROp_VBlendImm>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
+  const auto ElementSize = IROp->ElementSize;
+  const auto Selector = Op->Selector;
+
+  const auto GoverningPredicate = Is256Bit ? PRED_TMP_32B : PRED_TMP_16B;
+
+  const auto Dst = GetVReg(Node);
+  const auto LHS = GetVReg(Op->LHS);
+  const auto RHS = GetVReg(Op->RHS);
+  const auto DstIsNonAliasing = Dst != LHS && Dst != RHS;
+
+  // Silly case where two blending sources are the same.
+  if (LHS == RHS) {
+    if (DstIsNonAliasing) {
+      mov(SubRegSize, Dst.Z(), GoverningPredicate.Merging(), LHS.Z());
+    }
+    return;
+  }
+
+  // We'll need to expand our selector to match its predicate equivalent.
+  // The lowest bit of each predicate element being set to 1 signifies
+  // that it's enabled.
+  const auto MakePredicateMask = [ElementSize, Is256Bit, OpSize](uint16_t Imm) {
+    if (ElementSize == IR::OpSize::i8Bit) {
+      // Since we use a u16 selector, we have enough bits for every byte in a
+      // 128-bit lane, so we don't need to do anything here except replicate the
+      // bits in the event of 256-bit.
+      return Is256Bit ? uint32_t(Imm) << 16 | Imm : Imm;
+    }
+
+    uint32_t Mask = 0;
+    const auto DataSize = IR::OpSizeToSize(ElementSize);
+    const auto NumElements = IR::NumElements(OpSize, ElementSize);
+    for (uint32_t i = 0; i < NumElements; i++) {
+      if (((Imm >> i) & 1) != 0) {
+        Mask |= 1U << (DataSize * i);
+      }
+    }
+    return Mask;
+  };
+
+  // Our predicate that we'll be firing our constructed bitmask into.
+  constexpr auto Predicate = ARMEmitter::PReg::p0.Merging();
+
+  // TODO: We can completely eliminate this via PMOV in SVE2.1
+  ARMEmitter::ForwardLabel AfterLabel;
+  ARMEmitter::BackwardLabel ConstantLabel;
+  (void)b(&AfterLabel);
+  (void)Bind(&ConstantLabel);
+  const auto PredicateMask = MakePredicateMask(Selector);
+  if (Dst == RHS) {
+    dc32(~PredicateMask);
+  } else {
+    dc32(PredicateMask);
+  }
+  (void)Bind(&AfterLabel);
+  (void)adr(TMP1, &ConstantLabel);
+  ldr(Predicate, TMP1);
+
+  if (Dst == LHS) {
+    mov(SubRegSize, LHS.Z(), Predicate, RHS.Z());
+  } else if (Dst == RHS) {
+    mov(SubRegSize, RHS.Z(), Predicate, LHS.Z());
+  } else {
+    mov(SubRegSize, Dst.Z(), GoverningPredicate.Merging(), LHS.Z());
+    mov(SubRegSize, Dst.Z(), Predicate, RHS.Z());
+  }
+}
+
 DEF_OP(VFCopySign) {
   auto Op = IROp->C<IR::IROp_VFCopySign>();
   const auto OpSize = IROp->Size;
