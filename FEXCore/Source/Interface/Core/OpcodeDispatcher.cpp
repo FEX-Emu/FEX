@@ -1689,8 +1689,8 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 }
 
 void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
-  auto* Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto* Src2 = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src2 = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   auto Dest = _Andn(OpSizeFromSrc(Op), Src2, Src1);
 
@@ -1703,8 +1703,8 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // along with some edge-case handling and flag setting.
 
   LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
-  auto* Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto* Src2 = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src2 = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   const auto Size = OpSizeFromSrc(Op);
   const auto SrcSize = IR::OpSizeAsBits(Size);
@@ -1746,7 +1746,7 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
   const auto Size = OpSizeFromSrc(Op);
 
-  auto* Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto NegatedSrc = _Neg(Size, Src);
   auto Result = _And(Size, Src, NegatedSrc);
 
@@ -1767,7 +1767,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
   const auto Size = OpSizeFromSrc(Op);
 
-  auto* Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto Result = _Xor(Size, Sub(Size, Src, 1), Src);
 
   StoreResultGPR(Op, Result);
@@ -1787,7 +1787,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
   const auto Size = OpSizeFromSrc(Op);
 
-  auto* Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto Result = _And(Size, Sub(Size, Src, 1), Src);
 
   StoreResultGPR(Op, Result);
@@ -1807,8 +1807,8 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   const auto SrcSize = Op->Src[0].IsGPR() ? GPRSize : Size;
 
-  auto* Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
-  auto* Shift = LoadSourceGPR_WithOpSize(Op, Op->Src[1], GPRSize, Op->Flags, {.AllowUpperGarbage = true});
+  auto Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
+  auto Shift = LoadSourceGPR_WithOpSize(Op, Op->Src[1], GPRSize, Op->Flags, {.AllowUpperGarbage = true});
 
   Ref Result;
   if (Op->OP == 0x6F7) {
@@ -1831,9 +1831,9 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 
   // In 32-bit mode we only look at bottom 32-bit, no 8 or 16-bit BZHI so no
   // need to zero-extend sources
-  auto* Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
-  auto* Index = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  auto Index = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
   // Clear the high bits specified by the index. A64 only considers bottom bits
   // of the shift, so we don't need to mask bottom 8-bits ourselves.
@@ -1878,8 +1878,8 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
     return;
   }
 
-  auto* Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto* Result = Src;
+  auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Result = Src;
   if (DoRotation) [[likely]] {
     Result = _Ror(OpSizeFromSrc(Op), Src, _InlineConstant(Amount));
   }
@@ -1916,8 +1916,8 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
 
 void OpDispatchBuilder::PDEP(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
-  auto* Input = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto* Mask = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  auto Input = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Mask = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   auto Result = _PDep(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResultGPR(Op, Op->Dest, Result);
@@ -1925,8 +1925,8 @@ void OpDispatchBuilder::PDEP(OpcodeArgs) {
 
 void OpDispatchBuilder::PEXT(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
-  auto* Input = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto* Mask = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  auto Input = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Mask = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   auto Result = _PExt(OpSizeFromSrc(Op), Input, Mask);
 
   StoreResultGPR(Op, Op->Dest, Result);
@@ -1936,8 +1936,8 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
   const auto OpSize = OpSizeFromSrc(Op);
 
   // Only 32/64-bit anyway so allow garbage, we use 32-bit ops.
-  auto* Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto* Before = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Before = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   // Handles ADCX and ADOX
   const bool IsADCX = Op->OP == 0x1F6;
