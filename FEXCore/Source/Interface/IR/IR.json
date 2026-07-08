@@ -2564,6 +2564,24 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
         "TiedSource": 2
+      },
+      "FPR = VBlendImm OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$LHS, FPR:$RHS, u16:$Selector": {
+        "Desc": [
+          "Functions the same way an immediate blend operation on x86 would.",
+          "That is: (e.g. using 16-bit elements)",
+          "  if (Selector[0] == 1)",
+          "    Dst[15:0] = RHS[15:0]",
+          "  else",
+          "    Dst[15:0] = LHS[15:0]",
+          " <etc for the rest of the elements along the vector>",
+          "",
+          "Note that like x86, due to the selector size, the operation of this IR op",
+          "uses a 128-bit lane granularity, so each blending selector independently operates",
+          "on each 128-bit element that composes the vector."
+        ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize",
+        "TiedSource": 0
       }
     },
     "Conv": {
