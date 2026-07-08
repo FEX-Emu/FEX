@@ -3877,7 +3877,6 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
         // This allows us to only hit the ZEXT case on failure
         Ref RAXResult = NZCVSelect(OpSize::i64Bit, CondClass::EQ, Src3, Src1Lower);
 
-        // When the size is 4 we need to make sure not zext the GPR when the comparison fails
         StoreGPRRegister(X86State::REG_RAX, RAXResult);
       } else {
         StoreGPRRegister(X86State::REG_RAX, Src1Lower, Size);
@@ -3891,7 +3890,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
       Src2Lower = _Bfe(GPRSize, IR::OpSizeAsBits(Size), 0, Src2);
     }
-    Ref DestResult = Trivial ? Src2 : NZCVSelect(OpSize::i64Bit, CondClass::EQ, Src2Lower, Src1);
+    Ref DestResult = Trivial ? Src2Lower : NZCVSelect(OpSize::i64Bit, CondClass::EQ, Src2Lower, Src1);
 
     // Store in to GPR Dest
     if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {

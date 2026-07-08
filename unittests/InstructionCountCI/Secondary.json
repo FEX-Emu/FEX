@@ -2120,7 +2120,7 @@
       "ExpectedArm64ASM": [
         "mov w27, #0x0",
         "subs w26, w4, w4",
-        "mov x4, x6"
+        "mov w4, w6"
       ]
     },
     "cmpxchg [rcx], ebx": {
