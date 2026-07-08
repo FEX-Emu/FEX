@@ -774,7 +774,7 @@ DEF_OP(PDep) {
     // Now, they're copied, so we can start setting Dest (even if it overlaps with
     // one of them).  Handle early exit case
     mov(EmitSize, Dest, 0);
-    (void)cbz(EmitSize, OrigMask, &Done);
+    (void)cbz(EmitSize, Mask, &Done);
 
     // Setup for first iteration
     neg(EmitSize, T0, Mask);
