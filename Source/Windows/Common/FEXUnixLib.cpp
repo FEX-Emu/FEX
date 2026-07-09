@@ -149,7 +149,7 @@ bool TryEnableHardwareTSO() {
   }
 
   // Legacy Proton path.
-  bool Enable = TRUE;
+  BOOL Enable = TRUE;
   NTSTATUS Status = NtSetInformationProcess(NtCurrentProcess(), ProcessFexHardwareTso, &Enable, sizeof(Enable));
   return Status == STATUS_SUCCESS;
 }
