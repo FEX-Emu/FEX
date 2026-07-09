@@ -164,7 +164,11 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
         ActiveCodeMapPath = fmt::format("{}{}.{}.bin", CodeMapDir, ID, Time.QuadPart);
 
         auto Writer = fextl::make_unique<FEXCore::CodeMapWriter>(*this, false);
-        Writer->AppendSetMainExecutable(ImageInfo->Info);
+#ifdef _M_ARM64EC
+        Writer->AppendSetMainExecutable(ImageInfo->Info, true);
+#else
+        Writer->AppendSetMainExecutable(ImageInfo->Info, false);
+#endif
         CTX.SetCodeMapWriter(std::move(Writer));
       }
     }

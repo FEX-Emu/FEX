@@ -572,7 +572,7 @@ static int GenerateCache(int argc, const char** argv) {
     }
 
     for (auto& [FileId, Contents] : Parsed) {
-      if (!ExplicitFileId && (Contents.IsExecutable || Parsed.size() == 1)) {
+      if (!ExplicitFileId && (Contents.ExecutableBitness || Parsed.size() == 1)) {
         ProgramName.FileId = FileId;
         ProgramName.Filename = Contents.Filename;
       }
@@ -621,7 +621,7 @@ static int GenerateCache(int argc, const char** argv) {
  * Writes aggregated code map data into a single code map file that is ready to be used for cache generation
  */
 static void WriteNewCodeMap(const FEXCore::ExecutableFileInfo& File, const std::string& OutputName, const fextl::set<uintptr_t>& Blocks,
-                            bool IsExecutable, const std::set<FEXCore::ExecutableFileInfo>& Dependencies) {
+                            std::optional<int> ExecutableBitness, const std::set<FEXCore::ExecutableFileInfo>& Dependencies) {
   fmt::print("Writing {} blocks to {}\n", Blocks.size(), OutputName);
 
   struct CodeMapOpener : FEXCore::CodeMapOpener {
@@ -638,9 +638,9 @@ static void WriteNewCodeMap(const FEXCore::ExecutableFileInfo& File, const std::
 
   CodeMapOpener CodeMapOpener(OutputName);
   FEXCore::CodeMapWriter OutputCodeMap(CodeMapOpener, true);
-  if (IsExecutable) {
+  if (ExecutableBitness) {
     // List the main executable and all used libraries
-    OutputCodeMap.AppendSetMainExecutable(File);
+    OutputCodeMap.AppendSetMainExecutable(File, ExecutableBitness == 64);
 
     for (auto& Dependency : Dependencies) {
       OutputCodeMap.AppendLibraryLoad(Dependency);
@@ -658,7 +658,7 @@ static void WriteNewCodeMap(const FEXCore::ExecutableFileInfo& File, const std::
 struct ParsedContentsAndDependencies {
   fextl::string Filename;
   fextl::set<uint64_t> Blocks;
-  bool IsExecutable = false;
+  std::optional<int> ExecutableBitness;
   std::set<FEXCore::CodeMapFileId> Dependencies;
 };
 
@@ -688,13 +688,13 @@ static std::map<FEXCore::CodeMapFileId, ParsedContentsAndDependencies> ImportPen
     std::set<FEXCore::CodeMapFileId> Dependencies;
     std::optional<FEXCore::CodeMapFileId> ExecutableFileId;
     for (auto& [FileId, Contents] : FEXCore::CodeMap::ParseCodeMap(Incoming)) {
-      auto& [Filename, Blocks, IsExecutable, _] =
+      auto& [Filename, Blocks, ExecutableBitness, _] =
         Result.emplace(std::piecewise_construct, std::forward_as_tuple(FileId), std::tuple {}).first->second;
       Filename = std::move(Contents.Filename);
       Blocks.merge(std::move(Contents.Blocks));
-      IsExecutable = Contents.IsExecutable;
-      if (IsExecutable) {
-        LOGMAN_THROW_A_FMT(!ExecutableFileId, "Expected a unique executable identifiers per code map");
+      ExecutableBitness = Contents.ExecutableBitness;
+      if (ExecutableBitness) {
+        LOGMAN_THROW_A_FMT(!ExecutableFileId, "Expected a unique executable identifier per code map");
         ExecutableFileId = FileId;
       } else {
         Dependencies.insert(FileId);
@@ -745,7 +745,7 @@ static void AggregateCodeMaps(const std::string& NewCodeMapDirectory, const std:
     for (auto& Dependency : Contents.Dependencies) {
       Dependencies.emplace(nullptr, Dependency, IncomingCodeMap.at(Dependency).Filename);
     }
-    WriteNewCodeMap(File, OutputName, Contents.Blocks, Contents.IsExecutable, Dependencies);
+    WriteNewCodeMap(File, OutputName, Contents.Blocks, Contents.ExecutableBitness, Dependencies);
   }
 }
 
@@ -767,7 +767,7 @@ static int ProcessAll() {
   for (auto& Entry : std::filesystem::directory_iterator(ReadyCodeMapDirectory)) {
     std::ifstream CodeMap(Entry.path(), std::ios_base::binary);
     auto Parsed = FEXCore::CodeMap::ParseCodeMap(CodeMap);
-    auto ExecutableIt = std::ranges::find_if(Parsed, [](const auto& Entry) { return Entry.second.IsExecutable; });
+    auto ExecutableIt = std::ranges::find_if(Parsed, [](const auto& Entry) { return Entry.second.ExecutableBitness.has_value(); });
     if (ExecutableIt == Parsed.end()) {
       // Skip libraries; they're only processed as dependencies of a main executable
       continue;

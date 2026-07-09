@@ -107,16 +107,22 @@ fextl::map<CodeMapFileId, CodeMap::ParsedContents> CodeMap::ParseCodeMap(std::if
         break;
       }
       Ret[Info.ExternalFileId].Filename = std::move(Filename);
-    } else if (Entry.FileId == SetExecutableFileId {}.Marker.FileId && Entry.BlockOffset == SetExecutableFileId {}.Marker.BlockOffset) {
+    } else if ((Entry.FileId == SetExecutableFileId::Marker32.FileId && Entry.BlockOffset == SetExecutableFileId::Marker32.BlockOffset) ||
+               (Entry.FileId == SetExecutableFileId::Marker64.FileId && Entry.BlockOffset == SetExecutableFileId::Marker64.BlockOffset)) {
       CodeMapFileId ExecutableFileId;
       File.read(reinterpret_cast<char*>(&ExecutableFileId), sizeof(ExecutableFileId));
       if (!File) {
         break;
       }
-      Ret[ExecutableFileId].IsExecutable = true;
+      Ret[ExecutableFileId].ExecutableBitness =
+        (Entry.FileId == SetExecutableFileId::Marker32.FileId && Entry.BlockOffset == SetExecutableFileId::Marker32.BlockOffset) ? 32 : 64;
     } else {
       if (!Ret.contains(Entry.FileId)) {
-        LogMan::Msg::EFmt("Code map referenced unknown file id {:016x}", Entry.FileId);
+        if (Entry.FileId == 0xffff'ffff'ffff'ffff) {
+          ERROR_AND_DIE_FMT("Malformed code map");
+        } else {
+          LogMan::Msg::EFmt("Code map referenced unknown file id {:016x}", Entry.FileId);
+        }
       } else {
         Ret[Entry.FileId].Blocks.insert(Entry.BlockOffset);
       }
@@ -222,8 +228,8 @@ void CodeMapWriter::AppendLibraryLoad(const FEXCore::ExecutableFileInfo& FileInf
   AppendData(std::as_bytes(std::span {Data, TotalSize}));
 }
 
-void CodeMapWriter::AppendSetMainExecutable(const FEXCore::ExecutableFileInfo& FileInfo) {
-  CodeMap::SetExecutableFileId Data {.ExecutableFileId = FileInfo.FileId};
+void CodeMapWriter::AppendSetMainExecutable(const FEXCore::ExecutableFileInfo& FileInfo, bool Is64Bit) {
+  CodeMap::SetExecutableFileId Data {Is64Bit ? CodeMap::SetExecutableFileId::Marker64 : CodeMap::SetExecutableFileId::Marker32, FileInfo.FileId};
   AppendData(std::span {reinterpret_cast<const std::byte*>(&Data), sizeof(Data)});
 }
 
