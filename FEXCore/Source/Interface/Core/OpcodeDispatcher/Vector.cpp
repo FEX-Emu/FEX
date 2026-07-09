@@ -2581,9 +2581,10 @@ Ref OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstElementSize, 
 }
 
 Ref OpDispatchBuilder::CVTFPR_To_GPRImpl(OpcodeArgs, Ref Src, IR::OpSize SrcElementSize, bool HostRoundingMode) {
-  // GPR size is determined by REX.W
   // Source Element size is determined by instruction
-  const auto GPRSize = OpSizeFromDst(Op);
+  // GPR size is determined by REX.W
+  // But instruction does not support 16bit register operands
+  const auto GPRSize = std::max(OpSize::i32Bit, OpSizeFromDst(Op));
 
   if (CTX->HostFeatures.SupportsFRINTTS) {
     // When we have FRINTTS, this is a two-step process. First, we round to the
@@ -2616,7 +2617,9 @@ void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs, IR::OpSize SrcElementSize, boo
   const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : SrcElementSize;
   Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
   Ref Result = CVTFPR_To_GPRImpl(Op, Src, SrcElementSize, HostRoundingMode);
-  StoreResultGPR(Op, Result);
+
+  const auto DestSize = std::max(OpSize::i32Bit, OpSizeFromDst(Op));
+  StoreResultGPR_WithOpSize(Op, Op->Dest, Result, DestSize);
 }
 
 Ref OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen) {
