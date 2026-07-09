@@ -164,7 +164,11 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
         ActiveCodeMapPath = fmt::format("{}{}.{}.bin", CodeMapDir, ID, Time.QuadPart);
 
         auto Writer = fextl::make_unique<FEXCore::CodeMapWriter>(*this, false);
-        Writer->AppendSetMainExecutable(ImageInfo->Info);
+#ifdef _M_ARM64EC
+        Writer->AppendSetMainExecutable(ImageInfo->Info, true);
+#else
+        Writer->AppendSetMainExecutable(ImageInfo->Info, false);
+#endif
         CTX.SetCodeMapWriter(std::move(Writer));
       }
     }
@@ -223,8 +227,9 @@ int ImageTracker::OpenCodeMapFile() {
 
 void ImageTracker::LoadAOTImages(MappedImageInfo& ImageInfo) {
   // Don't attempt cache loading for FEXOfflineCompiler itself
-  static bool IsFOC = ImageInfo.Info.Filename.ends_with("fexofflinecompiler.exe");
-  if (IsFOC) {
+  static bool IsFOC32 = ImageInfo.Info.Filename.ends_with("fexofflinecompiler32.exe");
+  static bool IsFOC64 = ImageInfo.Info.Filename.ends_with("fexofflinecompiler64.exe");
+  if (IsFOC32 || IsFOC64) {
     return;
   }
 

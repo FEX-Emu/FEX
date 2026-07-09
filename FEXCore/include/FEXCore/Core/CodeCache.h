@@ -103,14 +103,17 @@ struct CodeMap {
   static constexpr Entry LoadExternalLibrary = {0xffff'ffff'ffff'ffff, 0xffff'ffff};
 
   struct FEX_PACKED SetExecutableFileId {
-    Entry Marker = {0xffff'ffff'ffff'ffff, 0xffff'fffe};
+    static constexpr Entry Marker32 = {0xffff'ffff'ffff'ffff, 0xffff'ffee};
+    static constexpr Entry Marker64 = {0xffff'ffff'ffff'ffff, 0xffff'ffef};
+    Entry Marker;
     CodeMapFileId ExecutableFileId;
   };
 
   struct ParsedContents {
     fextl::string Filename;
     fextl::set<uint64_t> Blocks;
-    bool IsExecutable = false;
+    // 32/64 for executables, nullopt for non-executables (libraries)
+    std::optional<int> ExecutableBitness;
   };
 
   // Follows scheme fileid[-nomb]
@@ -152,7 +155,7 @@ public:
 
   void AppendBlock(const FEXCore::ExecutableFileSectionInfo&, uint64_t Entry);
   void AppendLibraryLoad(const FEXCore::ExecutableFileInfo&);
-  void AppendSetMainExecutable(const FEXCore::ExecutableFileInfo&);
+  void AppendSetMainExecutable(const FEXCore::ExecutableFileInfo&, bool Is64Bit);
 
   // Thread-safely commit any pending data to disk
   void Flush(size_t Offset);

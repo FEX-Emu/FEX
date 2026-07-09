@@ -9,6 +9,11 @@ target_link_libraries(FEXOfflineCompiler PRIVATE
   fmt::fmt)
 
 if (MINGW)
+  if (ARCHITECTURE_arm64ec)
+    set_target_properties(FEXOfflineCompiler PROPERTIES OUTPUT_NAME "FEXOfflineCompiler64")
+  else()
+    set_target_properties(FEXOfflineCompiler PROPERTIES OUTPUT_NAME "FEXOfflineCompiler32")
+  endif()
   patch_library_wine(FEXOfflineCompiler)
   target_include_directories(FEXOfflineCompiler PRIVATE
     "${CMAKE_SOURCE_DIR}/Source/Windows/include/"
