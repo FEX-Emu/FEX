@@ -5686,10 +5686,7 @@ void OpDispatchBuilder::Insertq_imm(OpcodeArgs) {
     MaskVector = _VShlI(OpSize::i128Bit, OpSize::i64Bit, MaskVector, Shift);
   }
 
-  // Negate the mask.
-  MaskVector = _VNot(OpSize::i64Bit, MaskVector);
-
-  Dest = _VAnd(OpSize::i64Bit, Dest, MaskVector);
+  Dest = _VAndn(OpSize::i64Bit, Dest, MaskVector);
   const Ref Result = _VOr(OpSize::i64Bit, Dest, Src);
 
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
@@ -5745,9 +5742,7 @@ void OpDispatchBuilder::Insertq(OpcodeArgs) {
   SrcData = _VUShl(OpSize::i128Bit, OpSize::i64Bit, SrcData, ShiftBits, false);
 
   // Generate a destination mask
-  const Ref DstMask = _VNot(OpSize::i64Bit, _VUShl(OpSize::i128Bit, OpSize::i64Bit, SrcMask, ShiftBits, false));
-
-  Ref Result = _VAnd(OpSize::i64Bit, Dest, DstMask);
+  Ref Result = _VAndn(OpSize::i64Bit, Dest, _VUShl(OpSize::i128Bit, OpSize::i64Bit, SrcMask, ShiftBits, false));
   Result = _VOr(OpSize::i64Bit, Result, SrcData);
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
