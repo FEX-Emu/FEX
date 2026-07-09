@@ -1864,9 +1864,9 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
-      "FPR = VNot OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
+      "FPR = VNot OpSize:#RegisterSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "OpSize::i8Bit"
       },
 
       "FPR = VAbs OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
@@ -2153,41 +2153,41 @@
         "ElementSize": "ElementSize"
       },
 
-      "FPR = VAnd OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VAnd OpSize:#RegisterSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize",
+        "ElementSize": "OpSize::i8Bit",
         "EmitValidation": [
           "RegisterSize == FEXCore::IR::OpSize::i256Bit || RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
 
-      "FPR = VAndn OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VAndn OpSize:#RegisterSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize",
+        "ElementSize": "OpSize::i8Bit",
         "EmitValidation": [
           "RegisterSize == FEXCore::IR::OpSize::i256Bit || RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
 
-      "FPR = VOrn OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VOrn OpSize:#RegisterSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize",
+        "ElementSize": "OpSize::i8Bit",
         "EmitValidation": [
           "RegisterSize == FEXCore::IR::OpSize::i256Bit || RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
 
-      "FPR = VOr OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VOr OpSize:#RegisterSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize",
+        "ElementSize": "OpSize::i8Bit",
         "EmitValidation": [
           "RegisterSize == FEXCore::IR::OpSize::i256Bit || RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
 
-      "FPR = VXor OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VXor OpSize:#RegisterSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize",
+        "ElementSize": "OpSize::i8Bit",
         "EmitValidation": [
           "RegisterSize == FEXCore::IR::OpSize::i256Bit || RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i64Bit"
         ]

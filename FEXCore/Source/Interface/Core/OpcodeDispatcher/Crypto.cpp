@@ -50,7 +50,7 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
   Ref NewVec = _VExtr(OpSize::i128Bit, OpSize::i64Bit, Dest, Src, 1);
 
   // [W0, W1, W2, W3] ^ [W2, W3, W4, W5]
-  Ref Result = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, NewVec);
+  Ref Result = _VXor(OpSize::i128Bit, Dest, NewVec);
 
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
