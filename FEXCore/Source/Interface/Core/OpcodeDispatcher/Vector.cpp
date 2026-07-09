@@ -2839,11 +2839,15 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
     if (Op->Src[0].IsGPR()) {
       // Loading from GPR and moving to Vector.
       Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[0], GetGPROpSize(), Op->Flags);
+
+      const auto SrcSize = std::max(OpSize::i32Bit, OpSizeFromSrc(Op));
       // zext to 128bit
-      Result = _VCastFromGPR(OpSize::i128Bit, OpSizeFromSrc(Op), Src);
+      Result = _VCastFromGPR(OpSize::i128Bit, SrcSize, Src);
     } else {
       // Loading from Memory as a scalar. Zero extend
-      Result = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+      const auto SrcSize = std::max(OpSize::i32Bit, OpSizeFromSrc(Op));
+      Result = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
     }
 
     StoreResult_WithAVXInsert(VectorType, RegClass::FPR, Op, Result);
@@ -2851,14 +2855,19 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
     Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
     if (Op->Dest.IsGPR()) {
-      const auto ElementSize = OpSizeFromDst(Op);
+      const auto DstSize = std::max(OpSize::i32Bit, OpSizeFromDst(Op));
+
       // Extract element from GPR. Zero extending in the process.
-      Src = _VExtractToGPR(OpSizeFromSrc(Op), ElementSize, Src, 0);
+      Src = _VExtractToGPR(OpSizeFromSrc(Op), DstSize, Src, 0);
       StoreResultGPR(Op, Op->Dest, Src);
+
+      StoreResultGPR_WithOpSize(Op, Op->Dest, Src, DstSize);
     } else {
+      const auto DstSize = std::max(OpSize::i32Bit, OpSizeFromDst(Op));
+
       // Storing first element to memory.
       Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.LoadData = false});
-      _StoreMemFPR(OpSizeFromDst(Op), Dest, Src, OpSize::i8Bit);
+      _StoreMemFPR(DstSize, Dest, Src, OpSize::i8Bit);
     }
   }
 }
