@@ -773,6 +773,14 @@ static int ProcessAll() {
       continue;
     }
 
+#ifdef _WIN32
+    // For WoA, spawn a subprocess for each cache generation run to
+    // ensure robustness against JIT crashes.
+    char SelfPathRaw[PATH_MAX];
+    GetModuleFileNameA(nullptr, SelfPathRaw, sizeof(SelfPathRaw));
+    std::string SelfPath = SelfPathRaw;
+#endif
+
     fmt::println("\nChecking caches for executable {}", ExecutableIt->second.Filename);
 
     // TODO: Compute the cache config id from the active FEX configuration
@@ -808,9 +816,18 @@ static int ProcessAll() {
       std::vector<const char*> GenerateArgs {
         "generate", "--fileid", FileIdArg.c_str(), "--outdir", OutDir.c_str(), MergedCodeMapFilename.c_str(),
       };
+#ifndef _WIN32
       if (GenerateCache(GenerateArgs.size(), GenerateArgs.data()) != 0) {
         fmt::println("ERROR: Cache generation failed for {}", BinaryName);
       }
+#else
+      GenerateArgs.insert(GenerateArgs.begin(), SelfPath.c_str());
+      GenerateArgs.push_back(nullptr);
+      auto Status = _spawnv(_P_WAIT, SelfPath.c_str(), GenerateArgs.data());
+      if (Status) {
+        fmt::println("ERROR: Cache generation failed for {}", BinaryName);
+      }
+#endif
     }
   }
 
