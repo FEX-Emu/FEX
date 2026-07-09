@@ -575,7 +575,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   for (int i = 0; i < 7; ++i) {
     Ref Reg = _LoadMemFPR(OpSize::i128Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
     // Mask off the top bits
-    Reg = _VAnd(OpSize::i128Bit, OpSize::i128Bit, Reg, Mask);
+    Reg = _VAnd(OpSize::i128Bit, Reg, Mask);
     if (ReducedPrecisionMode) {
       // Convert to double precision
       Reg = _F80CVT(OpSize::i64Bit, Reg);

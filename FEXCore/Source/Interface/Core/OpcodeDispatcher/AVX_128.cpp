@@ -603,7 +603,7 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs, IR::OpSize SrcElementSi
 
 void OpDispatchBuilder::AVX128_VANDN(OpcodeArgs) {
   AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), OpSize::i128Bit,
-                          [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return _VAndn(OpSize::i128Bit, _ElementSize, Src2, Src1); });
+                          [this](IR::OpSize, Ref Src1, Ref Src2) { return _VAndn(OpSize::i128Bit, Src2, Src1); });
 }
 
 void OpDispatchBuilder::AVX128_VPACKSS(OpcodeArgs, IR::OpSize ElementSize) {
@@ -885,7 +885,7 @@ void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
 
   auto Mask1Byte = [this](Ref Src, Ref VMask) {
     auto VCMP = _VCMPLTZ(OpSize::i128Bit, OpSize::i8Bit, Src);
-    auto VAnd = _VAnd(OpSize::i128Bit, OpSize::i8Bit, VCMP, VMask);
+    auto VAnd = _VAnd(OpSize::i128Bit, VCMP, VMask);
 
     auto VAdd1 = _VAddP(OpSize::i128Bit, OpSize::i8Bit, VAnd, VAnd);
     auto VAdd2 = _VAddP(OpSize::i128Bit, OpSize::i8Bit, VAdd1, VAdd1);
@@ -1729,8 +1729,8 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs, IR::OpSize ElementSize) {
 
   {
     // Calculate ZF first.
-    auto AndLow = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src2.Low, Src1.Low);
-    auto AndHigh = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src2.High, Src1.High);
+    auto AndLow = _VAnd(OpSize::i128Bit, Src2.Low, Src1.Low);
+    auto AndHigh = _VAnd(OpSize::i128Bit, Src2.High, Src1.High);
 
     auto ShiftLow = _VUShrI(OpSize::i128Bit, ElementSize, AndLow, ElementSizeInBits - 1);
     auto ShiftHigh = _VUShrI(OpSize::i128Bit, ElementSize, AndHigh, ElementSizeInBits - 1);
@@ -1749,8 +1749,8 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs, IR::OpSize ElementSize) {
 
   {
     // Calculate CF Second
-    auto AndLow = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2.Low, Src1.Low);
-    auto AndHigh = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2.High, Src1.High);
+    auto AndLow = _VAndn(OpSize::i128Bit, Src2.Low, Src1.Low);
+    auto AndHigh = _VAndn(OpSize::i128Bit, Src2.High, Src1.High);
 
     auto ShiftLow = _VUShrI(OpSize::i128Bit, ElementSize, AndLow, ElementSizeInBits - 1);
     auto ShiftHigh = _VUShrI(OpSize::i128Bit, ElementSize, AndHigh, ElementSizeInBits - 1);
@@ -1788,11 +1788,11 @@ void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
   }
 
   // For 256-bit, we need to unroll. This is nontrivial.
-  Ref Test1Low = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src1.Low, Src2.Low);
-  Ref Test2Low = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2.Low, Src1.Low);
+  Ref Test1Low = _VAnd(OpSize::i128Bit, Src1.Low, Src2.Low);
+  Ref Test2Low = _VAndn(OpSize::i128Bit, Src2.Low, Src1.Low);
 
-  Ref Test1High = _VAnd(OpSize::i128Bit, OpSize::i8Bit, Src1.High, Src2.High);
-  Ref Test2High = _VAndn(OpSize::i128Bit, OpSize::i8Bit, Src2.High, Src1.High);
+  Ref Test1High = _VAnd(OpSize::i128Bit, Src1.High, Src2.High);
+  Ref Test2High = _VAndn(OpSize::i128Bit, Src2.High, Src1.High);
 
   // Element size must be less than 32-bit for the sign bit tricks.
   Ref Test1Max = _VUMax(OpSize::i128Bit, OpSize::i16Bit, Test1Low, Test1High);
@@ -2009,13 +2009,13 @@ void OpDispatchBuilder::AVX128_VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Sr
     ConstantEOR = LoadAndCacheNamedVectorConstant(
       OpSize::i128Bit, ElementSize == OpSize::i32Bit ? NAMED_VECTOR_PSUBADDPS_INVERT : NAMED_VECTOR_PSUBADDPD_INVERT);
   }
-  auto InvertedSourceLow = _VXor(OpSize::i128Bit, ElementSize, Sources[AddendIdx - 1].Low, ConstantEOR);
+  auto InvertedSourceLow = _VXor(OpSize::i128Bit, Sources[AddendIdx - 1].Low, ConstantEOR);
 
   Result.Low = _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].Low, Sources[Src2Idx - 1].Low, InvertedSourceLow);
   if (Is128Bit) {
     Result.High = LoadZeroVector(OpSize::i128Bit);
   } else {
-    auto InvertedSourceHigh = _VXor(OpSize::i128Bit, ElementSize, Sources[AddendIdx - 1].High, ConstantEOR);
+    auto InvertedSourceHigh = _VXor(OpSize::i128Bit, Sources[AddendIdx - 1].High, ConstantEOR);
     Result.High = _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].High, Sources[Src2Idx - 1].High, InvertedSourceHigh);
   }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);

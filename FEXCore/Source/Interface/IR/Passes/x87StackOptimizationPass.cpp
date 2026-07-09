@@ -1087,7 +1087,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           ResultNode = IREmit->_VFNeg(OpSize::i64Bit, OpSize::i64Bit, Value);
         } else {
           Ref HelperNode = IREmit->_LoadNamedVectorConstant(OpSize::i128Bit, IR::NamedVectorConstant::NAMED_VECTOR_F80_SIGN_MASK);
-          ResultNode = IREmit->_VXor(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
+          ResultNode = IREmit->_VXor(OpSize::i128Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
         break;
@@ -1102,7 +1102,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         } else {
           // Intermediate insts
           Ref HelperNode = IREmit->_LoadNamedVectorConstant(OpSize::i128Bit, IR::NamedVectorConstant::NAMED_VECTOR_F80_SIGN_MASK);
-          ResultNode = IREmit->_VAndn(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
+          ResultNode = IREmit->_VAndn(OpSize::i128Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
         break;
