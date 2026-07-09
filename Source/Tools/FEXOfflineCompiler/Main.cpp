@@ -52,6 +52,14 @@ static std::unique_ptr<FEX::Windows::OvercommitTracker> OvercommitTracker;
 static FEXCore::Core::InternalThreadState* Thread = nullptr;
 
 #ifdef _WIN32
+#ifdef _M_ARM64EC
+const bool Is64BitCompiler = true;
+#else
+const bool Is64BitCompiler = false;
+#endif
+#endif
+
+#ifdef _WIN32
 class AOTSyscallHandler : public FEXCore::HLE::SyscallHandler {
 #else
 class AOTSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEX::HLE::SyscallMmapInterface {
@@ -396,10 +404,8 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
     return std::nullopt;
   }
   const bool Is64Bit = Loader.Is64BitMode();
-#elif defined(_M_ARM64EC)
-  const bool Is64Bit = true;
 #else
-  const bool Is64Bit = false;
+  const bool Is64Bit = Is64BitCompiler;
 #endif
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Is64Bit ? "1" : "0");
 
@@ -774,11 +780,13 @@ static int ProcessAll() {
     }
 
 #ifdef _WIN32
-    // For WoA, spawn a subprocess for each cache generation run to
-    // ensure robustness against JIT crashes.
+    // For WoA, spawn a subprocess for each cache generation run.
+    // This ensures robustness and allows for switching FEXOfflineCompiler between WoW64 and ARM64EC.
     char SelfPathRaw[PATH_MAX];
     GetModuleFileNameA(nullptr, SelfPathRaw, sizeof(SelfPathRaw));
     std::string SelfPath = SelfPathRaw;
+    auto NewExecName = fmt::format("FEXOfflineCompiler{}.exe", ExecutableIt->second.ExecutableBitness.value());
+    SelfPath.replace(SelfPath.size() - NewExecName.size(), NewExecName.size(), NewExecName);
 #endif
 
     fmt::println("\nChecking caches for executable {}", ExecutableIt->second.Filename);

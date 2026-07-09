@@ -227,8 +227,9 @@ int ImageTracker::OpenCodeMapFile() {
 
 void ImageTracker::LoadAOTImages(MappedImageInfo& ImageInfo) {
   // Don't attempt cache loading for FEXOfflineCompiler itself
-  static bool IsFOC = ImageInfo.Info.Filename.ends_with("fexofflinecompiler.exe");
-  if (IsFOC) {
+  static bool IsFOC32 = ImageInfo.Info.Filename.ends_with("fexofflinecompiler32.exe");
+  static bool IsFOC64 = ImageInfo.Info.Filename.ends_with("fexofflinecompiler64.exe");
+  if (IsFOC32 || IsFOC64) {
     return;
   }
 
