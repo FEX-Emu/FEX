@@ -4451,13 +4451,9 @@ DEF_OP(VFMLS) {
 
     if (Is128Bit) {
       fneg(SubRegSize, DestTmp.Q(), VectorAddend.Q());
-    } else {
-      fneg(SubRegSize, DestTmp.D(), VectorAddend.D());
-    }
-
-    if (Is128Bit) {
       fmla(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
     } else {
+      fneg(SubRegSize, DestTmp.D(), VectorAddend.D());
       fmla(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
     }
 
@@ -4611,13 +4607,9 @@ DEF_OP(VFNMLS) {
 
     if (Is128Bit) {
       fneg(SubRegSize, DestTmp.Q(), VectorAddend.Q());
-    } else {
-      fneg(SubRegSize, DestTmp.D(), VectorAddend.D());
-    }
-
-    if (Is128Bit) {
       fmls(SubRegSize, DestTmp.Q(), Vector1.Q(), Vector2.Q());
     } else {
+      fneg(SubRegSize, DestTmp.D(), VectorAddend.D());
       fmls(SubRegSize, DestTmp.D(), Vector1.D(), Vector2.D());
     }
 
