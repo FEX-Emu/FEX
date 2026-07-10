@@ -95,7 +95,7 @@ void RegisterMsg(FEX::HLE::SyscallHandler* Handler) {
 
                               uint64_t Result = ::syscall(SYSCALL_DEF(mq_getsetattr), mqdes, HostNew_p, HostOld_p);
 
-                              if (Result != 1 && oldattr) {
+                              if (Result != -1 && oldattr) {
                                 FaultSafeUserMemAccess::VerifyIsWritable(oldattr, sizeof(*oldattr));
                                 *oldattr = HostOld;
                               }
