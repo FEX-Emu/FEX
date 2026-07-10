@@ -18,7 +18,7 @@ struct BitSet final {
   constexpr static size_t MinimumSize = sizeof(ElementType);
   constexpr static size_t MinimumSizeBits = sizeof(ElementType) * 8;
 
-  ElementType* Memory;
+  ElementType* Memory {};
   void Allocate(size_t Elements) {
     size_t AllocateSize = ToBytes(Elements);
     LOGMAN_THROW_A_FMT((AllocateSize * MinimumSize) >= Elements, "Fail");
@@ -68,7 +68,7 @@ struct BitSetView final {
   constexpr static size_t MinimumSize = sizeof(ElementType);
   constexpr static size_t MinimumSizeBits = sizeof(ElementType) * 8;
 
-  ElementType* Memory;
+  ElementType* Memory {};
 
   void GetView(BitSet<T>& Set, uint64_t ElementOffset) {
     LOGMAN_THROW_A_FMT((ElementOffset % MinimumSize) == 0, "Bitset view offset needs to be aligned to size of backing element");
