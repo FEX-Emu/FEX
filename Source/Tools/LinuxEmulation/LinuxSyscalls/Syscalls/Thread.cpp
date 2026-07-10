@@ -158,8 +158,8 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
   if (flags & CLONE_PIDFD) {
     // Use pidfd_open to emulate this flag
     const int pidfd = ::syscall(SYSCALL_DEF(pidfd_open), Result, 0);
-    if (Result == ~0ULL) {
-      LogMan::Msg::EFmt("Couldn't get pidfd of TID {}\n", Result);
+    if (pidfd == -1) {
+      LogMan::Msg::EFmt("Couldn't get pidfd of TID {}. errno={}\n", Result, errno);
     } else {
       *reinterpret_cast<int*>(args->args.pidfd) = pidfd;
     }
