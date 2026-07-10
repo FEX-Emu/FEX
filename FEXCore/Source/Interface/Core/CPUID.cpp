@@ -316,9 +316,8 @@ void CPUIDEmu::SetupHostHybridFlag() {
 
         // Walk our list of CPUMIDRs to find the most little core
         for (size_t j = LowestMIDRIdx; j < CPUMIDRs.size(); ++j) {
-          auto& MIDROption = CPUMIDRs[i];
+          const auto& MIDROption = CPUMIDRs[j];
           if ((MIDROption.Implementer == Implementer && MIDROption.Part == Part) || (MIDROption.Implementer == 0 && MIDROption.Part == 0)) {
-
             LowestMIDRIdx = j;
             LowestMIDR = MIDR;
             break;
