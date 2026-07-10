@@ -1059,6 +1059,7 @@ size_t Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, boo
   SpillStaticRegs(TmpReg, {
                             .GPRSpillMask = PreserveSRAMask,
                             .FPRSpillMask = PreserveSRAFPRMask,
+                            .FPRs = FPRs,
                           });
 
   sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
