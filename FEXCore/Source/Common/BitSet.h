@@ -33,7 +33,8 @@ struct BitSet final {
     FEXCore::Allocator::free(Memory);
     Memory = nullptr;
   }
-  bool Get(T Element) {
+  [[nodiscard]]
+  bool Get(T Element) const {
     return (Memory[Element / MinimumSizeBits] & (1ULL << (Element % MinimumSizeBits))) != 0;
   }
   void Set(T Element) {
@@ -48,13 +49,15 @@ struct BitSet final {
   void MemSet(size_t Elements) {
     memset(Memory, 0xFF, ToBytes(Elements));
   }
-  uint32_t ToBytes(size_t Elements) {
+  [[nodiscard]]
+  uint32_t ToBytes(size_t Elements) const {
     return AlignUp(Elements, MinimumSizeBits) / MinimumSize;
   }
 
   // This very explicitly doesn't let you take an address
   // Is only a getter
-  bool operator[](T Element) {
+  [[nodiscard]]
+  bool operator[](T Element) const {
     return Get(Element);
   }
 };
@@ -72,7 +75,8 @@ struct BitSetView final {
     Memory = &Set.Memory[ElementOffset / MinimumSizeBits];
   }
 
-  bool Get(T Element) {
+  [[nodiscard]]
+  bool Get(T Element) const {
     return (Memory[Element / MinimumSizeBits] & (1ULL << (Element % MinimumSizeBits))) != 0;
   }
   void Set(T Element) {
@@ -90,7 +94,8 @@ struct BitSetView final {
 
   // This very explicitly doesn't let you take an address
   // Is only a getter
-  bool operator[](T Element) {
+  [[nodiscard]]
+  bool operator[](T Element) const {
     return Get(Element);
   }
 };
