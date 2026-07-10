@@ -99,8 +99,10 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
     getrlimit, [](FEXCore::Core::CpuStateFrame* Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<true>> rlim) -> uint64_t {
       struct rlimit rlim64 {};
       uint64_t Result = ::getrlimit(resource, &rlim64);
-      FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
-      *rlim = rlim64;
+      if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
+        *rlim = rlim64;
+      }
       SYSCALL_ERRNO();
     });
 
@@ -108,8 +110,10 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
     ugetrlimit, [](FEXCore::Core::CpuStateFrame* Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
       struct rlimit rlim64 {};
       uint64_t Result = ::getrlimit(resource, &rlim64);
-      FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
-      *rlim = rlim64;
+      if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
+        *rlim = rlim64;
+      }
       SYSCALL_ERRNO();
     });
 
