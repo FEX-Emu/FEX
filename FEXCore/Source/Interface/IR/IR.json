@@ -2004,15 +2004,6 @@
           "BitShift > 0"
         ]
       },
-      "FPR = VUShraI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$DestVector, FPR:$Vector, u8:$BitShift": {
-        "TiedSource": 0,
-        "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize",
-        "EmitValidation": [
-          "ElementSize >= FEXCore::IR::OpSize::i8Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
-          "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
-        ]
-      },
       "FPR = VSShrI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",

@@ -3201,48 +3201,6 @@ DEF_OP(VUShrI) {
   }
 }
 
-DEF_OP(VUShraI) {
-  const auto Op = IROp->C<IR::IROp_VUShraI>();
-  const auto OpSize = IROp->Size;
-
-  const auto BitShift = Op->BitShift;
-  const auto SubRegSize = ConvertSubRegSize8(IROp);
-  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
-
-  const auto Dst = GetVReg(Node);
-  const auto DestVector = GetVReg(Op->DestVector);
-  const auto Vector = GetVReg(Op->Vector);
-
-  if (HostSupportsSVE256 && Is256Bit) {
-    if (Dst == DestVector) {
-      usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
-    } else {
-      if (Dst != Vector) {
-        mov(Dst.Z(), DestVector.Z());
-        usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
-      } else {
-        mov(VTMP1.Z(), DestVector.Z());
-        usra(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
-        mov(Dst.Z(), VTMP1.Z());
-      }
-    }
-  } else {
-    if (Dst == DestVector) {
-      usra(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
-    } else {
-      if (Dst != Vector) {
-        mov(Dst.Q(), DestVector.Q());
-        usra(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
-      } else {
-        mov(VTMP1.Q(), DestVector.Q());
-        usra(SubRegSize, VTMP1.Q(), Vector.Q(), BitShift);
-        mov(Dst.Q(), VTMP1.Q());
-      }
-    }
-  }
-}
-
 DEF_OP(VSShrI) {
   const auto Op = IROp->C<IR::IROp_VSShrI>();
   const auto OpSize = IROp->Size;
