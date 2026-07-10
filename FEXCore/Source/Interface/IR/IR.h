@@ -643,7 +643,7 @@ public:
     auto IROp = Node.GetNode(BaseList)->Op(IRList);
 
     if (IROp->Op == OP_BEGINBLOCK) {
-      auto BeginBlock = IROp->C<IROp_EndBlock>();
+      auto BeginBlock = IROp->C<IROp_BeginBlock>();
 
       Node = BeginBlock->BlockHeader;
     } else if (IROp->Op == OP_CODEBLOCK) {
