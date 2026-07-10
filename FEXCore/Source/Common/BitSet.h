@@ -40,7 +40,7 @@ struct BitSet final {
     Memory[Element / MinimumSizeBits] |= (1ULL << (Element % MinimumSizeBits));
   }
   void Clear(T Element) {
-    Memory[Element / MinimumSizeBits] &= (1ULL << (Element % MinimumSizeBits));
+    Memory[Element / MinimumSizeBits] &= ~(1ULL << (Element % MinimumSizeBits));
   }
   void MemClear(size_t Elements) {
     memset(Memory, 0, ToBytes(Elements));
@@ -79,7 +79,7 @@ struct BitSetView final {
     Memory[Element / MinimumSizeBits] |= (1ULL << (Element % MinimumSizeBits));
   }
   void Clear(T Element) {
-    Memory[Element / MinimumSizeBits] &= (1ULL << (Element % MinimumSizeBits));
+    Memory[Element / MinimumSizeBits] &= ~(1ULL << (Element % MinimumSizeBits));
   }
   void MemClear(size_t Elements) {
     memset(Memory, 0, AlignUp(Elements / MinimumSizeBits, MinimumSizeBits));
