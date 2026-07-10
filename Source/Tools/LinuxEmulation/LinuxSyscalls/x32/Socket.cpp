@@ -552,14 +552,16 @@ static uint64_t GetSockOpt(int sockfd, int level, int optname, auto_compat_ptr<v
     case SO_RCVTIMEO_OLD: {
       // _OLD uses old_timeval32. Needs to be converted
       struct timeval tv64 {};
-      Result = ::syscall(SYSCALL_DEF(getsockopt), sockfd, level, SO_RCVTIMEO_NEW, &tv64, sizeof(tv64));
+      socklen_t tv64size = sizeof(tv64);
+      Result = ::syscall(SYSCALL_DEF(getsockopt), sockfd, level, SO_RCVTIMEO_NEW, &tv64, &tv64size);
       *reinterpret_cast<timeval32*>(optval.Ptr) = tv64;
       break;
     }
     case SO_SNDTIMEO_OLD: {
       // _OLD uses old_timeval32. Needs to be converted
       struct timeval tv64 {};
-      Result = ::syscall(SYSCALL_DEF(getsockopt), sockfd, level, SO_SNDTIMEO_NEW, &tv64, sizeof(tv64));
+      socklen_t tv64size = sizeof(tv64);
+      Result = ::syscall(SYSCALL_DEF(getsockopt), sockfd, level, SO_SNDTIMEO_NEW, &tv64, &tv64size);
       *reinterpret_cast<timeval32*>(optval.Ptr) = tv64;
       break;
     }
