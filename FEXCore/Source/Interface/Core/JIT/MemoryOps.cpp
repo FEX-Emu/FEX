@@ -2406,7 +2406,7 @@ DEF_OP(CacheLineClear) {
   } else {
     auto CurrentWorkingReg = MemReg.X();
     for (size_t i = 0; i < std::max(1U, 64U / CTX->HostFeatures.DCacheLineSize); ++i) {
-      dc(ARMEmitter::DataCacheOperation::CIVAC, TMP1);
+      dc(ARMEmitter::DataCacheOperation::CIVAC, CurrentWorkingReg);
       add(ARMEmitter::Size::i64Bit, TMP1, CurrentWorkingReg, CTX->HostFeatures.DCacheLineSize);
       CurrentWorkingReg = TMP1;
     }
@@ -2435,7 +2435,7 @@ DEF_OP(CacheLineClean) {
   } else {
     auto CurrentWorkingReg = MemReg.X();
     for (size_t i = 0; i < std::max(1U, 64U / CTX->HostFeatures.DCacheLineSize); ++i) {
-      dc(ARMEmitter::DataCacheOperation::CVAC, TMP1);
+      dc(ARMEmitter::DataCacheOperation::CVAC, CurrentWorkingReg);
       add(ARMEmitter::Size::i64Bit, TMP1, CurrentWorkingReg, CTX->HostFeatures.DCacheLineSize);
       CurrentWorkingReg = TMP1;
     }
