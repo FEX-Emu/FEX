@@ -138,8 +138,8 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     }));
 
   REGISTER_SYSCALL_IMPL_X32(waitpid, [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int32_t* status, int32_t options) -> uint64_t {
-    uint64_t Result = ::waitpid(pid, status, options);
     FaultSafeUserMemAccess::VerifyIsWritableOrNull(status, sizeof(*status));
+    uint64_t Result = ::waitpid(pid, status, options);
     SYSCALL_ERRNO();
   });
 
