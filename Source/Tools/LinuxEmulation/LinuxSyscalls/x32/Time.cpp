@@ -193,7 +193,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     utimensat, [](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, const compat_ptr<timespec32> times, int flags) -> uint64_t {
       uint64_t Result = 0;
       if (times) {
-        FaultSafeUserMemAccess::VerifyIsReadable(times, sizeof(timeval32) * 2);
+        FaultSafeUserMemAccess::VerifyIsReadable(times, sizeof(timespec32) * 2);
         timespec times64[2] {};
         times64[0] = times[0];
         times64[1] = times[1];
