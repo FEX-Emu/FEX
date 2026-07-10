@@ -282,7 +282,7 @@ DEF_OP(ProcessorID) {
   // Load the values returned by the kernel
   ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::WReg::w0, ARMEmitter::WReg::w1, ARMEmitter::Reg::rsp);
   // Deallocate stack space
-  sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
 
   // Now that we are done in the syscall we need to carefully peel back the state
   // First unspill the registers from before
