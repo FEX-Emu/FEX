@@ -48,7 +48,7 @@ void RegisterTimer(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(
     timer_gettime, [](FEXCore::Core::CpuStateFrame* Frame, kernel_timer_t timerid, FEX::HLE::x32::old_itimerspec32* curr_value) -> uint64_t {
       itimerspec curr_value_host {};
-      uint64_t Result = ::syscall(SYSCALL_DEF(timer_gettime), timerid, curr_value_host);
+      uint64_t Result = ::syscall(SYSCALL_DEF(timer_gettime), timerid, &curr_value_host);
       FaultSafeUserMemAccess::VerifyIsWritable(curr_value, sizeof(*curr_value));
       *curr_value = curr_value_host;
       SYSCALL_ERRNO();
