@@ -280,7 +280,7 @@ void FEX::CPUFeatures::FillFeatureFlags() {
   if (PFR1.SupportsSSBS()) {
     SetFeature(Feature::SSBS);
   }
-  if (PFR1.SupportsSSBS()) {
+  if (PFR1.SupportsSSBS2()) {
     SetFeature(Feature::SSBS2);
   }
   if (PFR1.SupportsMTE()) {
