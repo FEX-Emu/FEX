@@ -13,9 +13,6 @@ $end_info$
 
 namespace FEXCore::CPU {
 
-#define GRD(Node) (IROp->Size <= 4 ? GetDst<RA_32>(Node) : GetDst<RA_64>(Node))
-#define GRS(Node) (IROp->Size <= 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
-
 #define DEF_BINOP_WITH_CONSTANT(FEXOp, VarOp, ConstOp)                                    \
   DEF_OP(FEXOp) {                                                                         \
     auto Op = IROp->C<IR::IROp_##FEXOp>();                                                \
