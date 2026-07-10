@@ -418,8 +418,8 @@ DEF_OP(MulH) {
   if (OpSize == IR::OpSize::i32Bit) {
     sxtw(TMP1, Src1.W());
     sxtw(TMP2, Src2.W());
-    mul(ARMEmitter::Size::i32Bit, Dst, TMP1, TMP2);
-    ubfx(ARMEmitter::Size::i32Bit, Dst, Dst, 32, 32);
+    mul(ARMEmitter::Size::i64Bit, Dst, TMP1, TMP2);
+    ubfx(ARMEmitter::Size::i64Bit, Dst, Dst, 32, 32);
   } else {
     smulh(Dst.X(), Src1.X(), Src2.X());
   }
