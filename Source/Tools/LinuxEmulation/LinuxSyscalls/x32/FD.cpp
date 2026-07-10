@@ -917,6 +917,9 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       Local = *offset;
     }
     uint64_t Result = ::sendfile(out_fd, in_fd, Local_p, count);
+    if (Result != -1 && offset) {
+      *offset = static_cast<compat_off_t>(Local);
+    }
     SYSCALL_ERRNO();
   });
 
