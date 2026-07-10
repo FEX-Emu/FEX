@@ -292,8 +292,6 @@ DEF_OP(Vector_FToS) {
     frinti(SubEmitSize, Dst.Z(), Mask.Merging(), Vector.Z());
     fcvtzs(Dst.Z(), SubEmitSize, Mask.Merging(), Dst.Z(), SubEmitSize);
   } else {
-    const auto Dst = GetVReg(Node);
-    const auto Vector = GetVReg(Op->Vector);
     if (OpSize == IR::OpSize::i64Bit) {
       frinti(SubEmitSize, Dst.D(), Vector.D());
       fcvtzs(SubEmitSize, Dst.D(), Dst.D());
