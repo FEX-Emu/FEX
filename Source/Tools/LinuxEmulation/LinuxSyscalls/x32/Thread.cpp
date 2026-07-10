@@ -154,7 +154,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(get_thread_area, [](FEXCore::Core::CpuStateFrame* Frame, struct user_desc* u_info) -> uint64_t {
     // Index to fetch comes from the user_desc
     uint32_t Entry = u_info->entry_number;
-    if (Entry < TLS_NextEntry || Entry > TLS_MaxEntry) {
+    if (Entry < TLS_NextEntry || Entry >= TLS_MaxEntry) {
       return -EINVAL;
     }
 
