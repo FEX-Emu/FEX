@@ -1165,8 +1165,7 @@ DEF_OP(VFAddV) {
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
     faddv(SubRegSize.Vector, Dst, Pred, Vector.Z());
-  }
-  if (HostSupportsSVE128) {
+  } else if (HostSupportsSVE128) {
     const auto Pred = PRED_TMP_16B.Merging();
     faddv(SubRegSize.Vector, Dst, Pred, Vector.Z());
   } else {
