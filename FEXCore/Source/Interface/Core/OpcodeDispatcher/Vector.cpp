@@ -366,13 +366,13 @@ Ref OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, 
 
 void OpDispatchBuilder::VectorScalarUnaryInsertALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
   const auto DstSize = GetGuestVectorLength();
-  auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Dest, Op->Src[0], false);
+  auto Result = VectorScalarUnaryInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Dest, Op->Src[0], false);
   StoreResultFPR_WithOpSize(Op, Op->Dest, Result, DstSize);
 }
 
 void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
   const auto DstSize = GetGuestVectorLength();
-  auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Src[0], Op->Src[1], true);
+  auto Result = VectorScalarUnaryInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Src[0], Op->Src[1], true);
   StoreResultFPR_WithOpSize(Op, Op->Dest, Result, DstSize);
 }
 
