@@ -2785,12 +2785,12 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSiz
 void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
-  Ref MaskSrc = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
+  Ref MaskSrc = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   // Mask only cares about the top bit of each byte
   MaskSrc = _VCMPLTZ(Size, OpSize::i8Bit, MaskSrc);
 
   // Vector that will overwrite byte elements.
-  Ref VectorSrc = LoadSourceGPR(Op, Op->Dest, Op->Flags);
+  Ref VectorSrc = LoadSourceFPR(Op, Op->Dest, Op->Flags);
 
   // RDI source (DS prefix by default)
   auto MemDest = MakeSegmentAddress(X86State::REG_RDI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
