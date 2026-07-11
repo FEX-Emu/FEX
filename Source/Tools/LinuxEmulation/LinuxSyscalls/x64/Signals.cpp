@@ -34,7 +34,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X64(
     rt_sigtimedwait,
     [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, siginfo_t* info, const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
-      FaultSafeUserMemAccess::VerifyIsReadable(set, sizeof(sigsetsize));
+      FaultSafeUserMemAccess::VerifyIsReadable(set, sigsetsize);
       FaultSafeUserMemAccess::VerifyIsWritableOrNull(info, sizeof(siginfo_t));
       FaultSafeUserMemAccess::VerifyIsReadableOrNull(timeout, sizeof(timespec));
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, info, timeout, sigsetsize);
