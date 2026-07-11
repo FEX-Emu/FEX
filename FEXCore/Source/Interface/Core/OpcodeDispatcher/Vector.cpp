@@ -598,14 +598,14 @@ Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpSize Size, IR::OpSize OpDstSize,
 }
 
 void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs, IR::OpSize ElementSize) {
-  const uint8_t CompType = Op->Src[1].Literal();
+  const uint8_t CompType = Op->Src[1].Literal() & 0b111;
   const auto DstSize = GetGuestVectorLength();
   const auto SrcSize = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSourceFPR_WithOpSize(Op, Op->Dest, DstSize, Op->Flags);
   Ref Src2 = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
-  Ref Result = InsertScalarFCMPOpImpl(DstSize, OpSizeFromDst(Op), ElementSize, Src1, Src2, CompType & 0b111, false);
+  Ref Result = InsertScalarFCMPOpImpl(DstSize, OpSizeFromDst(Op), ElementSize, Src1, Src2, CompType, false);
 
   // ARM doesn't have any instructions that handle the semantics of NLT and NLE directly.
   // In fact, these are the two SSE compatison types where we cannot use VFCMPScalarInsert
@@ -623,7 +623,7 @@ void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs, IR::OpSize ElementSize) {
 }
 
 void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs, IR::OpSize ElementSize) {
-  const uint8_t CompType = Op->Src[2].Literal();
+  const uint8_t CompType = Op->Src[2].Literal() & 0b11111;
   const auto DstSize = GetGuestVectorLength();
   const auto SrcSize = OpSizeFromSrc(Op);
 
@@ -633,7 +633,7 @@ void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs, IR::OpSize ElementSize
   Ref Src1 = LoadSourceFPR_WithOpSize(Op, Op->Src[0], DstSize, Op->Flags);
   Ref Src2 = LoadSourceFPR_WithOpSize(Op, Op->Src[1], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
-  Ref Result = InsertScalarFCMPOpImpl(DstSize, OpSizeFromDst(Op), ElementSize, Src1, Src2, CompType & 0b11111, true);
+  Ref Result = InsertScalarFCMPOpImpl(DstSize, OpSizeFromDst(Op), ElementSize, Src1, Src2, CompType, true);
   StoreResultFPR_WithOpSize(Op, Op->Dest, Result, DstSize);
 }
 
