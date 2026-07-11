@@ -10,20 +10,16 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 
-#include <FEXCore/IR/IR.h>
-
-#include <stddef.h>
-#include <stdint.h>
-#include <signal.h>
+#include <cstddef>
+#include <cstdint>
+#include <csignal>
+#include <ctime>
 #include <sys/time.h>
-#include <time.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
 namespace FEX::HLE {
 void RegisterTimer(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
-
   REGISTER_SYSCALL_IMPL(alarm, [](FEXCore::Core::CpuStateFrame* Frame, unsigned int seconds) -> uint64_t {
     uint64_t Result = ::alarm(seconds);
     SYSCALL_ERRNO();

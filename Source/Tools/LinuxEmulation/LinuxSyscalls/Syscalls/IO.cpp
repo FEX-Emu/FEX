@@ -9,16 +9,12 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 
-#include <FEXCore/IR/IR.h>
-
 #include <linux/aio_abi.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
 namespace FEX::HLE {
 void RegisterIO(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
-
   REGISTER_SYSCALL_IMPL(iopl, [](FEXCore::Core::CpuStateFrame* Frame, int level) -> uint64_t {
     // Just claim we don't have permission
     return -EPERM;

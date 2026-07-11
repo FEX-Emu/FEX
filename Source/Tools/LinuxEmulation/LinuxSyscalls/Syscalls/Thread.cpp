@@ -394,8 +394,6 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
 }
 
 void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
-
   REGISTER_SYSCALL_IMPL(rt_sigreturn, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
     FEX::HLE::_SyscallHandler->GetSignalDelegator()->HandleSignalHandlerReturn(true);
     FEX_UNREACHABLE;

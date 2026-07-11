@@ -10,7 +10,6 @@ $end_info$
 #include "LinuxSyscalls/x32/Syscalls.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/IR/IR.h>
 
 #include <stddef.h>
 #include <stdint.h>
@@ -20,8 +19,6 @@ $end_info$
 
 namespace FEX::HLE {
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
-
   REGISTER_SYSCALL_IMPL(brk, [](FEXCore::Core::CpuStateFrame* Frame, void* addr) -> uint64_t {
     uint64_t Result = FEX::HLE::_SyscallHandler->HandleBRK(Frame, addr);
     SYSCALL_ERRNO();

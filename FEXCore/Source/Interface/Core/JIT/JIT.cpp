@@ -909,7 +909,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   PendingCallReturnTargetLabel = nullptr;
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-    using namespace FEXCore::IR;
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
