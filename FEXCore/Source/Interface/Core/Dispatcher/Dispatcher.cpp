@@ -357,7 +357,7 @@ void Dispatcher::EmitDispatcher() {
       ldr(ARMEmitter::XReg::x4, &l_CompileSingleStep);
 
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<uintptr_t, void*, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
+        GenerateIndirectRuntimeCall<uintptr_t, void*, void*, uint64_t>(ARMEmitter::Reg::r4);
       } else {
         blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP }
       }
