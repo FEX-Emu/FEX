@@ -39,10 +39,10 @@ struct FlexBitSet final {
     Memory[Element / MinimumSizeBits] &= ~(1ULL << (Element % MinimumSizeBits));
   }
   void MemClear(size_t Elements) {
-    memset(Memory, 0, FEXCore::AlignUp(Elements / MinimumSizeBits, MinimumSizeBits));
+    memset(Memory, 0, SizeInBytes(Elements));
   }
   void MemSet(size_t Elements) {
-    memset(Memory, 0xFF, FEXCore::AlignUp(Elements / MinimumSizeBits, MinimumSizeBits));
+    memset(Memory, 0xFF, SizeInBytes(Elements));
   }
 
   // Range scanning results
