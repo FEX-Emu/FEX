@@ -179,7 +179,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   FD_ZERO(&Host_exceptfds);
 
   // Round up to the full 32bit word
-  uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
+  const uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 32;
 
   if (readfds) {
     FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
@@ -649,7 +649,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               sigemptyset(&HostSet);
 
                               // Round up to the full 32bit word
-                              uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
+                              const uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 32;
 
                               if (readfds) {
                                 FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
@@ -817,7 +817,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               sigemptyset(&HostSet);
 
                               // Round up to the full 32bit word
-                              uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
+                              const uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 32;
 
                               if (readfds) {
                                 FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
