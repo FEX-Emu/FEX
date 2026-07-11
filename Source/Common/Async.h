@@ -71,8 +71,10 @@ private:
 
 public:
   ~poll_reactor() {
-    if (AsyncStopRequest[0]) {
+    if (AsyncStopRequest[0] != -1) {
       ::close(AsyncStopRequest[0]);
+    }
+    if (AsyncStopRequest[1] != -1) {
       ::close(AsyncStopRequest[1]);
     }
   }
@@ -92,6 +94,7 @@ public:
     }
     // Wake up run() thread by closing this pipe endpoint
     ::close(AsyncStopRequest[1]);
+    AsyncStopRequest[1] = -1;
   }
 
   void cleanup() {
