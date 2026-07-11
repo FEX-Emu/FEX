@@ -2592,7 +2592,7 @@
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "and x0, x20, #0xffffffffffbfffff",
+        "and x0, x20, #0xffffffffff3fffff",
         "orr x0, x0, #0x800000",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
@@ -2607,7 +2607,7 @@
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "and x0, x20, #0xffffffffff7fffff",
+        "and x0, x20, #0xffffffffff3fffff",
         "orr x0, x0, #0x400000",
         "msr fpcr, x0",
         "fcvtn v16.4h, v17.4s",
@@ -2662,7 +2662,7 @@
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "and x0, x20, #0xffffffffffbfffff",
+        "and x0, x20, #0xffffffffff3fffff",
         "orr x0, x0, #0x800000",
         "msr fpcr, x0",
         "fcvtnt z2.h, p7/m, z17.s",
@@ -2679,7 +2679,7 @@
       ],
       "ExpectedArm64ASM": [
         "mrs x20, fpcr",
-        "and x0, x20, #0xffffffffff7fffff",
+        "and x0, x20, #0xffffffffff3fffff",
         "orr x0, x0, #0x400000",
         "msr fpcr, x0",
         "fcvtnt z2.h, p7/m, z17.s",

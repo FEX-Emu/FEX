@@ -168,7 +168,7 @@ DEF_OP(PushRoundingMode) {
   } else {
     LOGMAN_THROW_A_FMT(Op->RoundMode == 1 || Op->RoundMode == 2, "expect a valid round mode");
 
-    and_(ARMEmitter::Size::i64Bit, TMP1, Dest, ~(Op->RoundMode << 22));
+    and_(ARMEmitter::Size::i64Bit, TMP1, Dest, ~(3 << 22));
     orr(ARMEmitter::Size::i64Bit, TMP1, TMP1, (Op->RoundMode == 2 ? 1 : 2) << 22);
   }
 
