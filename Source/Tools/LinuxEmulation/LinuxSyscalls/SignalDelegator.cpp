@@ -1219,7 +1219,7 @@ uint64_t SignalDelegator::GuestSigProcMask(FEX::HLE::ThreadStateObject* Thread, 
   // 3) Give old mask back
   auto OldSet = Thread->SignalInfo.CurrentSignalMask.Val;
 
-  if (!!set) {
+  if (set) {
     uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
     if (how == SIG_BLOCK) {
       Thread->SignalInfo.CurrentSignalMask.Val |= *set & IgnoredSignalsMask;
@@ -1244,7 +1244,7 @@ uint64_t SignalDelegator::GuestSigProcMask(FEX::HLE::ThreadStateObject* Thread, 
     ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &HostMask, nullptr, 8);
   }
 
-  if (!!oldset) {
+  if (oldset) {
     *oldset = OldSet;
   }
 
