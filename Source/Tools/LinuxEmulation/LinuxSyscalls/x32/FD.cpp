@@ -944,7 +944,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     });
 
   REGISTER_SYSCALL_IMPL_X32(
-    readahead, [](FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t offset_low, uint64_t offset_high, size_t count) -> uint64_t {
+    readahead, [](FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t offset_low, uint32_t offset_high, size_t count) -> uint64_t {
       uint64_t Offset = offset_high;
       Offset <<= 32;
       Offset |= offset_low;
