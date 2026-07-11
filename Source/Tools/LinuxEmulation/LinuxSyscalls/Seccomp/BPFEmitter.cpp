@@ -110,7 +110,7 @@ uint64_t BPFEmitter::HandleStore(uint32_t BPFIP, const sock_filter* Inst) {
 
   [[maybe_unused]] size_t OpSize {};
 
-  const auto SrcReg = BPF_CLASS(Inst->code) == BPF_LD ? REG_A : REG_X;
+  const auto SrcReg = BPF_CLASS(Inst->code) == BPF_ST ? REG_A : REG_X;
   // Must be smaller than scratch space size.
   VALIDATE(Inst->k < 16);
 
