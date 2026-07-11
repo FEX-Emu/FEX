@@ -32,7 +32,7 @@ uint64_t SyscallHandler::read_ldt(FEXCore::Core::CpuStateFrame* Frame, void* ptr
   bytecount = std::min(bytecount, MAX_LDT_ENTRIES * LDT_ENTRY_SIZE);
   const auto EntriesToCopySize = std::min(bytecount, Thread->ldt_entry_count * LDT_ENTRY_SIZE);
 
-  if (FaultSafeUserMemAccess::CopyToUser(ptr, Thread->ldt_entries, EntriesToCopySize) != EntriesToCopySize) {
+  if (FaultSafeUserMemAccess::CopyToUser(ptr, Thread->ldt_entries, EntriesToCopySize) != 0) {
     return -EFAULT;
   }
 
@@ -40,9 +40,10 @@ uint64_t SyscallHandler::read_ldt(FEXCore::Core::CpuStateFrame* Frame, void* ptr
   // This means the guest can't ever know the actual size of the LDT.
   size_t RemainingSize = bytecount - EntriesToCopySize;
   if (RemainingSize) {
-    void* remaining = alloca(RemainingSize);
-    memset(remaining, 0, RemainingSize);
-    if (FaultSafeUserMemAccess::CopyToUser(reinterpret_cast<uint8_t*>(ptr) + EntriesToCopySize, remaining, RemainingSize) != RemainingSize) {
+    auto* Remaining = alloca(RemainingSize);
+    auto* RemainDst = reinterpret_cast<uint8_t*>(ptr) + EntriesToCopySize;
+    memset(Remaining, 0, RemainingSize);
+    if (FaultSafeUserMemAccess::CopyToUser(RemainDst, Remaining, RemainingSize) != 0) {
       return -EFAULT;
     }
   }
@@ -57,7 +58,7 @@ static uint64_t read_default_ldt(FEXCore::Core::CpuStateFrame* Frame, void* ptr,
   uint8_t Data[128] {};
   bytecount = std::min<uint64_t>(bytecount, sizeof(Data));
 
-  if (FaultSafeUserMemAccess::CopyToUser(ptr, Data, bytecount) != bytecount) {
+  if (FaultSafeUserMemAccess::CopyToUser(ptr, Data, bytecount) != 0) {
     return -EFAULT;
   }
 
