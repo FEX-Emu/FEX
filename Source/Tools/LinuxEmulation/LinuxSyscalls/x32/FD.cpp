@@ -163,6 +163,32 @@ auto fcntl32Handler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, u
   return fcntlHandler(Frame, fd, cmd, arg);
 };
 
+// Helper for select implementations
+static void SetHostFDSet(uint32_t nfds, uint32_t NumWords, const fd_set32* Guest, fd_set* Host) {
+  FaultSafeUserMemAccess::VerifyIsReadable(Guest, sizeof(fd_set32) * NumWords);
+
+  for (uint32_t i = 0; i < NumWords; ++i) {
+    const uint32_t FD = Guest[i];
+    const uint32_t Rem = nfds - (i * 32);
+    for (uint32_t j = 0; j < 32 && j < Rem; ++j) {
+      if ((FD >> j) & 1) {
+        FD_SET(i * 32 + j, Host);
+      }
+    }
+  }
+}
+static void SetGuestFDSet(uint32_t nfds, uint32_t NumWords, const fd_set& Host, fd_set32* Guest) {
+  FaultSafeUserMemAccess::VerifyIsWritable(Guest, sizeof(fd_set32) * NumWords);
+
+  for (uint32_t i = 0; i < nfds; ++i) {
+    if (FD_ISSET(i, &Host)) {
+      Guest[i / 32] |= 1 << (i & 31);
+    } else {
+      Guest[i / 32] &= ~(1 << (i & 31));
+    }
+  }
+}
+
 auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32* readfds, fd_set32* writefds, fd_set32* exceptfds,
                         struct timeval32* timeout) -> uint64_t {
   struct timeval tp64 {};
@@ -179,80 +205,28 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   FD_ZERO(&Host_exceptfds);
 
   // Round up to the full 32bit word
-  uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
+  const uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 32;
 
   if (readfds) {
-    FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
-    for (int i = 0; i < NumWords; ++i) {
-      uint32_t FD = readfds[i];
-      int32_t Rem = nfds - (i * 32);
-      for (int j = 0; j < 32 && j < Rem; ++j) {
-        if ((FD >> j) & 1) {
-          FD_SET(i * 32 + j, &Host_readfds);
-        }
-      }
-    }
+    SetHostFDSet(nfds, NumWords, readfds, &Host_readfds);
   }
-
   if (writefds) {
-    FaultSafeUserMemAccess::VerifyIsReadable(writefds, sizeof(fd_set32) * NumWords);
-    for (int i = 0; i < NumWords; ++i) {
-      uint32_t FD = writefds[i];
-      int32_t Rem = nfds - (i * 32);
-      for (int j = 0; j < 32 && j < Rem; ++j) {
-        if ((FD >> j) & 1) {
-          FD_SET(i * 32 + j, &Host_writefds);
-        }
-      }
-    }
+    SetHostFDSet(nfds, NumWords, writefds, &Host_writefds);
   }
-
   if (exceptfds) {
-    FaultSafeUserMemAccess::VerifyIsReadable(exceptfds, sizeof(fd_set32) * NumWords);
-    for (int i = 0; i < NumWords; ++i) {
-      uint32_t FD = exceptfds[i];
-      int32_t Rem = nfds - (i * 32);
-      for (int j = 0; j < 32 && j < Rem; ++j) {
-        if ((FD >> j) & 1) {
-          FD_SET(i * 32 + j, &Host_exceptfds);
-        }
-      }
-    }
+    SetHostFDSet(nfds, NumWords, exceptfds, &Host_exceptfds);
   }
 
   uint64_t Result = ::select(nfds, readfds ? &Host_readfds : nullptr, writefds ? &Host_writefds : nullptr,
                              exceptfds ? &Host_exceptfds : nullptr, timeout ? &tp64 : nullptr);
   if (readfds) {
-    FaultSafeUserMemAccess::VerifyIsWritable(readfds, sizeof(fd_set32) * NumWords);
-    for (int i = 0; i < nfds; ++i) {
-      if (FD_ISSET(i, &Host_readfds)) {
-        readfds[i / 32] |= 1 << (i & 31);
-      } else {
-        readfds[i / 32] &= ~(1 << (i & 31));
-      }
-    }
+    SetGuestFDSet(nfds, NumWords, Host_readfds, readfds);
   }
-
   if (writefds) {
-    FaultSafeUserMemAccess::VerifyIsWritable(writefds, sizeof(fd_set32) * NumWords);
-    for (int i = 0; i < nfds; ++i) {
-      if (FD_ISSET(i, &Host_writefds)) {
-        writefds[i / 32] |= 1 << (i & 31);
-      } else {
-        writefds[i / 32] &= ~(1 << (i & 31));
-      }
-    }
+    SetGuestFDSet(nfds, NumWords, Host_writefds, writefds);
   }
-
   if (exceptfds) {
-    FaultSafeUserMemAccess::VerifyIsWritable(exceptfds, sizeof(fd_set32) * NumWords);
-    for (int i = 0; i < nfds; ++i) {
-      if (FD_ISSET(i, &Host_exceptfds)) {
-        exceptfds[i / 32] |= 1 << (i & 31);
-      } else {
-        exceptfds[i / 32] &= ~(1 << (i & 31));
-      }
-    }
+    SetGuestFDSet(nfds, NumWords, Host_exceptfds, exceptfds);
   }
 
   if (timeout) {
@@ -649,45 +623,16 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               sigemptyset(&HostSet);
 
                               // Round up to the full 32bit word
-                              uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
+                              const uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 32;
 
                               if (readfds) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < NumWords; ++i) {
-                                  uint32_t FD = readfds[i];
-                                  int32_t Rem = nfds - (i * 32);
-                                  for (int j = 0; j < 32 && j < Rem; ++j) {
-                                    if ((FD >> j) & 1) {
-                                      FD_SET(i * 32 + j, &Host_readfds);
-                                    }
-                                  }
-                                }
+                                SetHostFDSet(nfds, NumWords, readfds, &Host_readfds);
                               }
-
                               if (writefds) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(writefds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < NumWords; ++i) {
-                                  uint32_t FD = writefds[i];
-                                  int32_t Rem = nfds - (i * 32);
-                                  for (int j = 0; j < 32 && j < Rem; ++j) {
-                                    if ((FD >> j) & 1) {
-                                      FD_SET(i * 32 + j, &Host_writefds);
-                                    }
-                                  }
-                                }
+                                SetHostFDSet(nfds, NumWords, writefds, &Host_writefds);
                               }
-
                               if (exceptfds) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(exceptfds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < NumWords; ++i) {
-                                  uint32_t FD = exceptfds[i];
-                                  int32_t Rem = nfds - (i * 32);
-                                  for (int j = 0; j < 32 && j < Rem; ++j) {
-                                    if ((FD >> j) & 1) {
-                                      FD_SET(i * 32 + j, &Host_exceptfds);
-                                    }
-                                  }
-                                }
+                                SetHostFDSet(nfds, NumWords, exceptfds, &Host_exceptfds);
                               }
 
                               FaultSafeUserMemAccess::VerifyIsReadableOrNull(sigmaskpack, sizeof(*sigmaskpack));
@@ -706,36 +651,13 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                                           exceptfds ? &Host_exceptfds : nullptr, timeout ? &tp64 : nullptr, &HostSet);
 
                               if (readfds) {
-                                FaultSafeUserMemAccess::VerifyIsWritable(readfds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < nfds; ++i) {
-                                  if (FD_ISSET(i, &Host_readfds)) {
-                                    readfds[i / 32] |= 1 << (i & 31);
-                                  } else {
-                                    readfds[i / 32] &= ~(1 << (i & 31));
-                                  }
-                                }
+                                SetGuestFDSet(nfds, NumWords, Host_readfds, readfds);
                               }
-
                               if (writefds) {
-                                FaultSafeUserMemAccess::VerifyIsWritable(writefds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < nfds; ++i) {
-                                  if (FD_ISSET(i, &Host_writefds)) {
-                                    writefds[i / 32] |= 1 << (i & 31);
-                                  } else {
-                                    writefds[i / 32] &= ~(1 << (i & 31));
-                                  }
-                                }
+                                SetGuestFDSet(nfds, NumWords, Host_writefds, writefds);
                               }
-
                               if (exceptfds) {
-                                FaultSafeUserMemAccess::VerifyIsWritable(exceptfds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < nfds; ++i) {
-                                  if (FD_ISSET(i, &Host_exceptfds)) {
-                                    exceptfds[i / 32] |= 1 << (i & 31);
-                                  } else {
-                                    exceptfds[i / 32] &= ~(1 << (i & 31));
-                                  }
-                                }
+                                SetGuestFDSet(nfds, NumWords, Host_exceptfds, exceptfds);
                               }
 
                               if (timeout) {
@@ -817,45 +739,16 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               sigemptyset(&HostSet);
 
                               // Round up to the full 32bit word
-                              uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
+                              const uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 32;
 
                               if (readfds) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < NumWords; ++i) {
-                                  uint32_t FD = readfds[i];
-                                  int32_t Rem = nfds - (i * 32);
-                                  for (int j = 0; j < 32 && j < Rem; ++j) {
-                                    if ((FD >> j) & 1) {
-                                      FD_SET(i * 32 + j, &Host_readfds);
-                                    }
-                                  }
-                                }
+                                SetHostFDSet(nfds, NumWords, readfds, &Host_readfds);
                               }
-
                               if (writefds) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(writefds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < NumWords; ++i) {
-                                  uint32_t FD = writefds[i];
-                                  int32_t Rem = nfds - (i * 32);
-                                  for (int j = 0; j < 32 && j < Rem; ++j) {
-                                    if ((FD >> j) & 1) {
-                                      FD_SET(i * 32 + j, &Host_writefds);
-                                    }
-                                  }
-                                }
+                                SetHostFDSet(nfds, NumWords, writefds, &Host_writefds);
                               }
-
                               if (exceptfds) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(exceptfds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < NumWords; ++i) {
-                                  uint32_t FD = exceptfds[i];
-                                  int32_t Rem = nfds - (i * 32);
-                                  for (int j = 0; j < 32 && j < Rem; ++j) {
-                                    if ((FD >> j) & 1) {
-                                      FD_SET(i * 32 + j, &Host_exceptfds);
-                                    }
-                                  }
-                                }
+                                SetHostFDSet(nfds, NumWords, exceptfds, &Host_exceptfds);
                               }
 
                               FaultSafeUserMemAccess::VerifyIsReadableOrNull(sigmaskpack, sizeof(*sigmaskpack));
@@ -874,36 +767,13 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                                           exceptfds ? &Host_exceptfds : nullptr, timeout, &HostSet);
 
                               if (readfds) {
-                                FaultSafeUserMemAccess::VerifyIsWritable(readfds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < nfds; ++i) {
-                                  if (FD_ISSET(i, &Host_readfds)) {
-                                    readfds[i / 32] |= 1 << (i & 31);
-                                  } else {
-                                    readfds[i / 32] &= ~(1 << (i & 31));
-                                  }
-                                }
+                                SetGuestFDSet(nfds, NumWords, Host_readfds, readfds);
                               }
-
                               if (writefds) {
-                                FaultSafeUserMemAccess::VerifyIsWritable(writefds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < nfds; ++i) {
-                                  if (FD_ISSET(i, &Host_writefds)) {
-                                    writefds[i / 32] |= 1 << (i & 31);
-                                  } else {
-                                    writefds[i / 32] &= ~(1 << (i & 31));
-                                  }
-                                }
+                                SetGuestFDSet(nfds, NumWords, Host_writefds, writefds);
                               }
-
                               if (exceptfds) {
-                                FaultSafeUserMemAccess::VerifyIsWritable(exceptfds, sizeof(fd_set32) * NumWords);
-                                for (int i = 0; i < nfds; ++i) {
-                                  if (FD_ISSET(i, &Host_exceptfds)) {
-                                    exceptfds[i / 32] |= 1 << (i & 31);
-                                  } else {
-                                    exceptfds[i / 32] &= ~(1 << (i & 31));
-                                  }
-                                }
+                                SetGuestFDSet(nfds, NumWords, Host_exceptfds, exceptfds);
                               }
 
                               SYSCALL_ERRNO();
