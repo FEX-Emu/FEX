@@ -12,7 +12,6 @@ $end_info$
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/IR/IR.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <sched.h>
@@ -234,7 +233,6 @@ enum Modify_ldt_func : int32_t {
 };
 
 void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
   REGISTER_SYSCALL_IMPL_X64(modify_ldt, [](FEXCore::Core::CpuStateFrame* Frame, int func, void* ptr, unsigned long bytecount) -> uint64_t {
     switch (func) {
     case Modify_ldt_func::LDT_READ: return FEX::HLE::_SyscallHandler->read_ldt(Frame, ptr, bytecount);

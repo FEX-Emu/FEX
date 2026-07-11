@@ -9,8 +9,6 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 
-#include <FEXCore/IR/IR.h>
-
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/mount.h>
@@ -23,8 +21,6 @@ $end_info$
 
 namespace FEX::HLE {
 void RegisterFS(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
-
   REGISTER_SYSCALL_IMPL(rename, [](FEXCore::Core::CpuStateFrame* Frame, const char* oldpath, const char* newpath) -> uint64_t {
     uint64_t Result = ::rename(oldpath, newpath);
     SYSCALL_ERRNO();

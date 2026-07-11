@@ -10,8 +10,6 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 
-#include <FEXCore/IR/IR.h>
-
 #include <stdint.h>
 #include <sys/epoll.h>
 
@@ -212,7 +210,6 @@ uint64_t SyscallPassthrough7(FEXCore::Core::CpuStateFrame* Frame, uint64_t arg1,
 #endif
 
 void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
   REGISTER_SYSCALL_IMPL(read, SyscallPassthrough3<SYSCALL_DEF(read)>);
   REGISTER_SYSCALL_IMPL(write, SyscallPassthrough3<SYSCALL_DEF(write)>);
   REGISTER_SYSCALL_IMPL(lseek, SyscallPassthrough3<SYSCALL_DEF(lseek)>);
@@ -417,7 +414,6 @@ void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
 
 namespace x64 {
   void RegisterPassthrough(FEX::HLE::SyscallHandler* Handler) {
-    using namespace FEXCore::IR;
     RegisterCommon(Handler);
     REGISTER_SYSCALL_IMPL_X64(ftruncate, SyscallPassthrough2<SYSCALL_DEF(ftruncate)>);
     REGISTER_SYSCALL_IMPL_X64(ioctl, SyscallPassthrough3<SYSCALL_DEF(ioctl)>);
@@ -505,7 +501,6 @@ namespace x64 {
 
 namespace x32 {
   void RegisterPassthrough(FEX::HLE::SyscallHandler* Handler) {
-    using namespace FEXCore::IR;
     RegisterCommon(Handler);
     REGISTER_SYSCALL_IMPL_X32(getuid32, SyscallPassthrough0<SYSCALL_DEF(getuid)>);
     REGISTER_SYSCALL_IMPL_X32(getgid32, SyscallPassthrough0<SYSCALL_DEF(getgid)>);

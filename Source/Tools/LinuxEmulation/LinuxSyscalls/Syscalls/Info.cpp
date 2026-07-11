@@ -9,7 +9,6 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 
-#include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstring>
@@ -35,8 +34,6 @@ using cap_user_header_t = void*;
 using cap_user_data_t = void*;
 
 void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
-
   REGISTER_SYSCALL_IMPL(uname, [](FEXCore::Core::CpuStateFrame* Frame, struct utsname* buf) -> uint64_t {
     auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
 

@@ -16,8 +16,6 @@ $end_info$
 
 namespace FEX::HLE::x64 {
 void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
-
   if (Handler->IsHostKernelVersionAtLeast(6, 6, 0)) {
     REGISTER_SYSCALL_IMPL_X64(map_shadow_stack, [](FEXCore::Core::CpuStateFrame* Frame, uint64_t addr, uint64_t size, uint32_t flags) -> uint64_t {
       // Claim that shadow stack isn't supported.

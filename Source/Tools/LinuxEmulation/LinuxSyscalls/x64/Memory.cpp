@@ -11,8 +11,6 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 
-#include <FEXCore/IR/IR.h>
-
 #include <sys/mman.h>
 #include <sys/shm.h>
 #include <unistd.h>
@@ -25,8 +23,6 @@ $end_info$
 namespace FEX::HLE::x64 {
 
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
-
   REGISTER_SYSCALL_IMPL_X64(
     mmap, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
       return (uint64_t)FEX::HLE::_SyscallHandler->GuestMmap(Frame->Thread, addr, length, prot, flags, fd, offset);

@@ -9,8 +9,6 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 
-#include <FEXCore/IR/IR.h>
-
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <fcntl.h>
@@ -30,7 +28,6 @@ $end_info$
 
 namespace FEX::HLE {
 void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
-  using namespace FEXCore::IR;
   REGISTER_SYSCALL_IMPL(poll, [](FEXCore::Core::CpuStateFrame* Frame, struct pollfd* fds, nfds_t nfds, int timeout) -> uint64_t {
     if (nfds) {
       // fds is allowed to be garbage if nfds is zero.
