@@ -267,7 +267,7 @@ DEF_OP(LoadContextIndexed) {
           ldr(Dst.Q(), TMP1, Op->BaseOffset);
         } else {
           add(ARMEmitter::Size::i64Bit, TMP1, TMP1, Op->BaseOffset);
-          ldur(Dst.Q(), TMP1, Op->BaseOffset);
+          ldur(Dst.Q(), TMP1);
         }
         break;
       case IR::OpSize::i256Bit:
@@ -333,7 +333,7 @@ DEF_OP(StoreContextIndexed) {
           str(Value.Q(), TMP1, Op->BaseOffset);
         } else {
           add(ARMEmitter::Size::i64Bit, TMP1, TMP1, Op->BaseOffset);
-          stur(Value.Q(), TMP1, Op->BaseOffset);
+          stur(Value.Q(), TMP1);
         }
         break;
       case IR::OpSize::i256Bit:
