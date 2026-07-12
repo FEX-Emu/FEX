@@ -147,9 +147,18 @@ DLLEXPORT_FUNC(WINBOOL, SetFilePointerEx, (HANDLE hFile, LARGE_INTEGER liDistanc
   }
 
   switch (dwMoveMethod) {
-  case FILE_BEGIN: PositionInfo.CurrentByteOffset = liDistanceToMove; break;
-  case FILE_CURRENT: PositionInfo.CurrentByteOffset.QuadPart += liDistanceToMove.QuadPart; break;
-  case FILE_END: PositionInfo.CurrentByteOffset = StandardInfo.EndOfFile; break;
+  case FILE_BEGIN: {
+    PositionInfo.CurrentByteOffset = liDistanceToMove;
+    break;
+  }
+  case FILE_CURRENT: {
+    PositionInfo.CurrentByteOffset.QuadPart += liDistanceToMove.QuadPart;
+    break;
+  }
+  case FILE_END: {
+    PositionInfo.CurrentByteOffset.QuadPart = StandardInfo.EndOfFile.QuadPart + liDistanceToMove.QuadPart;
+    break;
+  }
   default: UNIMPLEMENTED();
   }
   if (NTSTATUS Status = NtSetInformationFile(hFile, &IOSB, &PositionInfo, sizeof(PositionInfo), FilePositionInformation); Status) {
