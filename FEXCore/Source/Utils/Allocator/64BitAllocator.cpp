@@ -623,14 +623,14 @@ fextl::unique_ptr<T> make_alloc_unique(FEXCore::Allocator::MemoryRegion& Base, A
 fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocatorWithRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions) {
   // This is a bit tricky as we can't allocate memory safely except from the Regions provided. Otherwise we might overwrite memory pages we
   // don't own. Scan the memory regions and find the smallest one.
-  FEXCore::Allocator::MemoryRegion& Smallest = Regions[0];
-  for (auto& it : Regions) {
-    if (it.Size <= Smallest.Size) {
-      Smallest = it;
+  FEXCore::Allocator::MemoryRegion* Smallest = &Regions[0];
+  for (auto& Region : Regions) {
+    if (Region.Size <= Smallest->Size) {
+      Smallest = &Region;
     }
   }
 
-  return make_alloc_unique<OSAllocator_64Bit>(Smallest, Regions);
+  return make_alloc_unique<OSAllocator_64Bit>(*Smallest, Regions);
 }
 
 } // namespace Alloc::OSAllocator
