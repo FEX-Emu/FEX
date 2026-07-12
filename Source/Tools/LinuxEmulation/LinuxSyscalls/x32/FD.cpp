@@ -270,9 +270,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     _llseek, [](FEXCore::Core::CpuStateFrame* Frame, uint32_t fd, uint32_t offset_high, uint32_t offset_low, loff_t* result, uint32_t whence) -> uint64_t {
-      uint64_t Offset = offset_high;
-      Offset <<= 32;
-      Offset |= offset_low;
+      uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
       uint64_t Result = lseek(fd, Offset, whence);
       if (Result != -1) {
         FaultSafeUserMemAccess::VerifyIsWritable(result, sizeof(*result));
@@ -669,9 +667,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     fadvise64, [](FEXCore::Core::CpuStateFrame* Frame, int32_t fd, uint32_t offset_low, uint32_t offset_high, uint32_t len, int advice) -> uint64_t {
-      uint64_t Offset = offset_high;
-      Offset <<= 32;
-      Offset |= offset_low;
+      uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
       uint64_t Result = ::posix_fadvise64(fd, Offset, len, advice);
       SYSCALL_ERRNO();
     });
@@ -679,12 +675,8 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(fadvise64_64,
                             [](FEXCore::Core::CpuStateFrame* Frame, int32_t fd, uint32_t offset_low, uint32_t offset_high, uint32_t len_low,
                                uint32_t len_high, int advice) -> uint64_t {
-                              uint64_t Offset = offset_high;
-                              Offset <<= 32;
-                              Offset |= offset_low;
-                              uint64_t Len = len_high;
-                              Len <<= 32;
-                              Len |= len_low;
+                              uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
+                              uint64_t Len = (uint64_t(len_high) << 32) | len_low;
                               uint64_t Result = ::posix_fadvise64(fd, Offset, Len, advice);
                               SYSCALL_ERRNO();
                             });
@@ -795,30 +787,21 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     pread_64, [](FEXCore::Core::CpuStateFrame* Frame, int fd, void* buf, uint32_t count, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
-      uint64_t Offset = offset_high;
-      Offset <<= 32;
-      Offset |= offset_low;
-
+      uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
       uint64_t Result = ::pread64(fd, buf, count, Offset);
       SYSCALL_ERRNO();
     });
 
   REGISTER_SYSCALL_IMPL_X32(
     pwrite_64, [](FEXCore::Core::CpuStateFrame* Frame, int fd, void* buf, uint32_t count, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
-      uint64_t Offset = offset_high;
-      Offset <<= 32;
-      Offset |= offset_low;
-
+      uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
       uint64_t Result = ::pwrite64(fd, buf, count, Offset);
       SYSCALL_ERRNO();
     });
 
   REGISTER_SYSCALL_IMPL_X32(
     readahead, [](FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t offset_low, uint32_t offset_high, size_t count) -> uint64_t {
-      uint64_t Offset = offset_high;
-      Offset <<= 32;
-      Offset |= offset_low;
-
+      uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
       uint64_t Result = ::readahead(fd, Offset, count);
       SYSCALL_ERRNO();
     });
@@ -827,13 +810,8 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                             [](FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t offset_low, uint32_t offset_high, uint32_t len_low,
                                uint32_t len_high, unsigned int flags) -> uint64_t {
                               // Flags don't need remapped
-                              uint64_t Offset = offset_high;
-                              Offset <<= 32;
-                              Offset |= offset_low;
-
-                              uint64_t Len = len_high;
-                              Len <<= 32;
-                              Len |= len_low;
+                              uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
+                              uint64_t Len = (uint64_t(len_high) << 32) | len_low;
 
                               uint64_t Result = ::syscall(SYSCALL_DEF(sync_file_range), fd, Offset, Len, flags);
                               SYSCALL_ERRNO();
@@ -842,13 +820,8 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(fallocate,
                             [](FEXCore::Core::CpuStateFrame* Frame, int fd, int mode, uint32_t offset_low, uint32_t offset_high,
                                uint32_t len_low, uint32_t len_high) -> uint64_t {
-                              uint64_t Offset = offset_high;
-                              Offset <<= 32;
-                              Offset |= offset_low;
-
-                              uint64_t Len = len_high;
-                              Len <<= 32;
-                              Len |= len_low;
+                              uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
+                              uint64_t Len = (uint64_t(len_high) << 32) | len_low;
 
                               uint64_t Result = ::fallocate(fd, mode, Offset, Len);
                               SYSCALL_ERRNO();
