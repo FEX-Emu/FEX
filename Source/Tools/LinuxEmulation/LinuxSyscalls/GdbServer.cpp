@@ -1441,9 +1441,11 @@ void GdbServer::GdbServerLoop() {
   Acceptor->async_accept([this](fasio::error ec, std::optional<fasio::tcp_socket> Socket) {
     if (ec != fasio::error::success) {
       // Listen socket error or shutting down
-      LogMan::Msg::EFmt("[GdbServer] gdbserver shutting down: {}");
-      close(CommsSocket->FD);
-      CommsSocket.reset();
+      if (CommsSocket) {
+        LogMan::Msg::EFmt("[GdbServer] gdbserver shutting down: {}", CommsSocket->FD);
+        close(CommsSocket->FD);
+        CommsSocket.reset();
+      }
       // Repeat to wait for another connection
       return fasio::post_callback::repeat;
     }
