@@ -107,7 +107,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     break;
   }
 
-  const auto ZeroRegister = LoadZeroVector(OpSize::i32Bit);
+  const auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
 
   Ref Src1 = SHADataShuffle(Dest);
   Ref Src2 = SHADataShuffle(Src);
