@@ -7,11 +7,9 @@
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/Utils/TypeDefines.h>
-#include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/Utils/MathUtils.h>
-#include <FEXCore/fextl/sstream.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXCore/fextl/memory.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
