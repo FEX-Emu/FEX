@@ -391,7 +391,8 @@ inline char* Absolute(const char* Path, char Fill[PATH_MAX]) {
   std::error_code ec;
   const auto PathAbsolute = std::filesystem::absolute(Path, ec);
   if (!ec) {
-    strncpy(Fill, PathAbsolute.string().c_str(), sizeof(*Fill));
+    auto end = PathAbsolute.string().copy(Fill, PATH_MAX - 1);
+    Fill[end] = '\0';
     return Fill;
   }
 
