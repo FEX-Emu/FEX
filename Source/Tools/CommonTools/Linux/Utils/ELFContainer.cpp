@@ -611,13 +611,13 @@ void ELFContainer::CalculateSymbols() {
 void ELFContainer::GetDynamicLibs() {
   if (Mode == MODE_32BIT) {
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders[i]._32;
       if (hdr->sh_type == SHT_DYNAMIC) {
         const Elf32_Shdr* StrHeader = SectionHeaders.at(hdr->sh_link)._32;
         const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
 
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
-        for (size_t j = 0; i < Entries; ++j) {
+        for (size_t j = 0; j < Entries; ++j) {
           const Elf32_Dyn* Dynamic = reinterpret_cast<const Elf32_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
           if (Dynamic->d_tag == DT_NULL) {
             break;
@@ -630,13 +630,13 @@ void ELFContainer::GetDynamicLibs() {
     }
   } else {
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders[i]._64;
       if (hdr->sh_type == SHT_DYNAMIC) {
         const Elf64_Shdr* StrHeader = SectionHeaders.at(hdr->sh_link)._64;
         const char* SHStrings = &RawFile.at(StrHeader->sh_offset);
 
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
-        for (size_t j = 0; i < Entries; ++j) {
+        for (size_t j = 0; j < Entries; ++j) {
           const Elf64_Dyn* Dynamic = reinterpret_cast<const Elf64_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
           if (Dynamic->d_tag == DT_NULL) {
             break;
@@ -813,10 +813,10 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_
   if (Mode == MODE_32BIT) {
     // If INIT exists then add that first
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders[i]._32;
       if (hdr->sh_type == SHT_DYNAMIC) {
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
-        for (size_t j = 0; i < Entries; ++j) {
+        for (size_t j = 0; j < Entries; ++j) {
           const Elf32_Dyn* Dynamic = reinterpret_cast<const Elf32_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
           if (Dynamic->d_tag == DT_NULL) {
             break;
@@ -830,7 +830,7 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_
 
     // Fill init_array
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      const Elf32_Shdr* hdr = SectionHeaders.at(i)._32;
+      const Elf32_Shdr* hdr = SectionHeaders[i]._32;
       if (hdr->sh_type == SHT_INIT_ARRAY) {
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; j < Entries; ++j) {
@@ -841,10 +841,10 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_
   } else {
     // If INIT exists then add that first
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders[i]._64;
       if (hdr->sh_type == SHT_DYNAMIC) {
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
-        for (size_t j = 0; i < Entries; ++j) {
+        for (size_t j = 0; j < Entries; ++j) {
           const Elf64_Dyn* Dynamic = reinterpret_cast<const Elf64_Dyn*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
           if (Dynamic->d_tag == DT_NULL) {
             break;
@@ -858,7 +858,7 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_
 
     // Fill init_array
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
-      const Elf64_Shdr* hdr = SectionHeaders.at(i)._64;
+      const Elf64_Shdr* hdr = SectionHeaders[i]._64;
       if (hdr->sh_type == SHT_INIT_ARRAY) {
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; j < Entries; ++j) {
