@@ -202,12 +202,18 @@ private:
   static constexpr int DEFAULT_USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
 
   static uint32_t TranslateModes(FileModes Modes) {
+    const auto IsRead = (Modes & FileModes::READ) == FileModes::READ;
+    const auto IsWrite = (Modes & FileModes::WRITE) == FileModes::WRITE;
+
     uint32_t Mode {};
-    if ((Modes & FileModes::READ) == FileModes::READ) {
-      Mode |= O_RDONLY;
-    }
-    if ((Modes & FileModes::WRITE) == FileModes::WRITE) {
-      Mode |= O_WRONLY;
+    if (IsRead && IsWrite) {
+      Mode |= O_RDWR;
+    } else {
+      if (IsRead) {
+        Mode |= O_RDONLY;
+      } else if (IsWrite) {
+        Mode |= O_WRONLY;
+      }
     }
     if ((Modes & FileModes::CREATE) == FileModes::CREATE) {
       Mode |= O_CREAT;
