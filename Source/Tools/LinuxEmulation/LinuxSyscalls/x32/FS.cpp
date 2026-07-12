@@ -23,17 +23,13 @@ void RegisterFS(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     truncate64, [](FEXCore::Core::CpuStateFrame* Frame, const char* path, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
-      uint64_t Offset = offset_high;
-      Offset <<= 32;
-      Offset |= offset_low;
+      uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
       uint64_t Result = ::truncate(path, Offset);
       SYSCALL_ERRNO();
     });
 
   REGISTER_SYSCALL_IMPL_X32(ftruncate64, [](FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
-    uint64_t Offset = offset_high;
-    Offset <<= 32;
-    Offset |= offset_low;
+    uint64_t Offset = (uint64_t(offset_high) << 32) | offset_low;
     uint64_t Result = ::ftruncate(fd, Offset);
     SYSCALL_ERRNO();
   });
