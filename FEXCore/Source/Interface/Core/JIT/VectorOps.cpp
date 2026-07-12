@@ -4655,6 +4655,31 @@ DEF_OP(VBlendImm) {
   }
 }
 
+DEF_OP(VXar) {
+  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "Host must support SVE to use {}", __func__);
+
+  auto Op = IROp->C<IR::IROp_VXar>();
+  const auto SubRegSize = ConvertSubRegSize8(IROp);
+  const auto ElementSizeBits = IR::OpSizeAsBits(IROp->ElementSize);
+
+  const auto Dst = GetVReg(Node);
+  const auto LHS = GetVReg(Op->LHS);
+  const auto RHS = GetVReg(Op->RHS);
+  const auto Rotate = Op->Rotate;
+  LOGMAN_THROW_A_FMT(Rotate >= 1 && Rotate <= ElementSizeBits, "Rotate immediate must be within [1, {}]", ElementSizeBits);
+
+  if (Dst == LHS) {
+    xar(SubRegSize, Dst.Z(), RHS.Z(), Rotate);
+  } else if (Dst == RHS) {
+    movprfx(VTMP1.Z(), LHS.Z());
+    xar(SubRegSize, VTMP1.Z(), RHS.Z(), Rotate);
+    mov(Dst.Z(), VTMP1.Z());
+  } else {
+    movprfx(Dst.Z(), LHS.Z());
+    xar(SubRegSize, Dst.Z(), RHS.Z(), Rotate);
+  }
+}
+
 DEF_OP(VFCopySign) {
   auto Op = IROp->C<IR::IROp_VFCopySign>();
   const auto OpSize = IROp->Size;
