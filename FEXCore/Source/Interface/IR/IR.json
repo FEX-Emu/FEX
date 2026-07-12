@@ -2184,6 +2184,18 @@
         ]
       },
 
+      "FPR = VXar OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$LHS, FPR:$RHS, u8:$Rotate": {
+        "Desc": [
+          "Performs an XOR of corresponding elements and then rotates them right by",
+          "an amount between [1, ElementSize]"
+        ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize",
+        "EmitValidation": [
+          "RegisterSize == IR::OpSize::i256Bit || RegisterSize == IR::OpSize::i128Bit"
+        ]
+      },
+
       "FPR = VUQAdd OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"

@@ -1,0 +1,28 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "CRYPTO",
+      "SVE128"
+    ],
+    "DisabledHostFeatures": [
+      "SVE256",
+      "AFP"
+    ]
+  },
+  "Instructions": {
+    "sha1nexte xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "0x66 0x0f 0x38 0xc8"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov v3.16b, v2.16b",
+        "mov v3.s[3], v16.s[3]",
+        "xar z2.s, z2.s, z3.s, #2",
+        "add v16.4s, v17.4s, v2.4s"
+      ]
+    }
+  }
+}

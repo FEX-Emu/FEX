@@ -26,15 +26,23 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
-  // ARMv8 SHA1 extension provides a `SHA1H` instruction which does a fixed rotate by 30.
-  // This only operates on element 0 rather than element 3. We don't have the luxury of rewriting the x86 SHA algorithm to take advantage of this.
-  // Move the element to zero, rotate, and then move back (Using duplicates).
-  // Saves one instruction versus that path that doesn't support SHA extension.
-  auto Duplicated = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
-  auto Sha1HRotated = _VSha1H(Duplicated);
-  auto RotatedNode = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Sha1HRotated, 0);
-  auto Tmp = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src, RotatedNode);
-  auto Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, Src, Tmp);
+  Ref Result {};
+  if (CTX->HostFeatures.SupportsSVE128) {
+    auto ZeroVec = LoadZeroVector(OpSize::i128Bit);
+    auto Tmp = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, ZeroVec, Dest);
+    auto Xar = _VXar(OpSize::i128Bit, OpSize::i32Bit, ZeroVec, Tmp, 2);
+    Result = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src, Xar);
+  } else {
+    // ARMv8 SHA1 extension provides a `SHA1H` instruction which does a fixed rotate by 30.
+    // This only operates on element 0 rather than element 3. We don't have the luxury of rewriting the x86 SHA algorithm to take advantage of this.
+    // Move the element to zero, rotate, and then move back (Using duplicates).
+    // Saves one instruction versus that path that doesn't support SHA extension.
+    auto Duplicated = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
+    auto Sha1HRotated = _VSha1H(Duplicated);
+    auto RotatedNode = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Sha1HRotated, 0);
+    auto Tmp = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src, RotatedNode);
+    Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, Src, Tmp);
+  }
 
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
