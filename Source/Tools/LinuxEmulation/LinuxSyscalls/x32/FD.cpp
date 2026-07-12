@@ -857,7 +857,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(
     vmsplice, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const struct iovec32* iov, unsigned long nr_segs, unsigned int flags) -> uint64_t {
       FaultSafeUserMemAccess::VerifyIsReadable(iov, sizeof(struct iovec32) * SanitizeIOCount(nr_segs));
-      fextl::vector<iovec> Host_iovec(iov, iov + nr_segs);
+      fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(nr_segs));
       uint64_t Result = ::vmsplice(fd, Host_iovec.data(), nr_segs, flags);
       SYSCALL_ERRNO();
     });
