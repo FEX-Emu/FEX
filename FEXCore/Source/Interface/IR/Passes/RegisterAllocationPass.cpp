@@ -176,7 +176,7 @@ private:
     if (IROp->Op == OP_LOADREGISTER || IROp->Op == OP_LOADPF || IROp->Op == OP_LOADAF) {
       return Node;
     } else if (IROp->Op == OP_STOREREGISTER) {
-      auto V = IROp->C<IR::IROp_StorePF>()->Value;
+      auto V = IROp->C<IR::IROp_StoreRegister>()->Value;
       V.ClearKill();
       return IR->GetNode(V);
     } else if (IROp->Op == OP_STOREPF || IROp->Op == OP_STOREAF) {
