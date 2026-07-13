@@ -33,7 +33,7 @@ namespace {
     Ref RegToSSA[32];
   };
 
-  IR::RegClass GetRegClassFromNode(IR::IRListView* IR, IR::IROp_Header* IROp) {
+  IR::RegClass GetRegClassFromNode(const IR::IROp_Header* IROp) {
     const auto Class = IR::GetRegClass(IROp->Op);
     if (Class != IR::RegClass::Complex) {
       return Class;
@@ -49,7 +49,7 @@ namespace {
     case IR::OP_FILLREGISTER: return IROp->C<IR::IROp_FillRegister>()->Class;
     default: return IR::RegClass::Invalid;
     }
-  };
+  }
 } // Anonymous namespace
 
 class ConstrainedRAPass final : public RegisterAllocationPass {
@@ -85,27 +85,27 @@ private:
   // SourcesNextUses is read backwards, this tracks the index
   int64_t SourceIndex {};
 
-  bool Rematerializable(IROp_Header* IROp) {
+  static bool Rematerializable(const IROp_Header* IROp) {
     return IROp->Op == OP_CONSTANT;
   }
 
   Ref InsertFill(Ref Node) {
-    IROp_Header* IROp = IR->GetOp<IROp_Header>(Node);
+    const auto* IROp = IR->GetOp<IROp_Header>(Node);
 
     // Remat if we can
     if (Rematerializable(IROp)) {
-      const auto Op = IROp->C<IR::IROp_Constant>();
-      uint64_t Const = Op->Constant;
+      const auto* Op = IROp->C<IR::IROp_Constant>();
+      const uint64_t Const = Op->Constant;
       return IREmit->_Constant(Const, Op->Pad, Op->MaxBytes);
     }
 
     // Otherwise fill from stack
-    uint32_t SlotPlusOne = SpillSlots[IR->GetID(Node).Value];
+    const uint32_t SlotPlusOne = SpillSlots[IR->GetID(Node).Value];
     LOGMAN_THROW_A_FMT(SlotPlusOne >= 1, "Node must have been spilled");
 
-    const auto RegClass = GetRegClassFromNode(IR, IROp);
+    const auto RegClass = GetRegClassFromNode(IROp);
     return IREmit->_FillRegister(IROp->Size, IROp->ElementSize, SlotPlusOne - 1, RegClass);
-  };
+  }
 
   // IP of next-use of each source. IPs are measured from the end of the
   // block, so we don't need to size the block up-front.
@@ -113,32 +113,35 @@ private:
 
   bool AnySpilled {};
 
-  bool IsValidArg(OrderedNodeWrapper Arg) {
+  bool IsValidArg(OrderedNodeWrapper Arg) const {
     if (Arg.IsInvalid()) {
       return false;
     }
 
     auto Op = IR->GetOp<IROp_Header>(Arg)->Op;
     return Op != OP_INLINECONSTANT && Op != OP_INLINEENTRYPOINTOFFSET;
-  };
+  }
 
   RegisterClassData* GetClass(PhysicalRegister Reg) {
     return &Classes[Reg.Class];
-  };
+  }
+  const RegisterClassData* GetClass(PhysicalRegister Reg) const {
+    return &Classes[Reg.Class];
+  }
 
-  uint32_t GetRegBits(PhysicalRegister Reg) {
-    return 1 << Reg.Reg;
-  };
+  static uint32_t GetRegBits(PhysicalRegister Reg) {
+    return 1U << Reg.Reg;
+  }
 
-  bool IsInRegisterFile(Ref Node) {
+  bool IsInRegisterFile(Ref Node) const {
     auto ID = IR->GetID(Node).Value;
     LOGMAN_THROW_A_FMT(ID < SSAToReg.size(), "Only old nodes looked up");
 
-    PhysicalRegister Reg = SSAToReg[ID];
-    RegisterClassData* Class = GetClass(Reg);
+    const PhysicalRegister Reg = SSAToReg[ID];
+    const RegisterClassData* Class = GetClass(Reg);
 
     return (Class->Available & GetRegBits(Reg)) == 0 && Class->RegToSSA[Reg.Reg] == Node;
-  };
+  }
 
   void FreeReg(PhysicalRegister Reg) {
     RegisterClassData* Class = GetClass(Reg);
@@ -147,7 +150,7 @@ private:
     LOGMAN_THROW_A_FMT(!(Class->Available & RegBits), "Register double-free");
 
     Class->Available |= RegBits;
-  };
+  }
 
   bool HasSource(IROp_Header* I, PhysicalRegister Reg) {
     int NumArgs = IR::GetRAArgs(I->Op);
@@ -170,7 +173,7 @@ private:
     }
 
     return false;
-  };
+  }
 
   Ref DecodeSRANode(const IROp_Header* IROp, Ref Node) {
     if (IROp->Op == OP_LOADREGISTER || IROp->Op == OP_LOADPF || IROp->Op == OP_LOADAF) {
@@ -186,9 +189,9 @@ private:
     }
 
     return nullptr;
-  };
+  }
 
-  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
+  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) const {
     uint8_t FlagOffset = Classes[FEXCore::ToUnderlying(RegClass::GPRFixed)].Count - 2;
 
     if (IROp->Op == OP_STOREREGISTER) {
@@ -207,9 +210,9 @@ private:
         return PhysicalRegister {RegClass::GPRFixed, uint8_t(Op->Reg)};
       }
     }
-  };
+  }
 
-  bool IsTrivial(Ref Node, const IROp_Header* Header) {
+  bool IsTrivial(Ref Node, const IROp_Header* Header) const {
     switch (Header->Op) {
     case OP_ALLOCATEGPR: return true;
     case OP_ALLOCATEGPRAFTER: return true;
@@ -320,7 +323,7 @@ private:
     // If we already spilled the Candidate, we don't need to spill again.
     // Similarly, if we can rematerialize the instruction, we don't spill it.
     if (!Spilled && Header->Op != OP_CONSTANT) {
-      LOGMAN_THROW_A_FMT(Reg.AsRegClass() == GetRegClassFromNode(IR, Header), "Consistent");
+      LOGMAN_THROW_A_FMT(Reg.AsRegClass() == GetRegClassFromNode(Header), "Consistent");
 
       // SpillSlots allocation is deferred.
       if (SpillSlots.empty()) {
@@ -340,7 +343,7 @@ private:
     // Now that we've spilled the value, take it out of the register file
     FreeReg(Reg);
     AnySpilled = true;
-  };
+  }
 
   void RemapReg(Ref Node, PhysicalRegister Reg) {
     RegisterClassData* Class = GetClass(Reg);
@@ -350,7 +353,7 @@ private:
     if (Index < SSAToReg.size()) {
       SSAToReg[Index] = Reg;
     }
-  };
+  }
 
   // Record a given assignment of register Reg to Node.
   void SetReg(Ref Node, PhysicalRegister Reg) {
@@ -363,7 +366,7 @@ private:
 
     RemapReg(Node, Reg);
     Node->Reg = Reg.Raw;
-  };
+  }
 
   // Assign a register for a given Node, spilling if necessary.
   void AssignReg(IROp_Header* IROp, IROp_CodeBlock* Block, Ref CodeNode, IROp_Header* Pivot) {
@@ -419,7 +422,7 @@ private:
       }
     }
 
-    RegClass ClassType = GetRegClassFromNode(IR, IROp);
+    RegClass ClassType = GetRegClassFromNode(IROp);
     RegisterClassData* Class = &Classes[FEXCore::ToUnderlying(ClassType)];
 
     // Spill to make room in the register file.
@@ -432,7 +435,7 @@ private:
     LOGMAN_THROW_A_FMT(Class->Available != 0, "Post-condition of spilling");
     unsigned Reg = std::countr_zero(Class->Available);
     SetReg(CodeNode, PhysicalRegister(ClassType, Reg));
-  };
+  }
 };
 
 void ConstrainedRAPass::AddRegisters(IR::RegClass Class, uint32_t RegisterCount) {
@@ -441,7 +444,7 @@ void ConstrainedRAPass::AddRegisters(IR::RegClass Class, uint32_t RegisterCount)
   Classes[FEXCore::ToUnderlying(Class)].Count = RegisterCount;
 }
 
-inline bool KillMove(IROp_Header* LastOp, IROp_Header* IROp, Ref LastNode, Ref CodeNode) {
+static bool KillMove(const IROp_Header* LastOp, IROp_Header* IROp, Ref LastNode, Ref CodeNode) {
   // 32-bit moves in x86_64 are represented as a Bfe, detect them.
   if (LastOp->Op == OP_BFE && LastOp->C<IR::IROp_Bfe>()->lsb == 0 && LastOp->C<IR::IROp_Bfe>()->Width == 32) {
     auto Op = IROp->Op;
@@ -459,7 +462,7 @@ inline bool KillMove(IROp_Header* LastOp, IROp_Header* IROp, Ref LastNode, Ref C
   return LastOp->Op == OP_STOREREGISTER;
 }
 
-inline bool IsSignext(const IROp_Header* IROp, OrderedNodeWrapper Src, OpSize Size) {
+static bool IsSignext(const IROp_Header* IROp, OrderedNodeWrapper Src, OpSize Size) {
   if (IROp->Op == OP_SBFE) {
     auto Sbfe = IROp->C<IR::IROp_Sbfe>();
     return Sbfe->Width == 1 && Sbfe->lsb == (IR::OpSizeAsBits(Size) - 1) && Sbfe->Src == Src;
@@ -468,7 +471,7 @@ inline bool IsSignext(const IROp_Header* IROp, OrderedNodeWrapper Src, OpSize Si
   }
 }
 
-inline bool IsZero(const IROp_Header* IROp) {
+static bool IsZero(const IROp_Header* IROp) {
   return IROp->Op == OP_CONSTANT && IROp->C<IROp_Constant>()->Constant == 0;
 }
 
