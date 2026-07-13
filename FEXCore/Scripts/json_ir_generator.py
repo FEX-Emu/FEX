@@ -607,77 +607,77 @@ def print_validation(op):
 def print_ir_allocator_helpers():
     output_file.write("#ifdef IROP_ALLOCATE_HELPERS\n")
 
-    output_file.write("\ttemplate <class T>\n")
-    output_file.write("\tstruct Wrapper final {\n")
-    output_file.write("\t\tT *first;\n")
-    output_file.write("\t\tOrderedNode *Node; ///< Actual offset of this IR in ths list\n")
-    output_file.write("\n")
-    output_file.write("\t\toperator Wrapper<IROp_Header>() const { return Wrapper<IROp_Header> {reinterpret_cast<IROp_Header*>(first), Node}; }\n")
-    output_file.write("\t\toperator OrderedNode *() { return Node; }\n")
-    output_file.write("\t\toperator const OrderedNode *() const { return Node; }\n")
-    output_file.write("\t\toperator OpNodeWrapper () const { return Node->Header.Value; }\n")
-    output_file.write("\t};\n")
+    output_file.write("\ttemplate <class T>\n"
+                      "\tstruct Wrapper final {\n"
+                      "\t\tT *first;\n"
+                      "\t\tOrderedNode *Node; ///< Actual offset of this IR in ths list\n"
+                      "\n"
+                      "\t\toperator Wrapper<IROp_Header>() const { return Wrapper<IROp_Header> {reinterpret_cast<IROp_Header*>(first), Node}; }\n"
+                      "\t\toperator OrderedNode *() { return Node; }\n"
+                      "\t\toperator const OrderedNode *() const { return Node; }\n"
+                      "\t\toperator OpNodeWrapper () const { return Node->Header.Value; }\n"
+                      "\t};\n")
 
-    output_file.write("\ttemplate <class T>\n")
-    output_file.write("\tusing IRPair = Wrapper<T>;\n\n")
+    output_file.write("\ttemplate <class T>\n"
+                      "\tusing IRPair = Wrapper<T>;\n\n")
 
-    output_file.write("\tIRPair<IROp_Header> AllocateRawOp(size_t HeaderSize) {\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<IROp_Header*>(DualListData.DataAllocate(HeaderSize));\n")
-    output_file.write("\t\tmemset(Op, 0, HeaderSize);\n")
-    output_file.write("\t\tOp->Op = IROps::OP_DUMMY;\n")
-    output_file.write("\t\treturn IRPair<IROp_Header>{Op, CreateNode(Op)};\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\tIRPair<IROp_Header> AllocateRawOp(size_t HeaderSize) {\n"
+                      "\t\tauto Op = reinterpret_cast<IROp_Header*>(DualListData.DataAllocate(HeaderSize));\n"
+                      "\t\tmemset(Op, 0, HeaderSize);\n"
+                      "\t\tOp->Op = IROps::OP_DUMMY;\n"
+                      "\t\treturn IRPair<IROp_Header>{Op, CreateNode(Op)};\n"
+                      "\t}\n\n")
 
-    output_file.write("\ttemplate<class T, IROps T2>\n")
-    output_file.write("\tT *AllocateOrphanOp() {\n")
-    output_file.write("\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n")
-    output_file.write("\t\tmemset(Op, 0, Size);\n")
-    output_file.write("\t\tOp->Header.Op = T2;\n")
-    output_file.write("\t\treturn Op;\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\ttemplate<class T, IROps T2>\n"
+                      "\tT *AllocateOrphanOp() {\n"
+                      "\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n"
+                      "\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n"
+                      "\t\tmemset(Op, 0, Size);\n"
+                      "\t\tOp->Header.Op = T2;\n"
+                      "\t\treturn Op;\n"
+                      "\t}\n\n")
 
-    output_file.write("\ttemplate<class T, IROps T2>\n")
-    output_file.write("\tIRPair<T> AllocateOp() {\n")
-    output_file.write("\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n")
-    output_file.write("\t\tmemset(Op, 0, Size);\n")
-    output_file.write("\t\tOp->Header.Op = T2;\n")
-    output_file.write("\t\treturn IRPair<T>{Op, CreateNode(&Op->Header)};\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\ttemplate<class T, IROps T2>\n"
+                      "\tIRPair<T> AllocateOp() {\n"
+                      "\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n"
+                      "\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n"
+                      "\t\tmemset(Op, 0, Size);\n"
+                      "\t\tOp->Header.Op = T2;\n"
+                      "\t\treturn IRPair<T>{Op, CreateNode(&Op->Header)};\n"
+                      "\t}\n\n")
 
-    output_file.write("\tIR::OpSize GetOpSize(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn HeaderOp->Size;\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\tIR::OpSize GetOpSize(const OrderedNode *Op) const {\n"
+                      "\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n"
+                      "\t\treturn HeaderOp->Size;\n"
+                      "\t}\n\n")
 
-    output_file.write("\tIR::OpSize GetOpElementSize(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn HeaderOp->ElementSize;\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\tIR::OpSize GetOpElementSize(const OrderedNode *Op) const {\n"
+                      "\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n"
+                      "\t\treturn HeaderOp->ElementSize;\n"
+                      "\t}\n\n")
 
-    output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tLOGMAN_THROW_A_FMT(OpHasDest(Op), \"Op {} has no dest\\n\", GetOpName(Op));\n")
-    output_file.write("\t\treturn IR::OpSizeToSize(GetOpSize(Op)) / IR::OpSizeToSize(GetOpElementSize(Op));\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n"
+                      "\t\tLOGMAN_THROW_A_FMT(OpHasDest(Op), \"Op {} has no dest\\n\", GetOpName(Op));\n"
+                      "\t\treturn IR::OpSizeToSize(GetOpSize(Op)) / IR::OpSizeToSize(GetOpElementSize(Op));\n"
+                      "\t}\n\n")
 
-    output_file.write("\tbool OpHasDest(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn GetHasDest(HeaderOp->Op);\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\tbool OpHasDest(const OrderedNode *Op) const {\n"
+                      "\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n"
+                      "\t\treturn GetHasDest(HeaderOp->Op);\n"
+                      "\t}\n\n")
 
-    output_file.write("\tIROps GetOpType(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn HeaderOp->Op;\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\tIROps GetOpType(const OrderedNode *Op) const {\n"
+                      "\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n"
+                      "\t\treturn HeaderOp->Op;\n"
+                      "\t}\n\n")
 
-    output_file.write("\tFEXCore::IR::RegClass GetOpRegClass(const OrderedNode *Op) const {\n")
-    output_file.write("\t\treturn GetRegClass(GetOpType(Op));\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\tFEXCore::IR::RegClass GetOpRegClass(const OrderedNode *Op) const {\n"
+                      "\t\treturn GetRegClass(GetOpType(Op));\n"
+                      "\t}\n\n")
 
-    output_file.write("\tstd::string_view const& GetOpName(const OrderedNode *Op) const {\n")
-    output_file.write("\t\treturn IR::GetName(GetOpType(Op));\n")
-    output_file.write("\t}\n\n")
+    output_file.write("\tstd::string_view const& GetOpName(const OrderedNode *Op) const {\n"
+                      "\t\treturn IR::GetName(GetOpType(Op));\n"
+                      "\t}\n\n")
 
     # Generate helpers with operands
     for op in IROps:
