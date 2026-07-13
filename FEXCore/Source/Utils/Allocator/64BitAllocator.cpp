@@ -124,12 +124,13 @@ private:
 
       // Use madvise to set the full tracking region to zero.
       // This ensures unused pages are zero, while not having the backing pages consuming memory.
-      ::madvise(Region->UsedPages.Memory + ManagedSize, (Region->SlabInfo->RegionSize >> FEXCore::Utils::FEX_PAGE_SHIFT) - ManagedSize,
-                MADV_DONTNEED);
+      auto* MemoryAsBytes = reinterpret_cast<uint8_t*>(Region->UsedPages.Memory);
+      const auto TrackingRegionSize = Region->SlabInfo->RegionSize - ManagedSize;
+      ::madvise(MemoryAsBytes + ManagedSize, TrackingRegionSize, MADV_DONTNEED);
 
       // Use madvise to claim WILLNEED on the beginning pages for initial state tracking.
       // Improves performance of the following MemClear by not doing a page level fault dance for data necessary to track >170TB of used pages.
-      ::madvise(Region->UsedPages.Memory, ManagedSize, MADV_WILLNEED);
+      ::madvise(MemoryAsBytes, ManagedSize, MADV_WILLNEED);
 
       // Set our reserved pages
       Region->UsedPages.MemSet(NumManagedPages);
