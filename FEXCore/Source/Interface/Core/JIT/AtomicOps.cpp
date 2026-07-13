@@ -342,8 +342,8 @@ DEF_OP(TelemetrySetValue) {
     (void)Bind(&LoopTop);
     ldaxr(ARMEmitter::SubRegSize::i64Bit, TMP3, TMP2);
     orr(ARMEmitter::Size::i32Bit, TMP3, TMP3, Src);
-    stlxr(ARMEmitter::SubRegSize::i64Bit, TMP3, TMP3, TMP2);
-    (void)cbnz(ARMEmitter::Size::i32Bit, TMP3, &LoopTop);
+    stlxr(ARMEmitter::SubRegSize::i64Bit, TMP4, TMP3, TMP2);
+    (void)cbnz(ARMEmitter::Size::i32Bit, TMP4, &LoopTop);
   }
 #endif
 }
