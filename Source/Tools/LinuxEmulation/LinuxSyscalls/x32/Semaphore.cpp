@@ -86,7 +86,8 @@ union semun {
   void* __pad;
 };
 
-uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first, uint32_t second, uint32_t third, uint32_t ptr, uint32_t fifth) {
+static uint64_t
+_ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first, uint32_t second, uint32_t third, uint32_t ptr, uint32_t fifth) {
   uint64_t Result {};
 
   const int Version = call >> 16;
