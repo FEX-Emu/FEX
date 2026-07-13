@@ -58,6 +58,8 @@ public:
     }
     IsValidHandle = Handle != INVALID_HANDLE_VALUE;
 #endif
+
+    ShouldClose = IsValidHandle;
   }
 
   /**
