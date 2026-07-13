@@ -251,6 +251,10 @@ def parse_ops(ops):
 
             if "Desc" in op_val:
                 OpDef.Desc = op_val["Desc"]
+                if not isinstance(OpDef.Desc, list):
+                    ExitError(f"Desc field for op {OpDef.Name} must be an array of strings")
+                if not all(isinstance(item, str) for item in OpDef.Desc):
+                    ExitError(f"Desc field for op {OpDef.Name} must only contain strings")
 
             if "DynamicDispatch" in op_val:
                 OpDef.DynamicDispatch = bool(op_val["DynamicDispatch"])

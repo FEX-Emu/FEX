@@ -2016,7 +2016,7 @@
 
       "FPR = VUShrNI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
-        "Desc": "Unsigned shifts right each element and then narrows to the next lower element size",
+        "Desc": ["Unsigned shifts right each element and then narrows to the next lower element size"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize >> 1",
         "EmitValidation": [
@@ -2038,7 +2038,7 @@
         ]
       },
       "FPR = VSXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
-        "Desc": "Sign extends elements from the source element size to the next size up",
+        "Desc": ["Sign extends elements from the source element size to the next size up"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
@@ -2050,7 +2050,7 @@
         "ElementSize": "ElementSize << 1"
       },
       "FPR = VSSHLL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
-        "Desc": "Sign extends elements from the source element size to the next size up",
+        "Desc": ["Sign extends elements from the source element size to the next size up"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
@@ -2062,7 +2062,7 @@
         "ElementSize": "ElementSize << 1"
       },
       "FPR = VUXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
-        "Desc": "Zero extends elements from the source element size to the next size up",
+        "Desc": ["Zero extends elements from the source element size to the next size up"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
@@ -2217,7 +2217,7 @@
       },
 
       "FPR = VAddP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
-        "Desc": "Does a horizontal pairwise add of elements across the two source vectors",
+        "Desc": ["Does a horizontal pairwise add of elements across the two source vectors"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
@@ -2274,7 +2274,7 @@
         "ElementSize": "ElementSize"
       },
       "FPR = VFAddP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
-        "Desc": "Does a horizontal pairwise add of elements across the two source vectors with float element types",
+        "Desc": ["Does a horizontal pairwise add of elements across the two source vectors with float element types"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
@@ -2324,29 +2324,27 @@
         "ElementSize": "ElementSize << 1"
       },
       "FPR = VUMull2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "Desc": "Multiplies the high elements with size extension",
+        "Desc": ["Multiplies the high elements with size extension"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
       "FPR = VSMull2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "Desc": "Multiplies the high elements with size extension",
+        "Desc": ["Multiplies the high elements with size extension"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
       "FPR = VUMulH OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "Desc": "Wide unsigned multiply returning the high results",
+        "Desc": ["Wide unsigned multiply returning the high results"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
       "FPR = VSMulH OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "Desc": "Wide signed multiply returning the high results",
-
+        "Desc": ["Wide signed multiply returning the high results"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
       "FPR = VUABDL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "Desc": ["Unsigned Absolute Difference Long"
-                ],
+        "Desc": ["Unsigned Absolute Difference Long"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
@@ -2622,7 +2620,7 @@
       },
 
       "FPR = Vector_SToF OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
-        "Desc": "Vector op: Converts signed integer to same size float",
+        "Desc": ["Vector op: Converts signed integer to same size float"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
@@ -2634,12 +2632,12 @@
         "ElementSize": "ElementSize"
       },
       "FPR = Vector_FToZS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
-        "Desc": "Vector op: Converts float to signed integer, rounding towards zero",
+        "Desc": ["Vector op: Converts float to signed integer, rounding towards zero"],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
       "FPR = Vector_FToF OpSize:#RegisterSize, OpSize:#DestElementSize, FPR:$Vector, OpSize:$SrcElementSize": {
-        "Desc": "Vector op: Converts float from source element size to destination size (fp32<->fp64)",
+        "Desc": ["Vector op: Converts float from source element size to destination size (fp32<->fp64)"],
         "DestSize": "RegisterSize",
         "ElementSize": "DestElementSize"
       },
@@ -2694,75 +2692,74 @@
     },
     "Crypto": {
       "FPR = VAESImc FPR:$Vector": {
-        "Desc": "Does a stage of the inverse mix column transformation",
+        "Desc": ["Does a stage of the inverse mix column transformation"],
         "DestSize": "OpSize::i128Bit"
       },
       "FPR = VAESEnc OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
-        "Desc": "Does a step of AES encryption",
+        "Desc": ["Does a step of AES encryption"],
         "DestSize": "RegisterSize"
       },
       "FPR = VAESEncLast OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
-        "Desc": "Does the last step of AES encryption",
+        "Desc": ["Does the last step of AES encryption"],
         "DestSize": "RegisterSize"
       },
       "FPR = VAESDec OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
-        "Desc": "Does a step of AES decryption",
+        "Desc": ["Does a step of AES decryption"],
         "DestSize": "RegisterSize"
       },
       "FPR = VAESDecLast OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
-        "Desc": "Does the last step of AES decryption",
+        "Desc": ["Does the last step of AES decryption"],
         "DestSize": "RegisterSize"
       },
       "FPR = VAESKeyGenAssist FPR:$Src, FPR:$KeyGenTBLSwizzle, FPR:$ZeroReg, u8:$RCON": {
-        "Desc": "Assists in key generation",
+        "Desc": ["Assists in key generation"],
         "DestSize": "OpSize::i128Bit"
       },
       "FPR = VSha1H FPR:$Src": {
-        "Desc": "Does vector scalar SHA1H instruction",
+        "Desc": ["Does vector scalar SHA1H instruction"],
         "DestSize": "FEXCore::IR::OpSize::i32Bit"
       },
       "FPR = VSha1C FPR:$Src1, FPR:$Src2, FPR:$Src3": {
-        "Desc": "Does vector SHA1C instruction",
+        "Desc": ["Does vector SHA1C instruction"],
         "DestSize": "FEXCore::IR::OpSize::i128Bit",
         "TiedSource": 0
       },
       "FPR = VSha1M FPR:$Src1, FPR:$Src2, FPR:$Src3": {
-        "Desc": "Does vector SHA1M instruction",
+        "Desc": ["Does vector SHA1M instruction"],
         "DestSize": "FEXCore::IR::OpSize::i128Bit",
         "TiedSource": 0
       },
       "FPR = VSha1P FPR:$Src1, FPR:$Src2, FPR:$Src3": {
-        "Desc": "Does vector SHA1P instruction",
+        "Desc": ["Does vector SHA1P instruction"],
         "DestSize": "FEXCore::IR::OpSize::i128Bit",
         "TiedSource": 0
       },
       "FPR = VSha1SU1 FPR:$Src1, FPR:$Src2": {
-        "Desc": "Does vector scalar SHA1H instruction",
+        "Desc": ["Does vector scalar SHA1H instruction"],
         "DestSize": "FEXCore::IR::OpSize::i128Bit",
         "TiedSource": 0
       },
       "FPR = VSha256U0 FPR:$Src1, FPR:$Src2": {
-        "Desc": "Does vector scalar VSha256U0 instruction",
+        "Desc": ["Does vector scalar VSha256U0 instruction"],
         "DestSize": "FEXCore::IR::OpSize::i128Bit",
         "TiedSource": 0
       },
       "FPR = VSha256U1 FPR:$Src1, FPR:$Src2": {
-        "Desc": "Does vector scalar VSha256U1 instruction",
+        "Desc": ["Does vector scalar VSha256U1 instruction"],
         "DestSize": "FEXCore::IR::OpSize::i128Bit"
       },
       "FPR = VSha256H FPR:$Src1, FPR:$Src2, FPR:$Src3": {
-        "Desc": "Does vector scalar VSha256H instruction",
+        "Desc": ["Does vector scalar VSha256H instruction"],
         "DestSize": "FEXCore::IR::OpSize::i128Bit",
         "TiedSource": 0
       },
       "FPR = VSha256H2 FPR:$Src1, FPR:$Src2, FPR:$Src3": {
-        "Desc": "Does vector scalar VSha256H2 instruction",
+        "Desc": ["Does vector scalar VSha256H2 instruction"],
         "DestSize": "FEXCore::IR::OpSize::i128Bit",
         "TiedSource": 0
       },
       "GPR = CRC32 GPR:$Src1, GPR:$Src2, OpSize:$SrcSize": {
-        "Desc": ["CRC32 using polynomial 0x1EDC6F41"
-                ],
+        "Desc": ["CRC32 using polynomial 0x1EDC6F41"],
         "DestSize": "OpSize::i32Bit"
       },
       "FPR = PCLMUL OpSize:#RegisterSize, FPR:$Src1, FPR:$Src2, u8:$Selector": {
