@@ -50,8 +50,8 @@ struct BitSet final {
     memset(Memory, 0xFF, ToBytes(Elements));
   }
   [[nodiscard]]
-  uint32_t ToBytes(size_t Elements) const {
-    return AlignUp(Elements, MinimumSizeBits) / MinimumSize;
+  static size_t ToBytes(size_t Elements) {
+    return AlignUp(Elements, MinimumSizeBits) / 8;
   }
 
   // This very explicitly doesn't let you take an address
@@ -65,8 +65,8 @@ struct BitSet final {
 template<typename T>
 struct BitSetView final {
   using ElementType = T;
-  constexpr static size_t MinimumSize = sizeof(ElementType);
-  constexpr static size_t MinimumSizeBits = sizeof(ElementType) * 8;
+  constexpr static size_t MinimumSize = BitSet<T>::MinimumSize;
+  constexpr static size_t MinimumSizeBits = BitSet<T>::MinimumSizeBits;
 
   ElementType* Memory {};
 
@@ -86,10 +86,10 @@ struct BitSetView final {
     Memory[Element / MinimumSizeBits] &= ~(1ULL << (Element % MinimumSizeBits));
   }
   void MemClear(size_t Elements) {
-    memset(Memory, 0, AlignUp(Elements / MinimumSizeBits, MinimumSizeBits));
+    memset(Memory, 0, BitSet<T>::ToBytes(Elements));
   }
   void MemSet(size_t Elements) {
-    memset(Memory, 0xFF, AlignUp(Elements / MinimumSizeBits, MinimumSizeBits));
+    memset(Memory, 0xFF, BitSet<T>::ToBytes(Elements));
   }
 
   // This very explicitly doesn't let you take an address

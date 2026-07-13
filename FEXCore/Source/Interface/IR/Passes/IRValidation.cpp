@@ -46,7 +46,7 @@ void IRValidation::Run(IREmitter* IREmit) {
   OffsetToBlockMap.clear();
   EntryBlock = nullptr;
 
-  uint32_t Count = CurrentIR.GetSSACount();
+  const auto Count = CurrentIR.GetSSACount();
   if (Count > MaxNodes) {
     NodeIsLive.Realloc(Count);
   }
