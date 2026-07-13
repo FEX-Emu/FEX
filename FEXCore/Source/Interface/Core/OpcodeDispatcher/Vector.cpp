@@ -3301,7 +3301,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 
   // On top of resetting the flags to a default state, we also need to clear
   // all of the ST0-7/MM0-7 registers to zero.
-  Ref ZeroVector = LoadZeroVector(OpSize::i64Bit);
+  Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     _StoreContextFPR(OpSize::i128Bit, ZeroVector, MMBaseOffset() + i * 16);
   }
