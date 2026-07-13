@@ -112,14 +112,13 @@ private:
       return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<FlexBitElementType>::SizeInBytes(NumElements);
     }
 
-    static void InitializeVMARegionUsed(LiveVMARegion* Region, size_t AdditionalSize) {
-      size_t SizeOfLiveRegion =
+    static void InitializeVMARegionUsed(LiveVMARegion* Region) {
+      const size_t SizeOfLiveRegion =
         FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(Region->SlabInfo->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
-      size_t SizePlusManagedData = SizeOfLiveRegion + AdditionalSize;
 
-      Region->FreeSpace = Region->SlabInfo->RegionSize - SizePlusManagedData;
+      Region->FreeSpace = Region->SlabInfo->RegionSize - SizeOfLiveRegion;
 
-      size_t NumManagedPages = SizePlusManagedData >> FEXCore::Utils::FEX_PAGE_SHIFT;
+      size_t NumManagedPages = SizeOfLiveRegion >> FEXCore::Utils::FEX_PAGE_SHIFT;
       size_t ManagedSize = NumManagedPages << FEXCore::Utils::FEX_PAGE_SHIFT;
 
       // Use madvise to set the full tracking region to zero.
@@ -153,28 +152,27 @@ private:
   FEXCore::ForkableUniqueMutex AllocationMutex;
   void DetermineVASize();
 
-  LiveVMARegion* MakeRegionActive(ReservedRegionListType::iterator ReservedIterator, uint64_t UsedSize) {
+  LiveVMARegion* MakeRegionActive(ReservedRegionListType::iterator ReservedIterator) {
     ReservedVMARegion* ReservedRegion = *ReservedIterator;
 
     ReservedRegions->erase(ReservedIterator);
 
     // mprotect the new region we've allocated
-    size_t SizeOfLiveRegion =
+    const size_t SizeOfLiveRegion =
       FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(ReservedRegion->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
-    size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
 
-    auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
+    auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizeOfLiveRegion, PROT_READ | PROT_WRITE);
     LOGMAN_THROW_A_FMT(Res != -1, "Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno,
                        strerror(errno));
 
-    FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData);
+    FEXCore::Allocator::VirtualName("FEXMem_Misc", reinterpret_cast<void*>(ReservedRegion->Base), SizeOfLiveRegion);
     LiveVMARegion* LiveRange = new (reinterpret_cast<void*>(ReservedRegion->Base)) LiveVMARegion();
 
     // Copy over the reserved data
     LiveRange->SlabInfo = ReservedRegion;
 
     // Initialize VMA
-    LiveVMARegion::InitializeVMARegionUsed(LiveRange, UsedSize);
+    LiveVMARegion::InitializeVMARegionUsed(LiveRange);
 
     // Add to our active tracked ranges
     auto LiveIter = LiveRegions->emplace_back(LiveRange);
@@ -223,7 +221,7 @@ OSAllocator_64Bit::LiveVMARegion* OSAllocator_64Bit::FindLiveRegionForAddress(ui
       uintptr_t RegionEnd = ReservedRegion->Base + ReservedRegion->RegionSize;
       if (Addr >= ReservedRegion->Base && AddrEnd < RegionEnd) {
         // Found one, let's make it active
-        LiveRegion = MakeRegionActive(it, 0);
+        LiveRegion = MakeRegionActive(it);
         break;
       }
     }
@@ -393,7 +391,7 @@ again:
       size_t lengthPlusManagedData = length + lengthOfLiveRegion;
       for (auto it = ReservedRegions->begin(); it != ReservedRegions->end(); ++it) {
         if ((*it)->RegionSize >= lengthPlusManagedData) {
-          MakeRegionActive(it, 0);
+          MakeRegionActive(it);
           goto again;
         }
       }
