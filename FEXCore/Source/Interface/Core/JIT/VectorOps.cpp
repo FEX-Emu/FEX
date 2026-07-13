@@ -3296,8 +3296,13 @@ DEF_OP(VUShrNI) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    shrnb(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
-    uzp1(SubRegSize, Dst.Z(), Dst.Z(), Dst.Z());
+    if (BitShift == 0) {
+      mov_imm(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), 0);
+      uzp1(SubRegSize, Dst.Z(), Dst.Z(), VTMP1.Z());
+    } else {
+      shrnb(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
+      uzp1(SubRegSize, Dst.Z(), Dst.Z(), Dst.Z());
+    }
   } else {
     if (BitShift == 0) {
       xtn(SubRegSize, Dst.D(), Vector.D());
