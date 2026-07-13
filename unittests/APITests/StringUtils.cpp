@@ -5,6 +5,8 @@ using namespace FEXCore::StringUtils;
 
 TEST_CASE("ltrim") {
   CHECK(LeftTrim("") == "");
+  CHECK(LeftTrim(" ") == "");
+  CHECK(LeftTrim(" \t\n\r\f\v") == "");
   CHECK(LeftTrim("FEXInterpreter") == "FEXInterpreter");
 
   CHECK(LeftTrim("FEXInterpreter\n") == "FEXInterpreter\n");
@@ -31,6 +33,8 @@ TEST_CASE("ltrim") {
 
 TEST_CASE("rtrim") {
   CHECK(RightTrim("") == "");
+  CHECK(RightTrim(" ") == "");
+  CHECK(RightTrim(" \t\n\r\f\v") == "");
   CHECK(RightTrim("FEXInterpreter") == "FEXInterpreter");
 
   CHECK(RightTrim("FEXInterpreter\n") == "FEXInterpreter");
@@ -57,6 +61,8 @@ TEST_CASE("rtrim") {
 
 TEST_CASE("trim") {
   CHECK(Trim("") == "");
+  CHECK(Trim(" ") == "");
+  CHECK(Trim(" \t\n\r\f\v") == "");
   CHECK(Trim("FEXInterpreter") == "FEXInterpreter");
 
   CHECK(Trim("FEXInterpreter\n") == "FEXInterpreter");
