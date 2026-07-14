@@ -1199,20 +1199,16 @@ DEF_OP(VAddV) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    // SVE doesn't have an equivalent ADDV instruction, so we make do
-    // by performing two Adv. SIMD ADDV operations on the high and low
-    // 128-bit lanes and then sum them up.
-
-    const auto Mask = PRED_TMP_32B.Zeroing();
-    const auto CompactPred = ARMEmitter::PReg::p0;
-
-    // Select all our upper elements to run ADDV over them.
-    not_(CompactPred, Mask, PRED_TMP_16B);
-    compact(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), CompactPred, Vector.Z());
-
-    addv(SubRegSize.Vector, VTMP2.Q(), Vector.Q());
-    addv(SubRegSize.Vector, VTMP1.Q(), VTMP1.Q());
-    add(SubRegSize.Vector, Dst.Q(), VTMP1.Q(), VTMP2.Q());
+    if (ElementSize == IR::OpSize::i64Bit) {
+      const auto Mask = PRED_TMP_32B.Zeroing();
+      uaddv(SubRegSize.Vector, Dst.D(), Mask, Vector.Z());
+    } else {
+      const auto Mask = ARMEmitter::PReg::p0;
+      uaddv(SubRegSize.Vector, VTMP1.D(), Mask, Vector.Z());
+      mov_imm(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), 0);
+      ptrue(SubRegSize.Vector, Mask, ARMEmitter::PredicatePattern::SVE_VL1);
+      mov(SubRegSize.Vector, Dst.Z(), Mask.Merging(), VTMP1.Z());
+    }
   } else {
     if (ElementSize == IR::OpSize::i64Bit) {
       addp(SubRegSize.Scalar, Dst, Vector);
