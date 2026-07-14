@@ -933,7 +933,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           UpdateTopForPush_Slow();
           StoreStackValueAtOffset_Slow(SourceNode);
         } else {
-          auto* SourceNode = CurrentIR.GetNode(Op->X80Src);
           if (Op->OriginalValue.IsInvalid()) {
             // No original value to track - just push the converted data
             StackData.push(StackMemberInfo {SourceNode});
