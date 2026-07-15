@@ -61,8 +61,8 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
     }
     strncpy(buf->sysname, "Linux", __OLD_UTS_LEN);
     uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
-    snprintf(buf->release, __OLD_UTS_LEN, "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
-             FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+    snprintf(buf->release, __OLD_UTS_LEN, "%d.%d.%d", FEX::LinuxVersion::KernelMajor(GuestVersion),
+             FEX::LinuxVersion::KernelMinor(GuestVersion), FEX::LinuxVersion::KernelPatch(GuestVersion));
 
     const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
     strncpy(buf->version, version, __OLD_UTS_LEN);
@@ -85,8 +85,8 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
     }
     strncpy(buf->sysname, "Linux", __NEW_UTS_LEN);
     uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
-    snprintf(buf->release, __NEW_UTS_LEN, "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
-             FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+    snprintf(buf->release, __NEW_UTS_LEN, "%d.%d.%d", FEX::LinuxVersion::KernelMajor(GuestVersion),
+             FEX::LinuxVersion::KernelMinor(GuestVersion), FEX::LinuxVersion::KernelPatch(GuestVersion));
 
     const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
     strncpy(buf->version, version, __NEW_UTS_LEN);

@@ -10,6 +10,7 @@ $end_info$
 #include "Common/FEXServerClient.h"
 #include "Common/Config.h"
 #include "Common/HostFeatures.h"
+#include "Common/Linux/LinuxVersion.h"
 #include "Common/Linux/SBRKAllocations.h"
 #include "PortabilityInfo.h"
 #include "ELFCodeLoader.h"
@@ -463,8 +464,8 @@ int main(int argc, char** argv, char** const envp) {
     return -ENOEXEC;
   }
 
-  uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-  if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(5, 15)) {
+  uint32_t KernelVersion = FEX::LinuxVersion::CalculateHostKernelVersion();
+  if (KernelVersion < FEX::LinuxVersion::KernelVersion(5, 15)) {
     LogMan::Msg::EFmt("FEX requires kernel 5.15 minimum. Expect problems.");
   }
 

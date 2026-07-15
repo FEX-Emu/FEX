@@ -297,8 +297,8 @@ public:
 #ifndef AT_FLAGS_PRESERVE_ARGV0
 #define AT_FLAGS_PRESERVE_ARGV0 1
 #endif
-    uint32_t HostKernel = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-    if ((HostKernel >= FEX::HLE::SyscallHandler::KernelVersion(5, 12, 0) && (AtFlags & AT_FLAGS_PRESERVE_ARGV0)) || LoadedWithFD) {
+    uint32_t HostKernel = FEX::LinuxVersion::CalculateHostKernelVersion();
+    if ((HostKernel >= FEX::LinuxVersion::KernelVersion(5, 12, 0) && (AtFlags & AT_FLAGS_PRESERVE_ARGV0)) || LoadedWithFD) {
 
       // Erase the initial argument from the list in this case
       ApplicationArgs.erase(ApplicationArgs.begin());

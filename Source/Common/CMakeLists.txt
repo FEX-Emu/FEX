@@ -14,7 +14,8 @@ if (NOT MINGW)
   list(APPEND SRCS
     FEXServerClient.cpp
     FileFormatCheck.cpp
-    Linux/SBRKAllocations.cpp)
+    Linux/SBRKAllocations.cpp
+    Linux/LinuxVersion.cpp)
 endif()
 
 add_library(${NAME} STATIC ${SRCS})

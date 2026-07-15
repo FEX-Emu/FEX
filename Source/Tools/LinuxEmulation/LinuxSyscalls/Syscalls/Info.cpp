@@ -51,10 +51,10 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
     uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
     if (Thread->persona & UNAME26) {
       // Kernel version converts from 6.x.y to 2.6.60+x.
-      GuestVersion = FEX::HLE::SyscallHandler::KernelVersion(2, 6, 60 + FEX::HLE::SyscallHandler::KernelMinor(GuestVersion));
+      GuestVersion = FEX::LinuxVersion::KernelVersion(2, 6, 60 + FEX::LinuxVersion::KernelMinor(GuestVersion));
     }
-    snprintf(buf->release, sizeof(buf->release), "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
-             FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+    snprintf(buf->release, sizeof(buf->release), "%d.%d.%d", FEX::LinuxVersion::KernelMajor(GuestVersion),
+             FEX::LinuxVersion::KernelMinor(GuestVersion), FEX::LinuxVersion::KernelPatch(GuestVersion));
 
     const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
     strcpy(buf->version, version);
