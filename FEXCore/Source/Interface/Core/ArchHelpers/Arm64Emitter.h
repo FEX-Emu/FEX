@@ -129,6 +129,8 @@ protected:
   std::span<const ARMEmitter::VRegister> GeneralFPRegisters {};
   uint32_t PairRegisters = 0;
 
+  bool SupportCodeRelocations;
+
   struct FillSpecialRegsOptions {
     // Whether or not to set the FPCR.FIZ (flush inputs to zero) bit in the FPCR to
     // the current value of the emulated MXCSR.DAZ bit.
@@ -320,8 +322,6 @@ protected:
 
   FEX_CONFIG_OPT(Disassemble, DISASSEMBLE);
 #endif
-
-  FEX_CONFIG_OPT(EnableCodeCaching, ENABLECODECACHINGWIP);
 };
 
 } // namespace FEXCore::CPU

@@ -451,6 +451,8 @@ public:
     return Config.MonoHacks && MonoDetected;
   }
 
+  bool RequiresRelocatableConstants() const;
+
 protected:
   void UpdateAtomicTSOEmulationConfig() {
     if (SupportsHardwareTSO) {
