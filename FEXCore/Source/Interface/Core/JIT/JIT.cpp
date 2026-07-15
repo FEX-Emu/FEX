@@ -630,7 +630,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
   RAPass->AddRegisters(IR::RegClass::GPRFixed, StaticRegisters.size());
   RAPass->AddRegisters(IR::RegClass::FPR, GeneralFPRegisters.size());
   RAPass->AddRegisters(IR::RegClass::FPRFixed, StaticFPRegisters.size());
-  RAPass->PairRegs = PairRegisters;
+  RAPass->SetNumPairRegs(PairRegisters);
 
   {
     // Set up pointers that the JIT needs to load
