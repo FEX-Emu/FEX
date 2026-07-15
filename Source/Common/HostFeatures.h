@@ -101,6 +101,8 @@ public:
     SVE_F64MM,
     // MMFR1
     AFP,
+    // MMFR3
+    S1POE,
     // ISAR2
     WFxt,
     RPRES,
@@ -148,6 +150,7 @@ public:
     MMFR2_EL1,
     ZFR0_EL1,
     MMFR1_EL1,
+    MMFR3_EL1,
     ISAR2_EL1,
   };
 
@@ -559,6 +562,30 @@ public:
     };
   };
 
+  class MMFR3Reg final : public FeatureReg {
+  public:
+    FIELD_FETCHER(S1POE, S1POE, 0b0001);
+
+  private:
+    enum Field {
+      TCRX = 0 * 4,
+      SCTLRX = 1 * 4,
+      S1PIE = 2 * 4,
+      S2PIE = 3 * 4,
+      S1POE = 4 * 4,
+      S2POE = 5 * 4,
+      AIE = 6 * 4,
+      MEC = 7 * 4,
+      D128 = 8 * 4,
+      D128_2 = 9 * 4,
+      SNERR = 10 * 4,
+      ANERR = 11 * 4,
+      SDERR = 13 * 4,
+      ADERR = 14 * 4,
+      SPEC_FPACC = 15 * 4,
+    };
+  };
+
   class ISAR2Reg final : public FeatureReg {
   public:
     FIELD_FETCHER(WFxt, WFxt, 0b0010);
@@ -621,6 +648,7 @@ public:
   ZFR0Reg ZFR0;
   MMFR2Reg MMFR2;
   MMFR1Reg MMFR1;
+  MMFR3Reg MMFR3;
   ISAR2Reg ISAR2;
   DCZIDReg DCZID;
   SVEVLReg SVEVL;

@@ -485,6 +485,7 @@ int main(int argc, char** argv, char** envp) {
     features += fmt::format("mmfr0=0x{:x},", Features.MMFR0.Get());
     features += fmt::format("mmfr1=0x{:x},", Features.MMFR1.Get());
     features += fmt::format("mmfr2=0x{:x},", Features.MMFR2.Get());
+    features += fmt::format("mmfr3=0x{:x},", Features.MMFR3.Get());
     features += fmt::format("zfr0=0x{:x},", Features.ZFR0.Get());
     features += fmt::format("dczid=0x{:x},", Features.DCZID.Get());
     features += fmt::format("svevl=0x{:x}", Features.SVEVL.Get());
