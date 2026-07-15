@@ -3562,9 +3562,13 @@ DEF_OP(VSQXTN2) {
       mov(Dst.Q(), VectorLower.Q());
       ins(ARMEmitter::SubRegSize::i32Bit, Dst, 1, VTMP2, 0);
     } else {
-      mov(VTMP1.Q(), VectorLower.Q());
-      sqxtn2(SubRegSize, VTMP1, VectorUpper);
-      mov(Dst.Q(), VTMP1.Q());
+      if (Dst == VectorLower) {
+        sqxtn2(SubRegSize, VectorLower, VectorUpper);
+      } else {
+        mov(VTMP1.Q(), VectorLower.Q());
+        sqxtn2(SubRegSize, VTMP1, VectorUpper);
+        mov(Dst.Q(), VTMP1.Q());
+      }
     }
   }
 }
