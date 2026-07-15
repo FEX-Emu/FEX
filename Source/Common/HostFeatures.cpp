@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 #include "Common/CPUInfo.h"
 #include "Common/HostFeatures.h"
+#ifndef _WIN32
+#include "Common/Linux/LinuxVersion.h"
+#endif
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/HostFeatures.h>
@@ -69,7 +72,8 @@ GetSysReg(MIDR_EL1, MIDR_EL1);
 GetSysReg(ISAR1_EL1, ID_AA64ISAR1_EL1);
 GetSysReg(MMFR0_EL1, ID_AA64MMFR0_EL1);
 GetSysReg(MMFR2_EL1, ID_AA64MMFR2_EL1);
-GetSysReg(ZFR0_EL1, s3_0_c0_c4_4); // Can't request by name
+GetSysReg(MMFR3_EL1, s3_0_c0_c7_3); // Can't request by name
+GetSysReg(ZFR0_EL1, s3_0_c0_c4_4);  // Can't request by name
 GetSysReg(MMFR1_EL1, ID_AA64MMFR1_EL1);
 GetSysReg(ISAR2_EL1, ID_AA64ISAR2_EL1);
 GetSysReg(DCZID_EL0, DCZID_EL0);
@@ -84,6 +88,12 @@ public:
     ISAR1.SetReg(Get_ISAR1_EL1());
     MMFR0.SetReg(Get_MMFR0_EL1());
     MMFR2.SetReg(Get_MMFR2_EL1());
+#ifndef _WIN32
+    if (FEX::LinuxVersion::CalculateHostKernelVersion() >= FEX::LinuxVersion::KernelVersion(6, 5)) {
+      // Only exists in kernel 6.5 and newer.
+      MMFR3.SetReg(Get_MMFR3_EL1());
+    }
+#endif
     MMFR1.SetReg(Get_MMFR1_EL1());
     ISAR2.SetReg(Get_ISAR2_EL1());
     DCZID.SetReg(Get_DCZID_EL0());
@@ -158,6 +168,8 @@ public:
         MMFR1.SetReg(ValueHex);
       } else if (Key == "mmfr2") {
         MMFR2.SetReg(ValueHex);
+      } else if (Key == "mmfr3") {
+        MMFR3.SetReg(ValueHex);
       } else if (Key == "zfr0") {
         ZFR0.SetReg(ValueHex);
       } else if (Key == "dczid") {
