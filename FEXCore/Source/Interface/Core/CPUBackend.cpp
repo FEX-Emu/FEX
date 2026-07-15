@@ -412,13 +412,7 @@ namespace CPU {
 
   fextl::shared_ptr<CodeBuffer> CodeBufferManager::GetLatest() {
     if (!Latest) {
-      if (FEXCore::Config::Get_ENABLECODECACHINGWIP()) {
-        // Start with a larger code buffer to avoid resizes that would discard
-        // code loaded from caches
-        AllocateNew(MAX_CODE_SIZE);
-      } else {
-        AllocateNew(INITIAL_CODE_SIZE);
-      }
+      AllocateNew(INITIAL_CODE_SIZE);
     }
     return Latest;
   }
@@ -432,6 +426,10 @@ namespace CPU {
     auto NewCodeBufferSize = GetLatest()->AllocatedSize;
     NewCodeBufferSize = std::min<size_t>(NewCodeBufferSize * 2, MAX_CODE_SIZE);
     return AllocateNew(NewCodeBufferSize);
+  }
+
+  fextl::shared_ptr<CodeBuffer> CodeBufferManager::StartMaximalCodeBuffer() {
+    return AllocateNew(MAX_CODE_SIZE);
   }
 
 

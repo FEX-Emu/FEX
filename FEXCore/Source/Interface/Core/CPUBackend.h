@@ -80,6 +80,10 @@ namespace CPU {
     // Subsequent calls to GetLatest will point to the returned buffer.
     fextl::shared_ptr<CodeBuffer> StartLargerCodeBuffer();
 
+    // Allocate a new CodeBuffer with maximum internal size.
+    // Subsequent calls to GetLatest will point to the returned buffer.
+    fextl::shared_ptr<CodeBuffer> StartMaximalCodeBuffer();
+
     // Write offset into the latest CodeBuffer
     std::size_t LatestOffset {};
 
