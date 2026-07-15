@@ -94,7 +94,7 @@ TSOEmulationFacts GetTSOEmulationFacts() {
 namespace SIGBUSTest {
 static bool* FaultArray {};
 
-__attribute__((naked)) void atomic_load_u16(std::byte* Data) {
+__attribute__((naked)) static void atomic_load_u16(std::byte* Data) {
   asm volatile(R"(
     ldarh w1, [x0];
     ret;
@@ -102,7 +102,7 @@ __attribute__((naked)) void atomic_load_u16(std::byte* Data) {
                  : "x1", "memory");
 }
 
-__attribute__((naked)) void atomic_load_u32(std::byte* Data) {
+__attribute__((naked)) static void atomic_load_u32(std::byte* Data) {
   asm volatile(R"(
     ldar w1, [x0];
     ret;
@@ -110,14 +110,14 @@ __attribute__((naked)) void atomic_load_u32(std::byte* Data) {
                  : "x1", "memory");
 }
 
-__attribute__((naked)) void atomic_load_u64(std::byte* Data) {
+__attribute__((naked)) static void atomic_load_u64(std::byte* Data) {
   asm volatile(R"(
     ldar x1, [x0];
     ret;
     )" ::
                  : "x1", "memory");
 }
-__attribute__((naked)) void atomic_load_u128(std::byte* Data) {
+__attribute__((naked)) static void atomic_load_u128(std::byte* Data) {
   asm volatile(R"(
     ldaxp x1, x2, [x0];
     ret;
@@ -125,7 +125,7 @@ __attribute__((naked)) void atomic_load_u128(std::byte* Data) {
                  : "x1", "x2", "x3", "memory");
 }
 
-__attribute__((naked)) void atomic_set_u16(std::byte* Data, uint16_t value) {
+__attribute__((naked)) static void atomic_set_u16(std::byte* Data, uint16_t value) {
   asm volatile(R"(
     .word 0x78e13002; // ldsetalh w1, w2, [x0];
     ret;
@@ -133,7 +133,7 @@ __attribute__((naked)) void atomic_set_u16(std::byte* Data, uint16_t value) {
                  : "memory");
 }
 
-__attribute__((naked)) void atomic_set_u32(std::byte* Data, uint32_t value) {
+__attribute__((naked)) static void atomic_set_u32(std::byte* Data, uint32_t value) {
   asm volatile(R"(
     .word 0xb8e13002; // ldsetal w1, w2, [x0];
     ret;
@@ -141,14 +141,14 @@ __attribute__((naked)) void atomic_set_u32(std::byte* Data, uint32_t value) {
                  : "memory");
 }
 
-__attribute__((naked)) void atomic_set_u64(std::byte* Data, uint64_t value) {
+__attribute__((naked)) static void atomic_set_u64(std::byte* Data, uint64_t value) {
   asm volatile(R"(
     .word 0xf8e13002; // ldsetal x1, x2, [x0];
     ret;
     )" ::
                  : "memory");
 }
-__attribute__((naked)) void atomic_set_u128_impl(__uint128_t expected, __uint128_t desired, std::byte* Data) {
+__attribute__((naked)) static void atomic_set_u128_impl(__uint128_t expected, __uint128_t desired, std::byte* Data) {
   asm volatile(R"(
     .word 0x4860fc82; // caspal x0, x1, x2, x3, [x4];
     ret;
@@ -180,7 +180,7 @@ static bool FaultOffset_RMW_32bit[64] {};
 static bool FaultOffset_RMW_64bit[64] {};
 static bool FaultOffset_RMW_128bit[64] {};
 
-void RunFaultTests() {
+static void RunFaultTests() {
   if (CalculatedFaultOffsets) {
     return;
   }
@@ -225,7 +225,7 @@ void RunFaultTests() {
   CalculatedFaultOffsets = true;
 }
 
-void PrintSIGBUSInfo() {
+static void PrintSIGBUSInfo() {
   RunFaultTests();
 
   auto print_granule = [](const char* size, bool* FaultArray) {
@@ -275,7 +275,7 @@ struct FirstFaultInformation {
   int32_t RMWFaultAlignment {};
 };
 
-FirstFaultInformation CalculateFirstFaultInformation() {
+static FirstFaultInformation CalculateFirstFaultInformation() {
   RunFaultTests();
   FirstFaultInformation Info {};
   auto FindFirstFaultOffset = [](bool FaultOffsets[64]) -> int32_t {
