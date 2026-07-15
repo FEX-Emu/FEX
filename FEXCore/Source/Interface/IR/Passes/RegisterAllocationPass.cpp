@@ -52,6 +52,11 @@ namespace {
   }
 } // Anonymous namespace
 
+void RegisterAllocationPass::SetNumPairRegs(uint32_t NumRegs) {
+  LOGMAN_THROW_A_FMT((NumRegs % 2) == 0, "Number of pair regs must be even. (Given: {})", NumRegs);
+  PairRegs = NumRegs;
+}
+
 class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
   explicit ConstrainedRAPass(const FEXCore::CPUIDEmu* CPUID)
