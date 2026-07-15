@@ -196,7 +196,7 @@ unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClass Cond)
   }
 }
 
-constexpr FlagInfo ClassifyConst(IROps Op) {
+static constexpr FlagInfo ClassifyConst(IROps Op) {
   switch (Op) {
   case OP_ANDWITHFLAGS:
     return FlagInfo::Pack({
@@ -332,15 +332,15 @@ constexpr FlagInfo ClassifyConst(IROps Op) {
   }
 }
 
-constexpr auto FlagInfos = std::invoke([] {
+constexpr auto FlagInfos = [] {
   std::array<FlagInfo, OP_LAST> ret = {};
 
   for (unsigned i = 0; i < OP_LAST; ++i) {
-    ret[i] = ClassifyConst((IROps)i);
+    ret[i] = ClassifyConst(IROps(i));
   }
 
   return ret;
-});
+}();
 
 FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   FlagInfo Info = FlagInfos[IROp->Op];
