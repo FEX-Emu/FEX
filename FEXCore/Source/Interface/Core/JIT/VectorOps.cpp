@@ -2791,17 +2791,17 @@ DEF_OP(VUShrSWide) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
     dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
-    if (Dst != Vector) {
-      // NOTE: SVE LSR is a destructive operation.
-      movprfx(Dst.Z(), Vector.Z());
-    }
     if (ElementSize == IR::OpSize::i64Bit) {
+      const auto Mask = PRED_TMP_32B.Merging();
+
+      if (Dst != Vector) {
+        // NOTE: SVE LSR is a destructive operation.
+        movprfx(Dst.Z(), Vector.Z());
+      }
       lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     } else {
-      lsr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      lsr_wide(SubRegSize, Dst.Z(), Vector.Z(), VTMP1.Z());
     }
   } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
@@ -2857,17 +2857,17 @@ DEF_OP(VSShrSWide) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
     dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
-    if (Dst != Vector) {
-      // NOTE: SVE LSR is a destructive operation.
-      movprfx(Dst.Z(), Vector.Z());
-    }
     if (ElementSize == IR::OpSize::i64Bit) {
+      const auto Mask = PRED_TMP_32B.Merging();
+
+      if (Dst != Vector) {
+        // NOTE: SVE LSR is a destructive operation.
+        movprfx(Dst.Z(), Vector.Z());
+      }
       asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     } else {
-      asr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      asr_wide(SubRegSize, Dst.Z(), Vector.Z(), VTMP1.Z());
     }
   } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
@@ -2923,17 +2923,17 @@ DEF_OP(VUShlSWide) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
     dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
-    if (Dst != Vector) {
-      // NOTE: SVE LSR is a destructive operation.
-      movprfx(Dst.Z(), Vector.Z());
-    }
     if (ElementSize == IR::OpSize::i64Bit) {
+      const auto Mask = PRED_TMP_32B.Merging();
+
+      if (Dst != Vector) {
+        // NOTE: SVE LSR is a destructive operation.
+        movprfx(Dst.Z(), Vector.Z());
+      }
       lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     } else {
-      lsl_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      lsl_wide(SubRegSize, Dst.Z(), Vector.Z(), VTMP1.Z());
     }
   } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
