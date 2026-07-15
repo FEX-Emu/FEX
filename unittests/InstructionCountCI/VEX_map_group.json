@@ -48,13 +48,12 @@
       ]
     },
     "vpsrlw ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 12 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "lsr z16.h, p7/m, z16.h, #15"
+        "lsr z16.h, z17.h, #15"
       ]
     },
     "vpsrlw ymm0, ymm1, 16": {
@@ -103,23 +102,21 @@
       ]
     },
     "vpsraw ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 12 0b100 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "asr z16.h, p7/m, z16.h, #15"
+        "asr z16.h, z17.h, #15"
       ]
     },
     "vpsraw ymm0, ymm1, 16": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 12 0b100 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "asr z16.h, p7/m, z16.h, #15"
+        "asr z16.h, z17.h, #15"
       ]
     },
     "vpsllw xmm0, xmm1, 0": {
@@ -159,13 +156,12 @@
       ]
     },
     "vpsllw ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 12 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "lsl z16.h, p7/m, z16.h, #15"
+        "lsl z16.h, z17.h, #15"
       ]
     },
     "vpsllw ymm0, ymm1, 16": {
@@ -214,13 +210,12 @@
       ]
     },
     "vpsrld ymm0, ymm1, 31": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 13 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "lsr z16.s, p7/m, z16.s, #31"
+        "lsr z16.s, z17.s, #31"
       ]
     },
     "vpsrld ymm0, ymm1, 32": {
@@ -269,23 +264,21 @@
       ]
     },
     "vpsrad ymm0, ymm1, 31": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 13 0b100 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "asr z16.s, p7/m, z16.s, #31"
+        "asr z16.s, z17.s, #31"
       ]
     },
     "vpsrad ymm0, ymm1, 32": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 13 0b100 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "asr z16.s, p7/m, z16.s, #31"
+        "asr z16.s, z17.s, #31"
       ]
     },
     "vpslld xmm0, xmm1, 0": {
@@ -325,13 +318,12 @@
       ]
     },
     "vpslld ymm0, ymm1, 31": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 13 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "lsl z16.s, p7/m, z16.s, #31"
+        "lsl z16.s, z17.s, #31"
       ]
     },
     "vpslld ymm0, ymm1, 32": {
@@ -380,13 +372,12 @@
       ]
     },
     "vpsrlq ymm0, ymm1, 63": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 14 0b010 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "lsr z16.d, p7/m, z16.d, #63"
+        "lsr z16.d, z17.d, #63"
       ]
     },
     "vpsrlq ymm0, ymm1, 64": {
@@ -498,13 +489,12 @@
       ]
     },
     "vpsllq ymm0, ymm1, 63": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map group 14 0b110 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z16, z17",
-        "lsl z16.d, p7/m, z16.d, #63"
+        "lsl z16.d, z17.d, #63"
       ]
     },
     "vpsllq ymm0, ymm1, 64": {

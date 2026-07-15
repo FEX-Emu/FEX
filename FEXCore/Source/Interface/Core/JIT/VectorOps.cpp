@@ -2787,17 +2787,17 @@ DEF_OP(VUShrSWide) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
     dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
-    if (Dst != Vector) {
-      // NOTE: SVE LSR is a destructive operation.
-      movprfx(Dst.Z(), Vector.Z());
-    }
     if (ElementSize == IR::OpSize::i64Bit) {
+      const auto Mask = PRED_TMP_32B.Merging();
+
+      if (Dst != Vector) {
+        // NOTE: SVE LSR is a destructive operation.
+        movprfx(Dst.Z(), Vector.Z());
+      }
       lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     } else {
-      lsr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      lsr_wide(SubRegSize, Dst.Z(), Vector.Z(), VTMP1.Z());
     }
   } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
@@ -2853,17 +2853,17 @@ DEF_OP(VSShrSWide) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
     dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
-    if (Dst != Vector) {
-      // NOTE: SVE LSR is a destructive operation.
-      movprfx(Dst.Z(), Vector.Z());
-    }
     if (ElementSize == IR::OpSize::i64Bit) {
+      const auto Mask = PRED_TMP_32B.Merging();
+
+      if (Dst != Vector) {
+        // NOTE: SVE LSR is a destructive operation.
+        movprfx(Dst.Z(), Vector.Z());
+      }
       asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     } else {
-      asr_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      asr_wide(SubRegSize, Dst.Z(), Vector.Z(), VTMP1.Z());
     }
   } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
@@ -2919,17 +2919,17 @@ DEF_OP(VUShlSWide) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
     dup(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), ShiftScalar.Z(), 0);
-    if (Dst != Vector) {
-      // NOTE: SVE LSR is a destructive operation.
-      movprfx(Dst.Z(), Vector.Z());
-    }
     if (ElementSize == IR::OpSize::i64Bit) {
+      const auto Mask = PRED_TMP_32B.Merging();
+
+      if (Dst != Vector) {
+        // NOTE: SVE LSR is a destructive operation.
+        movprfx(Dst.Z(), Vector.Z());
+      }
       lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
     } else {
-      lsl_wide(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
+      lsl_wide(SubRegSize, Dst.Z(), Vector.Z(), VTMP1.Z());
     }
   } else if (HostSupportsSVE128) {
     const auto Mask = PRED_TMP_16B.Merging();
@@ -3177,19 +3177,12 @@ DEF_OP(VUShrI) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
   } else {
     if (HostSupportsSVE256 && Is256Bit) {
-      const auto Mask = PRED_TMP_32B.Merging();
-
       if (BitShift == 0) {
         if (Dst != Vector) {
           mov(Dst.Z(), Vector.Z());
         }
       } else {
-        // SVE LSR is destructive, so lets set up the destination if
-        // Vector doesn't already alias it.
-        if (Dst != Vector) {
-          movprfx(Dst.Z(), Vector.Z());
-        }
-        lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
+        lsr(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
       }
     } else {
       if (BitShift == 0) {
@@ -3218,19 +3211,12 @@ DEF_OP(VSShrI) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
     if (Shift == 0) {
       if (Dst != Vector) {
         mov(Dst.Z(), Vector.Z());
       }
     } else {
-      // SVE ASR is destructive, so lets set up the destination if
-      // Vector doesn't already alias it.
-      if (Dst != Vector) {
-        movprfx(Dst.Z(), Vector.Z());
-      }
-      asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), Shift);
+      asr(SubRegSize, Dst.Z(), Vector.Z(), Shift);
     }
   } else {
     if (Shift == 0) {
@@ -3260,19 +3246,12 @@ DEF_OP(VShlI) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
   } else {
     if (HostSupportsSVE256 && Is256Bit) {
-      const auto Mask = PRED_TMP_32B.Merging();
-
       if (BitShift == 0) {
         if (Dst != Vector) {
           mov(Dst.Z(), Vector.Z());
         }
       } else {
-        // SVE LSL is destructive, so lets set up the destination if
-        // Vector doesn't already alias it.
-        if (Dst != Vector) {
-          movprfx(Dst.Z(), Vector.Z());
-        }
-        lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
+        lsl(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
       }
     } else {
       if (BitShift == 0) {

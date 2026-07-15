@@ -3925,13 +3925,12 @@
       ]
     },
     "vblendvps ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 3 0b01 0x4a 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z2, z19",
-        "asr z2.s, p7/m, z2.s, #31",
+        "asr z2.s, z19.s, #31",
         "movprfx z0, z18",
         "bsl z0.d, z0.d, z17.d, z2.d",
         "mov z16.d, z0.d"
@@ -3949,13 +3948,12 @@
       ]
     },
     "vblendvpd ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 3 0b01 0x4b 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z2, z19",
-        "asr z2.d, p7/m, z2.d, #63",
+        "asr z2.d, z19.d, #63",
         "movprfx z0, z18",
         "bsl z0.d, z0.d, z17.d, z2.d",
         "mov z16.d, z0.d"
@@ -3973,13 +3971,12 @@
       ]
     },
     "vpblendvb ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 3 0b01 0x4c 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z2, z19",
-        "asr z2.b, p7/m, z2.b, #7",
+        "asr z2.b, z19.b, #7",
         "movprfx z0, z18",
         "bsl z0.d, z0.d, z17.d, z2.d",
         "mov z16.d, z0.d"
