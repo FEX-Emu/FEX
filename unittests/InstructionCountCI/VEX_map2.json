@@ -325,8 +325,8 @@
         "smullb z0.s, z17.h, z18.h",
         "smullt z1.s, z17.h, z18.h",
         "zip2 z3.s, z0.s, z1.s",
-        "asr z2.s, p7/m, z2.s, #14",
-        "asr z3.s, p7/m, z3.s, #14",
+        "asr z2.s, z2.s, #14",
+        "asr z3.s, z3.s, #14",
         "mov z4.s, #1",
         "add z2.s, z2.s, z4.s",
         "add z3.s, z3.s, z4.s",
@@ -366,7 +366,7 @@
         "and z2.d, z18.d, z2.d",
         "trn1 z2.b, z2.b, z2.b",
         "trn1 z2.h, z2.h, z2.h",
-        "lsl z2.b, p7/m, z2.b, #2",
+        "lsl z2.b, z2.b, #2",
         "mov w20, #0x100",
         "movk w20, #0x302, lsl #16",
         "mov z3.s, w20",
@@ -404,19 +404,18 @@
       ]
     },
     "vpermilpd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "Map 2 0b01 0x0d 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z2, z18",
-        "lsr z2.d, p7/m, z2.d, #1",
+        "lsr z2.d, z18.d, #1",
         "mov z3.d, #1",
         "and z2.d, z2.d, z3.d",
         "trn1 z2.b, z2.b, z2.b",
         "trn1 z2.h, z2.h, z2.h",
         "trn1 z2.s, z2.s, z2.s",
-        "lsl z2.b, p7/m, z2.b, #3",
+        "lsl z2.b, z2.b, #3",
         "mov x20, #0x100",
         "movk x20, #0x302, lsl #16",
         "movk x20, #0x504, lsl #32",
@@ -589,7 +588,7 @@
         "and z2.d, z17.d, z2.d",
         "trn1 z2.b, z2.b, z2.b",
         "trn1 z2.h, z2.h, z2.h",
-        "lsl z2.b, p7/m, z2.b, #2",
+        "lsl z2.b, z2.b, #2",
         "add z2.b, z2.b, z3.b",
         "tbl z16.b, {z18.b}, z2.b"
       ]
@@ -1162,7 +1161,7 @@
         "and z2.d, z17.d, z2.d",
         "trn1 z2.b, z2.b, z2.b",
         "trn1 z2.h, z2.h, z2.h",
-        "lsl z2.b, p7/m, z2.b, #2",
+        "lsl z2.b, z2.b, #2",
         "add z2.b, z2.b, z3.b",
         "tbl z16.b, {z18.b}, z2.b"
       ]

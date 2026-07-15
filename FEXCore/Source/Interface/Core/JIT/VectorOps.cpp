@@ -3181,19 +3181,12 @@ DEF_OP(VUShrI) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
   } else {
     if (HostSupportsSVE256 && Is256Bit) {
-      const auto Mask = PRED_TMP_32B.Merging();
-
       if (BitShift == 0) {
         if (Dst != Vector) {
           mov(Dst.Z(), Vector.Z());
         }
       } else {
-        // SVE LSR is destructive, so lets set up the destination if
-        // Vector doesn't already alias it.
-        if (Dst != Vector) {
-          movprfx(Dst.Z(), Vector.Z());
-        }
-        lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
+        lsr(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
       }
     } else {
       if (BitShift == 0) {
@@ -3222,19 +3215,12 @@ DEF_OP(VSShrI) {
   const auto Vector = GetVReg(Op->Vector);
 
   if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
     if (Shift == 0) {
       if (Dst != Vector) {
         mov(Dst.Z(), Vector.Z());
       }
     } else {
-      // SVE ASR is destructive, so lets set up the destination if
-      // Vector doesn't already alias it.
-      if (Dst != Vector) {
-        movprfx(Dst.Z(), Vector.Z());
-      }
-      asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), Shift);
+      asr(SubRegSize, Dst.Z(), Vector.Z(), Shift);
     }
   } else {
     if (Shift == 0) {
@@ -3264,19 +3250,12 @@ DEF_OP(VShlI) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
   } else {
     if (HostSupportsSVE256 && Is256Bit) {
-      const auto Mask = PRED_TMP_32B.Merging();
-
       if (BitShift == 0) {
         if (Dst != Vector) {
           mov(Dst.Z(), Vector.Z());
         }
       } else {
-        // SVE LSL is destructive, so lets set up the destination if
-        // Vector doesn't already alias it.
-        if (Dst != Vector) {
-          movprfx(Dst.Z(), Vector.Z());
-        }
-        lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
+        lsl(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
       }
     } else {
       if (BitShift == 0) {
