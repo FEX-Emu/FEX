@@ -351,22 +351,22 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   switch (IROp->Op) {
   case OP_NZCVSELECT:
   case OP_NZCVSELECTINCREMENT: {
-    auto Op = IROp->CW<IR::IROp_NZCVSelect>();
+    auto Op = IROp->C<IR::IROp_NZCVSelect>();
     return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_NZCVSELECTV: {
-    auto Op = IROp->CW<IR::IROp_NZCVSelectV>();
+    auto Op = IROp->C<IR::IROp_NZCVSelectV>();
     return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_NEG: {
-    auto Op = IROp->CW<IR::IROp_Neg>();
+    auto Op = IROp->C<IR::IROp_Neg>();
     return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_CONDJUMP: {
-    auto Op = IROp->CW<IR::IROp_CondJump>();
+    auto Op = IROp->C<IR::IROp_CondJump>();
     if (!Op->FromNZCV) {
       return FlagInfo::Pack({});
     }
@@ -376,7 +376,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
 
   case OP_CONDSUBNZCV:
   case OP_CONDADDNZCV: {
-    auto Op = IROp->CW<IR::IROp_CondAddNZCV>();
+    auto Op = IROp->C<IR::IROp_CondAddNZCV>();
     return FlagInfo::Pack({
       .Read = FlagsForCondClassType(Op->Cond),
       .Write = FLAG_NZCV,
@@ -385,7 +385,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   }
 
   case OP_RMIFNZCV: {
-    auto Op = IROp->CW<IR::IROp_RmifNZCV>();
+    auto Op = IROp->C<IR::IROp_RmifNZCV>();
 
     static_assert(FLAG_N == (1 << 3), "rmif mask lines up with our bits");
     static_assert(FLAG_Z == (1 << 2), "rmif mask lines up with our bits");
@@ -399,7 +399,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   }
 
   case OP_INVALIDATEFLAGS: {
-    auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
+    auto Op = IROp->C<IR::IROp_InvalidateFlags>();
     unsigned Flags = 0;
 
     // TODO: Make this translation less silly
@@ -536,7 +536,7 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
   // Initialize the FlagsRead mask according to the exit instruction.
   auto [ExitNode, ExitOp] = CodeLast();
   if (ExitOp->Op == IR::OP_CONDJUMP) {
-    auto Op = ExitOp->CW<IR::IROp_CondJump>();
+    auto Op = ExitOp->C<IR::IROp_CondJump>();
     FlagsRead = CFG.Get(Op->TrueBlock)->Flags | CFG.Get(Op->FalseBlock)->Flags;
   } else if (ExitOp->Op == IR::OP_JUMP) {
     FlagsRead = CFG.Get(ExitOp->Args[0])->Flags;
@@ -643,7 +643,7 @@ void DeadFlagCalculationEliminination::OptimizeParity(IREmitter* IREmit, IRListV
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block)) {
       if (IROp->Op == OP_STOREPF) {
-        auto Op = IROp->CW<IR::IROp_StorePF>();
+        auto Op = IROp->C<IR::IROp_StorePF>();
         auto Generator = CurrentIR.GetOp<IR::IROp_Header>(Op->Value);
 
         // Determine if we only write 0/1 to the parity flag.
@@ -696,7 +696,7 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
     --CodeLast;
     auto [ExitNode, ExitOp] = CodeLast();
     if (ExitOp->Op == IR::OP_CONDJUMP) {
-      auto Op = ExitOp->CW<IR::IROp_CondJump>();
+      auto Op = ExitOp->C<IR::IROp_CondJump>();
 
       CFG.RecordEdge(Block->ID, Op->TrueBlock);
       CFG.RecordEdge(Block->ID, Op->FalseBlock);
