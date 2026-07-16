@@ -96,7 +96,7 @@ public:
   }
 
   bool isValid(size_t Offset) const {
-    return buffer[Offset].first;
+    return buffer[Offset].Type == StackSlot::VALID;
   }
 
   void clear() {
