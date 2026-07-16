@@ -394,7 +394,7 @@ int main(int argc, char** argv, char** const envp) {
       return -ENOEXEC;
     }
 
-    RunAsHost(SignalDelegation, Loader.DefaultRIP(), &State);
+    RunAsHost(SignalDelegation.get(), Loader.DefaultRIP(), &State);
     SignalDelegation->UninstallTLSState(ParentThread);
     FEX::HLE::_SyscallHandler->TM.DestroyThread(ParentThread, true);
   }
