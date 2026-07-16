@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
+#include "PipeScanner.h"
+
 #include <dirent.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
-#include <fcntl.h>
 
 namespace PipeScanner {
-std::vector<int> IncomingPipes {};
+static std::vector<int> IncomingPipes {};
+
 void SetWaitPipe(int FD) {
   int flags = fcntl(FD, F_GETFD);
   flags |= FD_CLOEXEC;
