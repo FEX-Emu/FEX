@@ -52,8 +52,8 @@ template<typename T>
 class FixedSizeStack {
 public:
   struct StackSlotEntry final {
-    StackSlot Type;
-    T Value;
+    StackSlot Type = StackSlot::UNUSED;
+    T Value = T::Invalid;
   };
 
   static constexpr uint8_t size = 8;
@@ -64,8 +64,7 @@ public:
   // If SlowPath is true, then TopOffset is always zero.
   int8_t TopOffset = 0;
 
-  FixedSizeStack()
-    : buffer(FixedSizeStack::size, {StackSlot::UNUSED, T::Invalid}) {}
+  FixedSizeStack() = default;
 
   void push(const T& Value) {
     rotate();
@@ -101,16 +100,14 @@ public:
   }
 
   void clear() {
-    for (auto& Elem : buffer) {
-      Elem = {StackSlot::UNUSED, T::Invalid};
-    }
+    buffer.fill({StackSlot::UNUSED, T::Invalid});
     TopOffset = 0;
   }
 
   void dump() const {
     LogMan::Msg::DFmt("-- Stack");
 
-    for (size_t i = 0; i < 8; i++) {
+    for (size_t i = 0; i < buffer.size(); i++) {
       const auto& [Valid, Element] = buffer[i];
       if (Valid == StackSlot::VALID) {
         LogMan::Msg::DFmt("| ST{}: 0x{:x}", i, (uintptr_t)(Element.StackDataNode));
@@ -148,7 +145,7 @@ public:
   }
 
 private:
-  fextl::vector<StackSlotEntry> buffer;
+  std::array<StackSlotEntry, size> buffer {};
 };
 
 class X87StackOptimization final : public Pass {
@@ -292,10 +289,10 @@ private:
   void Reset();
 
   struct StackMemberInfo {
-    StackMemberInfo() = delete;
-    StackMemberInfo(Ref Data)
+    constexpr StackMemberInfo() = default;
+    constexpr StackMemberInfo(Ref Data)
       : StackDataNode(Data) {}
-    StackMemberInfo(Ref Data, Ref Source, OpSize Size)
+    constexpr StackMemberInfo(Ref Data, Ref Source, OpSize Size)
       : StackDataNode(Data)
       , Source({Size, Source}) {}
     Ref StackDataNode {}; // Reference to the data in the Stack.
