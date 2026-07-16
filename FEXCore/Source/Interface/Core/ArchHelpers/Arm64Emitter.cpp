@@ -633,7 +633,7 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
   }
 }
 
-void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Register TmpReg2, bool SetFIZ, bool SetPredRegs) {
+void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Register TmpReg2, const FillSpecialRegsOptions& Options) {
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {
     // Enable AFP features when filling JIT state.
@@ -649,7 +649,7 @@ void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Regi
         (1U << 2) |   // NEP
           (1U << 1)); // AH
 
-    if (SetFIZ) {
+    if (Options.SetFIZ) {
       // Insert MXCSR.DAZ in to FIZ
       ldr(TmpReg2.W(), STATE.R(), offsetof(FEXCore::Core::CPUState, mxcsr));
       bfxil(ARMEmitter::Size::i64Bit, TmpReg, TmpReg2, 6, 1);
@@ -659,7 +659,7 @@ void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Regi
   }
 #endif
 
-  if (SetPredRegs && EmitterCTX->HostFeatures.SupportsSVE()) {
+  if (Options.SetPredRegs && EmitterCTX->HostFeatures.SupportsSVE()) {
     // Set up predicate registers.
     // We don't bother spilling these in SpillStaticRegs,
     // since all that matters is we restore them on a fill.
@@ -822,7 +822,7 @@ void Arm64Emitter::FillStaticRegs(FillStaticRegOptions Options) {
     msr(ARMEmitter::SystemRegister::NZCV, TmpReg);
   }
 
-  FillSpecialRegs(TmpReg, TmpReg2, true, Options.FPRs);
+  FillSpecialRegs(TmpReg, TmpReg2, {.SetFIZ = true, .SetPredRegs = Options.FPRs});
 
   if (Options.FPRs) {
     if (EmitterCTX->HostFeatures.SupportsAVX && EmitterCTX->HostFeatures.SupportsSVE256) {
