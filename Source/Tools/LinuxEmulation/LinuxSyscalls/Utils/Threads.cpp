@@ -138,7 +138,7 @@ void StackTracker::DeallocateStackObjectAndExit(void* Ptr, int Status) {
 }
 
 #ifdef ARCHITECTURE_arm64
-__attribute__((naked)) void StackPivotAndCall(void* Arg, FEXCore::Threads::ThreadFunc Func, uint64_t StackPivot) {
+__attribute__((naked)) static void StackPivotAndCall(void* Arg, FEXCore::Threads::ThreadFunc Func, uint64_t StackPivot) {
   // x0: Arg
   // x1: Function to call
   // x2: StackPivot
@@ -164,7 +164,7 @@ __attribute__((naked)) void StackPivotAndCall(void* Arg, FEXCore::Threads::Threa
                    : "memory");
 }
 #else
-__attribute__((naked)) void StackPivotAndCall(void* Arg, FEXCore::Threads::ThreadFunc Func, uint64_t StackPivot) {
+__attribute__((naked)) static void StackPivotAndCall(void* Arg, FEXCore::Threads::ThreadFunc Func, uint64_t StackPivot) {
   // rdi: Arg
   // rsi: Function to call
   // rdx: StackPivot
@@ -352,13 +352,13 @@ namespace PThreads {
     return (void*)(uint64_t)Status;
   }
 
-  StackTracker* STracker {};
+  static StackTracker* STracker {};
 
-  fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg) {
+  static fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg) {
     return fextl::make_unique<PThread>(STracker, Func, Arg);
   }
 
-  void CleanupAfterFork_PThread() {
+  static void CleanupAfterFork_PThread() {
     STracker->CleanupAfterFork_PThread();
   }
 

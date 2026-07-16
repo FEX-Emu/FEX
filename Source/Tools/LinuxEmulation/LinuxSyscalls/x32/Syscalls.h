@@ -73,6 +73,24 @@ private:
   fextl::unique_ptr<MemAllocator> AllocHandler {};
 };
 
+void RegisterEpoll(FEX::HLE::SyscallHandler* Handler);
+void RegisterFD(FEX::HLE::SyscallHandler* Handler);
+void RegisterFS(FEX::HLE::SyscallHandler* Handler);
+void RegisterInfo(FEX::HLE::SyscallHandler* Handler);
+void RegisterIO(FEX::HLE::SyscallHandler* Handler);
+void RegisterMemory(FEX::HLE::SyscallHandler* Handler);
+void RegisterMsg(FEX::HLE::SyscallHandler* Handler);
+void RegisterNotImplemented(FEX::HLE::SyscallHandler* Handler);
+void RegisterPassthrough(FEX::HLE::SyscallHandler* Handler);
+void RegisterSched(FEX::HLE::SyscallHandler* Handler);
+void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler);
+void RegisterSignals(FEX::HLE::SyscallHandler* Handler);
+void RegisterSocket(FEX::HLE::SyscallHandler* Handler);
+void RegisterStubs(FEX::HLE::SyscallHandler* Handler);
+void RegisterThread(FEX::HLE::SyscallHandler* Handler);
+void RegisterTime(FEX::HLE::SyscallHandler* Handler);
+void RegisterTimer(FEX::HLE::SyscallHandler* Handler);
+
 fextl::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation,
                                                           FEX::HLE::ThunkHandler* ThunkHandler, fextl::unique_ptr<MemAllocator> Allocator);
 //////

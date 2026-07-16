@@ -64,16 +64,10 @@ static void SignalHandlerThunk(int Signal, siginfo_t* Info, void* UContext) {
   ThreadObject->SignalInfo.Delegator->HandleSignal(ThreadObject, Signal, Info, UContext);
 }
 
-uint64_t SigIsMember(GuestSAMask* Set, int Signal) {
+static uint64_t SigIsMember(GuestSAMask* Set, int Signal) {
   // Signal 0 isn't real, so everything is offset by one inside the set
   Signal -= 1;
   return (Set->Val >> Signal) & 1;
-}
-
-uint64_t SetSignal(GuestSAMask* Set, int Signal) {
-  // Signal 0 isn't real, so everything is offset by one inside the set
-  Signal -= 1;
-  return Set->Val | (1ULL << Signal);
 }
 
 /**

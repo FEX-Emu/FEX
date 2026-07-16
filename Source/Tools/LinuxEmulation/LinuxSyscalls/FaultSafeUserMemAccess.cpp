@@ -48,7 +48,7 @@ extern "C" uint64_t CopyToUser_FaultInst;
 void* const CopyToUser_FaultLocation = &CopyToUser_FaultInst;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED && defined(ARCHITECTURE_arm64)
-__attribute__((naked)) bool VerifyIsReadableImpl(const void* Src, size_t Size) {
+__attribute__((naked)) static bool VerifyIsReadableImpl(const void* Src, size_t Size) {
   __asm volatile(R"(
   // Early exit if size is zero.
   cbz x1, 2f;
@@ -67,7 +67,7 @@ __attribute__((naked)) bool VerifyIsReadableImpl(const void* Src, size_t Size) {
                    : "memory");
 }
 
-__attribute__((naked)) bool VerifyIsOnlyWritable(void* Src, size_t Size) {
+__attribute__((naked)) static bool VerifyIsOnlyWritable(void* Src, size_t Size) {
   __asm volatile(R"(
   // Early exit if size is zero.
   cbz x1, 2f;
@@ -88,7 +88,7 @@ __attribute__((naked)) bool VerifyIsOnlyWritable(void* Src, size_t Size) {
                    : "memory");
 }
 
-__attribute__((naked)) bool VerifyIsStringReadableMaxSizeImpl(const char* Src, size_t MaxSize) {
+__attribute__((naked)) static bool VerifyIsStringReadableMaxSizeImpl(const char* Src, size_t MaxSize) {
   __asm volatile(R"(
   1:
   cbz x1, 2f;

@@ -37,14 +37,14 @@ static void UnhandledIoctl(const char* Type, int fd, uint32_t cmd, uint32_t args
 }
 
 namespace BasicHandler {
-  uint32_t BasicHandler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t BasicHandler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     uint64_t Result = ::ioctl(fd, cmd, args);
     SYSCALL_ERRNO();
   }
 } // namespace BasicHandler
 
 namespace V4l2 {
-  uint32_t V4l2Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t V4l2Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
     case _IOC_NR(FEX_VIDIOC_G_FMT): {
       fex_v4l2_format* format = reinterpret_cast<fex_v4l2_format*>(args);
@@ -277,10 +277,7 @@ namespace V4l2 {
 } // namespace V4l2
 
 namespace DRM {
-  uint32_t AddAndRunHandler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args);
-  void AssignDeviceTypeToFD(FEXCore::Core::CpuStateFrame* Frame, int fd, const drm_version& Version);
-
-  DRMLRUCacheFDCache::HandlerType FindHandler(FEXCore::Core::CpuStateFrame* Frame, int32_t FD) {
+  static DRMLRUCacheFDCache::HandlerType FindHandler(FEXCore::Core::CpuStateFrame* Frame, int32_t FD) {
     auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
     if (!Thread->DRMLRUCache) {
       Thread->DRMLRUCache = fextl::make_unique<DRMLRUCacheFDCache>();
@@ -288,7 +285,7 @@ namespace DRM {
     return Thread->DRMLRUCache->FindHandler(FD);
   }
 
-  uint32_t AddAndRunHandler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t AddAndRunHandler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
     if (!Thread->DRMLRUCache) {
       Thread->DRMLRUCache = fextl::make_unique<DRMLRUCacheFDCache>();
@@ -297,7 +294,7 @@ namespace DRM {
     return Thread->DRMLRUCache->AddAndRunMapHandler(Frame, fd, cmd, args);
   }
 
-  void CheckAndAddFDDuplication(FEXCore::Core::CpuStateFrame* Frame, int fd, int NewFD) {
+  static void CheckAndAddFDDuplication(FEXCore::Core::CpuStateFrame* Frame, int fd, int NewFD) {
     auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
     if (!Thread->DRMLRUCache) {
       Thread->DRMLRUCache = fextl::make_unique<DRMLRUCacheFDCache>();
@@ -305,7 +302,7 @@ namespace DRM {
     Thread->DRMLRUCache->DuplicateFD(fd, NewFD);
   }
 
-  uint32_t AMDGPU_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t AMDGPU_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
     case _IOC_NR(FEX_DRM_IOCTL_AMDGPU_GEM_METADATA): {
       AMDGPU::fex_drm_amdgpu_gem_metadata* val = reinterpret_cast<AMDGPU::fex_drm_amdgpu_gem_metadata*>(args);
@@ -340,7 +337,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t RADEON_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t RADEON_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
     case _IOC_NR(FEX_DRM_IOCTL_RADEON_CP_INIT): {
       RADEON::fex_drm_radeon_init_t* val = reinterpret_cast<RADEON::fex_drm_radeon_init_t*>(args);
@@ -475,7 +472,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t MSM_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t MSM_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
     case _IOC_NR(FEX_DRM_IOCTL_MSM_WAIT_FENCE): {
       MSM::fex_drm_msm_wait_fence* val = reinterpret_cast<MSM::fex_drm_msm_wait_fence*>(args);
@@ -511,7 +508,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t Nouveau_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t Nouveau_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
 #define _BASIC_META(x) case _IOC_NR(x):
 #define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
@@ -537,7 +534,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t I915_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t I915_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
 #define SIMPLE(enum, type)                                               \
   case _IOC_NR(FEX_##enum): {                                            \
     I915::fex_##type* guest = reinterpret_cast<I915::fex_##type*>(args); \
@@ -582,7 +579,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t Panfrost_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t Panfrost_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
 #define _BASIC_META(x) case _IOC_NR(x):
 #define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
@@ -607,7 +604,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t Lima_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t Lima_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
 #define _BASIC_META(x) case _IOC_NR(x):
 #define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
@@ -632,7 +629,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t VC4_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t VC4_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
     case _IOC_NR(FEX_DRM_IOCTL_VC4_PERFMON_GET_VALUES): {
       FEX::HLE::x32::VC4::fex_drm_vc4_perfmon_get_values* val = reinterpret_cast<FEX::HLE::x32::VC4::fex_drm_vc4_perfmon_get_values*>(args);
@@ -668,7 +665,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t V3D_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t V3D_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
     case _IOC_NR(FEX_DRM_IOCTL_V3D_SUBMIT_CSD): {
       FEX::HLE::x32::V3D::fex_drm_v3d_submit_csd* val = reinterpret_cast<FEX::HLE::x32::V3D::fex_drm_v3d_submit_csd*>(args);
@@ -704,7 +701,7 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t Virtio_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t Virtio_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     switch (_IOC_NR(cmd)) {
 #define _BASIC_META(x) case _IOC_NR(x):
 #define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
@@ -729,13 +726,13 @@ namespace DRM {
     return -EPERM;
   }
 
-  uint32_t Default_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t Default_Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
     // Default handler assumes everything is correct and doesn't need to do any work.
     uint64_t Result = ::ioctl(fd, cmd, args);
     SYSCALL_ERRNO();
   }
 
-  void AssignDeviceTypeToFD(FEXCore::Core::CpuStateFrame* Frame, int fd, const drm_version& Version) {
+  static void AssignDeviceTypeToFD(FEXCore::Core::CpuStateFrame* Frame, int fd, const drm_version& Version) {
     if (Version.name) {
       auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
       if (!Thread->DRMLRUCache) {
@@ -773,7 +770,7 @@ namespace DRM {
     }
   }
 
-  uint32_t Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
+  static uint32_t Handler(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t cmd, uint32_t args) {
 #define SIMPLE(enum, type)                                             \
   case _IOC_NR(FEX_##enum): {                                          \
     DRM::fex_##type* guest = reinterpret_cast<DRM::fex_##type*>(args); \
@@ -950,7 +947,7 @@ uint32_t DRMLRUCacheFDCache::AddAndRunMapHandler(FEXCore::Core::CpuStateFrame* F
   SYSCALL_ERRNO();
 }
 
-std::array<DRMLRUCacheFDCache::HandlerType, 1U << _IOC_TYPEBITS> Handlers = []() consteval {
+static constexpr std::array<DRMLRUCacheFDCache::HandlerType, 1U << _IOC_TYPEBITS> Handlers = []() consteval {
   using namespace DRM;
   using namespace sockios;
   using namespace V4l2;
