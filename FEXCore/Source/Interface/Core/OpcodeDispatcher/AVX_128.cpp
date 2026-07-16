@@ -865,9 +865,12 @@ void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs, IR::OpSize ElementSize) {
       GPR = Mask4Byte(Src.Low);
     }
   } else if (ElementSize == OpSize::i32Bit) {
-    auto GPRLow = Mask4Byte(Src.Low);
-    auto GPRHigh = Mask4Byte(Src.High);
-    GPR = _Orlshl(OpSize::i64Bit, GPRLow, GPRHigh, 4);
+    Ref Fused = _VUnZip2(OpSize::i128Bit, OpSize::i16Bit, Src.Low, Src.High);
+    Fused = _VUShrI(OpSize::i128Bit, OpSize::i16Bit, Fused, 15);
+    auto ConstantUSHL = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NAMED_VECTOR_INCREMENTAL_U16_INDEX);
+    Fused = _VUShl(OpSize::i128Bit, OpSize::i16Bit, Fused, ConstantUSHL, false);
+    Fused = _VAddV(OpSize::i128Bit, OpSize::i16Bit, Fused);
+    GPR = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Fused, 0);
   } else {
     auto GPRLow = Mask8Byte(Src.Low);
     auto GPRHigh = Mask8Byte(Src.High);
