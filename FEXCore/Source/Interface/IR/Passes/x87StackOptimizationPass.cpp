@@ -573,24 +573,34 @@ void X87StackOptimization::HandleBinopStack(IROps Op64, bool VFOp64, IROps Op80,
 }
 
 inline void X87StackOptimization::UpdateTopForPop_Slow() {
+  const auto PopContainer = [](auto& container) {
+    const auto begin = std::begin(container);
+    std::rotate(begin, std::next(begin), std::end(container));
+  };
+
   // Pop the top of the x87 stack
   GetOffsetTopWithCache_Slow(1);
-  std::rotate(TopOffsetCache.begin(), std::next(TopOffsetCache.begin()), TopOffsetCache.end());
-  std::rotate(TopOffsetAddressCache.begin(), std::next(TopOffsetAddressCache.begin()), TopOffsetAddressCache.end());
-  std::rotate(TopValueCache.begin(), std::next(TopValueCache.begin()), TopValueCache.end());
-  std::rotate(FlushValuesPending.begin(), std::next(FlushValuesPending.begin()), FlushValuesPending.end());
-  std::rotate(TopValidCache.begin(), std::next(TopValidCache.begin()), TopValidCache.end());
+  PopContainer(TopOffsetCache);
+  PopContainer(TopOffsetAddressCache);
+  PopContainer(TopValueCache);
+  PopContainer(FlushValuesPending);
+  PopContainer(TopValidCache);
   FlushTopPending = true;
 }
 
 inline void X87StackOptimization::UpdateTopForPush_Slow() {
-  // Pop the top of the x87 stack
+  const auto PushContainer = [](auto& container) {
+    const auto end = std::end(container);
+    std::rotate(std::begin(container), std::prev(end), end);
+  };
+
+  // Push the top of the x87 stack
   GetOffsetTopWithCache_Slow(1, true);
-  std::rotate(TopOffsetCache.begin(), std::prev(TopOffsetCache.end()), TopOffsetCache.end());
-  std::rotate(TopOffsetAddressCache.begin(), std::prev(TopOffsetAddressCache.end()), TopOffsetAddressCache.end());
-  std::rotate(TopValueCache.begin(), std::prev(TopValueCache.end()), TopValueCache.end());
-  std::rotate(FlushValuesPending.begin(), std::prev(FlushValuesPending.end()), FlushValuesPending.end());
-  std::rotate(TopValidCache.begin(), std::prev(TopValidCache.end()), TopValidCache.end());
+  PushContainer(TopOffsetCache);
+  PushContainer(TopOffsetAddressCache);
+  PushContainer(TopValueCache);
+  PushContainer(FlushValuesPending);
+  PushContainer(TopValidCache);
   FlushTopPending = true;
 }
 
