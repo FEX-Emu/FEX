@@ -32,14 +32,14 @@
 namespace FEXCore::IR {
 
 // FIXME(pmatos): copy from OpcodeDispatcher.h
-inline uint32_t MMBaseOffset() {
+static uint32_t MMBaseOffset() {
   return static_cast<uint32_t>(offsetof(Core::CPUState, mm[0][0]));
 }
 
 // Similar helper to the one in OpcodeDispatcher.h except we do not
 // need to handle flags, etc.
 template<typename T>
-void DeriveOp(Ref& RefV, IROps NewOp, IREmitter::IRPair<T> Expr) {
+static void DeriveOp(Ref& RefV, IROps NewOp, IREmitter::IRPair<T> Expr) {
   Expr.first->Header.Op = NewOp;
   RefV = Expr;
 }
@@ -52,8 +52,8 @@ template<typename T>
 class FixedSizeStack {
 public:
   struct StackSlotEntry final {
-    StackSlot Type;
-    T Value;
+    StackSlot Type = StackSlot::UNUSED;
+    T Value = T::Invalid;
   };
 
   static constexpr uint8_t size = 8;
@@ -64,8 +64,7 @@ public:
   // If SlowPath is true, then TopOffset is always zero.
   int8_t TopOffset = 0;
 
-  FixedSizeStack()
-    : buffer(FixedSizeStack::size, {StackSlot::UNUSED, T::Invalid}) {}
+  FixedSizeStack() = default;
 
   void push(const T& Value) {
     rotate();
@@ -97,20 +96,18 @@ public:
   }
 
   bool isValid(size_t Offset) const {
-    return buffer[Offset].first;
+    return buffer[Offset].Type == StackSlot::VALID;
   }
 
   void clear() {
-    for (auto& Elem : buffer) {
-      Elem = {StackSlot::UNUSED, T::Invalid};
-    }
+    buffer.fill({StackSlot::UNUSED, T::Invalid});
     TopOffset = 0;
   }
 
   void dump() const {
     LogMan::Msg::DFmt("-- Stack");
 
-    for (size_t i = 0; i < 8; i++) {
+    for (size_t i = 0; i < buffer.size(); i++) {
       const auto& [Valid, Element] = buffer[i];
       if (Valid == StackSlot::VALID) {
         LogMan::Msg::DFmt("| ST{}: 0x{:x}", i, (uintptr_t)(Element.StackDataNode));
@@ -148,7 +145,7 @@ public:
   }
 
 private:
-  fextl::vector<StackSlotEntry> buffer;
+  std::array<StackSlotEntry, size> buffer {};
 };
 
 class X87StackOptimization final : public Pass {
@@ -292,10 +289,10 @@ private:
   void Reset();
 
   struct StackMemberInfo {
-    StackMemberInfo() = delete;
-    StackMemberInfo(Ref Data)
+    constexpr StackMemberInfo() = default;
+    constexpr StackMemberInfo(Ref Data)
       : StackDataNode(Data) {}
-    StackMemberInfo(Ref Data, Ref Source, OpSize Size)
+    constexpr StackMemberInfo(Ref Data, Ref Source, OpSize Size)
       : StackDataNode(Data)
       , Source({Size, Source}) {}
     Ref StackDataNode {}; // Reference to the data in the Stack.
@@ -576,24 +573,34 @@ void X87StackOptimization::HandleBinopStack(IROps Op64, bool VFOp64, IROps Op80,
 }
 
 inline void X87StackOptimization::UpdateTopForPop_Slow() {
+  const auto PopContainer = [](auto& container) {
+    const auto begin = std::begin(container);
+    std::rotate(begin, std::next(begin), std::end(container));
+  };
+
   // Pop the top of the x87 stack
   GetOffsetTopWithCache_Slow(1);
-  std::rotate(TopOffsetCache.begin(), std::next(TopOffsetCache.begin()), TopOffsetCache.end());
-  std::rotate(TopOffsetAddressCache.begin(), std::next(TopOffsetAddressCache.begin()), TopOffsetAddressCache.end());
-  std::rotate(TopValueCache.begin(), std::next(TopValueCache.begin()), TopValueCache.end());
-  std::rotate(FlushValuesPending.begin(), std::next(FlushValuesPending.begin()), FlushValuesPending.end());
-  std::rotate(TopValidCache.begin(), std::next(TopValidCache.begin()), TopValidCache.end());
+  PopContainer(TopOffsetCache);
+  PopContainer(TopOffsetAddressCache);
+  PopContainer(TopValueCache);
+  PopContainer(FlushValuesPending);
+  PopContainer(TopValidCache);
   FlushTopPending = true;
 }
 
 inline void X87StackOptimization::UpdateTopForPush_Slow() {
-  // Pop the top of the x87 stack
+  const auto PushContainer = [](auto& container) {
+    const auto end = std::end(container);
+    std::rotate(std::begin(container), std::prev(end), end);
+  };
+
+  // Push the top of the x87 stack
   GetOffsetTopWithCache_Slow(1, true);
-  std::rotate(TopOffsetCache.begin(), std::prev(TopOffsetCache.end()), TopOffsetCache.end());
-  std::rotate(TopOffsetAddressCache.begin(), std::prev(TopOffsetAddressCache.end()), TopOffsetAddressCache.end());
-  std::rotate(TopValueCache.begin(), std::prev(TopValueCache.end()), TopValueCache.end());
-  std::rotate(FlushValuesPending.begin(), std::prev(FlushValuesPending.end()), FlushValuesPending.end());
-  std::rotate(TopValidCache.begin(), std::prev(TopValidCache.end()), TopValidCache.end());
+  PushContainer(TopOffsetCache);
+  PushContainer(TopOffsetAddressCache);
+  PushContainer(TopValueCache);
+  PushContainer(FlushValuesPending);
+  PushContainer(TopValidCache);
   FlushTopPending = true;
 }
 
