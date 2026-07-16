@@ -129,7 +129,19 @@ protected:
   std::span<const ARMEmitter::VRegister> GeneralFPRegisters {};
   uint32_t PairRegisters = 0;
 
-  void FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Register TmpReg2, bool SetFIZ, bool SetPredRegs);
+  struct FillSpecialRegsOptions {
+    // Whether or not to set the FPCR.FIZ (flush inputs to zero) bit in the FPCR to
+    // the current value of the emulated MXCSR.DAZ bit.
+    // Will only attempt to do so, even when set to true, if and only if the host system
+    // supports FEAT_AFP.
+    bool SetFIZ {};
+
+    // Whether or not FillSpecialRegs should load our SVE predicate temporaries
+    // with certain canned values that accelerate some operations. Will (obviously)
+    // not load predicates, even if set to true, on host systems that do not support SVE.
+    bool SetPredRegs {};
+  };
+  void FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Register TmpReg2, const FillSpecialRegsOptions& Options);
 
   // Correlate an ARM register back to an x86 register index.
   // Returning REG_INVALID if there was no mapping.

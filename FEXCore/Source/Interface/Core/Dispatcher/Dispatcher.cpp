@@ -121,7 +121,7 @@ void Dispatcher::EmitDispatcher() {
 
   ldr(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
 
-  FillSpecialRegs(TMP1, TMP2, false, true);
+  FillSpecialRegs(TMP1, TMP2, {.SetFIZ = false, .SetPredRegs = true});
 
   // As ARM64EC uses this as an entrypoint for both guest calls and host returns, opportunistically try to return
   // using the call-ret stack to avoid unbalancing it.
