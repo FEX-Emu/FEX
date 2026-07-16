@@ -32,14 +32,14 @@
 namespace FEXCore::IR {
 
 // FIXME(pmatos): copy from OpcodeDispatcher.h
-inline uint32_t MMBaseOffset() {
+static uint32_t MMBaseOffset() {
   return static_cast<uint32_t>(offsetof(Core::CPUState, mm[0][0]));
 }
 
 // Similar helper to the one in OpcodeDispatcher.h except we do not
 // need to handle flags, etc.
 template<typename T>
-void DeriveOp(Ref& RefV, IROps NewOp, IREmitter::IRPair<T> Expr) {
+static void DeriveOp(Ref& RefV, IROps NewOp, IREmitter::IRPair<T> Expr) {
   Expr.first->Header.Op = NewOp;
   RefV = Expr;
 }
