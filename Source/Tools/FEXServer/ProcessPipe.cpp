@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "FEXHeaderUtils/Syscalls.h"
 #include "Logger.h"
+#include "ProcessPipe.h"
 #include "SquashFS.h"
 
 #include <Common/AsyncNet.h>
@@ -31,7 +32,7 @@
 #include <xxhash.h>
 
 namespace FEXCore {
-inline bool operator<(const FEXCore::ExecutableFileInfo& a, const FEXCore::ExecutableFileInfo& b) noexcept {
+static bool operator<(const FEXCore::ExecutableFileInfo& a, const FEXCore::ExecutableFileInfo& b) noexcept {
   return a.FileId < b.FileId;
 }
 } // namespace FEXCore
@@ -45,19 +46,19 @@ struct std::hash<FEXCore::ExecutableFileInfo> {
 
 namespace ProcessPipe {
 constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-int ServerLockFD {-1};
-int WatchFD {-1};
-std::optional<fasio::tcp_acceptor> ServerAcceptor;
-std::optional<fasio::tcp_acceptor> ServerFSAcceptor;
-int NumClients = 0;
-time_t RequestTimeout {10};
-bool Foreground {false};
-std::vector<struct pollfd> PollFDs {};
+static int ServerLockFD {-1};
+static int WatchFD {-1};
+static std::optional<fasio::tcp_acceptor> ServerAcceptor;
+static std::optional<fasio::tcp_acceptor> ServerFSAcceptor;
+static int NumClients = 0;
+static time_t RequestTimeout {10};
+static bool Foreground {false};
+static std::vector<struct pollfd> PollFDs {};
 
 // FD count watching
-constexpr size_t static MAX_FD_DISTANCE = 32;
-rlimit MaxFDs {};
-std::atomic<size_t> NumFilesOpened {};
+constexpr size_t MAX_FD_DISTANCE = 32;
+static rlimit MaxFDs {};
+static std::atomic<size_t> NumFilesOpened {};
 
 // Path to directory for unprocessed code maps dumped by FEX
 static std::string NewCodeMapDirectory;
@@ -72,14 +73,14 @@ void SetWatchFD(int FD) {
   WatchFD = FD;
 }
 
-size_t GetNumFilesOpen() {
+static size_t GetNumFilesOpen() {
   // Walk /proc/self/fd/ to see how many open files we currently have
   const std::filesystem::path self {"/proc/self/fd/"};
 
   return std::distance(std::filesystem::directory_iterator {self}, std::filesystem::directory_iterator {});
 }
 
-void GetMaxFDs() {
+static void GetMaxFDs() {
   // Get our kernel limit for the number of open files
   if (getrlimit(RLIMIT_NOFILE, &MaxFDs) != 0) {
     fprintf(stderr, "[FEXMountDaemon] getrlimit(RLIMIT_NOFILE) returned error %d %s\n", errno, strerror(errno));
@@ -89,7 +90,7 @@ void GetMaxFDs() {
   NumFilesOpened = GetNumFilesOpen();
 }
 
-void CheckRaiseFDLimit() {
+static void CheckRaiseFDLimit() {
   if (NumFilesOpened < (MaxFDs.rlim_cur - MAX_FD_DISTANCE)) {
     // No need to raise the limit.
     return;
@@ -221,7 +222,7 @@ bool InitializeServerPipe() {
 
 static fasio::poll_reactor Reactor;
 
-void HandleSocketData(fasio::tcp_socket&);
+static void HandleSocketData(fasio::tcp_socket&);
 
 bool InitializeServerSocket(bool abstract) {
   fextl::string ServerSocketName;
@@ -281,7 +282,7 @@ bool InitializeServerSocket(bool abstract) {
   return true;
 }
 
-void SendEmptyErrorPacket(fasio::tcp_socket& Socket) {
+static void SendEmptyErrorPacket(fasio::tcp_socket& Socket) {
   FEXServerClient::FEXServerResultPacket Res {
     .Header {
       .Type = FEXServerClient::PacketType::TYPE_ERROR,
@@ -293,7 +294,7 @@ void SendEmptyErrorPacket(fasio::tcp_socket& Socket) {
   write(Socket, Data, ec);
 }
 
-void SendFDSuccessPacket(fasio::tcp_socket& Socket, int FD) {
+static void SendFDSuccessPacket(fasio::tcp_socket& Socket, int FD) {
   FEXServerClient::FEXServerResultPacket Res {
     .Header {
       .Type = FEXServerClient::PacketType::TYPE_SUCCESS,
@@ -466,7 +467,7 @@ static std::map<FEXCore::ExecutableFileInfo, NeedsCacheRefresh> AggregateCodeMap
   return Result;
 }
 
-int32_t EmbedSubprocess(const char* path, char* const* args) {
+static int32_t EmbedSubprocess(const char* path, char* const* args) {
   pid_t pid = fork();
   if (pid == 0) {
     execvp(path, args);
@@ -491,7 +492,7 @@ static int RunOfflineCompiler(const char* CodeMap) {
   return EmbedSubprocess(OfflineCompilerPath.c_str(), const_cast<char* const*>(&ExecveArgs[0]));
 };
 
-void HandleSocketData(fasio::tcp_socket& Socket) {
+static void HandleSocketData(fasio::tcp_socket& Socket) {
   std::vector<uint8_t> Data(1500);
 
   // Get the current number of FDs of the process before we start handling sockets.
@@ -726,7 +727,7 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
   }
 }
 
-void CloseConnections() {
+static void CloseConnections() {
   // Close the server pipe so new processes will know to spin up a new FEXServer.
   // This one is closing
   close(ServerLockFD);

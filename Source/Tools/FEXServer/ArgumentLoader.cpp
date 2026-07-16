@@ -9,11 +9,11 @@
 #include <fmt/format.h>
 
 namespace FEXServer::Config {
-static fextl::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
+constexpr std::string_view Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
 
 FEXServerOptions Load(int argc, char** argv) {
   FEXServerOptions FEXOptions {};
-  optparse::OptionParser Parser = optparse::OptionParser().version(Version);
+  optparse::OptionParser Parser = optparse::OptionParser().version(fextl::string(Version));
 
   Parser.add_option("-k", "--kill").action("store_true").set_default(false).help("Shutdown an already active FEXServer");
 

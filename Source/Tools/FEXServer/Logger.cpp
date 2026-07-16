@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#include "Logger.h"
+
 #include <Common/Async.h>
 #include <Common/FEXServerClient.h>
 
@@ -10,10 +12,10 @@ void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, co
 }
 
 namespace Logger {
-int LogClientQueuePipe[2];
-std::thread LogThread;
+static int LogClientQueuePipe[2];
+static std::thread LogThread;
 
-void HandleLogData(int Socket) {
+static void HandleLogData(int Socket) {
   std::vector<uint8_t> Data(1500);
   size_t CurrentRead {};
   while (true) {
@@ -54,7 +56,7 @@ void HandleLogData(int Socket) {
   }
 }
 
-void LogThreadFunc() {
+static void LogThreadFunc() {
   fasio::poll_reactor Reactor;
 
   auto Pipe = fasio::posix_descriptor {Reactor, LogClientQueuePipe[0]};

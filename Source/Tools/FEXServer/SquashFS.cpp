@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#include "SquashFS.h"
+
 #include "Common/FEXServerClient.h"
 #include "Common/FileFormatCheck.h"
 
@@ -17,17 +19,17 @@
 namespace SquashFS {
 
 constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-int ServerRootFSLockFD {-1};
-int FuseMountPID {};
-fextl::string MountFolder {};
+static int ServerRootFSLockFD {-1};
+static int FuseMountPID {};
+static fextl::string MountFolder {};
 
-void ShutdownImagePID() {
+static void ShutdownImagePID() {
   if (FuseMountPID) {
     FHU::Syscalls::tgkill(FuseMountPID, FuseMountPID, SIGINT);
   }
 }
 
-bool InitializeSquashFSPipe() {
+static bool InitializeSquashFSPipe() {
   auto RootFSLockFile = FEXServerClient::GetServerRootFSLockFile();
 
   int Ret = open(RootFSLockFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_EXCL | O_CLOEXEC, USER_PERMS);
@@ -84,7 +86,7 @@ bool InitializeSquashFSPipe() {
   return true;
 }
 
-bool DowngradeRootFSPipeToReadLock() {
+static bool DowngradeRootFSPipeToReadLock() {
   flock lk {
     .l_type = F_RDLCK,
     .l_whence = SEEK_SET,
@@ -104,7 +106,7 @@ bool DowngradeRootFSPipeToReadLock() {
   return true;
 }
 
-bool MountRootFSImagePath(const fextl::string& SquashFS, bool EroFS) {
+static bool MountRootFSImagePath(const fextl::string& SquashFS, bool EroFS) {
   pid_t ParentTID = ::getpid();
   MountFolder = fmt::format("{}/.FEXMount{}-XXXXXX", FEXServerClient::GetServerMountFolder(), ParentTID);
   char* MountFolderStr = MountFolder.data();

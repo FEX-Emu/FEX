@@ -37,12 +37,12 @@ static timespec StartTime {};
 static std::optional<fmt::text_style> DisableColors = isatty(STDOUT_FILENO) ? std::nullopt : std::optional {fmt::text_style {}};
 
 namespace Logging {
-void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
+static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   const auto Output = fmt::format("{} {}\n", fmt::styled(LogMan::DebugLevelStr(Level), DisableColors.value_or(DebugLevelStyle(Level))), Message);
   write(STDOUT_FILENO, Output.c_str(), Output.size());
 }
 
-void AssertHandler(const char* Message) {
+static void AssertHandler(const char* Message) {
   return MsgHandler(LogMan::ASSERT, Message);
 }
 
@@ -77,9 +77,9 @@ void ActionHandler(int sig, siginfo_t* info, void* context) {
   _exit(1);
 }
 
-void ActionIgnore(int sig, siginfo_t* info, void* context) {}
+static void ActionIgnore(int sig, siginfo_t* info, void* context) {}
 
-void SetupSignals() {
+static void SetupSignals() {
   // Setup our signal handlers now so we can capture some events
   struct sigaction act {};
   act.sa_sigaction = ActionHandler;
@@ -104,7 +104,7 @@ void SetupSignals() {
 /**
  * @brief Deparents itself by forking and terminating the parent process.
  */
-void DeparentSelf() {
+static void DeparentSelf() {
   auto SystemdEnv = getenv("INVOCATION_ID");
   if (SystemdEnv) {
     // If FEXServer was launched through systemd then don't deparent, otherwise systemd kills the entire server.
