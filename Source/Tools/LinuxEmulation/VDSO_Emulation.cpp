@@ -27,7 +27,8 @@
 #include <unistd.h>
 
 namespace FEX::VDSO {
-VDSOEntrypoints VDSOPointers {};
+static VDSOEntrypoints VDSOPointers {};
+
 namespace VDSOHandlers {
   using TimeType = decltype(::time)*;
   using GetTimeOfDayType = decltype(::gettimeofday)*;
@@ -36,12 +37,12 @@ namespace VDSOHandlers {
   using GetCPUType = decltype(FHU::Syscalls::getcpu)*;
   using GetRandomType = ssize_t (*)(void*, size_t, uint32_t, void*, size_t);
 
-  TimeType TimePtr;
-  GetTimeOfDayType GetTimeOfDayPtr;
-  ClockGetTimeType ClockGetTimePtr;
-  ClockGetResType ClockGetResPtr;
-  GetCPUType GetCPUPtr;
-  GetRandomType GetRandomPtr;
+  static TimeType TimePtr;
+  static GetTimeOfDayType GetTimeOfDayPtr;
+  static ClockGetTimeType ClockGetTimePtr;
+  static ClockGetResType ClockGetResPtr;
+  static GetCPUType GetCPUPtr;
+  static GetRandomType GetRandomPtr;
 } // namespace VDSOHandlers
 
 using HandlerPtr = void (*)(void*);
@@ -207,12 +208,12 @@ namespace x64 {
     }
   } // namespace VDSO
 
-  HandlerPtr Handler_time = FEX::VDSO::x64::glibc::time;
-  HandlerPtr Handler_gettimeofday = FEX::VDSO::x64::glibc::gettimeofday;
-  HandlerPtr Handler_clock_gettime = FEX::VDSO::x64::glibc::clock_gettime;
-  HandlerPtr Handler_clock_getres = FEX::VDSO::x64::glibc::clock_getres;
-  HandlerPtr Handler_getcpu = FEX::VDSO::x64::glibc::getcpu;
-  HandlerPtr Handler_getrandom = FEX::VDSO::x64::glibc::getrandom;
+  static HandlerPtr Handler_time = FEX::VDSO::x64::glibc::time;
+  static HandlerPtr Handler_gettimeofday = FEX::VDSO::x64::glibc::gettimeofday;
+  static HandlerPtr Handler_clock_gettime = FEX::VDSO::x64::glibc::clock_gettime;
+  static HandlerPtr Handler_clock_getres = FEX::VDSO::x64::glibc::clock_getres;
+  static HandlerPtr Handler_getcpu = FEX::VDSO::x64::glibc::getcpu;
+  static HandlerPtr Handler_getrandom = FEX::VDSO::x64::glibc::getrandom;
 } // namespace x64
 namespace x32 {
   namespace glibc {
@@ -410,12 +411,12 @@ namespace x32 {
     }
   } // namespace VDSO
 
-  HandlerPtr Handler_time = FEX::VDSO::x32::glibc::time;
-  HandlerPtr Handler_gettimeofday = FEX::VDSO::x32::glibc::gettimeofday;
-  HandlerPtr Handler_clock_gettime = FEX::VDSO::x32::glibc::clock_gettime;
-  HandlerPtr Handler_clock_gettime64 = FEX::VDSO::x32::glibc::clock_gettime64;
-  HandlerPtr Handler_clock_getres = FEX::VDSO::x32::glibc::clock_getres;
-  HandlerPtr Handler_getcpu = FEX::VDSO::x32::glibc::getcpu;
+  static HandlerPtr Handler_time = FEX::VDSO::x32::glibc::time;
+  static HandlerPtr Handler_gettimeofday = FEX::VDSO::x32::glibc::gettimeofday;
+  static HandlerPtr Handler_clock_gettime = FEX::VDSO::x32::glibc::clock_gettime;
+  static HandlerPtr Handler_clock_gettime64 = FEX::VDSO::x32::glibc::clock_gettime64;
+  static HandlerPtr Handler_clock_getres = FEX::VDSO::x32::glibc::clock_getres;
+  static HandlerPtr Handler_getcpu = FEX::VDSO::x32::glibc::getcpu;
 } // namespace x32
 
 class VDSOParser final {
@@ -482,7 +483,7 @@ VDSOParser::VDSOParser(const uint8_t* HeaderBase) {
   }
 }
 
-void LoadHostVDSO() {
+static void LoadHostVDSO() {
   // Linux gives the VDSO ELF header base in the auxv value AT_SYSINFO_EHDR.
   auto VDSOHeader = ::getauxval(AT_SYSINFO_EHDR);
 
@@ -609,7 +610,7 @@ static std::array<FEXCore::IR::ThunkDefinition, 7> VDSODefinitions = {{
 }};
 
 template<bool Is64Bit>
-void LoadGuestVDSOSymbols(char* VDSOBase) {
+static void LoadGuestVDSOSymbols(char* VDSOBase) {
   using ELFHeaderType = std::conditional_t<Is64Bit, Elf64_Ehdr, Elf32_Ehdr>;
   using ELFSHeaderType = std::conditional_t<Is64Bit, Elf64_Shdr, Elf32_Shdr>;
   using ELFSymbolType = std::conditional_t<Is64Bit, Elf64_Sym, Elf32_Sym>;
@@ -683,7 +684,8 @@ void LoadGuestVDSOSymbols(char* VDSOBase) {
   }
 }
 
-void LoadFEXGeneratedCode(FEXCore::Core::InternalThreadState* Thread, bool Is64Bit, VDSOMapping* Mapping, FEX::HLE::SyscallHandler* const Handler) {
+static void LoadFEXGeneratedCode(FEXCore::Core::InternalThreadState* Thread, bool Is64Bit, VDSOMapping* Mapping,
+                                 FEX::HLE::SyscallHandler* const Handler) {
   if (VDSOPointers.VDSO_FEX_CallbackRET && (!Is64Bit || (VDSOPointers.VDSO_kernel_sigreturn && VDSOPointers.VDSO_kernel_rt_sigreturn))) {
     // Unnecessary if all VDSO paths have already been loaded.
     return;
