@@ -45,7 +45,7 @@ public:
    *
    * @{ */
 
-  RegClass WalkFindRegClass(Ref Node);
+  RegClass WalkFindRegClass(Ref Node) const;
 
   // These inlining helpers are used by IRDefines.inc so define first.
   Ref InlineMem(OpSize Size, Ref Offset, MemOffsetType OffsetType, uint8_t& OffsetScale, bool TSO = false) {
@@ -310,14 +310,14 @@ public:
   }
 
   /**  @} */
-  RegClass WalkFindRegClass(OrderedNodeWrapper ssa) {
-    Ref RealNode = ssa.GetNode(DualListData.ListBegin());
+  RegClass WalkFindRegClass(OrderedNodeWrapper ssa) const {
+    auto RealNode = ssa.GetNode(DualListData.ListBegin());
     return WalkFindRegClass(RealNode);
   }
 
-  bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t* Constant = nullptr) {
-    Ref RealNode = ssa.GetNode(DualListData.ListBegin());
-    FEXCore::IR::IROp_Header* IROp = RealNode->Op(DualListData.DataBegin());
+  bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t* Constant = nullptr) const {
+    auto RealNode = ssa.GetNode(DualListData.ListBegin());
+    const auto* IROp = RealNode->Op(DualListData.DataBegin());
     if (IROp->Op == OP_CONSTANT) {
       auto Op = IROp->C<IR::IROp_Constant>();
       if (Constant) {
@@ -328,9 +328,9 @@ public:
     return false;
   }
 
-  bool IsValueInlineConstant(OrderedNodeWrapper ssa) {
-    Ref RealNode = ssa.GetNode(DualListData.ListBegin());
-    FEXCore::IR::IROp_Header* IROp = RealNode->Op(DualListData.DataBegin());
+  bool IsValueInlineConstant(OrderedNodeWrapper ssa) const {
+    auto RealNode = ssa.GetNode(DualListData.ListBegin());
+    const auto* IROp = RealNode->Op(DualListData.DataBegin());
     if (IROp->Op == OP_INLINECONSTANT) {
       return true;
     }
