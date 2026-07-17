@@ -5,7 +5,9 @@
     "RAX": "0x2",
     "RBX": "0xA",
     "RDI": "0x0",
-    "RSI": "0x0"
+    "RSI": "0x0",
+    "RDX": "0x1",
+    "RSP": "0x9"
   }
 }
 %endif
@@ -14,12 +16,16 @@ lea rdx, [rel .data]
 
 vmovapd ymm0, [rdx]
 vmovapd ymm1, [rdx + 32]
+vmovapd ymm2, [rdx + 64]
 
 vmovmskpd rax, xmm0
 vmovmskpd rbx, ymm0
 
 vmovmskpd rdi, xmm1
 vmovmskpd rsi, ymm1
+
+vmovmskpd rdx, xmm2
+vmovmskpd rsp, ymm2
 
 hlt
 
@@ -34,3 +40,8 @@ dq 0x4142434445464748
 dq 0x5152535455565758
 dq 0x4142434445464748
 dq 0x5152535455565758
+
+dq 0x8000000000000000
+dq 0x0000000000000000
+dq 0x0000000000000000
+dq 0x8000000000000000
