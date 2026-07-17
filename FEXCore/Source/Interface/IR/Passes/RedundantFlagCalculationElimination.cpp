@@ -7,6 +7,7 @@ $end_info$
 
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
+#include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
 
 #include <FEXCore/Core/X86Enums.h>

@@ -42,9 +42,9 @@ using GLIBC_MALLOC_Hook = void* (*)(size_t, const void* caller);
 using GLIBC_REALLOC_Hook = void* (*)(void*, size_t, const void* caller);
 using GLIBC_FREE_Hook = void (*)(void*, const void* caller);
 
-fextl::unique_ptr<Alloc::HostAllocator> Alloc64 {};
+static fextl::unique_ptr<Alloc::HostAllocator> Alloc64 {};
 
-void* FEX_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
+static void* FEX_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
   void* Result = Alloc64->Mmap(addr, length, prot, flags, fd, offset);
   if (Result >= (void*)-4096) {
     errno = -(uint64_t)Result;
@@ -68,7 +68,7 @@ void VirtualName(const char* Name, void* Ptr, size_t Size) {
   }
 }
 
-int FEX_munmap(void* addr, size_t length) {
+static int FEX_munmap(void* addr, size_t length) {
   int Result = Alloc64->Munmap(addr, length);
 
   if (Result != 0) {

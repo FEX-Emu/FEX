@@ -3,6 +3,7 @@
 #include "Interface/Core/Interpreter/Fallbacks/FallbackOpHandler.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
+#include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
 #include "FEXCore/IR/IR.h"
 #include "FEXCore/Utils/Profiler.h"

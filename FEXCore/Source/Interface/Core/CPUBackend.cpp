@@ -346,10 +346,6 @@ namespace CPU {
     return nullptr;
   }
 
-  GuestToHostMap& GetLookupCache(const CodeBuffer& Buffer) {
-    return *Buffer.LookupCache;
-  }
-
   CodeBuffer::CodeBuffer(size_t Size)
     : AllocatedSize(Size) {
     Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Size, true));
