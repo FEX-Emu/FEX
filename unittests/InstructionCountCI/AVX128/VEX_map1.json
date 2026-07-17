@@ -519,21 +519,18 @@
       ]
     },
     "vmovmskpd rax, ymm0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Map 1 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #192]",
-        "uzp2 v3.4s, v16.4s, v16.4s",
-        "mov x20, v3.d[0]",
-        "bfi x20, x20, #31, #32",
-        "lsr x20, x20, #62",
-        "uzp2 v2.4s, v2.4s, v2.4s",
-        "mov x21, v2.d[0]",
-        "bfi x21, x21, #31, #32",
-        "lsr x21, x21, #62",
-        "orr x4, x20, x21, lsl #2"
+        "uzp2 v2.4s, v16.4s, v2.4s",
+        "ushr v2.4s, v2.4s, #31",
+        "ldr q3, [x28, #3280]",
+        "ushl v2.4s, v2.4s, v3.4s",
+        "addv s2, v2.4s",
+        "mov w4, v2.s[0]"
       ]
     },
     "vsqrtps xmm0, xmm1": {
