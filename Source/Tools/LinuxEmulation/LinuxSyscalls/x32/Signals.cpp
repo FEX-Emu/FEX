@@ -28,7 +28,7 @@ struct CpuStateFrame;
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEXCore::x86::siginfo_t>, "%lx")
 
 namespace FEX::HLE::x32 {
-void CopySigInfo(FEXCore::x86::siginfo_t* Info, const siginfo_t& Host) {
+static void CopySigInfo(FEXCore::x86::siginfo_t* Info, const siginfo_t& Host) {
   // Copy the basic things first
   Info->si_signo = Host.si_signo;
   Info->si_errno = Host.si_errno;

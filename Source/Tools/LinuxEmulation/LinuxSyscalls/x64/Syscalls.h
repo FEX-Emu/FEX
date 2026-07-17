@@ -95,6 +95,17 @@ void RegisterSyscall(SyscallHandler* _Handler, int num, const char* name, F f) {
   RegisterSyscall(_Handler, num, name, +f);
 }
 
+void RegisterEpoll(FEX::HLE::SyscallHandler* Handler);
+void RegisterFD(FEX::HLE::SyscallHandler* Handler);
+void RegisterInfo(FEX::HLE::SyscallHandler* Handler);
+void RegisterMemory(FEX::HLE::SyscallHandler* Handler);
+void RegisterNotImplemented(FEX::HLE::SyscallHandler* Handler);
+void RegisterPassthrough(FEX::HLE::SyscallHandler* Handler);
+void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler);
+void RegisterSignals(FEX::HLE::SyscallHandler* Handler);
+void RegisterThread(FEX::HLE::SyscallHandler* Handler);
+void RegisterTime(FEX::HLE::SyscallHandler* Handler);
+
 } // namespace FEX::HLE::x64
 
 // Registers syscall for 64bit only

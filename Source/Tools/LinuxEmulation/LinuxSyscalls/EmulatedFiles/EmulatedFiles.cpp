@@ -67,7 +67,7 @@ static void SealTmpFD(int fd) {
   }
 }
 
-fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores) {
+static fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores) {
   fextl::ostringstream cpu_stream {};
   auto res_0 = ctx->RunCPUIDFunction(0, 0);
   auto res_1 = ctx->RunCPUIDFunction(1, 0);

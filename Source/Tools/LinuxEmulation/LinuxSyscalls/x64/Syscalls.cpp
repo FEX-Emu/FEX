@@ -12,16 +12,6 @@ $end_info$
 #include <FEXCore/HLE/SyscallHandler.h>
 
 namespace FEX::HLE::x64 {
-void RegisterEpoll(FEX::HLE::SyscallHandler* Handler);
-void RegisterFD(FEX::HLE::SyscallHandler* Handler);
-void RegisterInfo(FEX::HLE::SyscallHandler* Handler);
-void RegisterMemory(FEX::HLE::SyscallHandler* Handler);
-void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler);
-void RegisterSignals(FEX::HLE::SyscallHandler* Handler);
-void RegisterThread(FEX::HLE::SyscallHandler* Handler);
-void RegisterTime(FEX::HLE::SyscallHandler* Handler);
-void RegisterNotImplemented(FEX::HLE::SyscallHandler* Handler);
-void RegisterPassthrough(FEX::HLE::SyscallHandler* Handler);
 
 x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler)
   : SyscallHandler {ctx, _SignalDelegation, ThunkHandler} {

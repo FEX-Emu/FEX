@@ -246,8 +246,8 @@ static uint64_t RecvMsg(int sockfd, struct msghdr32* msg, int flags) {
   SYSCALL_ERRNO();
 }
 
-void ConvertHeaderToHost(fextl::vector<iovec>& iovec, struct msghdr* Host, const struct msghdr32* Guest, fextl::vector<uint8_t>& ControlLen,
-                         size_t& ControlLenOffset) {
+static void ConvertHeaderToHost(fextl::vector<iovec>& iovec, struct msghdr* Host, const struct msghdr32* Guest,
+                                fextl::vector<uint8_t>& ControlLen, size_t& ControlLenOffset) {
   size_t CurrentIOVecSize = iovec.size();
   iovec.resize(CurrentIOVecSize + Guest->msg_iovlen);
   for (size_t i = 0; i < Guest->msg_iovlen; ++i) {
@@ -267,7 +267,7 @@ void ConvertHeaderToHost(fextl::vector<iovec>& iovec, struct msghdr* Host, const
   Host->msg_flags = Guest->msg_flags;
 }
 
-void ConvertHeaderToGuest(struct msghdr32* Guest, struct msghdr* Host) {
+static void ConvertHeaderToGuest(struct msghdr32* Guest, struct msghdr* Host) {
   for (size_t i = 0; i < Guest->msg_iovlen; ++i) {
     Guest->msg_iov[i] = Host->msg_iov[i];
   }
