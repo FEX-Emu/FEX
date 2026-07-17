@@ -23,8 +23,8 @@ namespace FEX::HLE {
 class MemAllocator32Bit final : public FEX::HLE::MemAllocator {
 private:
   static constexpr uint64_t BASE_KEY = 16;
-  const uint64_t TOP_KEY = 0xFFFF'F000ULL >> FEXCore::Utils::FEX_PAGE_SHIFT;
-  const uint64_t TOP_KEY32BIT = 0x7FFF'F000ULL >> FEXCore::Utils::FEX_PAGE_SHIFT;
+  static constexpr uint64_t TOP_KEY = 0xFFFF'F000ULL >> FEXCore::Utils::FEX_PAGE_SHIFT;
+  static constexpr uint64_t TOP_KEY32BIT = 0x7FFF'F000ULL >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
 public:
   MemAllocator32Bit() {
