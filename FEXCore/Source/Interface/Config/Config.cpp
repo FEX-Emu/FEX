@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 #include "Common/StringConv.h"
-#include "FEXCore/Utils/EnumUtils.h"
+#include "Utils/Config.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/StringUtils.h>
@@ -252,7 +253,7 @@ void Load() {
   }
 }
 
-fextl::string ExpandPath(const fextl::string& ContainerPrefix, const fextl::string& PathName) {
+static fextl::string ExpandPath(const fextl::string& ContainerPrefix, const fextl::string& PathName) {
   if (PathName.empty()) {
     return {};
   }

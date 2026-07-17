@@ -100,7 +100,7 @@ namespace ProductNames {
 #endif
 } // namespace ProductNames
 
-uint32_t GetCPUID_Syscall() {
+static uint32_t GetCPUID_Syscall() {
   uint32_t CPU {};
   FHU::Syscalls::getcpu(&CPU, nullptr);
   return CPU;
@@ -148,7 +148,7 @@ uint64_t GetCycleCounterFrequency() {
   return Result;
 }
 
-uint32_t GetCPUID_TPIDRRO() {
+static uint32_t GetCPUID_TPIDRRO() {
   uint64_t Result {};
   __asm("mrs %[Res], TPIDRRO_EL0" : [Res] "=r"(Result));
   return Result;

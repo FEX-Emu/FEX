@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#include <FEXCore/Utils/CompilerDefs.h>
+
 namespace FEXCore::Assert {
 // This function can not be inlined
 [[noreturn]]
