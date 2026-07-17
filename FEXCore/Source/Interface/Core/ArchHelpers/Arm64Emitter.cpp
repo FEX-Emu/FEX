@@ -360,6 +360,7 @@ namespace x32 {
 Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr, size_t size)
   : Emitter(static_cast<uint8_t*>(EmissionPtr), size)
   , EmitterCTX {ctx}
+  , SupportCodeRelocations {ctx->RequiresRelocatableConstants()}
 #ifdef VIXL_SIMULATOR
   , Simulator {&SimDecoder, stdout, vixl::aarch64::SimStack(SimulatorStackSize).Allocate()}
 #endif
@@ -425,7 +426,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     NOPPad = false;
   } else if (Pad == PadType::AUTOPAD) {
     // Force NOP padding to ensure relocated constants always have enough encoding space available
-    NOPPad = EnableCodeCaching;
+    NOPPad = SupportCodeRelocations;
   }
 
   bool Is64Bit = s == ARMEmitter::Size::i64Bit;

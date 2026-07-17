@@ -55,4 +55,10 @@ FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunctionN
 bool FEXCore::Context::ContextImpl::IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address) const {
   return Thread->CPUBackend->IsAddressInCodeBuffer(Address) || CodeCache.IsAddressInMappedCodeBuffer(Address);
 }
+
+bool FEXCore::Context::ContextImpl::RequiresRelocatableConstants() const {
+  // Support relocation when generating a cache or when generating reference code for validation
+  return CodeCache.IsGeneratingCache || FEXCore::Config::Get_ENABLECODECACHEVALIDATION();
+}
+
 } // namespace FEXCore::Context
