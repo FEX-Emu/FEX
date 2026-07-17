@@ -527,7 +527,7 @@ void BTCpuProcessInit() {
 
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
-  const auto NtDll = GetModuleHandle("ntdll.dll");
+  const auto NtDll = GetModuleHandleW(L"ntdll.dll");
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   OvercommitTracker.emplace(IsWine);
 
