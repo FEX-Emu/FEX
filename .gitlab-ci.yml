@@ -31,7 +31,7 @@ build:
     - apt-get -y update
     - apt-get install -y
         git cmake ninja-build ccache
-        lld clang
+        lld clang clang-tools
         libclang-dev llvm-dev
         libstdc++-14-dev-i386-cross libgcc-14-dev-i386-cross
         libstdc++-14-dev-amd64-cross libgcc-14-dev-amd64-cross
