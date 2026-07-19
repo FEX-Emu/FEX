@@ -252,7 +252,7 @@ void IRValidation::Run(IREmitter* IREmit) {
 
   HadWarning = false;
   if (HadError || HadWarning) {
-    fextl::stringstream Out;
+    fextl::ostringstream Out;
     FEXCore::IR::Dump(&Out, &CurrentIR);
 
     if (HadError) {

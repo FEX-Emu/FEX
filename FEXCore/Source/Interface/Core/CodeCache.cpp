@@ -476,7 +476,7 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
           if (tail->RIP >= Section.BeginVA && tail->RIP < Section.EndVA) {
             auto [IRView, TotalInstructions, TotalInstructionsLength, StartAddr, Length, _] =
               ValidationCTX->GenerateIR(ValidationThread.get(), tail->RIP, false, FEXCore::Config::Get_MAXINST());
-            fextl::stringstream ss;
+            fextl::ostringstream ss;
             FEXCore::IR::Dump(&ss, &*IRView);
             LogMan::Msg::EFmt("IR:\n{}", ss.str());
           } else {
