@@ -8,21 +8,16 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <functional>
+#include <concepts>
 #include <utility>
 
 namespace FEXCore::Context {
 class ContextImpl;
-}
-
-namespace FEXCore::HLE {
-class SyscallHandler;
 }
 
 namespace FEXCore::IR {
@@ -44,63 +39,56 @@ protected:
 
 class PassManager final {
 public:
-  void AddDefaultPasses(FEXCore::Context::ContextImpl* ctx);
-  void AddDefaultValidationPasses();
-  Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
-    auto PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
-
-    if (!Name.empty()) {
-      NameToPassMaping[Name] = PassPtr;
-    }
-    return PassPtr;
+  explicit PassManager(Context::ContextImpl* CTX) {
+    AddDefaultPasses(CTX);
   }
 
-  void InsertRegisterAllocationPass(FEXCore::Context::ContextImpl* ctx);
-
+  // Executes all of the passes added to the manager.
+  // If assertions are enabled, this will also run all validation passes.
   void Run(IREmitter* IREmit);
 
-  bool HasPass(fextl::string Name) const {
+  // Inserts a new pass into the manager, optionally also assigning a name to it
+  // for use in the lookup functions,
+  Pass* InsertPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name = "");
+
+  // Whether or not a pass with the given name is within the manager.
+  bool HasPass(const fextl::string& Name) const {
     return NameToPassMaping.contains(Name);
   }
 
-  template<typename T>
-  T* GetPass(fextl::string Name) {
-    return dynamic_cast<T*>(NameToPassMaping[Name]);
+  // Retrieves a pass from the manager that has the given name assigned to it.
+  // Will return nullptr if the pass doesn't exist.
+  template<std::derived_from<Pass> T>
+  T* GetPass(const fextl::string& Name) {
+    return dynamic_cast<T*>(GetPass(Name));
+  }
+  Pass* GetPass(const fextl::string& Name) {
+    const auto Iter = NameToPassMaping.find(Name);
+    if (Iter == NameToPassMaping.end()) {
+      return nullptr;
+    }
+    return Iter->second;
   }
 
-  Pass* GetPass(fextl::string Name) {
-    return NameToPassMaping[Name];
-  }
-
-  void RegisterSyscallHandler(FEXCore::HLE::SyscallHandler* Handler) {
-    SyscallHandler = Handler;
-  }
-
+  // Finalizes the pass manager state and assumes no other passes will be added after called.
+  // This will reorganize the execution order of the passes if necessary.
   void Finalize();
 
-protected:
-  FEXCore::HLE::SyscallHandler* SyscallHandler {};
-
 private:
+  void AddDefaultPasses(Context::ContextImpl* ctx);
+
   using PassArrayType = fextl::vector<fextl::unique_ptr<Pass>>;
-  PassArrayType::iterator InsertAt(PassArrayType::iterator pos, fextl::unique_ptr<Pass> Pass) {
-    Pass->RegisterPassManager(this);
-    return Passes.insert(pos, std::move(Pass));
-  }
+  PassArrayType::iterator InsertAt(PassArrayType::iterator pos, fextl::unique_ptr<Pass> Pass);
+
   PassArrayType Passes;
   fextl::unordered_map<fextl::string, Pass*> NameToPassMaping;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   fextl::vector<fextl::unique_ptr<Pass>> ValidationPasses;
-  void InsertValidationPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
-    Pass->RegisterPassManager(this);
-    auto PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
-
-    if (!Name.empty()) {
-      NameToPassMaping[Name] = PassPtr;
-    }
-  }
+  void InsertValidationPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name = "");
 #endif
+
+  void AttemptNameMapping(const fextl::string& Name, Pass* NewPass);
 
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   FEX_CONFIG_OPT(PassManagerDumpIR, PASSMANAGERDUMPIR);

@@ -13,6 +13,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 
 namespace FEXCore::IR {
@@ -66,24 +67,41 @@ void PassManager::Finalize() {
   }
 }
 
-void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx) {
+void PassManager::AddDefaultPasses(Context::ContextImpl* ctx) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 
+  // We only specifically disable optimization passes if desired, as IR output should
+  // still be well-formed regardless of the modifications made to it.
   if (!DisablePasses()) {
     InsertPass(CreateX87StackOptimizationPass(ctx->HostFeatures, ctx->Config.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit));
     InsertPass(CreateDeadFlagCalculationEliminination());
   }
-}
 
-void PassManager::AddDefaultValidationPasses() {
+  InsertPass(IR::CreateRegisterAllocationPass(&ctx->CPUID), "RA");
+
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   InsertValidationPass(Validation::CreateIRValidation(), "IRValidation");
 #endif
 }
 
-void PassManager::InsertRegisterAllocationPass(FEXCore::Context::ContextImpl* ctx) {
-  InsertPass(IR::CreateRegisterAllocationPass(&ctx->CPUID), "RA");
+Pass* PassManager::InsertPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name) {
+  auto* PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
+  AttemptNameMapping(Name, PassPtr);
+  return PassPtr;
 }
+
+PassManager::PassArrayType::iterator PassManager::InsertAt(PassArrayType::iterator pos, fextl::unique_ptr<Pass> Pass) {
+  Pass->RegisterPassManager(this);
+  return Passes.insert(pos, std::move(Pass));
+}
+
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+void PassManager::InsertValidationPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name) {
+  Pass->RegisterPassManager(this);
+  auto* PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
+  AttemptNameMapping(Name, PassPtr);
+}
+#endif
 
 void PassManager::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::Run");
@@ -97,5 +115,16 @@ void PassManager::Run(IREmitter* IREmit) {
     Pass->Run(IREmit);
   }
 #endif
+}
+
+void PassManager::AttemptNameMapping(const fextl::string& Name, Pass* NewPass) {
+  if (Name.empty()) {
+    // Empty name is a 'don't care' case. e.g. Passes that just need to run,
+    // but don't need to be actively looked up.
+    return;
+  }
+
+  const auto Result = NameToPassMaping.emplace(Name, NewPass);
+  LOGMAN_THROW_A_FMT(Result.second, "Tried to insert pass with name '{}'. But name is already used", Name);
 }
 } // namespace FEXCore::IR
