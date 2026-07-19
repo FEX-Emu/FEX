@@ -358,10 +358,10 @@ namespace CPU {
       LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
     }
 
-    FEXCore::Allocator::VirtualName("FEXMemJIT", reinterpret_cast<void*>(Ptr), Size);
+    FEXCore::Allocator::VirtualName("FEXMemJIT", Ptr, Size);
 
     // Huge-pages reduce the amount of iTLB misses dramatically when it works.
-    FEXCore::Allocator::VirtualTHPControl(reinterpret_cast<void*>(Ptr), Size, FEXCore::Allocator::THPControl::Enable);
+    FEXCore::Allocator::VirtualTHPControl(Ptr, Size, FEXCore::Allocator::THPControl::Enable);
 
     LookupCache = fextl::make_unique<GuestToHostMap>();
   }
@@ -430,17 +430,19 @@ namespace CPU {
 
 
   bool CPUBackend::IsAddressInCodeBuffer(uintptr_t Address) const {
-    auto CheckCodeBuffer = [](CodeBuffer& Buffer, uintptr_t Address) {
+    const auto CheckCodeBuffer = [](const CodeBuffer& Buffer, uintptr_t Address) {
+      const auto BufferPtr = reinterpret_cast<uintptr_t>(Buffer.Ptr);
+
       // The last page of the code buffer is protected, so we need to exclude it from the valid range
       // when checking if the address is in the code buffer.
-      uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.AllocatedSize - 1, FEXCore::Utils::FEX_PAGE_SIZE);
-      return (Address >= reinterpret_cast<uintptr_t>(Buffer.Ptr) && Address < LastPageAddr);
+      const uintptr_t LastPageAddr = AlignDown(BufferPtr + Buffer.AllocatedSize - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+      return (Address >= BufferPtr && Address < LastPageAddr);
     };
 
     if (CheckCodeBuffer(*CurrentCodeBuffer, Address)) {
       return true;
     }
-    for (auto& Buffer : SignalHandlerCodeBuffers) {
+    for (const auto& Buffer : SignalHandlerCodeBuffers) {
       if (CheckCodeBuffer(*Buffer, Address)) {
         return true;
       }
