@@ -526,8 +526,6 @@ private:
     FEXCore::UncheckedLongJump::LongJump(ThreadState->RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
-  // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
-  void EmitDetectionString();
   IR::RegisterAllocationPass* RAPass {};
   FEXCore::Core::DebugData* DebugData {};
 
