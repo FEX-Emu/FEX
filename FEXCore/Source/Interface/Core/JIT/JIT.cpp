@@ -622,7 +622,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
   , HostSupportsRPRES {ctx->HostFeatures.SupportsRPRES}
   , HostSupportsAFP {ctx->HostFeatures.SupportsAFP}
   , CTX {ctx}
-  , TempAllocator(ctx->CPUBackendAllocator, 0) {
+  , TempCodeBufferAllocator(ctx->CPUBackendAllocator, 0) {
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
@@ -843,7 +843,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   case RestartOptions::Control::EnableFarARM64Jumps: RequiresFarARM64Jumps = true; break;
   case RestartOptions::Control::NeedsLargerJITSpace:
     // Get rid of the claimed buffer immediately, we can't fit in it at all.
-    TempAllocator.UnclaimBuffer();
+    TempCodeBufferAllocator.UnclaimBuffer();
     SSANodeMultiplier *= 2;
     break;
   default: LOGMAN_MSG_A_FMT("Unhandled Arm64 restart condition!");
@@ -864,7 +864,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // JIT output is first written to a temporary buffer and later relocated to the CodeBuffer.
   // This minimizes lock contention of CodeBufferWriteMutex.
-  auto TempCodeBufferInfo = TempAllocator.ReownOrClaimBufferWithSize(DesiredBufferRange);
+  auto TempCodeBufferInfo = TempCodeBufferAllocator.ReownOrClaimBufferWithSize(DesiredBufferRange);
   auto TempCodeBuffer = TempCodeBufferInfo.Ptr;
   const uint32_t UsableBufferRange = TempCodeBufferInfo.Size - FEXCore::Utils::FEX_PAGE_SIZE;
 
@@ -1124,7 +1124,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     CodeBuffers.LatestOffset = GetCursorOffset();
   }
 
-  TempAllocator.DelayedDisownBuffer();
+  TempCodeBufferAllocator.DelayedDisownBuffer();
 
   ClearICache(CodeBegin, CodeOnlySize);
 
