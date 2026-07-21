@@ -43,23 +43,31 @@ public:
     AddDefaultPasses(CTX);
   }
 
+  // Executes all of the passes added to the manager.
+  // If assertions are enabled, this will also run all validation passes.
   void Run(IREmitter* IREmit);
 
+  // Inserts a new pass into the manager, optionally also assigning a name to it
+  // for use in the lookup functions,
   Pass* InsertPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name = "");
 
+  // Whether or not a pass with the given name is within the manager.
   bool HasPass(const fextl::string& Name) const {
     return NameToPassMaping.contains(Name);
   }
 
+  // Retrieves a pass from the manager that has the given name assigned to it.
+  // Will return nullptr if the pass doesn't exist.
   template<std::derived_from<Pass> T>
   T* GetPass(const fextl::string& Name) {
     return dynamic_cast<T*>(GetPass(Name));
   }
-
   Pass* GetPass(const fextl::string& Name) {
     return NameToPassMaping[Name];
   }
 
+  // Finalizes the pass manager state and assumes no other passes will be added after called.
+  // This will reorganize the execution order of the passes if necessary.
   void Finalize();
 
 private:
