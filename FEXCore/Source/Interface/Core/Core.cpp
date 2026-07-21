@@ -395,7 +395,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
   Thread->LookupCache = fextl::make_unique<FEXCore::LookupCache>(this);
   Thread->FrontendDecoder = fextl::make_unique<FEXCore::Frontend::Decoder>(Thread);
-  Thread->PassManager = fextl::make_unique<FEXCore::IR::PassManager>();
+  Thread->PassManager = fextl::make_unique<FEXCore::IR::PassManager>(this);
 
   Thread->CurrentFrame->State.L1Pointer = Thread->LookupCache->GetL1Pointer();
   Thread->CurrentFrame->State.L1Mask = Thread->LookupCache->GetScaledL1PointerMask();
@@ -404,15 +404,13 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
 
   Dispatcher->InitThreadPointers(Thread);
 
-  Thread->PassManager->AddDefaultPasses(this);
-  Thread->PassManager->AddDefaultValidationPasses();
-
   Thread->PassManager->RegisterSyscallHandler(SyscallHandler);
 
   // Create CPU backend
-  Thread->PassManager->InsertRegisterAllocationPass(this);
   Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
 
+  // We finalize *after* the CPU backend is initialized, as the CPU backend will
+  // provide necessary register information to the register allocation pass.
   Thread->PassManager->Finalize();
 }
 

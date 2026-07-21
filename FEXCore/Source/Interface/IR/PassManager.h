@@ -44,20 +44,13 @@ protected:
 
 class PassManager final {
 public:
-  void AddDefaultPasses(FEXCore::Context::ContextImpl* ctx);
-  void AddDefaultValidationPasses();
-  Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
-    auto PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
-
-    if (!Name.empty()) {
-      NameToPassMaping[Name] = PassPtr;
-    }
-    return PassPtr;
+  explicit PassManager(Context::ContextImpl* CTX) {
+    AddDefaultPasses(CTX);
   }
 
-  void InsertRegisterAllocationPass(FEXCore::Context::ContextImpl* ctx);
-
   void Run(IREmitter* IREmit);
+
+  Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "");
 
   bool HasPass(fextl::string Name) const {
     return NameToPassMaping.contains(Name);
@@ -82,24 +75,17 @@ protected:
   FEXCore::HLE::SyscallHandler* SyscallHandler {};
 
 private:
+  void AddDefaultPasses(Context::ContextImpl* ctx);
+
   using PassArrayType = fextl::vector<fextl::unique_ptr<Pass>>;
-  PassArrayType::iterator InsertAt(PassArrayType::iterator pos, fextl::unique_ptr<Pass> Pass) {
-    Pass->RegisterPassManager(this);
-    return Passes.insert(pos, std::move(Pass));
-  }
+  PassArrayType::iterator InsertAt(PassArrayType::iterator pos, fextl::unique_ptr<Pass> Pass);
+
   PassArrayType Passes;
   fextl::unordered_map<fextl::string, Pass*> NameToPassMaping;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   fextl::vector<fextl::unique_ptr<Pass>> ValidationPasses;
-  void InsertValidationPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
-    Pass->RegisterPassManager(this);
-    auto PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
-
-    if (!Name.empty()) {
-      NameToPassMaping[Name] = PassPtr;
-    }
-  }
+  void InsertValidationPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "");
 #endif
 
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);

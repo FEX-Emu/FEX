@@ -66,24 +66,47 @@ void PassManager::Finalize() {
   }
 }
 
-void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx) {
+void PassManager::AddDefaultPasses(Context::ContextImpl* ctx) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 
+  // We only specifically disable optimization passes if desired, as IR output should
+  // still be well-formed regardless of the modifications made to it.
   if (!DisablePasses()) {
     InsertPass(CreateX87StackOptimizationPass(ctx->HostFeatures, ctx->Config.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit));
     InsertPass(CreateDeadFlagCalculationEliminination());
   }
-}
 
-void PassManager::AddDefaultValidationPasses() {
+  InsertPass(IR::CreateRegisterAllocationPass(&ctx->CPUID), "RA");
+
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   InsertValidationPass(Validation::CreateIRValidation(), "IRValidation");
 #endif
 }
 
-void PassManager::InsertRegisterAllocationPass(FEXCore::Context::ContextImpl* ctx) {
-  InsertPass(IR::CreateRegisterAllocationPass(&ctx->CPUID), "RA");
+Pass* PassManager::InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name) {
+  auto PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
+
+  if (!Name.empty()) {
+    NameToPassMaping[Name] = PassPtr;
+  }
+  return PassPtr;
 }
+
+PassManager::PassArrayType::iterator PassManager::InsertAt(PassArrayType::iterator pos, fextl::unique_ptr<Pass> Pass) {
+  Pass->RegisterPassManager(this);
+  return Passes.insert(pos, std::move(Pass));
+}
+
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+void PassManager::InsertValidationPass(fextl::unique_ptr<Pass> Pass, fextl::string Name) {
+  Pass->RegisterPassManager(this);
+  auto PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
+
+  if (!Name.empty()) {
+    NameToPassMaping[Name] = PassPtr;
+  }
+}
+#endif
 
 void PassManager::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::Run");
