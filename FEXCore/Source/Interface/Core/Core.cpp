@@ -545,9 +545,6 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
   if (!HasCustomIR) {
     const auto* GuestCode = reinterpret_cast<const uint8_t*>(GuestRIP);
 
-    bool HadDispatchError {false};
-    bool HadInvalidInst {false};
-
     Thread->FrontendDecoder->DecodeInstructionsAtEntry(Thread, GuestCode, GuestRIP, MaxInst);
 
     const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
@@ -567,6 +564,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     }
 #endif
 
+    bool HadDispatchError {false};
+    bool HadInvalidInst {false};
     for (size_t j = 0; j < CodeBlocks.size(); ++j) {
       const auto& Block = CodeBlocks[j];
 
@@ -588,18 +587,16 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
       // Set the block entry point
       Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
 
-      uint64_t BlockInstructionsLength {};
-
       // Reset any block-specific state
       Thread->OpDispatcher->StartNewBlock();
 
-      uint64_t InstsInBlock = Block.NumInstructions;
-
+      const uint64_t InstsInBlock = Block.NumInstructions;
       if (InstsInBlock == 0) {
         // Special case for an empty instruction block.
         Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_InlineEntrypointOffset(GPRSize, Block.Entry - GuestRIP));
       }
 
+      uint64_t BlockInstructionsLength {};
       for (size_t i = 0; i < InstsInBlock; ++i) {
         uint64_t InstAddress = Block.Entry + BlockInstructionsLength;
         const FEXCore::X86Tables::X86InstInfo* TableInfo {nullptr};
