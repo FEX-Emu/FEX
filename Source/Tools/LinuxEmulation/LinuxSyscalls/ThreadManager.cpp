@@ -86,19 +86,17 @@ uint32_t ThreadManager::StatAlloc::FrontendAllocateSlots(uint32_t NewSize) {
 
   if (ftruncate(fd, NewSize) == -1) {
     LogMan::Msg::EFmt("[StatAlloc] ftruncate more failed");
-
-    goto err;
+    close(fd);
+    return CurrentSize;
   }
 
-  {
-    auto SharedBase = FEXCore::Allocator::mmap(Base, NewSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
-    if (SharedBase == MAP_FAILED) {
-      LogMan::Msg::EFmt("[StatAlloc] allocate more mmap shm failed");
-      goto err;
-    }
+  auto SharedBase = FEXCore::Allocator::mmap(Base, NewSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+  if (SharedBase == MAP_FAILED) {
+    LogMan::Msg::EFmt("[StatAlloc] allocate more mmap shm failed");
+    close(fd);
+    return CurrentSize;
   }
 
-err:
   close(fd);
   return NewSize;
 }
