@@ -4,6 +4,7 @@
 #include "Common/JitSymbols.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/CPUID.h"
+#include "Interface/Core/SharedCodeBufferManager.h"
 #include <Interface/IR/IntrusiveIRList.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -130,7 +131,7 @@ public:
                             uint32_t RelocationOffset, bool ForStorage);
 };
 
-class ContextImpl final : public FEXCore::Context::Context, public CPU::CodeBufferManager {
+class ContextImpl final : public FEXCore::Context::Context, public CPU::SharedCodeBufferManager {
 public:
   // Context base class implementation.
   bool InitCore() override;

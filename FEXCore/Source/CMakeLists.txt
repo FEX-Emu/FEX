@@ -24,6 +24,7 @@ set(SRCS
   Interface/Core/Addressing.cpp
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp
+  Interface/Core/SharedCodeBufferManager.cpp
   Interface/Core/OpcodeDispatcher/AVX_128.cpp
   Interface/Core/OpcodeDispatcher/Crypto.cpp
   Interface/Core/OpcodeDispatcher/Flags.cpp

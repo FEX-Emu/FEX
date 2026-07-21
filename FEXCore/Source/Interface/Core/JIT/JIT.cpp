@@ -666,7 +666,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     Ptrs.LDIV = reinterpret_cast<uint64_t>(LDIV);
   }
 
-  CurrentCodeBuffer = CodeBuffers.GetLatest();
+  CurrentCodeBuffer = SharedCodeBuffers.GetLatest();
   ThreadState->LookupCache->Shared = CurrentCodeBuffer->LookupCache.get();
 }
 
@@ -675,7 +675,7 @@ void Arm64JITCore::ClearCache() {
   auto PrevCodeBuffer = CurrentCodeBuffer;
   auto lk = PrevCodeBuffer->LookupCache->AcquireWriteLock();
 
-  auto CodeBuffer = GetEmptyCodeBuffer();
+  auto CodeBuffer = GetEmptySharedCodeBuffer();
   SetBuffer(CodeBuffer->Ptr, CodeBuffer->AllocatedSize);
 
   ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache, lk);
@@ -1072,7 +1072,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   // Migrate the compile output from temporary storage to the actual CodeBuffer.
   // This can block progress in other compiling threads, so the duration of the lock should be as small as possible.
   {
-    auto CodeBufferLock = std::unique_lock {CodeBuffers.CodeBufferWriteMutex};
+    auto CodeBufferLock = std::unique_lock {SharedCodeBuffers.CodeBufferWriteMutex};
 
     // Query size of generated code
     const auto TempSize = GetCursorOffset();
@@ -1089,13 +1089,13 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
       // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
       SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->AllocatedSize);
-      SetCursorOffset(CodeBuffers.LatestOffset);
+      SetCursorOffset(SharedCodeBuffers.LatestOffset);
       Align16B();
       if ((GetCursorOffset() + TempSize) > CurrentCodeBuffer->UsableSize()) {
         CTX->ClearCodeCache(ThreadState);
       }
 
-      CodeBuffers.LatestOffset = GetCursorOffset();
+      SharedCodeBuffers.LatestOffset = GetCursorOffset();
     }
 
     // Adjust host addresses
@@ -1107,14 +1107,14 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     CodeBegin += Delta;
 
     for (std::size_t Idx = PrevNumAllocations; Idx != Relocations.size(); ++Idx) {
-      Relocations[Idx].Header.Offset += CodeBuffers.LatestOffset;
+      Relocations[Idx].Header.Offset += SharedCodeBuffers.LatestOffset;
     }
 
     // Copy over CodeBuffer contents
     memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer, TempSize);
-    SetCursorOffset(CodeBuffers.LatestOffset + TempSize);
+    SetCursorOffset(SharedCodeBuffers.LatestOffset + TempSize);
 
-    CodeBuffers.LatestOffset = GetCursorOffset();
+    SharedCodeBuffers.LatestOffset = GetCursorOffset();
   }
 
   TempCodeBufferAllocator.DelayedDisownBuffer();
