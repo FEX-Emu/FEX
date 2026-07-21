@@ -675,7 +675,7 @@ inline NodeID NodeWrapperBase<Type>::ID() const {
 [[nodiscard]]
 bool IsBlockExit(FEXCore::IR::IROps Op);
 
-void Dump(fextl::stringstream* out, const IRListView* IR);
+void Dump(fextl::ostringstream* out, const IRListView* IR);
 
 constexpr auto format_as(FEXCore::IR::NodeID ID) {
   return ID.Value;
