@@ -44,18 +44,18 @@ public:
 
   void Run(IREmitter* IREmit);
 
-  Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "");
+  Pass* InsertPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name = "");
 
-  bool HasPass(fextl::string Name) const {
+  bool HasPass(const fextl::string& Name) const {
     return NameToPassMaping.contains(Name);
   }
 
   template<typename T>
-  T* GetPass(fextl::string Name) {
-    return dynamic_cast<T*>(NameToPassMaping[Name]);
+  T* GetPass(const fextl::string& Name) {
+    return dynamic_cast<T*>(GetPass(Name));
   }
 
-  Pass* GetPass(fextl::string Name) {
+  Pass* GetPass(const fextl::string& Name) {
     return NameToPassMaping[Name];
   }
 
@@ -72,8 +72,10 @@ private:
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   fextl::vector<fextl::unique_ptr<Pass>> ValidationPasses;
-  void InsertValidationPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "");
+  void InsertValidationPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name = "");
 #endif
+
+  void AttemptNameMapping(const fextl::string& Name, Pass* NewPass);
 
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   FEX_CONFIG_OPT(PassManagerDumpIR, PASSMANAGERDUMPIR);

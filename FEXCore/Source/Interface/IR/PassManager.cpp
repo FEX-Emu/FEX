@@ -13,6 +13,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 
 namespace FEXCore::IR {
@@ -83,12 +84,9 @@ void PassManager::AddDefaultPasses(Context::ContextImpl* ctx) {
 #endif
 }
 
-Pass* PassManager::InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name) {
-  auto PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
-
-  if (!Name.empty()) {
-    NameToPassMaping[Name] = PassPtr;
-  }
+Pass* PassManager::InsertPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name) {
+  auto* PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
+  AttemptNameMapping(Name, PassPtr);
   return PassPtr;
 }
 
@@ -98,13 +96,10 @@ PassManager::PassArrayType::iterator PassManager::InsertAt(PassArrayType::iterat
 }
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-void PassManager::InsertValidationPass(fextl::unique_ptr<Pass> Pass, fextl::string Name) {
+void PassManager::InsertValidationPass(fextl::unique_ptr<Pass> Pass, const fextl::string& Name) {
   Pass->RegisterPassManager(this);
-  auto PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
-
-  if (!Name.empty()) {
-    NameToPassMaping[Name] = PassPtr;
-  }
+  auto* PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
+  AttemptNameMapping(Name, PassPtr);
 }
 #endif
 
@@ -120,5 +115,16 @@ void PassManager::Run(IREmitter* IREmit) {
     Pass->Run(IREmit);
   }
 #endif
+}
+
+void PassManager::AttemptNameMapping(const fextl::string& Name, Pass* NewPass) {
+  if (Name.empty()) {
+    // Empty name is a 'don't care' case. e.g. Passes that just need to run,
+    // but don't need to be actively looked up.
+    return;
+  }
+
+  const auto Result = NameToPassMaping.emplace(Name, NewPass);
+  LOGMAN_THROW_A_FMT(Result.second, "Tried to insert pass with name '{}'. But name is already used", Name);
 }
 } // namespace FEXCore::IR
