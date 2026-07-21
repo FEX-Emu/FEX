@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
+#include <concepts>
 #include <utility>
 
 namespace FEXCore::Context {
@@ -50,7 +51,7 @@ public:
     return NameToPassMaping.contains(Name);
   }
 
-  template<typename T>
+  template<std::derived_from<Pass> T>
   T* GetPass(const fextl::string& Name) {
     return dynamic_cast<T*>(GetPass(Name));
   }
