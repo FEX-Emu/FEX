@@ -670,12 +670,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
   ThreadState->LookupCache->Shared = CurrentCodeBuffer->LookupCache.get();
 }
 
-void Arm64JITCore::EmitDetectionString() {
-  const char JITString[] = "FEXJIT::Arm64JITCore::";
-  EmitString(JITString);
-  Align();
-}
-
 void Arm64JITCore::ClearCache() {
   // NOTE: Holding on to the reference here is required to ensure validity of the WriteLock mutex
   auto PrevCodeBuffer = CurrentCodeBuffer;
@@ -683,7 +677,6 @@ void Arm64JITCore::ClearCache() {
 
   auto CodeBuffer = GetEmptyCodeBuffer();
   SetBuffer(CodeBuffer->Ptr, CodeBuffer->AllocatedSize);
-  EmitDetectionString();
 
   ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache, lk);
 }
