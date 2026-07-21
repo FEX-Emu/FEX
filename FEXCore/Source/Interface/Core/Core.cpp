@@ -543,18 +543,17 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
   }
 
   if (!HasCustomIR) {
-    const uint8_t* GuestCode {};
-    GuestCode = reinterpret_cast<const uint8_t*>(GuestRIP);
+    const auto* GuestCode = reinterpret_cast<const uint8_t*>(GuestRIP);
 
     bool HadDispatchError {false};
     bool HadInvalidInst {false};
 
     Thread->FrontendDecoder->DecodeInstructionsAtEntry(Thread, GuestCode, GuestRIP, MaxInst);
 
-    auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
-    auto CodeBlocks = &BlockInfo->Blocks;
+    const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
+    const auto& CodeBlocks = BlockInfo->Blocks;
 
-    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode,
+    Thread->OpDispatcher->BeginFunction(GuestRIP, &CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode,
                                         AreMonoHacksActive() && MonoBackpatcherBlock.load(std::memory_order_relaxed) == GuestRIP);
 
     const auto GPRSize = Thread->OpDispatcher->GetGPROpSize();
@@ -568,11 +567,11 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     }
 #endif
 
-    for (size_t j = 0; j < CodeBlocks->size(); ++j) {
-      const FEXCore::Frontend::Decoder::DecodedBlocks& Block = CodeBlocks->at(j);
+    for (size_t j = 0; j < CodeBlocks.size(); ++j) {
+      const auto& Block = CodeBlocks[j];
 
 #ifdef ZYDIS_DISASSEMBLER
-      if (FEXCore::Config::Get_X86DISASSEMBLE() && CodeBlocks->size() > 1) {
+      if (FEXCore::Config::Get_X86DISASSEMBLE() && CodeBlocks.size() > 1) {
         LogMan::Msg::IFmt("  Block {} Entry={:#x} NumInsts={}", j, Block.Entry, Block.NumInstructions);
       }
 #endif
