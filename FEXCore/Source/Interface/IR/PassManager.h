@@ -8,21 +8,15 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <functional>
 #include <utility>
 
 namespace FEXCore::Context {
 class ContextImpl;
-}
-
-namespace FEXCore::HLE {
-class SyscallHandler;
 }
 
 namespace FEXCore::IR {
@@ -65,14 +59,7 @@ public:
     return NameToPassMaping[Name];
   }
 
-  void RegisterSyscallHandler(FEXCore::HLE::SyscallHandler* Handler) {
-    SyscallHandler = Handler;
-  }
-
   void Finalize();
-
-protected:
-  FEXCore::HLE::SyscallHandler* SyscallHandler {};
 
 private:
   void AddDefaultPasses(Context::ContextImpl* ctx);

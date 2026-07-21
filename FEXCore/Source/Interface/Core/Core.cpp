@@ -404,8 +404,6 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
 
   Dispatcher->InitThreadPointers(Thread);
 
-  Thread->PassManager->RegisterSyscallHandler(SyscallHandler);
-
   // Create CPU backend
   Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
 
