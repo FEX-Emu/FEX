@@ -63,7 +63,11 @@ public:
     return dynamic_cast<T*>(GetPass(Name));
   }
   Pass* GetPass(const fextl::string& Name) {
-    return NameToPassMaping[Name];
+    const auto Iter = NameToPassMaping.find(Name);
+    if (Iter == NameToPassMaping.end()) {
+      return nullptr;
+    }
+    return Iter->second;
   }
 
   // Finalizes the pass manager state and assumes no other passes will be added after called.
