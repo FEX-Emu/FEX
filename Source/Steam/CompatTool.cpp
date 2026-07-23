@@ -8,12 +8,61 @@ $end_info$
 
 #include "PortabilityInfo.h"
 #include "Common/Config.h"
+#include "Common/JSONPool.h"
 #include "FEXCore/Utils/FileLoading.h"
 #include "FEXCore/Utils/StringUtils.h"
 #include "FEXHeaderUtils/Filesystem.h"
 
 #include <stdlib.h>
+#include <string_view>
 #include <tiny-json.h>
+
+static fextl::string TrimTrailingSlashes(fextl::string Path) {
+  while (Path.size() > 1 && Path.ends_with('/')) {
+    Path.pop_back();
+  }
+
+  return Path;
+}
+
+static fextl::string GetGraphicsProviderRoot(const char* GraphicsProvider) {
+  fextl::string GraphicsProviderPath {GraphicsProvider};
+
+  char RealPath[PATH_MAX] {};
+  if (auto* AbsolutePath = FHU::Filesystem::Absolute(GraphicsProvider, RealPath)) {
+    GraphicsProviderPath = AbsolutePath;
+  }
+
+  const auto GraphicsProviderDirectory = TrimTrailingSlashes(FHU::Filesystem::ParentPath(GraphicsProviderPath));
+
+  fextl::vector<char> FileData;
+  if (!FEXCore::FileLoading::LoadFile(FileData, GraphicsProviderPath)) {
+    return GraphicsProviderDirectory;
+  }
+
+  FEX::JSON::JsonAllocator Pool {};
+  const json_t* json = FEX::JSON::CreateJSON(FileData, Pool);
+  if (!json) {
+    return GraphicsProviderDirectory;
+  }
+
+  const json_t* GraphicsProviderV0 = json_getProperty(json, "graphics_provider_v0");
+  if (!GraphicsProviderV0 || json_getType(GraphicsProviderV0) != JSON_OBJ) {
+    return GraphicsProviderDirectory;
+  }
+
+  const json_t* Root = json_getProperty(GraphicsProviderV0, "root");
+  if (!Root || json_getType(Root) != JSON_TEXT) {
+    return GraphicsProviderDirectory;
+  }
+
+  const std::string_view RootPath {json_getValue(Root)};
+  if (FHU::Filesystem::IsAbsolute(RootPath)) {
+    return TrimTrailingSlashes(FHU::Filesystem::LexicallyNormal(fextl::string {RootPath}));
+  }
+
+  return TrimTrailingSlashes(FHU::Filesystem::LexicallyNormal(fextl::fmt::format("{}/{}", GraphicsProviderDirectory, RootPath)));
+}
 
 fextl::string GenerateSteamConfigTemplate(const FEX::Config::PortableInformation& PortableInfo) {
   const auto ConfigTemplatePath = PortableInfo.InterpreterPath + "ConfigTemplate.json";
@@ -35,7 +84,7 @@ fextl::string GenerateSteamConfigTemplate(const FEX::Config::PortableInformation
   const char* CacheDir = getenv("XDG_CACHE_HOME");
   const auto UserDirectory = fextl::fmt::format("/run/user/{}", geteuid());
   if (GraphicsProvider) {
-    MountPoint = FHU::Filesystem::ParentPath(GraphicsProvider);
+    MountPoint = GetGraphicsProviderRoot(GraphicsProvider);
   } else if (RuntimeDir) {
     MountPoint = fextl::fmt::format("{}/fexrootfs/", RuntimeDir);
   } else if (FHU::Filesystem::Exists(UserDirectory)) {
