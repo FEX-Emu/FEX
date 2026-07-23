@@ -124,7 +124,7 @@ public:
   }
 
   // Returns a mask to set in AbridgedTagWord
-  uint8_t getValidMask() {
+  uint8_t getValidMask() const {
     uint8_t Mask = 0;
     for (size_t i = 0; i < buffer.size(); i++) {
       if (buffer[i].Type == StackSlot::VALID) {
@@ -135,7 +135,7 @@ public:
   }
 
   // Returns a mask to set in AbridgedTagWord
-  uint8_t getInvalidMask() {
+  uint8_t getInvalidMask() const {
     uint8_t Mask = 0;
     for (size_t i = 0; i < buffer.size(); i++) {
       if (buffer[i].Type == StackSlot::INVALID) {
