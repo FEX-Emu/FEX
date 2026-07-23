@@ -4,10 +4,11 @@
 
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/Utils/AllocatorHooks.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 
 #ifndef _WIN32
-#include <sys/prctl.h>
+#include <FEXCore/Utils/PrctlUtils.h>
 #endif
 
 namespace FEXCore::CPU {
@@ -41,24 +42,21 @@ CodeBuffer::~CodeBuffer() {
 
 auto SharedCodeBufferManager::AllocateNew(size_t Size) -> fextl::shared_ptr<CodeBuffer> {
 #ifndef _WIN32
-// MDWE (Memory-Deny-Write-Execute) is a new Linux 6.3 feature.
-// It's equivalent to systemd's `MemoryDenyWriteExecute` but implemented entirely in the kernel.
-//
-// MDWE prevents applications from creating RWX memory mappings.
-// This prevents FEX from doing anything JIT related, as FEX uses RWX for JIT memory mappings.
-//
-// A potential workaround to make FEX work with MDWE is to call mprotect every time we need to write or modify code.
-// Alternatively, FEX could use a memory mirror where one half is mapped as RW and the other is RX.
-//
-// Once MDWE is enabled with the prctl, the feature is sealed and it can /NOT/ be turned off.
-//
-// Status of MDWE is queried through prctl using `PR_GET_MDWE`:
-// -1: The kernel doesn't support MDWE
-// 0: MDWE is supported but disabled
-// >0: MDWE is enabled, hence prohibiting RWX mappings
-#ifndef PR_GET_MDWE
-#define PR_GET_MDWE 66
-#endif
+  // MDWE (Memory-Deny-Write-Execute) is a new Linux 6.3 feature.
+  // It's equivalent to systemd's `MemoryDenyWriteExecute` but implemented entirely in the kernel.
+  //
+  // MDWE prevents applications from creating RWX memory mappings.
+  // This prevents FEX from doing anything JIT related, as FEX uses RWX for JIT memory mappings.
+  //
+  // A potential workaround to make FEX work with MDWE is to call mprotect every time we need to write or modify code.
+  // Alternatively, FEX could use a memory mirror where one half is mapped as RW and the other is RX.
+  //
+  // Once MDWE is enabled with the prctl, the feature is sealed and it can /NOT/ be turned off.
+  //
+  // Status of MDWE is queried through prctl using `PR_GET_MDWE`:
+  // -1: The kernel doesn't support MDWE
+  // 0: MDWE is supported but disabled
+  // >0: MDWE is enabled, hence prohibiting RWX mappings
   int MDWE = ::prctl(PR_GET_MDWE, 0, 0, 0, 0);
   if (MDWE != -1 && MDWE != 0) {
     LogMan::Msg::EFmt("MDWE was set to 0x{:x} which means FEX can't allocate executable memory", MDWE);

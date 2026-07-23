@@ -2,8 +2,7 @@
 #pragma once
 
 #ifndef _WIN32
-#include <sys/mman.h>
-#include <sys/user.h>
+
 #include <sys/prctl.h>
 
 #ifndef PR_SET_VMA
@@ -48,6 +47,10 @@
 #endif
 #ifndef PR_SHADOW_STACK_ENABLE
 #define PR_SHADOW_STACK_ENABLE (1ULL << 0)
+#endif
+
+#ifndef PR_GET_MDWE
+#define PR_GET_MDWE 66
 #endif
 
 #endif // ifndef _WIN32
