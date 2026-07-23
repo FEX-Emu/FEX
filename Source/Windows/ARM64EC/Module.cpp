@@ -268,7 +268,7 @@ void ParseWineSyscallNumbers(HMODULE NtDll) {
 void InitSyscalls() {
   // The ntdll exports called by GetModuleHandle/GetProcAddress aren't known to be patched before JIT init by any current
   // software so are safe to call, but if that changes the loader structures in the PEB could be parsed manually.
-  const auto NtDll = GetModuleHandle("ntdll.dll");
+  const auto NtDll = GetModuleHandleW(L"ntdll.dll");
   NtDllBase = reinterpret_cast<uintptr_t>(NtDll);
 
   const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
@@ -593,7 +593,7 @@ NTSTATUS ProcessInit() {
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<Exception::ECSyscallHandler>();
 
-  const auto NtDll = GetModuleHandle("ntdll.dll");
+  const auto NtDll = GetModuleHandleW(L"ntdll.dll");
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   OvercommitTracker.emplace(IsWine);
 

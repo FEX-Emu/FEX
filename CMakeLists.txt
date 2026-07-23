@@ -195,6 +195,9 @@ if (ENABLE_GDB_SYMBOLS)
 endif()
 
 add_compile_definitions(_LARGEFILE64_SOURCE)
+if (WIN32)
+  add_compile_definitions(UNICODE _UNICODE)
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

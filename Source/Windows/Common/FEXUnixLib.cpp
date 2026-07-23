@@ -247,8 +247,8 @@ SHMSlotResult AllocateSHMSlots(void* SHMBase, uint32_t MapSize, uint32_t MaxSize
   }
 
   // Opaque handle path, doesn't support resizing.
-  auto handle = CreateFile(fextl::fmt::format("/dev/shm/fex-{}-stats", Illegal::linux_getpid()).c_str(), GENERIC_READ | GENERIC_WRITE,
-                           FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+  auto handle = CreateFileA(fextl::fmt::format("/dev/shm/fex-{}-stats", Illegal::linux_getpid()).c_str(), GENERIC_READ | GENERIC_WRITE,
+                            FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
   // Create the section mapping for the file handle for the full size.
   HANDLE SectionMapping;
@@ -284,7 +284,7 @@ void DeleteSHMStatsFile() {
   }
 
   // Legacy Proton path.
-  DeleteFile(fextl::fmt::format("/dev/shm/fex-{}-stats", Illegal::linux_getpid()).c_str());
+  DeleteFileA(fextl::fmt::format("/dev/shm/fex-{}-stats", Illegal::linux_getpid()).c_str());
 }
 
 } // namespace FEX::Windows::UnixLib
