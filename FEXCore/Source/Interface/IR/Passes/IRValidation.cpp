@@ -60,7 +60,7 @@ void IRValidation::Run(IREmitter* IREmit) {
 #endif
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+    auto BlockIROp = BlockHeader->C<FEXCore::IR::IROp_CodeBlock>();
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
     if (!EntryBlock) {
@@ -78,15 +78,15 @@ void IRValidation::Run(IREmitter* IREmit) {
       const auto OpSize = IROp->Size;
 
       if (GetHasDest(IROp->Op)) {
-        HadError |= OpSize == IR::OpSize::iInvalid;
-        // Does the op have a destination of size 0?
+        // Does the op have an unsized destination?
         if (OpSize == IR::OpSize::iInvalid) {
+          HadError = true;
           Errors << "%" << ID << ": Had destination but with no size" << std::endl;
         }
 
         // Does the node have zero uses? Should have been DCE'd
         if (CodeNode->GetUses() == 0) {
-          HadWarning |= true;
+          HadWarning = true;
           Warnings << "%" << ID << ": Destination created but had no uses" << std::endl;
         }
 
@@ -99,35 +99,32 @@ void IRValidation::Run(IREmitter* IREmit) {
 
           // If no register class was assigned
           if (AssignedClass == IR::RegClass::Invalid) {
-            HadError |= true;
+            HadError = true;
             Errors << "%" << ID << ": Had destination but with no register class assigned" << std::endl;
           }
 
           // If no physical register was assigned
           if (PhyReg.IsInvalid()) {
-            HadError |= true;
+            HadError = true;
             Errors << "%" << ID << ": Had destination but with no register assigned" << std::endl;
           }
 
           // Assigned class wasn't the expected class and it is a non-complex op
           if (AssignedClass != ExpectedClass && ExpectedClass != IR::RegClass::Complex) {
-            HadWarning |= true;
+            HadWarning = true;
             Warnings << "%" << ID << ": Destination had register class " << uint32_t(AssignedClass) << " When register class "
                      << uint32_t(ExpectedClass) << " Was expected" << std::endl;
           }
         }
       }
 
-      uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
-
+      const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         const auto ArgID = Arg.ID();
         if (Arg.IsImmediate()) {
           continue;
         }
-
-        IROps Op = CurrentIR.GetOp<IROp_Header>(Arg)->Op;
 
         if (ArgID.IsValid()) {
           Uses[ArgID.Value]++;
@@ -136,10 +133,11 @@ void IRValidation::Run(IREmitter* IREmit) {
         // We do not validate the location of inline constants because it's
         // irrelevant, they're ignored by RA and always inlined to where they
         // need to be. This lets us pool inline constants globally.
-        bool Ignore = (Op == OP_IRHEADER || Op == OP_INLINECONSTANT);
+        const IROps Op = CurrentIR.GetOp<IROp_Header>(Arg)->Op;
+        const bool Ignore = (Op == OP_IRHEADER || Op == OP_INLINECONSTANT);
 
         if (!Ignore && ArgID.IsValid() && !NodeIsLive.Get(ArgID.Value)) {
-          HadError |= true;
+          HadError = true;
           Errors << "%" << ID << ": Arg[" << i << "] references invalid %" << ArgID << std::endl;
         }
       }
@@ -148,7 +146,6 @@ void IRValidation::Run(IREmitter* IREmit) {
 
       switch (IROp->Op) {
       case IR::OP_EXITFUNCTION: {
-        CurrentBlock->HasExit = true;
         break;
       }
       case IR::OP_CONDJUMP: {
@@ -164,7 +161,7 @@ void IRValidation::Run(IREmitter* IREmit) {
         const FEXCore::IR::IROp_Header* FalseTargetOp = CurrentIR.GetOp<IROp_Header>(FalseTargetNode);
 
         if (TrueTargetOp->Op != OP_CODEBLOCK) {
-          HadError |= true;
+          HadError = true;
           Errors << "CondJump %" << ID << ": True Target Jumps to Op that isn't the begining of a block" << std::endl;
         } else {
           auto Block = OffsetToBlockMap.try_emplace(Op->TrueBlock.ID()).first;
@@ -172,7 +169,7 @@ void IRValidation::Run(IREmitter* IREmit) {
         }
 
         if (FalseTargetOp->Op != OP_CODEBLOCK) {
-          HadError |= true;
+          HadError = true;
           Errors << "CondJump %" << ID << ": False Target Jumps to Op that isn't the begining of a block" << std::endl;
         } else {
           auto Block = OffsetToBlockMap.try_emplace(Op->FalseBlock.ID()).first;
@@ -188,7 +185,7 @@ void IRValidation::Run(IREmitter* IREmit) {
 
         const FEXCore::IR::IROp_Header* TargetOp = CurrentIR.GetOp<IROp_Header>(TargetNode);
         if (TargetOp->Op != OP_CODEBLOCK) {
-          HadError |= true;
+          HadError = true;
           Errors << "Jump %" << ID << ": Jump to Op that isn't the begining of a block" << std::endl;
         } else {
           auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[0].ID()).first;
@@ -205,7 +202,7 @@ void IRValidation::Run(IREmitter* IREmit) {
     // Blocks can only have zero (Exit), 1 (Unconditional branch) or 2 (Conditional) successors
     size_t NumSuccessors = CurrentBlock->Successors.size();
     if (NumSuccessors > 2) {
-      HadError |= true;
+      HadError = true;
       Errors << "%" << BlockID << " Has " << NumSuccessors << " successors which is too many" << std::endl;
     }
 
@@ -221,7 +218,7 @@ void IRValidation::Run(IREmitter* IREmit) {
       {
         auto Op = GetOp(CodeCurrent);
         if (Op != IR::OP_ENDBLOCK) {
-          HadError |= true;
+          HadError = true;
           Errors << "%" << BlockID << " Failed to end block with EndBlock" << std::endl;
         }
       }
@@ -232,7 +229,7 @@ void IRValidation::Run(IREmitter* IREmit) {
       {
         auto Op = GetOp(CodeCurrent);
         if (!IsBlockExit(Op)) {
-          HadError |= true;
+          HadError = true;
           Errors << "%" << BlockID << " Didn't have a block exit IR op as its last instruction" << std::endl;
         }
       }
@@ -244,7 +241,7 @@ void IRValidation::Run(IREmitter* IREmit) {
     for (uint32_t i = 0; i < CurrentIR.GetSSACount(); i++) {
       auto [Node, IROp] = CurrentIR.at(IR::NodeID {i})();
       if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
-        HadError |= true;
+        HadError = true;
         Errors << "%" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
       }
     }
