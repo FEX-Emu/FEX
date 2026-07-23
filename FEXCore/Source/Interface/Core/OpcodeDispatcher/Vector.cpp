@@ -3786,32 +3786,14 @@ void OpDispatchBuilder::VPMULHWOp(OpcodeArgs, bool Signed) {
 }
 
 Ref OpDispatchBuilder::PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2) {
-  Ref Res {};
   if (Size == OpSize::i64Bit) {
     // Implementation is more efficient for 8byte registers
-    Res = _VSMull(Size << 1, OpSize::i16Bit, Src1, Src2);
-    Res = _VSShrI(Size << 1, OpSize::i32Bit, Res, 14);
-    auto OneVector = _VectorImm(Size << 1, OpSize::i32Bit, 1);
-    Res = _VAdd(Size << 1, OpSize::i32Bit, Res, OneVector);
-    return _VUShrNI(Size << 1, OpSize::i32Bit, Res, 1);
+    Ref Res = _VSMull(Size << 1, OpSize::i16Bit, Src1, Src2);
+    return _VRSHRN(Size << 1, OpSize::i32Bit, Res, 15);
   } else {
-    // 128-bit and 256-bit are less efficient
-    Ref ResultLow;
-    Ref ResultHigh;
-
-    ResultLow = _VSMull(Size, OpSize::i16Bit, Src1, Src2);
-    ResultHigh = _VSMull2(Size, OpSize::i16Bit, Src1, Src2);
-
-    ResultLow = _VSShrI(Size, OpSize::i32Bit, ResultLow, 14);
-    ResultHigh = _VSShrI(Size, OpSize::i32Bit, ResultHigh, 14);
-    auto OneVector = _VectorImm(Size, OpSize::i32Bit, 1);
-
-    ResultLow = _VAdd(Size, OpSize::i32Bit, ResultLow, OneVector);
-    ResultHigh = _VAdd(Size, OpSize::i32Bit, ResultHigh, OneVector);
-
-    // Combine the results
-    Res = _VUShrNI(Size, OpSize::i32Bit, ResultLow, 1);
-    return _VUShrNI2(Size, OpSize::i32Bit, Res, ResultHigh, 1);
+    Ref ResultLow = _VSMull(Size, OpSize::i16Bit, Src1, Src2);
+    Ref ResultHigh = _VSMull2(Size, OpSize::i16Bit, Src1, Src2);
+    return _VRSHRNPair(Size, OpSize::i32Bit, ResultLow, ResultHigh, 15);
   }
 }
 
