@@ -199,11 +199,11 @@ private:
     }
   }
 
-  void StoreStackMem_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+  void StoreStackMem_Helper(const IRListView& IR, const IROp_StoreStackMem* Op, Ref StackNode) {
     LOGMAN_THROW_A_FMT(!ReducedPrecisionMode, "Full precision mode expected.");
 
-    Ref AddrNode = IR->GetNode(Op->Addr);
-    Ref Offset = IR->GetNode(Op->Offset);
+    Ref AddrNode = IR.GetNode(Op->Addr);
+    Ref Offset = IR.GetNode(Op->Offset);
     OpSize Align = Op->Align;
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
@@ -227,11 +227,11 @@ private:
 
   // Performs a store to memory from a value the stack passed in as StackNode.
   // This is the version dealing with the reduced precision case.
-  void StoreStackMem_Reduced_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+  void StoreStackMem_Reduced_Helper(const IRListView& IR, const IROp_StoreStackMem* Op, Ref StackNode) {
     LOGMAN_THROW_A_FMT(ReducedPrecisionMode, "Reduced precision mode expected.");
 
-    Ref AddrNode = IR->GetNode(Op->Addr);
-    Ref Offset = IR->GetNode(Op->Offset);
+    Ref AddrNode = IR.GetNode(Op->Addr);
+    Ref Offset = IR.GetNode(Op->Offset);
     OpSize Align = Op->Align;
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
@@ -355,9 +355,9 @@ private:
   // On the slow path TopCache is always the last obtained version of top.
   // TopOffset is ignored
   bool SlowPath = false;
+
   // Keeping IREmitter not to pass arguments around
   IREmitter* IREmit = nullptr;
-  IRListView* IR = nullptr;
 };
 
 inline const X87StackOptimization::StackMemberInfo X87StackOptimization::StackMemberInfo::Invalid {nullptr};
@@ -732,7 +732,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
   // Initialize IREmit member
   IREmit = Emit;
-  IR = &CurrentIR;
 
   // Run optimization proper
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -1026,11 +1025,11 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         }
 
         if (ReducedPrecisionMode) {
-          StoreStackMem_Reduced_Helper(Op, StackNode);
+          StoreStackMem_Reduced_Helper(CurrentIR, Op, StackNode);
           break;
         }
 
-        StoreStackMem_Helper(Op, StackNode);
+        StoreStackMem_Helper(CurrentIR, Op, StackNode);
         break;
       }
 
