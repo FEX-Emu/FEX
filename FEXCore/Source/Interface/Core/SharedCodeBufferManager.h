@@ -6,8 +6,13 @@ tags: backend|shared
 $end_info$
 */
 #pragma once
+
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
+#include <FEXCore/Utils/TypeDefines.h>
+
+#include <cstddef>
+#include <cstdint>
 
 namespace FEXCore {
 struct GuestToHostMap;
