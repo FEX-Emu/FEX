@@ -92,7 +92,7 @@ public:
     return buffer[Offset];
   }
 
-  void setTop(T Value, size_t Offset = 0) {
+  void setTop(const T& Value, size_t Offset = 0) {
     buffer[Offset] = {StackSlot::VALID, Value};
   }
 
