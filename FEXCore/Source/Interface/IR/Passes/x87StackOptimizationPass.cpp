@@ -92,7 +92,7 @@ public:
     return buffer[Offset];
   }
 
-  void setTop(T Value, size_t Offset = 0) {
+  void setTop(const T& Value, size_t Offset = 0) {
     buffer[Offset] = {StackSlot::VALID, Value};
   }
 
@@ -124,7 +124,7 @@ public:
   }
 
   // Returns a mask to set in AbridgedTagWord
-  uint8_t getValidMask() {
+  uint8_t getValidMask() const {
     uint8_t Mask = 0;
     for (size_t i = 0; i < buffer.size(); i++) {
       if (buffer[i].Type == StackSlot::VALID) {
@@ -135,7 +135,7 @@ public:
   }
 
   // Returns a mask to set in AbridgedTagWord
-  uint8_t getInvalidMask() {
+  uint8_t getInvalidMask() const {
     uint8_t Mask = 0;
     for (size_t i = 0; i < buffer.size(); i++) {
       if (buffer[i].Type == StackSlot::INVALID) {
@@ -199,11 +199,11 @@ private:
     }
   }
 
-  void StoreStackMem_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+  void StoreStackMem_Helper(const IRListView& IR, const IROp_StoreStackMem* Op, Ref StackNode) {
     LOGMAN_THROW_A_FMT(!ReducedPrecisionMode, "Full precision mode expected.");
 
-    Ref AddrNode = IR->GetNode(Op->Addr);
-    Ref Offset = IR->GetNode(Op->Offset);
+    Ref AddrNode = IR.GetNode(Op->Addr);
+    Ref Offset = IR.GetNode(Op->Offset);
     OpSize Align = Op->Align;
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
@@ -227,11 +227,11 @@ private:
 
   // Performs a store to memory from a value the stack passed in as StackNode.
   // This is the version dealing with the reduced precision case.
-  void StoreStackMem_Reduced_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+  void StoreStackMem_Reduced_Helper(const IRListView& IR, const IROp_StoreStackMem* Op, Ref StackNode) {
     LOGMAN_THROW_A_FMT(ReducedPrecisionMode, "Reduced precision mode expected.");
 
-    Ref AddrNode = IR->GetNode(Op->Addr);
-    Ref Offset = IR->GetNode(Op->Offset);
+    Ref AddrNode = IR.GetNode(Op->Addr);
+    Ref Offset = IR.GetNode(Op->Offset);
     OpSize Align = Op->Align;
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
@@ -355,9 +355,9 @@ private:
   // On the slow path TopCache is always the last obtained version of top.
   // TopOffset is ignored
   bool SlowPath = false;
+
   // Keeping IREmitter not to pass arguments around
   IREmitter* IREmit = nullptr;
-  IRListView* IR = nullptr;
 };
 
 inline const X87StackOptimization::StackMemberInfo X87StackOptimization::StackMemberInfo::Invalid {nullptr};
@@ -732,7 +732,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
   // Initialize IREmit member
   IREmit = Emit;
-  IR = &CurrentIR;
 
   // Run optimization proper
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -1026,11 +1025,11 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         }
 
         if (ReducedPrecisionMode) {
-          StoreStackMem_Reduced_Helper(Op, StackNode);
+          StoreStackMem_Reduced_Helper(CurrentIR, Op, StackNode);
           break;
         }
 
-        StoreStackMem_Helper(Op, StackNode);
+        StoreStackMem_Helper(CurrentIR, Op, StackNode);
         break;
       }
 
@@ -1234,8 +1233,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
     SynchronizeStackValues();
     FlushCachedRegs();
   }
-
-  return;
 }
 
 fextl::unique_ptr<Pass> CreateX87StackOptimizationPass(const HostFeatures& Features, OpSize GPROpSize) {
