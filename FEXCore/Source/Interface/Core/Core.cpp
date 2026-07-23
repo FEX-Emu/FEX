@@ -560,10 +560,14 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     }
 #endif
 
-    bool HadDispatchError {false};
-    bool HadInvalidInst {false};
     for (size_t j = 0; j < CodeBlocks.size(); ++j) {
       const auto& Block = CodeBlocks[j];
+
+      // Dispatch failures and invalid instructions terminate only the decoded
+      // block that contains them. Other block targets in the same multiblock
+      // compilation unit are independent entry paths.
+      bool HadDispatchError {false};
+      bool HadInvalidInst {false};
 
 #ifdef ZYDIS_DISASSEMBLER
       if (FEXCore::Config::Get_X86DISASSEMBLE() && CodeBlocks.size() > 1) {
