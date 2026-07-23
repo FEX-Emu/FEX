@@ -1234,8 +1234,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
     SynchronizeStackValues();
     FlushCachedRegs();
   }
-
-  return;
 }
 
 fextl::unique_ptr<Pass> CreateX87StackOptimizationPass(const HostFeatures& Features, OpSize GPROpSize) {
