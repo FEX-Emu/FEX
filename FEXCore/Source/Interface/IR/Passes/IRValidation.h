@@ -15,9 +15,6 @@ public:
 
 private:
   struct BlockInfo {
-    bool HasExit;
-    const OrderedNode* BlockNode;
-
     fextl::vector<OrderedNode*> Predecessors;
     fextl::vector<OrderedNode*> Successors;
   };

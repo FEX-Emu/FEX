@@ -146,7 +146,6 @@ void IRValidation::Run(IREmitter* IREmit) {
 
       switch (IROp->Op) {
       case IR::OP_EXITFUNCTION: {
-        CurrentBlock->HasExit = true;
         break;
       }
       case IR::OP_CONDJUMP: {
