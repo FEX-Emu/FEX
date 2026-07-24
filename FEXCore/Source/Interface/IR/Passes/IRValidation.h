@@ -8,20 +8,19 @@
 
 namespace FEXCore::IR::Validation {
 
-struct BlockInfo {
-  bool HasExit;
-  const OrderedNode* BlockNode;
-
-  fextl::vector<OrderedNode*> Predecessors;
-  fextl::vector<OrderedNode*> Successors;
-};
-
 class IRValidation final : public FEXCore::IR::Pass {
 public:
   ~IRValidation();
   void Run(IREmitter* IREmit) override;
 
 private:
+  struct BlockInfo {
+    bool HasExit;
+    const OrderedNode* BlockNode;
+
+    fextl::vector<OrderedNode*> Predecessors;
+    fextl::vector<OrderedNode*> Successors;
+  };
 
   BitSet<uint64_t> NodeIsLive {};
   OrderedNode* EntryBlock {};
