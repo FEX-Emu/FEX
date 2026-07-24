@@ -118,16 +118,13 @@ void IRValidation::Run(IREmitter* IREmit) {
         }
       }
 
-      uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
-
+      const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         const auto ArgID = Arg.ID();
         if (Arg.IsImmediate()) {
           continue;
         }
-
-        IROps Op = CurrentIR.GetOp<IROp_Header>(Arg)->Op;
 
         if (ArgID.IsValid()) {
           Uses[ArgID.Value]++;
@@ -136,7 +133,8 @@ void IRValidation::Run(IREmitter* IREmit) {
         // We do not validate the location of inline constants because it's
         // irrelevant, they're ignored by RA and always inlined to where they
         // need to be. This lets us pool inline constants globally.
-        bool Ignore = (Op == OP_IRHEADER || Op == OP_INLINECONSTANT);
+        const IROps Op = CurrentIR.GetOp<IROp_Header>(Arg)->Op;
+        const bool Ignore = (Op == OP_IRHEADER || Op == OP_INLINECONSTANT);
 
         if (!Ignore && ArgID.IsValid() && !NodeIsLive.Get(ArgID.Value)) {
           HadError = true;
