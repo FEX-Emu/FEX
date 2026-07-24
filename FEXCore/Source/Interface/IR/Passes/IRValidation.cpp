@@ -60,7 +60,7 @@ void IRValidation::Run(IREmitter* IREmit) {
 #endif
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+    auto BlockIROp = BlockHeader->C<FEXCore::IR::IROp_CodeBlock>();
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
     if (!EntryBlock) {
