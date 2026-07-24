@@ -5158,6 +5158,7 @@ void OpDispatchBuilder::NoExecOp(OpcodeArgs) {
                 .Signal = Core::FAULT_SIGSEGV,
                 .TrapNumber = X86State::X86_TRAPNO_PF,
                 .si_code = 2, // SEGV_ACCERR
+                .FaultAddress = Op->FaultAddress,
               });
 }
 

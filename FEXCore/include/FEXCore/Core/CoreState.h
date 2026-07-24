@@ -424,6 +424,7 @@ struct CpuStateFrame {
     uint16_t err_code;
     uint16_t _pad : 16;
   } SynchronousFaultData;
+  uint64_t SynchronousFaultAddress {};
 
   InternalThreadState* Thread;
 
@@ -444,4 +445,5 @@ static_assert(std::is_standard_layout<CpuStateFrame>::value, "This needs to be s
 static_assert(sizeof(CpuStateFrame::SynchronousFaultData) == 8, "This needs to be 8 bytes");
 static_assert(alignof(CpuStateFrame::SynchronousFaultDataStruct) == 8, "This needs to be 8 bytes");
 static_assert(offsetof(CpuStateFrame, SynchronousFaultData) % 8 == 0, "This needs to be aligned");
+static_assert(offsetof(CpuStateFrame, SynchronousFaultAddress) % 8 == 0, "This needs to be aligned");
 } // namespace FEXCore::Core

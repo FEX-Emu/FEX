@@ -210,6 +210,7 @@ struct DecodedOperand {
 
 struct DecodedInst {
   uint64_t PC;
+  uint64_t FaultAddress;
 
   DecodedOperand Dest;
   DecodedOperand Src[3];

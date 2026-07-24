@@ -76,6 +76,9 @@ DEF_OP(Break) {
   LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant);
   str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
 
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Reason.FaultAddress);
+  str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultAddress));
+
   switch (Op->Reason.Signal) {
   case Core::FAULT_SIGILL:
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGILL));
