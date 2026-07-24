@@ -1,7 +1,8 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "1"
+    "RAX": "1",
+    "RBX": "0x80000000"
   }
 }
 %endif
@@ -20,6 +21,8 @@ fistp dword [rel .dummy]
 
 fstsw ax
 and rax, 1
+
+mov ebx, dword [rel .dummy]
 
 hlt
 
