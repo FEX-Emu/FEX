@@ -124,6 +124,7 @@
     "  uint8_t Signal;",
     "  uint8_t TrapNumber;",
     "  uint8_t si_code;",
+    "  uint64_t FaultAddress;",
     "};"
   ],
   "IRTypes" : {

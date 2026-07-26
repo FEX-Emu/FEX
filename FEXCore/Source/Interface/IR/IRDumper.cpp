@@ -321,7 +321,8 @@ static void PrintArg(fextl::ostringstream* out, const IRListView*, FEXCore::IR::
   *out << "{" << Arg.ErrorRegister << ".";
   *out << static_cast<uint32_t>(Arg.Signal) << ".";
   *out << static_cast<uint32_t>(Arg.TrapNumber) << ".";
-  *out << static_cast<uint32_t>(Arg.si_code) << "}";
+  *out << static_cast<uint32_t>(Arg.si_code) << ".";
+  *out << fmt::format("0x{:x}", Arg.FaultAddress) << "}";
 }
 
 static void PrintArg(fextl::ostringstream* out, const IRListView*, ShiftType Arg) {
