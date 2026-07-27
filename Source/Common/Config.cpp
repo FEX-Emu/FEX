@@ -198,7 +198,7 @@ private:
 class AppLoader final : public OptionMapper {
 public:
   explicit AppLoader(const fextl::string& AppName, FEXCore::Config::LayerType Type);
-  void Load();
+  void Load() override;
 
 private:
   const fextl::string AppName;
