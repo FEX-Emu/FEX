@@ -198,7 +198,7 @@ private:
 class AppLoader final : public OptionMapper {
 public:
   explicit AppLoader(const fextl::string& AppName, FEXCore::Config::LayerType Type);
-  void Load();
+  void Load() override;
 
 private:
   const fextl::string AppName;
@@ -242,12 +242,12 @@ void OptionMapper::MapNameToOption(const char* ConfigName, const char* ConfigStr
 
 MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::optional<fextl::string> AppName)
   : OptionMapper(Type)
-  , AppName {AppName}
+  , AppName {std::move(AppName)}
   , Config {FEXCore::Config::GetConfigFileLocation(Type == FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN)} {}
 
 MainLoader::MainLoader(fextl::string ConfigFile, std::optional<fextl::string> AppName)
   : OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
-  , AppName {AppName}
+  , AppName {std::move(AppName)}
   , Config {std::move(ConfigFile)} {}
 
 
@@ -257,7 +257,7 @@ MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigF
 
 MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigFile, std::optional<fextl::string> AppName)
   : OptionMapper(Type)
-  , AppName {AppName}
+  , AppName {std::move(AppName)}
   , Config {ConfigFile} {}
 
 void MainLoader::Load() {
@@ -356,7 +356,7 @@ fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(const fextl::string* F
 }
 
 fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(std::string_view AppConfig, std::optional<fextl::string> AppName) {
-  return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_USER_OVERRIDE, AppConfig, AppName);
+  return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_USER_OVERRIDE, AppConfig, std::move(AppName));
 }
 
 fextl::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type) {
@@ -367,7 +367,7 @@ fextl::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char* const _en
   return fextl::make_unique<EnvLoader>(_envp);
 }
 
-fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, int ProgramFDFromEnv) {
+static fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, int ProgramFDFromEnv) {
   // If executed with a FEX FD then the Program argument might be empty.
   // In this case we need to scan the FD node to recover the application binary that exists on disk.
   // Only do this if the Program argument is empty, since we would prefer the application's expectation
@@ -525,7 +525,7 @@ void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInfo
 }
 
 #ifndef _WIN32
-fextl::string FindUserHomeThroughUID() {
+static fextl::string FindUserHomeThroughUID() {
   // `getpwuid` allocates memory, parse `/etc/passwd` manually.
   // Format is trivial: `<name>:<password hash>:<uid>:<gid>:<comment>:<home>:<shell>`
 
