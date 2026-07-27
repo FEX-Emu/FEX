@@ -356,7 +356,7 @@ fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(const fextl::string* F
 }
 
 fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(std::string_view AppConfig, std::optional<fextl::string> AppName) {
-  return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_USER_OVERRIDE, AppConfig, AppName);
+  return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_USER_OVERRIDE, AppConfig, std::move(AppName));
 }
 
 fextl::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type) {
