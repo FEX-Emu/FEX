@@ -242,12 +242,12 @@ void OptionMapper::MapNameToOption(const char* ConfigName, const char* ConfigStr
 
 MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::optional<fextl::string> AppName)
   : OptionMapper(Type)
-  , AppName {AppName}
+  , AppName {std::move(AppName)}
   , Config {FEXCore::Config::GetConfigFileLocation(Type == FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN)} {}
 
 MainLoader::MainLoader(fextl::string ConfigFile, std::optional<fextl::string> AppName)
   : OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
-  , AppName {AppName}
+  , AppName {std::move(AppName)}
   , Config {std::move(ConfigFile)} {}
 
 
@@ -257,7 +257,7 @@ MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigF
 
 MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigFile, std::optional<fextl::string> AppName)
   : OptionMapper(Type)
-  , AppName {AppName}
+  , AppName {std::move(AppName)}
   , Config {ConfigFile} {}
 
 void MainLoader::Load() {
