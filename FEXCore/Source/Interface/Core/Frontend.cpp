@@ -1091,13 +1091,21 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
   if (ErrorDuringDecoding != DecodedBlockStatus::SUCCESS || HitNonExecutableRange || HitBadRelocation) [[unlikely]] {
     // Put an invalid instruction in the stream so the core can raise SIGILL if hit
     // Error while decoding instruction. We don't know the table or instruction size
+    const auto InstSize = DecodeInst->InstSize;
     DecodeInst->TableInfo = nullptr;
-    auto Result = ErrorDuringDecoding != DecodedBlockStatus::SUCCESS ? ErrorDuringDecoding :
-                  DecodeInst->InstSize                               ? DecodedBlockStatus::PARTIAL_DECODE_INST :
-                  HitNonExecutableRange                              ? DecodedBlockStatus::NOEXEC_INST :
-                                                                       DecodedBlockStatus::BAD_RELOCATION;
     DecodeInst->InstSize = 0;
-    return Result;
+
+    // A decode error can be caused by substituting zero for an inaccessible
+    // instruction byte, so the instruction fetch fault takes priority.
+    if (HitNonExecutableRange) {
+      return InstSize ? DecodedBlockStatus::PARTIAL_DECODE_INST : DecodedBlockStatus::NOEXEC_INST;
+    }
+
+    if (HitBadRelocation) {
+      return DecodedBlockStatus::BAD_RELOCATION;
+    }
+
+    return ErrorDuringDecoding;
   } else if (!DecodeInst->TableInfo || (DecodeInst->TableInfo->Type == TYPE_INST && !DecodeInst->TableInfo->OpcodeDispatcher.OpDispatch)) {
     // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
     return DecodedBlockStatus::INVALID_INST;
