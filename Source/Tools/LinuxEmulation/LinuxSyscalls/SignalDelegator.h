@@ -209,10 +209,10 @@ private:
   void FrontendRegisterHostSignalHandler(int Signal, bool Required);
   void FrontendRegisterFrontendHostSignalHandler(int Signal, bool Required);
 
-  void SetHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+  void SetHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
     HostHandlers[Signal].Handlers.push_back(std::move(Func));
   }
-  void SetFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+  void SetFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
     HostHandlers[Signal].FrontendHandler = std::move(Func);
   }
 
