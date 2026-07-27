@@ -99,7 +99,7 @@ void SignalDelegator::HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Sign
 }
 
 void SignalDelegator::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-  SetHostSignalHandler(Signal, std::move(Func), Required);
+  SetHostSignalHandler(Signal, std::move(Func));
   FrontendRegisterHostSignalHandler(Signal, Required);
 }
 
@@ -1077,7 +1077,7 @@ void SignalDelegator::RegisterHostSignalHandlerForGuest(int Signal, FEX::HLE::Ho
 }
 
 void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-  SetFrontendHostSignalHandler(Signal, std::move(Func), Required);
+  SetFrontendHostSignalHandler(Signal, std::move(Func));
   FrontendRegisterFrontendHostSignalHandler(Signal, Required);
 }
 
