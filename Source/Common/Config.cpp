@@ -367,7 +367,7 @@ fextl::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char* const _en
   return fextl::make_unique<EnvLoader>(_envp);
 }
 
-fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, int ProgramFDFromEnv) {
+static fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, int ProgramFDFromEnv) {
   // If executed with a FEX FD then the Program argument might be empty.
   // In this case we need to scan the FD node to recover the application binary that exists on disk.
   // Only do this if the Program argument is empty, since we would prefer the application's expectation
@@ -525,7 +525,7 @@ void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInfo
 }
 
 #ifndef _WIN32
-fextl::string FindUserHomeThroughUID() {
+static fextl::string FindUserHomeThroughUID() {
   // `getpwuid` allocates memory, parse `/etc/passwd` manually.
   // Format is trivial: `<name>:<password hash>:<uid>:<gid>:<comment>:<home>:<shell>`
 
