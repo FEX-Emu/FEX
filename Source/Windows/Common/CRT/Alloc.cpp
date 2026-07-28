@@ -2,6 +2,7 @@
 #define _SECIMP
 #define _CRTIMP
 #include <cstdint>
+#include <cstdlib>
 #include "../Priv.h"
 #include <rpmalloc/rpmalloc.h>
 
