@@ -14,6 +14,7 @@ struct FILE;
 #include <cerrno>
 #include <io.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include <wchar.h>
 #include <windef.h>
 #include <winternl.h>

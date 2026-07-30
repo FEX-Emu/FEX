@@ -188,3 +188,11 @@ DLLEXPORT_FUNC(LONG, RegCloseKey, (HKEY hKey)) {
 DLLEXPORT_FUNC(DWORD, GetActiveProcessorCount, (WORD group)) {
   UNIMPLEMENTED();
 }
+
+DLLEXPORT_FUNC(UINT, GetACP, ()) {
+  UNIMPLEMENTED();
+}
+
+DLLEXPORT_FUNC(int, GetLocaleInfoEx, (LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCData, int cchData)) {
+  UNIMPLEMENTED();
+}

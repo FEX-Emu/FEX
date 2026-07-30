@@ -4,6 +4,7 @@
 
 #include <concepts>
 #include <string_view>
+#include <cstdlib>
 
 namespace FEXCore::StrConv {
 template<std::integral T>
