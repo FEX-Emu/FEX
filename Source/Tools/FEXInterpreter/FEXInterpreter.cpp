@@ -525,16 +525,18 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
 
   bool SupportsAVX {};
+  bool SupportsSVE256 {};
   fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {
     auto HostFeatures = FEX::FetchHostFeatures();
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
     SupportsAVX = HostFeatures.SupportsAVX;
+    SupportsSVE256 = HostFeatures.SupportsSVE256;
   }
 
   FEX::Kernel::Init(Loader.Is64BitMode(), CTX.get());
 
-  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName, SupportsAVX);
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName, SupportsAVX, SupportsSVE256);
   auto ThunkHandler = FEX::HLE::CreateThunkHandler();
 
   auto SyscallHandler = Loader.Is64BitMode() ?

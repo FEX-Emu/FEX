@@ -249,7 +249,7 @@ int main(int argc, char** argv, char** const envp) {
   auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
 
 #ifndef _WIN32
-  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {}, HostFeatures.SupportsAVX);
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {}, HostFeatures.SupportsAVX, HostFeatures.SupportsSVE256);
 #else
   // Enable exit on HLT while Wine's longjump is broken.
   //

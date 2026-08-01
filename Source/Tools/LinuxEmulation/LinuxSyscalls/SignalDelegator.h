@@ -54,7 +54,7 @@ public:
 
   // Returns true if the host handled the signal
   // Arguments are the same as sigaction handler
-  SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName, bool SupportsAVX);
+  SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName, bool SupportsAVX, bool SupportsSVE256);
   ~SignalDelegator() override;
 
   // Called from the signal trampoline function.
@@ -196,6 +196,7 @@ private:
   std::mutex HostDelegatorMutex;
   std::mutex GuestDelegatorMutex;
   bool SupportsAVX;
+  bool SupportsSVE256;
 
   // Called from the thunk handler to handle the signal
   void HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObject, int Signal, void* Info, void* UContext);
@@ -294,5 +295,5 @@ private:
 };
 
 fextl::unique_ptr<FEX::HLE::SignalDelegator>
-CreateSignalDelegator(FEXCore::Context::Context* CTX, const std::string_view ApplicationName, bool SupportsAVX);
+CreateSignalDelegator(FEXCore::Context::Context* CTX, const std::string_view ApplicationName, bool SupportsAVX, bool SupportsSVE256);
 } // namespace FEX::HLE
