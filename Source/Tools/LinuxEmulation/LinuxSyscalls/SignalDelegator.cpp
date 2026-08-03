@@ -116,7 +116,7 @@ void SignalDelegator::SpillSRA(FEXCore::Core::InternalThreadState* Thread, void*
     Thread->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRAIdxMap);
   }
 
-  if (SupportsAVX) {
+  if (SupportsAVX && SupportsSVE256) {
     // TODO: This doesn't save the upper 128-bits of the 256-bit registers.
     // This needs to be implemented still.
     for (size_t i = 0; i < Config.SRAFPRCount; i++) {
@@ -872,10 +872,11 @@ void SignalDelegator::QueueSignal(pid_t tgid, pid_t tid, int Signal, siginfo_t* 
   }
 }
 
-SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName, bool SupportsAVX)
+SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName, bool SupportsAVX, bool SupportsSVE256)
   : CTX {_CTX}
   , ApplicationName {ApplicationName}
-  , SupportsAVX {SupportsAVX} {
+  , SupportsAVX {SupportsAVX}
+  , SupportsSVE256 {SupportsSVE256} {
   // Signal zero isn't real
   HostHandlers[0].Installed = true;
 
@@ -1345,7 +1346,7 @@ uint64_t SignalDelegator::GuestSignalFD(int fd, const uint64_t* set, size_t sigs
 }
 
 fextl::unique_ptr<FEX::HLE::SignalDelegator>
-CreateSignalDelegator(FEXCore::Context::Context* CTX, const std::string_view ApplicationName, bool SupportsAVX) {
-  return fextl::make_unique<FEX::HLE::SignalDelegator>(CTX, ApplicationName, SupportsAVX);
+CreateSignalDelegator(FEXCore::Context::Context* CTX, const std::string_view ApplicationName, bool SupportsAVX, bool SupportsSVE256) {
+  return fextl::make_unique<FEX::HLE::SignalDelegator>(CTX, ApplicationName, SupportsAVX, SupportsSVE256);
 }
 } // namespace FEX::HLE
