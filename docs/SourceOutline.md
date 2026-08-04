@@ -1,4 +1,4 @@
-# FEX-2607
+# FEX-2608
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -31,6 +31,7 @@ IR to host code generation
 
 #### shared
 - [CPUBackend.h](../FEXCore/Source/Interface/Core/CPUBackend.h)
+- [SharedCodeBufferManager.h](../FEXCore/Source/Interface/Core/SharedCodeBufferManager.h)
 
 
 
