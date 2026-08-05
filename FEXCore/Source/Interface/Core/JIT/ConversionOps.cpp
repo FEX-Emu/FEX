@@ -558,16 +558,18 @@ DEF_OP(Vector_F64ToI32) {
     }
   } else {
     ///< Round float to integral depending on rounding mode.
+    ///< skip TowardsZero as fcvtzs below already truncates toward zero on its own
+    auto CVTReg = Dst.Q();
     switch (Round) {
     case IR::RoundMode::Nearest: frintn(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
     case IR::RoundMode::NegInfinity: frintm(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
     case IR::RoundMode::PosInfinity: frintp(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
-    case IR::RoundMode::TowardsZero: frintz(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case IR::RoundMode::TowardsZero: CVTReg = Vector.Q(); break;
     case IR::RoundMode::Host: frinti(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
     }
 
     ///< Convert f64 directly to i64
-    fcvtzs(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Dst.Q());
+    fcvtzs(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), CVTReg);
 
     ///< Saturating narrow i64 -> i32
     ///
