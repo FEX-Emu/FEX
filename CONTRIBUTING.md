@@ -1,1 +1,1 @@
-No AI/ML/dl/LLM/etc code contributions.
+No AI/ML/deep learning/LLM/etc code contributions.
