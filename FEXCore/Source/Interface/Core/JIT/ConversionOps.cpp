@@ -557,26 +557,30 @@ DEF_OP(Vector_F64ToI32) {
       }
     }
   } else {
-    // This has a known precision issue that isn't easily resolvable without throwing away performance.
-    // Doing the conversion in multi-stage steps has an issue that you can lose precision in the f32->i32 step if your source was f64.
-    // To get around this with ASIMD FEX needs to use fcvtzs (Scalar, Integer, to GPR) for each F64 to be directly converted to i32.
-    // This is a very costly transform that the SVE path doesn't need to do since it supports f64->i32 directly.
-    // If this precision issue is necessary then we can add an option for it in the future.
-
     ///< Round float to integral depending on rounding mode.
+    ///< skip TowardsZero as fcvtzs below already truncates toward zero on its own
+    auto CVTReg = Dst.Q();
     switch (Round) {
     case IR::RoundMode::Nearest: frintn(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
     case IR::RoundMode::NegInfinity: frintm(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
     case IR::RoundMode::PosInfinity: frintp(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
-    case IR::RoundMode::TowardsZero: frintz(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case IR::RoundMode::TowardsZero: CVTReg = Vector.Q(); break;
     case IR::RoundMode::Host: frinti(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
     }
 
-    // Now narrow from f64 to f32.
-    fcvtn(ARMEmitter::SubRegSize::i32Bit, Dst.Q(), Dst.Q());
+    ///< Convert f64 directly to i64
+    fcvtzs(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), CVTReg);
 
-    ///< Convert the two F32 integrals to real integers.
-    fcvtzs(ARMEmitter::SubRegSize::i32Bit, Dst.D(), Dst.D());
+    ///< Saturating narrow i64 -> i32
+    ///
+    ///< The caller(Vector_CVT_Float_To_Int32Impl) only fixes up positive overflow:
+    ///< it tests MaxF > Src (MaxF = 2^31) and swaps in CVTMAX_I32 (0x80000000) where
+    ///< the test fails.
+    ///
+    ///< Sources below INT32_MIN are handled by sqxtn:
+    ///< ARM saturates to INT32_MIN, which is 0x80000000 the same value as
+    ///< x86's integer-indefinite value.
+    sqxtn(ARMEmitter::SubRegSize::i32Bit, Dst.D(), Dst.D());
   }
 }
 
