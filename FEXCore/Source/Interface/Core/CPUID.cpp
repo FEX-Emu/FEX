@@ -493,8 +493,8 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
 
   Res.edx = (1 << 0) |  // FPU
             (1 << 1) |  // Virtual 8086 mode enhancements
-            (0 << 2) |  // Debugging extensions
-            (0 << 3) |  // Page size extension
+            (1 << 2) |  // Debugging extensions
+            (1 << 3) |  // Page size extension
             (1 << 4) |  // RDTSC supported
             (1 << 5) |  // MSR supported
             (1 << 6) |  // PAE
@@ -1097,7 +1097,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) con
             (1 << 23) |                               // MMX
             (1 << 24) |                               // FXSAVE/FXRSTOR
             (1 << 25) |                               // FXSAVE/FXRSTOR Optimizations
-            (0 << 26) |                               // 1 gigabit pages
+            (1 << 26) |                               // 1 gigabit pages
             (SUPPORTS_RDTSCP << 27) |                 // RDTSCP
             (0 << 28) |                               // Reserved
             (1 << 29) |                               // Long Mode
