@@ -20,6 +20,8 @@
 import re
 from pathlib import Path
 import sys
+import traceback
+import logging
 
 if (len(sys.argv) != 4):
     print("doc_outline_generator GIT_DIR SRC_DIR LINK_PREFIX")
@@ -62,17 +64,29 @@ for path in Paths:
                 name = entry.split(":", 1)[0].strip();
                 val = entry.split(":", 1)[1].strip();
                 if name == "category":
-                    cat_name = val.split("~", 1)[0].strip();
-                    cat_val = val.split("~", 1)[1].strip();
-                    CategoryLabels[cat_name] = cat_val
+                    try:
+                        cat_name = val.split("~", 1)[0].strip();
+                        cat_val = val.split("~", 1)[1].strip();
+                        CategoryLabels[cat_name] = cat_val
+                    except Exception as e:
+                        logging.error("Failure to parse {}".format(val))
+                        logging.error(traceback.format_exc())
                 elif name == "meta":
-                    meta_name = val.split("~", 1)[0].strip();
-                    meta_val = val.split("~", 1)[1].strip();
-                    MetaLabels[meta_name] = meta_val
+                    try:
+                        meta_name = val.split("~", 1)[0].strip();
+                        meta_val = val.split("~", 1)[1].strip();
+                        MetaLabels[meta_name] = meta_val
+                    except Exception as e:
+                        logging.error("Failure to parse {}".format(val))
+                        logging.error(traceback.format_exc())
                 elif name == "glossary":
-                    glossary_name = val.split("~", 1)[0].strip();
-                    glossary_val = val.split("~", 1)[1].strip();
-                    GlossaryLabels[glossary_name] = glossary_val
+                    try:
+                        glossary_name = val.split("~", 1)[0].strip();
+                        glossary_val = val.split("~", 1)[1].strip();
+                        GlossaryLabels[glossary_name] = glossary_val
+                    except Exception as e:
+                        logging.error("Failure to parse {}".format(val))
+                        logging.error(traceback.format_exc())
                 elif name == "tags":
                     for meta_name in val.split(","):
                         if meta_name.strip() not in Meta:
