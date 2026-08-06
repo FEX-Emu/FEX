@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 /*
 $info$
-category: Thread shared code buffer management
+category: code buffer ~ Thread shared code buffer management
 tags: backend|shared
 $end_info$
 */
