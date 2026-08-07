@@ -4761,7 +4761,7 @@
       ]
     },
     "fucomi st0, st0": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 26,
       "Comment": [
         "0xdb 11b 0xe8 /5"
       ],
@@ -4787,12 +4787,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fucomi st0, st1": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xe9 /5"
       ],
@@ -4822,12 +4825,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fucomi st0, st2": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xea /5"
       ],
@@ -4857,12 +4863,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fucomi st0, st3": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xeb /5"
       ],
@@ -4892,12 +4901,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fucomi st0, st4": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xec /5"
       ],
@@ -4927,12 +4939,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fucomi st0, st5": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xed /5"
       ],
@@ -4962,12 +4977,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fucomi st0, st6": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xee /5"
       ],
@@ -4997,12 +5015,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fucomi st0, st7": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xef /5"
       ],
@@ -5032,12 +5053,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fcomi st0, st0": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 26,
       "Comment": [
         "0xdb 11b 0xf0 /6"
       ],
@@ -5063,12 +5087,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fcomi st0, st1": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf1 /6"
       ],
@@ -5098,12 +5125,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fcomi st0, st2": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf2 /6"
       ],
@@ -5133,12 +5163,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fcomi st0, st3": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf3 /6"
       ],
@@ -5168,12 +5201,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fcomi st0, st4": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf4 /6"
       ],
@@ -5203,12 +5239,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fcomi st0, st5": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf5 /6"
       ],
@@ -5238,12 +5277,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fcomi st0, st6": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf6 /6"
       ],
@@ -5273,12 +5315,15 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
     },
     "fcomi st0, st7": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf7 /6"
       ],
@@ -5308,6 +5353,9 @@
         "bfi w23, w21, #29, #1",
         "bfi w23, w22, #30, #1",
         "eor w26, w20, #0x1",
+        "mov w27, #0x0",
+        "bfi w23, w27, #28, #1",
+        "bfi w23, w27, #31, #1",
         "strb w20, [x28, #1040]",
         "msr nzcv, x23"
       ]
@@ -10168,7 +10216,7 @@
       ]
     },
     "fucomip st0": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xdf 11b 0xe8 /5"
       ],
@@ -10194,6 +10242,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10207,7 +10258,7 @@
       ]
     },
     "fucomip st1": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdf 11b 0xe9 /5"
       ],
@@ -10237,6 +10288,9 @@
         "bfi w30, w23, #29, #1",
         "bfi w30, w24, #30, #1",
         "eor w26, w22, #0x1",
+        "mov w27, #0x0",
+        "bfi w30, w27, #28, #1",
+        "bfi w30, w27, #31, #1",
         "strb w22, [x28, #1040]",
         "msr nzcv, x30",
         "strb w21, [x28, #1051]",
@@ -10248,7 +10302,7 @@
       ]
     },
     "fucomip st2": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xea /5"
       ],
@@ -10278,6 +10332,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10291,7 +10348,7 @@
       ]
     },
     "fucomip st3": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xeb /5"
       ],
@@ -10321,6 +10378,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10334,7 +10394,7 @@
       ]
     },
     "fucomip st4": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xec /5"
       ],
@@ -10364,6 +10424,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10377,7 +10440,7 @@
       ]
     },
     "fucomip st5": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xed /5"
       ],
@@ -10407,6 +10470,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10420,7 +10486,7 @@
       ]
     },
     "fucomip st6": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xee /5"
       ],
@@ -10450,6 +10516,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10463,7 +10532,7 @@
       ]
     },
     "fucomip st7": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xef /5"
       ],
@@ -10493,6 +10562,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10506,7 +10578,7 @@
       ]
     },
     "fcomip st0": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xdf 11b 0xf0 /6"
       ],
@@ -10532,6 +10604,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10545,7 +10620,7 @@
       ]
     },
     "fcomip st1": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdf 11b 0xf1 /6"
       ],
@@ -10575,6 +10650,9 @@
         "bfi w30, w23, #29, #1",
         "bfi w30, w24, #30, #1",
         "eor w26, w22, #0x1",
+        "mov w27, #0x0",
+        "bfi w30, w27, #28, #1",
+        "bfi w30, w27, #31, #1",
         "strb w22, [x28, #1040]",
         "msr nzcv, x30",
         "strb w21, [x28, #1051]",
@@ -10586,7 +10664,7 @@
       ]
     },
     "fcomip st2": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf2 /6"
       ],
@@ -10616,6 +10694,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10629,7 +10710,7 @@
       ]
     },
     "fcomip st3": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf3 /6"
       ],
@@ -10659,6 +10740,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10672,7 +10756,7 @@
       ]
     },
     "fcomip st4": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf4 /6"
       ],
@@ -10702,6 +10786,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10715,7 +10802,7 @@
       ]
     },
     "fcomip st5": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf5 /6"
       ],
@@ -10745,6 +10832,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10758,7 +10848,7 @@
       ]
     },
     "fcomip st6": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf6 /6"
       ],
@@ -10788,6 +10878,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10801,7 +10894,7 @@
       ]
     },
     "fcomip st7": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf7 /6"
       ],
@@ -10831,6 +10924,9 @@
         "bfi w24, w22, #29, #1",
         "bfi w24, w23, #30, #1",
         "eor w26, w21, #0x1",
+        "mov w27, #0x0",
+        "bfi w24, w27, #28, #1",
+        "bfi w24, w27, #31, #1",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
