@@ -32,7 +32,7 @@ void OpDispatchBuilder::ZeroPF_AF() {
   SetAF(0);
 }
 
-void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, Ref Src) {
+void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, Ref Src, uint32_t FlagsMask) {
   size_t NumFlags = FlagOffsets.size();
   if (Lower8) {
     // Calculate flags early.
@@ -46,6 +46,11 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, Ref Src) {
 
   for (size_t i = 0; i < NumFlags; ++i) {
     const auto FlagOffset = FlagOffsets[i];
+
+    if (!((1U << FlagOffset) & FlagsMask)) {
+      // Leave current flag value unchanged
+      continue;
+    }
 
     if (FlagOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
       // AF is in bit 4 architecturally, and we need to store it to bit 4 of our

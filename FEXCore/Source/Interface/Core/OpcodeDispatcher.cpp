@@ -3625,7 +3625,10 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
 void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
-  Push(Size, GetPackedRFLAG());
+  // VM, RF cleared to 0
+  constexpr uint32_t FlagsMask = ~((1U << FEXCore::X86State::RFLAG_VM_LOC) | (1U << FEXCore::X86State::RFLAG_RF_LOC));
+
+  Push(Size, GetPackedRFLAG(FlagsMask));
 }
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
@@ -3638,7 +3641,21 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
 
   Src = _Or(OpSize::i64Bit, Src, Constant(0x202));
 
-  SetPackedRFLAG(false, Src);
+  // FEX always executes at CPL 3 and IOPL < CPL:
+  // VIP, VIF, VM, IOPL, IF unchanged
+  uint32_t FlagsMask =
+    ~((1U << FEXCore::X86State::RFLAG_VIP_LOC) | (1U << FEXCore::X86State::RFLAG_VIF_LOC) | (1U << FEXCore::X86State::RFLAG_VM_LOC) |
+      (1U << FEXCore::X86State::RFLAG_IOPL_LOC) | (1U << FEXCore::X86State::RFLAG_RF_LOC));
+
+  // ID, AC unchanged
+  if (Size == OpSize::i16Bit) {
+    FlagsMask &= ~((1U << FEXCore::X86State::RFLAG_ID_LOC) | (1U << FEXCore::X86State::RFLAG_AC_LOC));
+  }
+
+  SetPackedRFLAG(false, Src, FlagsMask);
+
+  // RF cleared to 0
+  SetRFLAG<FEXCore::X86State::RFLAG_RF_LOC>(Constant(0));
 
   auto NewRIP = GetRelocatedPC(Op);
   ExitFunction(NewRIP, BranchHint::CheckTF);
