@@ -428,11 +428,16 @@ else ()
   file(GENERATE OUTPUT CTestTestfile.cmake CONTENT "# No tests since BUILD_TESTING is disabled")
 endif()
 
-find_package(fmt QUIET)
-if (NOT fmt_FOUND)
-  # Disable fmt install
+if (MINGW)
   set(FMT_INSTALL OFF)
   add_subdirectory(External/fmt/)
+else()
+  find_package(fmt QUIET)
+  if (NOT fmt_FOUND)
+    # Disable fmt install
+    set(FMT_INSTALL OFF)
+    add_subdirectory(External/fmt/)
+  endif()
 endif()
 
 find_package(range-v3 QUIET)
