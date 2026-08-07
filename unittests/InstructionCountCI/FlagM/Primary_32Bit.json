@@ -313,7 +313,7 @@
       ]
     },
     "o16 pushf": {
-      "ExpectedInstructionCount": 39,
+      "ExpectedInstructionCount": 35,
       "Comment": "0x9c",
       "ExpectedArm64ASM": [
         "cset x20, lo",
@@ -333,10 +333,6 @@
         "orr x20, x20, x21, lsl #12",
         "ldrb w21, [x28, #1022]",
         "orr x20, x20, x21, lsl #14",
-        "ldrb w21, [x28, #1024]",
-        "orr x20, x20, x21, lsl #16",
-        "ldrb w21, [x28, #1025]",
-        "orr x20, x20, x21, lsl #17",
         "ldrb w21, [x28, #1026]",
         "orr x20, x20, x21, lsl #18",
         "ldrb w21, [x28, #1027]",
@@ -358,7 +354,7 @@
       ]
     },
     "pushfd": {
-      "ExpectedInstructionCount": 39,
+      "ExpectedInstructionCount": 35,
       "Comment": "0x9c",
       "ExpectedArm64ASM": [
         "cset x20, lo",
@@ -378,10 +374,6 @@
         "orr x20, x20, x21, lsl #12",
         "ldrb w21, [x28, #1022]",
         "orr x20, x20, x21, lsl #14",
-        "ldrb w21, [x28, #1024]",
-        "orr x20, x20, x21, lsl #16",
-        "ldrb w21, [x28, #1025]",
-        "orr x20, x20, x21, lsl #17",
         "ldrb w21, [x28, #1026]",
         "orr x20, x20, x21, lsl #18",
         "ldrb w21, [x28, #1027]",
