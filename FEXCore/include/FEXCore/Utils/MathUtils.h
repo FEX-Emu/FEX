@@ -18,6 +18,18 @@ constexpr uint64_t AlignDown(uint64_t value, uint64_t size) {
   return value - value % size;
 }
 
+[[nodiscard]]
+constexpr uint64_t AlignUpPowerOf2(uint64_t value, uint64_t size) {
+  LOGMAN_THROW_A_FMT(std::popcount(size) == 1, "Alignment needs to be power of 2");
+  return (value + size - 1) & ~(size - 1);
+}
+
+[[nodiscard]]
+constexpr uint64_t AlignDownPowerOf2(uint64_t value, uint64_t size) {
+  LOGMAN_THROW_A_FMT(std::popcount(size) == 1, "Alignment needs to be power of 2");
+  return value & ~(size - 1);
+}
+
 // Returns the ilog2 of a power-of-2 integer.
 // Asserts in the case that the passed in integer is not a power-of-2.
 template<typename T>
