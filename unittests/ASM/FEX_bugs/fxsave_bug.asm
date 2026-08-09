@@ -22,7 +22,7 @@ fninit
 times 8 fldz
 
 ; Empty them
-times 8 ffreep
+times 8 ffreep st0
 
 ; Load seven of them with random data
 fld tword [rel .random_data + (0 * 10)]
