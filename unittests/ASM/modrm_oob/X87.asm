@@ -23,14 +23,14 @@ mov rax, 0
 fldz
 w3_size %1, 4, dword
 w3_size %1, 8, qword
-ffreep
+ffreep st0
 %endmacro
 
 %macro x87_i24_op 1
 fldz
 w3_size %1, 2, word
 w3_size %1, 4, dword
-ffreep
+ffreep st0
 %endmacro
 
 x87_f48_op fadd
@@ -50,11 +50,11 @@ x87_f48_op fdivr
 
 ; fld is special
 w3_size fld, 4, dword
-ffreep
+ffreep st0
 w3_size fld, 8, qword
-ffreep
+ffreep st0
 w3_size fld, 10, tword
-ffreep
+ffreep st0
 
 ; fst is special
 fldz
@@ -96,11 +96,11 @@ x87_i24_op fidivr
 
 ; fild is special
 w3_size fild, 2, word
-ffreep
+ffreep st0
 w3_size fild, 4, dword
-ffreep
+ffreep st0
 w3_size fild, 8, qword
-ffreep
+ffreep st0
 
 ; fist is special
 fldz
