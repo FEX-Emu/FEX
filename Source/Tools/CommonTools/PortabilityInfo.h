@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+#include <limits.h>
+
 #include "Common/Config.h"
 
 namespace FEX {
