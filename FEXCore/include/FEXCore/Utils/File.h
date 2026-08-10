@@ -4,9 +4,13 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/Utils/EnumOperators.h>
 
+#include <chrono>
+#include <thread>
+
 #ifndef _WIN32
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/file.h>
 #else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -110,6 +114,38 @@ public:
 #endif
   }
 
+  bool Lock(uint32_t TimeoutMS) {
+    for (uint32_t i = 0;; ++i) {
+      if (TryLock()) {
+        return true;
+      }
+      if (i >= TimeoutMS) {
+        return false;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  }
+
+  bool Unlock() {
+    if (!Locked) {
+      return false; // we could return true here :thonk:
+    }
+#ifndef _WIN32
+    if (flock(Handle, LOCK_UN) == -1) {
+      return false;
+    }
+#else
+    OVERLAPPED Overlapped {};
+    Overlapped.Offset = static_cast<DWORD>(LOCK_SENTINEL_OFFSET);
+    Overlapped.OffsetHigh = static_cast<DWORD>(LOCK_SENTINEL_OFFSET >> 32);
+    if (!UnlockFileEx(Handle, 0, 1, 0, &Overlapped)) {
+      return false;
+    }
+#endif
+    Locked = false;
+    return true;
+  }
+
   ~File() {
     if (!IsValidHandle) {
       return;
@@ -196,10 +232,32 @@ protected:
     , IsValidHandle {true}
     , Handle {Handle} {}
 private:
+  bool TryLock() {
+    if (Locked) {
+      return true;
+    }
+#ifndef _WIN32
+    if (flock(Handle, LOCK_EX | LOCK_NB) == -1) {
+      return false;
+    }
+#else
+    // mimic posix advisory-only lock by locking some unattainably-high bit
+    OVERLAPPED Overlapped {};
+    Overlapped.Offset = static_cast<DWORD>(LOCK_SENTINEL_OFFSET);
+    Overlapped.OffsetHigh = static_cast<DWORD>(LOCK_SENTINEL_OFFSET >> 32);
+    if (!LockFileEx(Handle, LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY, 0, 1, 0, &Overlapped)) {
+      return false;
+    }
+#endif
+    Locked = true;
+    return true;
+  }
+
   bool ShouldClose {};
   bool IsValidHandle {};
 
   FileHandleType Handle {};
+  bool Locked = false;
 #ifndef _WIN32
   static constexpr int DEFAULT_USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
 
@@ -240,6 +298,8 @@ private:
   }
 #else
   static constexpr int DEFAULT_SHARE_MODE = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+  static constexpr uint64_t LOCK_SENTINEL_OFFSET = 1ULL << 62;
+
   struct Disposition {
     uint32_t CreationFlag;
     uint32_t Access;
@@ -254,7 +314,11 @@ private:
       Disp.Access |= GENERIC_WRITE;
     }
     if ((Modes & FileModes::CREATE) == FileModes::CREATE) {
-      Disp.CreationFlag = CREATE_ALWAYS;
+      if ((Modes & FileModes::TRUNCATE) == FileModes::TRUNCATE) {
+        Disp.CreationFlag = CREATE_ALWAYS;
+      } else {
+        Disp.CreationFlag = OPEN_ALWAYS;
+      }
     } else {
       Disp.CreationFlag = OPEN_ALWAYS;
     }

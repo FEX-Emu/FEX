@@ -103,6 +103,8 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
 
   // Track atomic TSO emulation configuration.
   UpdateAtomicTSOEmulationConfig();
+
+  DiskCache.Init(this);
 }
 
 struct GetFrameBlockInfoResult {
@@ -858,6 +860,40 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
+  std::optional<ExecutableFileSectionInfo> Region = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
+  std::optional<DiskCache::CodeHitData> Hit;
+  bool DiskCacheHitRelocationsApplied = false;
+  bool LoadDiskCacheCode = true;
+  if (Region && Region->FileStartVA != 0) {
+    Hit = DiskCache.Lookup(Thread, *Region, GuestRIP);
+    if (Hit) {
+      DiskCacheHitRelocationsApplied = CodeCache.ApplyCodeRelocations(GuestRIP, std::as_writable_bytes(Hit->HostCode), Hit->Relocations, 0, false);
+
+      if (DiskCacheHitRelocationsApplied && LoadDiskCacheCode) {
+        auto LoadedCode = Thread->CPUBackend->LoadCachedCode(Hit->HostCode, Hit->EntryPoints);
+        if (LoadedCode.BlockBegin) {
+
+          // annoying to unpack a different copy here, maybe better way to do this
+          fextl::set<uint64_t> EntryPoints;
+          for (auto [GuestOffset, HostAddr] : LoadedCode.EntryPoints) {
+            EntryPoints.insert(GuestOffset + Region->FileStartVA);
+          }
+          for (auto CodePage : Hit->GuestPages) {
+            if (Thread->LookupCache->AddBlockExecutableRange(Thread, EntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
+              SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+            }
+          }
+          for (auto [GuestOffset, HostAddr] : LoadedCode.EntryPoints) {
+            Thread->LookupCache->AddBlockMapping(Thread, GuestOffset + Region->FileStartVA, Hit->GuestPages, HostAddr);
+          }
+
+          uint64_t ModuleOffset = GuestRIP - Region->FileStartVA;
+          return reinterpret_cast<uintptr_t>(LoadedCode.EntryPoints[ModuleOffset]);
+        }
+      }
+    }
+  }
+
   // Accumulate a JIT count now, as even if another thread raced us, it should count as a compile.
   FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedJITCount, 1);
 
@@ -869,6 +905,9 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     // DebugData wasn't populated, indicating another thread raced us for compiling this block
     return reinterpret_cast<uintptr_t>(CodePtr);
   }
+
+  // if this ever fires, we need to serialize the offset into disk cache
+  LOGMAN_THROW_A_FMT(StartAddr == GuestRIP, "StartAddr offset from GuestRIP");
 
   // The core managed to compile the code.
   if (Config.BlockJITNaming()) {
@@ -909,11 +948,6 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     }
   }
 
-  // Clear any relocations that might have been generated
-  if (!CodeCache.IsGeneratingCache) {
-    Thread->CPUBackend->ClearRelocations();
-  }
-
   fextl::vector<uint64_t> CodePages;
 
   if (NeedsAddGuestCodeRanges) {
@@ -929,17 +963,29 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     }
   }
 
-  // Insert to lookup cache
+  // Disk Cache
+  if (Region && Region->FileStartVA != 0) {
+    std::span<const FEXCore::CPU::Relocation> Relocations;
+    if (DebugData && DebugData->Relocations) {
+      Relocations = *DebugData->Relocations;
+    }
+    std::span<const uint8_t> GuestCode = {reinterpret_cast<const uint8_t*>(StartAddr), Length};
+    const Frontend::Decoder::DecodedBlockInformation* BlockInfo = NeedsAddGuestCodeRanges ? Thread->FrontendDecoder->GetDecodedBlockInfo() : nullptr;
+    DiskCache.Store(Thread, *Region, GuestRIP, GuestCode, CompiledCode, Relocations, BlockInfo);
 
+    if (CodeMapWriter) {
+      CodeMapWriter->AppendBlock(*Region, GuestRIP);
+    }
+  }
+
+  // Insert to lookup cache
   for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
     Thread->LookupCache->AddBlockMapping(Thread, GuestAddr, CodePages, HostAddr);
   }
 
-  if (CodeMapWriter) {
-    auto Region = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
-    if (Region && Region->FileStartVA != 0) {
-      CodeMapWriter->AppendBlock(*Region, GuestRIP);
-    }
+  // Clear any relocations that might have been generated
+  if (!CodeCache.IsGeneratingCache) {
+    Thread->CPUBackend->ClearRelocations();
   }
 
   return (uintptr_t)CodePtr;

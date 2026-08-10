@@ -136,6 +136,8 @@ public:
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) = 0;
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) = 0;
 
+  virtual void InitDiskCache() = 0;
+
   virtual AbstractCodeCache& GetCodeCache() = 0;
   virtual void SetCodeMapWriter(fextl::unique_ptr<CodeMapWriter>) = 0;
   virtual void FlushAndCloseCodeMap() = 0;
