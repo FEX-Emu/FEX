@@ -6,6 +6,9 @@
 
 namespace FEXCore::UncheckedLongJump {
 #if defined(ARCHITECTURE_arm64)
+#ifdef __arm64ec__
+#pragma clang diagnostic ignored "-Winline-asm"
+#endif
 [[nodiscard]]
 FEX_DEFAULT_VISIBILITY FEX_NAKED uint64_t SetJump(JumpBuf& Buffer) {
   __asm volatile(R"(
