@@ -72,7 +72,9 @@ GetSysReg(MIDR_EL1, MIDR_EL1);
 GetSysReg(ISAR1_EL1, ID_AA64ISAR1_EL1);
 GetSysReg(MMFR0_EL1, ID_AA64MMFR0_EL1);
 GetSysReg(MMFR2_EL1, ID_AA64MMFR2_EL1);
+#ifndef _WIN32
 GetSysReg(MMFR3_EL1, s3_0_c0_c7_3); // Can't request by name
+#endif
 GetSysReg(ZFR0_EL1, s3_0_c0_c4_4);  // Can't request by name
 GetSysReg(MMFR1_EL1, ID_AA64MMFR1_EL1);
 GetSysReg(ISAR2_EL1, ID_AA64ISAR2_EL1);

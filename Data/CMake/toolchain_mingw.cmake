@@ -9,8 +9,8 @@ set(CMAKE_AR ${MINGW_TRIPLE}-ar)
 # Compile everything as static to avoid requiring the MinGW runtime libraries, force page aligned sections so that
 # debug symbols work correctly, and disable loop alignment to workaround an LLVM bug
 # (https://github.com/llvm/llvm-project/issues/47432)
-set(CMAKE_SHARED_LINKER_FLAGS_INIT "-static -static-libgcc -static-libstdc++ -Wl,--file-alignment=4096,/mllvm:-align-loops=1")
-set(CMAKE_EXE_LINKER_FLAGS_INIT "-static -static-libgcc -static-libstdc++ -Wl,--file-alignment=4096,/mllvm:-align-loops=1")
+set(CMAKE_SHARED_LINKER_FLAGS_INIT "-static -Wl,--file-alignment=4096,/mllvm:-align-loops=1")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-static -Wl,--file-alignment=4096,/mllvm:-align-loops=1")
 set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 set(CMAKE_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)

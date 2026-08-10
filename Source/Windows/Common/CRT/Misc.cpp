@@ -51,7 +51,7 @@ void InitEnv() {
 __attribute__((used, section(".CRT$FEXB"))) void (*_InitEnv)(void) = InitEnv;
 } // namespace
 
-char*** __p__environ() {
+DLLEXPORT_FUNC(char***, __p__environ, ()) {
   return &EnvArray;
 }
 

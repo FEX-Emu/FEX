@@ -136,6 +136,7 @@ public:
 #endif
 };
 
+#ifndef _WIN32
 static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   fmt::print("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
 }
@@ -143,6 +144,7 @@ static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
 static void AssertHandler(const char* Message) {
   fmt::print("[A] {}\n", Message);
 }
+#endif
 
 namespace FEXCore {
 inline bool operator<(const ExecutableFileInfo& a, const ExecutableFileInfo& b) noexcept {
