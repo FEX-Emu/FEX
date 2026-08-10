@@ -6,8 +6,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-intmax_t strtoimax(const char* s1, char** p, int base) {
-  const unsigned char* s = s1;
+intmax_t strtoimax(const char* s, char** p, int base) {
   int sign = 0;
   uintmax_t x;
 

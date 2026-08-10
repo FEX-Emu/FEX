@@ -21,7 +21,7 @@ static const unsigned char digits[] = {
 };
 
 uintmax_t strtoumax(const char* s1, char** p, int base) {
-  const unsigned char* s = s1;
+  const unsigned char* s = (const unsigned char*)s1;
   size_t x1, z1;
   uintmax_t x, z = 0;
   int sign = 0;
