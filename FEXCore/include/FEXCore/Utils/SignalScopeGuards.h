@@ -250,19 +250,19 @@ public:
 
 template<template<typename> class LockType = std::unique_lock, typename MutexType>
 [[nodiscard]]
-static auto MaskSignalsAndLockMutex(MutexType& mutex, uint64_t Mask = ~0ULL) {
+static inline auto MaskSignalsAndLockMutex(MutexType& mutex, uint64_t Mask = ~0ULL) {
   return LockType<MutexType> {mutex};
 }
 
 template<template<typename> class LockType = std::unique_lock, typename MutexType>
 [[nodiscard]]
-static auto GuardSignalDeferringSection(MutexType& mutex, FEXCore::Core::InternalThreadState* Thread, uint64_t Mask = ~0ULL) {
+static inline auto GuardSignalDeferringSection(MutexType& mutex, FEXCore::Core::InternalThreadState* Thread, uint64_t Mask = ~0ULL) {
   return LockType<MutexType> {mutex};
 }
 
 template<template<typename> class LockType = std::unique_lock, typename MutexType>
 [[nodiscard]]
-static auto GuardSignalDeferringSectionWithFallback(MutexType& mutex, FEXCore::Core::InternalThreadState* Thread, uint64_t Mask = ~0ULL) {
+static inline auto GuardSignalDeferringSectionWithFallback(MutexType& mutex, FEXCore::Core::InternalThreadState* Thread, uint64_t Mask = ~0ULL) {
   return LockType<MutexType> {mutex};
 }
 
