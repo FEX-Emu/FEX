@@ -94,6 +94,15 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
       }
     }
 
+#ifdef FEX_STEAM_SUPPORT
+    // Always add pressure-vessel libraries.
+    const auto ArchPrefix = Is64BitMode() ? "x86_64-linux-gnu" : "i386-linux-gnu";
+    PathPrefixes.emplace_back(fextl::fmt::format("/run/gfx/main/usr/lib/{}", ArchPrefix));
+    if (!RootFSIsMultiarch) {
+      PathPrefixes.emplace_back(fextl::fmt::format("/usr/lib/pressure-vessel/overrides/lib/{}", ArchPrefix));
+    }
+#endif
+
     FEX::JSON::JsonAllocator Pool {};
     const json_t* json = FEX::JSON::CreateJSON(FileData, Pool);
 
