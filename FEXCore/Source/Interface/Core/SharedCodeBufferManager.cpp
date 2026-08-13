@@ -66,7 +66,9 @@ fextl::shared_ptr<CodeBuffer> SharedCodeBufferManager::AllocateNew(size_t Size) 
   auto Buffer = fextl::make_shared<CodeBuffer>(Size);
 
   Latest = Buffer;
-  LatestOffset = 0;
+  CodeBufferBase = Buffer->Ptr;
+  CodeBufferEnd = Buffer->Ptr + Buffer->UsableSize();
+  CodeBufferOffset = CodeBufferBase;
 
   OnCodeBufferAllocated(Buffer);
 

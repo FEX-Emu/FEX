@@ -8,6 +8,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/fextl/memory.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/Utils/TypeDefines.h>
 
@@ -63,10 +64,48 @@ public:
   fextl::shared_ptr<CodeBuffer> StartMaximalCodeBuffer();
 
   // Write offset into the latest CodeBuffer
-  std::size_t LatestOffset {};
+  uint8_t* CodeBufferBase {};
+  uint8_t* CodeBufferEnd {};
+  std::atomic<uint8_t*> CodeBufferOffset {};
 
-  // Protects writes to the latest CodeBuffer and changes to LatestOffset
-  FEXCore::ForkableUniqueMutex CodeBufferWriteMutex;
+  // Atomically allocate a fixed size buffer out of the current allocated codebuffer.
+  // Lockless because it's just a linear allocator.
+  struct CodeBufferAllocation {
+    const uint8_t* BufferBase;
+    uint8_t* BufferAllocationOffset;
+  };
+
+  CodeBufferAllocation AtomicAllocateBuffer(size_t Size) {
+    Size = FEXCore::AlignUp(Size, 16);
+    LOGMAN_THROW_A_FMT(reinterpret_cast<uintptr_t>(CodeBufferOffset.load()) % 16 == 0, "Buffer needs to always be 16B aligned!");
+
+    auto ExpectedOffset = CodeBufferOffset.load(std::memory_order_relaxed);
+    auto DesiredOffset = ExpectedOffset + Size;
+
+    if (DesiredOffset > CodeBufferEnd) {
+      // Couldn't fit.
+      return {};
+    }
+
+    while (!CodeBufferOffset.compare_exchange_strong(ExpectedOffset, DesiredOffset)) {
+      DesiredOffset = ExpectedOffset + Size;
+
+      if (DesiredOffset > CodeBufferEnd) {
+        // Couldn't fit.
+        return {};
+      }
+    }
+
+    // Managed to fit.
+    return {
+      .BufferBase = CodeBufferBase,
+      .BufferAllocationOffset = ExpectedOffset,
+    };
+  }
+
+  size_t GetAllocatedSize() const {
+    return CodeBufferOffset - CodeBufferBase;
+  }
 
   virtual void OnCodeBufferAllocated(const std::shared_ptr<CodeBuffer>&) {};
 

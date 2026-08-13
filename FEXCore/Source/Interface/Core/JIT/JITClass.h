@@ -624,6 +624,8 @@ private:
 
   void EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF);
 
+  [[nodiscard]] SharedCodeBufferManager::CodeBufferAllocation AllocateCodeBufferInSharedCache(size_t Size);
+
 #define DEF_OP(x) void Op_##x(IR::IROp_Header const* IROp, IR::Ref Node)
 
   ///< Unhandled handler
