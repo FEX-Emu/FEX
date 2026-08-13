@@ -815,6 +815,33 @@ void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool C
   EmitSuspendInterruptCheck();
 }
 
+
+SharedCodeBufferManager::CodeBufferAllocation Arm64JITCore::AllocateCodeBufferInSharedCache(size_t Size) {
+  SharedCodeBufferManager::CodeBufferAllocation AllocatedInfo {};
+  LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
+                                                                                               "doesn't match up!\n");
+  // Bring CodeBuffer up to date
+  if (auto Prev = CheckCodeBufferUpdate()) {
+    Allocator::VirtualDontNeed(ThreadState->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
+    auto lk = ThreadState->LookupCache->AcquireWriteLock();
+    ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache, lk);
+  }
+
+  // Attempt to allocate a buffer from the SharedCodeBuffers.
+  while (AllocatedInfo.BufferAllocationOffset == nullptr) {
+    AllocatedInfo = SharedCodeBuffers.AtomicAllocateBuffer(Size);
+
+    if (AllocatedInfo.BufferAllocationOffset == nullptr) {
+      // If it didn't fit then clear the buffer and try again.
+      // This has the possibility of migrating the SharedCodeBuffer. See above in `Arm64JITCore::ClearCache()`
+      CTX->ClearCodeCache(ThreadState);
+      continue;
+    }
+  }
+
+  return AllocatedInfo;
+}
+
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                                    FEXCore::Core::DebugData* DebugData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
@@ -1069,34 +1096,19 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     SetCursorOffset(PrevCur);
   }
 
-  // Migrate the compile output from temporary storage to the actual CodeBuffer.
-  // This can block progress in other compiling threads, so the duration of the lock should be as small as possible.
-  {
-    auto CodeBufferLock = std::unique_lock {SharedCodeBuffers.CodeBufferWriteMutex};
+  // Make sure code is 16B aligned on the tail.
+  Align16B();
 
+  // Migrate the compile output from temporary storage to the actual CodeBuffer.
+  {
     // Query size of generated code
     const auto TempSize = GetCursorOffset();
+    LOGMAN_THROW_A_FMT(TempSize % 16 == 0, "Needs to be 16B aligned!");
 
-    // Bring CodeBuffer up to date
-    {
-      LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
-                                                                                                   "doesn't match up!\n");
-      if (auto Prev = CheckCodeBufferUpdate()) {
-        Allocator::VirtualDontNeed(ThreadState->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
-        auto lk = ThreadState->LookupCache->AcquireWriteLock();
-        ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache, lk);
-      }
+    auto AllocatedInfo = AllocateCodeBufferInSharedCache(TempSize);
 
-      // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
-      SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->AllocatedSize);
-      SetCursorOffset(SharedCodeBuffers.LatestOffset);
-      Align16B();
-      if ((GetCursorOffset() + TempSize) > CurrentCodeBuffer->UsableSize()) {
-        CTX->ClearCodeCache(ThreadState);
-      }
-
-      SharedCodeBuffers.LatestOffset = GetCursorOffset();
-    }
+    // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
+    SetBuffer(AllocatedInfo.BufferAllocationOffset, Size);
 
     // Adjust host addresses
     const auto Delta = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
@@ -1106,15 +1118,16 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     }
     CodeBegin += Delta;
 
+    // Offset the relocations based on how far forward they moved from the temp buffer to the new buffer.
+    // TODO: Relocations should instead be relocated based on the block entrypoint instead of the codebuffer base.
+    // This would make this relocation movement here get deleted and then `CodeCache::HandleRelocations` can just handle it.
+    const size_t AllocationOffset = AllocatedInfo.BufferAllocationOffset - AllocatedInfo.BufferBase;
     for (std::size_t Idx = PrevNumAllocations; Idx != Relocations.size(); ++Idx) {
-      Relocations[Idx].Header.Offset += SharedCodeBuffers.LatestOffset;
+      Relocations[Idx].Header.Offset += AllocationOffset;
     }
 
     // Copy over CodeBuffer contents
     memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer, TempSize);
-    SetCursorOffset(SharedCodeBuffers.LatestOffset + TempSize);
-
-    SharedCodeBuffers.LatestOffset = GetCursorOffset();
   }
 
   TempCodeBufferAllocator.DelayedDisownBuffer();

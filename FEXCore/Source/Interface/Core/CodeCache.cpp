@@ -314,7 +314,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   std::ranges::copy(GIT_HASH, header.FEXVersion);
   header.NumBlocks = LookupCache.BlockList.size();
   header.NumCodePages = LookupCache.CodePages.size();
-  header.CodeBufferSize = FEXCore::AlignUp(CTX.LatestOffset, Utils::FEX_PAGE_SIZE);
+  header.CodeBufferSize = FEXCore::AlignUp(CTX.GetAllocatedSize(), Utils::FEX_PAGE_SIZE);
   header.NumRelocations = Relocations.size();
   header.SerializedBaseAddress = SerializedBaseAddress;
   ::write(fd, &header, sizeof(header));
@@ -361,7 +361,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   }
 
   // Dump the host code (relocated for position-independent serialization)
-  std::span CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->Ptr), reinterpret_cast<std::byte*>(CodeBuffer->Ptr) + CTX.LatestOffset);
+  std::span CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->Ptr), reinterpret_cast<std::byte*>(CodeBuffer->Ptr) + CTX.GetAllocatedSize());
   if (!ApplyCodeRelocations(SerializedBaseAddress, CodeBufferData, Relocations, 0, true)) {
     LOGMAN_THROW_A_FMT(false, "Failed to apply code relocations");
     return false;
@@ -446,10 +446,10 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   }));
   (void)ApplyCodeRelocations(Section.FileStartVA, CodeBufferRangeRef, NewRelocations, 0, false);
 
-  if (ValidationCTX->LatestOffset <= CodeBufferRangeRef.size()) {
+  if (ValidationCTX->GetAllocatedSize() <= CodeBufferRangeRef.size()) {
     // Reference compilation produced fewer bytes than our cache, so validation is going to fail.
     // Make sure we don't output any garbage bytes though.
-    CodeBufferRangeRef = CodeBufferRangeRef.subspan(0, ValidationCTX->LatestOffset);
+    CodeBufferRangeRef = CodeBufferRangeRef.subspan(0, ValidationCTX->GetAllocatedSize());
   }
 
   auto [Mismatch, _] = std::mismatch(CodeBufferRangeRef.begin(), CodeBufferRangeRef.end(), CachedCode.begin());
@@ -500,7 +500,7 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
 
   // Reset Context state for next validation
   ValidationThread->LookupCache->ClearCache(ValidationThread->LookupCache->AcquireWriteLock());
-  ValidationCTX->LatestOffset = 0;
+  ValidationCTX->CodeBufferOffset = ValidationCTX->CodeBufferBase;
 
   LogMan::Msg::IFmt("            successfully validated cache");
 }
