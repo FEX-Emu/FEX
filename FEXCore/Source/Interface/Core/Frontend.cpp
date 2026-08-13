@@ -89,6 +89,11 @@ Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
 }
 
 bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
+  // Check for wraparound
+  if (Address + Size < Address) {
+    return false;
+  }
+
   while (Address < ExecutableRangeBase || Address + Size > ExecutableRangeEnd) {
     auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, Address);
     ExecutableRangeBase = RangeInfo.Base;
