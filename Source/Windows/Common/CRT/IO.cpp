@@ -471,3 +471,11 @@ int access(const char* Path, int AccessMode) {
 int rename(const char* _OldFilename, const char* _NewFilename) {
   UNIMPLEMENTED();
 }
+
+int printf(const char* Format, ...) {
+  UNIMPLEMENTED();
+}
+
+int puts(const char* Str) {
+  UNIMPLEMENTED();
+}
