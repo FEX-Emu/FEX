@@ -2461,6 +2461,51 @@
         "mov w4, w20"
       ]
     },
+    "db 0x66, 0x8D, 0xC0": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "0x8d",
+        "LEA ax, ax illegal register to register encoding"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1496]",
+        "ldr x0, [x28, #2968]",
+        "br x0"
+      ]
+    },
+    "db 0x8D, 0xC0": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "0x8d",
+        "LEA eax, eax illegal register to register encoding"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1496]",
+        "ldr x0, [x28, #2968]",
+        "br x0"
+      ]
+    },
+    "db 0x48, 0x8D, 0xC0": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "0x8d",
+        "LEA rax, rax illegal register to register encoding"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1496]",
+        "ldr x0, [x28, #2968]",
+        "br x0"
+      ]
+    },
     "mov cs, ax": {
       "ExpectedInstructionCount": 4,
       "Skip": "Yes",
