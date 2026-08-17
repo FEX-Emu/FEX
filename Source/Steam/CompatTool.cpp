@@ -12,6 +12,7 @@ $end_info$
 #include "FEXCore/Utils/StringUtils.h"
 #include "FEXHeaderUtils/Filesystem.h"
 
+#include <optional>
 #include <stdlib.h>
 #include <tiny-json.h>
 
@@ -80,11 +81,11 @@ fextl::string GenerateSteamAppConfig(const FEX::Config::PortableInformation& Por
 
   // Current supported Steam options.
   struct SteamOptions {
-    bool TSO = true;
-    bool Multiblock = true;
-    bool Thunks_GL = false;
-    bool Thunks_Vulkan = false;
-    bool EnableLogging = false;
+    std::optional<bool> TSO {};
+    std::optional<bool> Multiblock {};
+    std::optional<bool> Thunks_GL {};
+    std::optional<bool> Thunks_Vulkan {};
+    std::optional<bool> EnableLogging {};
   };
   SteamOptions Options {};
 
@@ -108,18 +109,35 @@ fextl::string GenerateSteamAppConfig(const FEX::Config::PortableInformation& Por
   const auto steam_fex_compat = getenv("STEAM_COMPAT_FEX_CONFIG");
   if (steam_fex_compat) {
     const auto steam_fex_compat_view = std::string_view(steam_fex_compat);
-    if (steam_fex_compat_view.find("TSOEnabled:1") != steam_fex_compat_view.npos) {
-      Options.TSO = true;
-    }
-    if (steam_fex_compat_view.find("Multiblock:1") != steam_fex_compat_view.npos) {
-      Options.Multiblock = true;
-    }
-    if (steam_fex_compat_view.find("ThunksDB_GL:1") != steam_fex_compat_view.npos) {
-      Options.Thunks_GL = true;
-    }
-    if (steam_fex_compat_view.find("ThunksDB_Vulkan:1") != steam_fex_compat_view.npos) {
-      Options.Thunks_Vulkan = true;
-    }
+
+    // Return a tristate for Steam options.
+    // - Exists: Value must be 1 or 0 to set the boolean.
+    // - Doesn't exist: std::optional is unset and config option isn't emitted.
+    auto get_bool_flag = [steam_fex_compat_view](std::string_view option) -> std::optional<bool> {
+      const auto pos = steam_fex_compat_view.find(option);
+      const auto value_pos = pos + option.size();
+
+      // If the key isn't found, or the value position would be beyond the end of the view, then it's not set.
+      if (pos == steam_fex_compat_view.npos || value_pos >= steam_fex_compat_view.size()) {
+        return std::nullopt;
+      }
+
+      const auto value = steam_fex_compat_view[value_pos];
+      if (value == '1') {
+        return true;
+      } else if (value == '0') {
+        return false;
+      }
+
+      // Give an error on invalid boolean key.
+      fextl::fmt::print(stderr, "Invalid option for bool config {}. Got {}\n", option, value);
+      return std::nullopt;
+    };
+
+    Options.TSO = get_bool_flag("TSOEnabled:");
+    Options.Multiblock = get_bool_flag("Multiblock:");
+    Options.Thunks_GL = get_bool_flag("ThunksDB_GL:");
+    Options.Thunks_Vulkan = get_bool_flag("ThunksDB_Vulkan:");
   }
 
   // Create the json.
@@ -128,19 +146,30 @@ fextl::string GenerateSteamAppConfig(const FEX::Config::PortableInformation& Por
   Dest = json_objOpen(Buffer, nullptr);
   {
     Dest = json_objOpen(Dest, "Config");
-    Dest = json_str(Dest, "TSOEnabled", Options.TSO ? "1" : "0");
-    Dest = json_str(Dest, "Multiblock", Options.Multiblock ? "1" : "0");
-    Dest = json_str(Dest, "SilentLog", Options.EnableLogging ? "0" : "1");
+    if (Options.TSO) {
+      Dest = json_str(Dest, "TSOEnabled", Options.TSO.value() ? "1" : "0");
+    }
+    if (Options.Multiblock) {
+      Dest = json_str(Dest, "Multiblock", Options.Multiblock.value() ? "1" : "0");
+    }
+
     if (Options.EnableLogging) {
-      Dest = json_str(Dest, "OutputLog", "server");
+      Dest = json_str(Dest, "SilentLog", Options.EnableLogging.value() ? "0" : "1");
+      if (Options.EnableLogging.value()) {
+        Dest = json_str(Dest, "OutputLog", "server");
+      }
     }
     Dest = json_objClose(Dest);
   }
 
-  {
+  if (Options.Thunks_GL || Options.Thunks_Vulkan) {
     Dest = json_objOpen(Dest, "ThunksDB");
-    Dest = json_str(Dest, "GL", Options.Thunks_GL ? "1" : "0");
-    Dest = json_str(Dest, "Vulkan", Options.Thunks_Vulkan ? "1" : "0");
+    if (Options.Thunks_GL) {
+      Dest = json_str(Dest, "GL", Options.Thunks_GL.value() ? "1" : "0");
+    }
+    if (Options.Thunks_Vulkan) {
+      Dest = json_str(Dest, "Vulkan", Options.Thunks_Vulkan.value() ? "1" : "0");
+    }
     Dest = json_objClose(Dest);
   }
 
