@@ -1454,7 +1454,8 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
     if (BlockSuccIt != BlockInfo.Blocks.end() && BlockSuccIt->Entry < NextBlockStartAddress) {
       NextBlockStartAddress = BlockSuccIt->Entry;
     }
-    LOGMAN_THROW_A_FMT(NextBlockStartAddress > RIPToDecode, "unexpected");
+
+    LOGMAN_THROW_A_FMT(NextBlockStartAddress == ~0ULL || NextBlockStartAddress > RIPToDecode, "unexpected");
 
     // Insert the block now so it can be looked up and split if necessary on a backward edge
     auto BlockIt = BlockInfo.Blocks.emplace(BlockSuccIt);
