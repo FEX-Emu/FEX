@@ -89,6 +89,11 @@ Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
 }
 
 bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
+  // Check for wraparound
+  if (Address + Size < Address) {
+    return false;
+  }
+
   while (Address < ExecutableRangeBase || Address + Size > ExecutableRangeEnd) {
     auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, Address);
     ExecutableRangeBase = RangeInfo.Base;
@@ -1449,7 +1454,8 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
     if (BlockSuccIt != BlockInfo.Blocks.end() && BlockSuccIt->Entry < NextBlockStartAddress) {
       NextBlockStartAddress = BlockSuccIt->Entry;
     }
-    LOGMAN_THROW_A_FMT(NextBlockStartAddress > RIPToDecode, "unexpected");
+
+    LOGMAN_THROW_A_FMT(NextBlockStartAddress == ~0ULL || NextBlockStartAddress > RIPToDecode, "unexpected");
 
     // Insert the block now so it can be looked up and split if necessary on a backward edge
     auto BlockIt = BlockInfo.Blocks.emplace(BlockSuccIt);
