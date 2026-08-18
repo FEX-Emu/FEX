@@ -48,6 +48,7 @@ static inline EXCEPTION_RECORD HandleGuestException(FEXCore::Core::CpuStateFrame
           Dst.NumberParameters = 1;
           Dst.ExceptionInformation[0] = Cx;
           return Dst;
+        case 0x2c: Dst.ExceptionCode = STATUS_ASSERTION_FAILURE; return Dst;
         case 0x2d:
           Rip += 3;
           Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
