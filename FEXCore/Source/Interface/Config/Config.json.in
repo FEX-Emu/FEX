@@ -132,6 +132,34 @@
         "Desc": [
           "Allows overriding cpu feature flags for manual testing"
         ]
+      },
+      "DiskCache": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enables disk caching for code blocks"
+        ]
+      },
+      "DiskCacheRelocationFilter": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Don't cache blocks with relocations pointing outside of any known region"
+        ]
+      },
+      "DiskCachePath": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "Optional base directory override for disk cache"
+        ]
+      },
+      "DiskCacheRODBNames": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "Optional list of extra read-only disk cache DBs to consider"
+        ]
       }
     },
     "Emulation": {

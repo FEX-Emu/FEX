@@ -18,6 +18,11 @@ $end_info$
 #include <FEXCore/fextl/map.h>
 
 #include <cstdint>
+#include <span>
+
+namespace FEXCore::DiskCache {
+struct BlobEntryPoint;
+}
 
 namespace FEXCore::CPU {
 union Relocation;
@@ -56,6 +61,8 @@ namespace CPU {
       fextl::map<uint64_t, uint8_t*> EntryPoints;
       // The total size of the codeblock from [BlockBegin, BlockBegin+Size).
       size_t Size;
+      // Offset of BlockBegin from the start of the CodeBuffer it lives in
+      uint64_t HostCodeOffset;
     };
 
     // Header that can live at the start of a JIT block.
@@ -114,6 +121,10 @@ namespace CPU {
     [[nodiscard]]
     virtual CompiledCode CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                      FEXCore::Core::DebugData* DebugData, bool CheckTF) = 0;
+
+    virtual CompiledCode LoadCachedCode(std::span<const uint8_t> HostBytes, std::span<const DiskCache::BlobEntryPoint> EntryPoints) {
+      return {};
+    }
 
     virtual fextl::vector<FEXCore::CPU::Relocation> TakeRelocations(uint64_t GuestBaseAddress) = 0;
 

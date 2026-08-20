@@ -187,6 +187,37 @@ DLLEXPORT_FUNC(WINBOOL, FlushFileBuffers, (HANDLE hFile)) {
   UNIMPLEMENTED();
 }
 
+DLLEXPORT_FUNC(
+  WINBOOL, LockFileEx,
+  (HANDLE hFile, DWORD dwFlags, DWORD dwReserved, DWORD nNumberOfBytesToLockLow, DWORD nNumberOfBytesToLockHigh, LPOVERLAPPED lpOverlapped)) {
+  if (!lpOverlapped || lpOverlapped->hEvent) {
+    UNIMPLEMENTED();
+  }
+  LARGE_INTEGER ByteOffset;
+  ByteOffset.QuadPart = (static_cast<LONGLONG>(lpOverlapped->OffsetHigh) << 32) | lpOverlapped->Offset;
+  LARGE_INTEGER Length;
+  Length.QuadPart = (static_cast<LONGLONG>(nNumberOfBytesToLockHigh) << 32) | nNumberOfBytesToLockLow;
+  // IoStatusBlock must be null on Wine :harold:
+  NTSTATUS Status = NtLockFile(hFile, nullptr, nullptr, nullptr, nullptr, &ByteOffset, &Length, 0, !!(dwFlags & LOCKFILE_FAIL_IMMEDIATELY),
+                               !!(dwFlags & LOCKFILE_EXCLUSIVE_LOCK));
+  return WinAPIReturn(Status);
+}
+
+DLLEXPORT_FUNC(WINBOOL, UnlockFileEx,
+               (HANDLE hFile, DWORD dwReserved, DWORD nNumberOfBytesToUnlockLow, DWORD nNumberOfBytesToUnlockHigh, LPOVERLAPPED lpOverlapped)) {
+  if (!lpOverlapped || lpOverlapped->hEvent) {
+    UNIMPLEMENTED();
+  }
+  LARGE_INTEGER ByteOffset;
+  ByteOffset.QuadPart = (static_cast<LONGLONG>(lpOverlapped->OffsetHigh) << 32) | lpOverlapped->Offset;
+  LARGE_INTEGER Length;
+  Length.QuadPart = (static_cast<LONGLONG>(nNumberOfBytesToUnlockHigh) << 32) | nNumberOfBytesToUnlockLow;
+  // IoStatusBlock must be non-null on Wine :harold:
+  IO_STATUS_BLOCK IoStatusBlock;
+  NTSTATUS Status = NtUnlockFile(hFile, &IoStatusBlock, &ByteOffset, &Length, 0);
+  return WinAPIReturn(Status);
+}
+
 DLLEXPORT_FUNC(DWORD, GetFinalPathNameByHandleA, (HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath, DWORD dwFlags)) {
   UNIMPLEMENTED();
 }

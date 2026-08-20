@@ -40,7 +40,7 @@ static bool InitializeSquashFSPipe() {
     ServerRootFSLockFD = open(RootFSLockFile.c_str(), O_RDWR | O_CLOEXEC, USER_PERMS);
     if (ServerRootFSLockFD != -1) {
       // Now that we have opened the file, try to get a write lock.
-      flock lk {
+      struct flock lk {
         .l_type = F_WRLCK,
         .l_whence = SEEK_SET,
         .l_start = 0,
@@ -67,7 +67,7 @@ static bool InitializeSquashFSPipe() {
     return false;
   } else {
     // FIFO file was created. Try to get a write lock
-    flock lk {
+    struct flock lk {
       .l_type = F_WRLCK,
       .l_whence = SEEK_SET,
       .l_start = 0,
@@ -87,7 +87,7 @@ static bool InitializeSquashFSPipe() {
 }
 
 static bool DowngradeRootFSPipeToReadLock() {
-  flock lk {
+  struct flock lk {
     .l_type = F_RDLCK,
     .l_whence = SEEK_SET,
     .l_start = 0,

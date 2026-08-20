@@ -10,6 +10,7 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/HostFeatures.h>
+#include <FEXCore/Core/DiskCache.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
@@ -202,6 +203,8 @@ public:
   FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) override;
   FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) override;
 
+  virtual void InitDiskCache() override {}
+
   CodeCache& GetCodeCache() override {
     return CodeCache;
   }
@@ -375,6 +378,7 @@ public:
   FEXCore::HLE::SourcecodeResolver* SourcecodeResolver {};
   FEXCore::ThunkHandler* ThunkHandler {};
   fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
+  DiskCache::DiskCache DiskCache;
   CodeCache CodeCache;
   fextl::unique_ptr<CodeMapWriter> CodeMapWriter;
 

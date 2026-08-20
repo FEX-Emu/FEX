@@ -741,5 +741,6 @@ void InitializeConfigs(const PortableInformation& PortableInfo) {
   FEXCore::Config::SetConfigDirectory(GetConfigDirectory(true, PortableInfo), true);
   FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(false, PortableInfo), false);
   FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(true, PortableInfo), true);
+  FEXCore::Config::SetCacheDirectory(GetCacheDirectory());
 }
 } // namespace FEX::Config
