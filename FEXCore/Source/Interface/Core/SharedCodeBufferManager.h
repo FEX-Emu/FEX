@@ -22,7 +22,11 @@ struct GuestToHostMap;
 namespace FEXCore::CPU {
 struct CodeBuffer {
   uint8_t* Ptr;
+  uint8_t* CodeBufferEnd;
   size_t AllocatedSize; // including guard page; see UsableSize()
+
+  // Code buffer allocation information.
+  std::atomic<uint8_t*> CodeBufferOffset {};
 
   fextl::unique_ptr<GuestToHostMap> LookupCache;
 
@@ -38,35 +42,6 @@ struct CodeBuffer {
   size_t UsableSize() const {
     return AllocatedSize - FEXCore::Utils::FEX_PAGE_SIZE;
   }
-};
-
-/**
- * A manager that coordinates access to the CodeBuffer used for compiling new code across threads.
- *
- * The CodeBuffer is managed as a partially persistent data structure:
- * - Exactly one CodeBuffer is now designated as "active", which means data can be appended to it
- * - Lossy modifications to the active CodeBuffer will not invalidate any data in use by other threads (which is what enables save CodeBuffer sharing across threads)
- * - Instead, such lossy modifications trigger a new "version" of the data in the modifying thread. Old versions of the CodeBuffer persist as read-only data for use by the other threads.
- * - The other threads can update their version of the CodeBuffer. This will decrease the reference count and eventually trigger deallocation of the old version
- */
-class SharedCodeBufferManager {
-public:
-  // Get the CodeBuffer that was most recently allocated.
-  // This is the only CodeBuffer that data may be written to.
-  fextl::shared_ptr<CodeBuffer> GetLatest();
-
-  // Allocate a new CodeBuffer with geometric growth up to an internal maximum.
-  // Subsequent calls to GetLatest will point to the returned buffer.
-  fextl::shared_ptr<CodeBuffer> StartLargerCodeBuffer();
-
-  // Allocate a new CodeBuffer with maximum internal size.
-  // Subsequent calls to GetLatest will point to the returned buffer.
-  fextl::shared_ptr<CodeBuffer> StartMaximalCodeBuffer();
-
-  // Write offset into the latest CodeBuffer
-  uint8_t* CodeBufferBase {};
-  uint8_t* CodeBufferEnd {};
-  std::atomic<uint8_t*> CodeBufferOffset {};
 
   // Atomically allocate a fixed size buffer out of the current allocated codebuffer.
   // Lockless because it's just a linear allocator.
@@ -98,14 +73,40 @@ public:
 
     // Managed to fit.
     return {
-      .BufferBase = CodeBufferBase,
+      .BufferBase = Ptr,
       .BufferAllocationOffset = ExpectedOffset,
     };
   }
 
   size_t GetAllocatedSize() const {
-    return CodeBufferOffset - CodeBufferBase;
+    return CodeBufferOffset - Ptr;
   }
+};
+
+/**
+ * A manager that coordinates access to the CodeBuffer used for compiling new code across threads.
+ *
+ * The CodeBuffer is managed as a partially persistent data structure:
+ * - Exactly one CodeBuffer is now designated as "active", which means data can be appended to it
+ * - Lossy modifications to the active CodeBuffer will not invalidate any data in use by other threads (which is what enables save CodeBuffer sharing across threads)
+ * - Instead, such lossy modifications trigger a new "version" of the data in the modifying thread. Old versions of the CodeBuffer persist as read-only data for use by the other threads.
+ * - The other threads can update their version of the CodeBuffer. This will decrease the reference count and eventually trigger deallocation of the old version
+ */
+class SharedCodeBufferManager {
+public:
+  virtual ~SharedCodeBufferManager() = default;
+
+  // Get the CodeBuffer that was most recently allocated.
+  // This is the only CodeBuffer that data may be written to.
+  fextl::shared_ptr<CodeBuffer> GetLatest();
+
+  // Allocate a new CodeBuffer with geometric growth up to an internal maximum.
+  // Subsequent calls to GetLatest will point to the returned buffer.
+  fextl::shared_ptr<CodeBuffer> StartLargerCodeBuffer();
+
+  // Allocate a new CodeBuffer with maximum internal size.
+  // Subsequent calls to GetLatest will point to the returned buffer.
+  fextl::shared_ptr<CodeBuffer> StartMaximalCodeBuffer();
 
   virtual void OnCodeBufferAllocated(const std::shared_ptr<CodeBuffer>&) {};
 

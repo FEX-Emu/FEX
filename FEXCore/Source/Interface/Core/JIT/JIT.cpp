@@ -816,8 +816,8 @@ void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool C
 }
 
 
-SharedCodeBufferManager::CodeBufferAllocation Arm64JITCore::AllocateCodeBufferInSharedCache(size_t Size) {
-  SharedCodeBufferManager::CodeBufferAllocation AllocatedInfo {};
+CodeBuffer::CodeBufferAllocation Arm64JITCore::AllocateCodeBufferInSharedCache(size_t Size) {
+  CodeBuffer::CodeBufferAllocation AllocatedInfo {};
   LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
                                                                                                "doesn't match up!\n");
   // Bring CodeBuffer up to date
@@ -829,7 +829,7 @@ SharedCodeBufferManager::CodeBufferAllocation Arm64JITCore::AllocateCodeBufferIn
 
   // Attempt to allocate a buffer from the SharedCodeBuffers.
   while (AllocatedInfo.BufferAllocationOffset == nullptr) {
-    AllocatedInfo = SharedCodeBuffers.AtomicAllocateBuffer(Size);
+    AllocatedInfo = CurrentCodeBuffer->AtomicAllocateBuffer(Size);
 
     if (AllocatedInfo.BufferAllocationOffset == nullptr) {
       // If it didn't fit then clear the buffer and try again.
