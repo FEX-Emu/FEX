@@ -3,6 +3,7 @@
 #include <FEXCore/fextl/allocator.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/Utils/EnumOperators.h>
+#include "FEXCore/Utils/LogManager.h"
 
 #include <chrono>
 #include <thread>
@@ -11,6 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -43,7 +45,8 @@ public:
 
   File() = default;
 
-  File(const char* Filepath, FileModes Modes) {
+  File(const char* Filepath, FileModes Modes, bool Seekable = true)
+    : Seekable {Seekable} {
 #ifndef _WIN32
     auto Disp = TranslateModes(Modes);
     Handle = open(Filepath, Disp, DEFAULT_USER_PERMS);
@@ -75,6 +78,10 @@ public:
    * @return The number of bytes actually written or -1 on error.
    */
   ssize_t Write(const void* Buffer, size_t Bytes) {
+    if (!Seekable) {
+      LOGMAN_THROW_A_FMT(false, "Can't use non-positioned ops on a non-seekable file!");
+      return -1;
+    }
 #ifndef _WIN32
     return write(Handle, Buffer, Bytes);
 #else
@@ -101,6 +108,10 @@ public:
    * @return The number of bytes read or -1 on error.
    */
   ssize_t Read(void* Buffer, size_t Bytes) {
+    if (!Seekable) {
+      LOGMAN_THROW_A_FMT(false, "Can't use non-positioned ops on a non-seekable file!");
+      return -1;
+    }
 #ifndef _WIN32
     return read(Handle, Buffer, Bytes);
 #else
@@ -108,6 +119,48 @@ public:
     auto Result = ReadFile(Handle, Buffer, Bytes, &BytesRead, nullptr);
     if (Result) {
       return BytesRead;
+    }
+    // Some error, match Linux side.
+    return -1;
+#endif
+  }
+
+  ssize_t PRead(void* Buffer, size_t Bytes, uint64_t Offset) {
+    if (Seekable) {
+      LOGMAN_THROW_A_FMT(false, "Can't use positioned ops on a seekable file!");
+      return -1;
+    }
+#ifndef _WIN32
+    return pread(Handle, Buffer, Bytes, Offset);
+#else
+    DWORD BytesRead {};
+    OVERLAPPED Overlapped {};
+    Overlapped.Offset = static_cast<DWORD>(Offset);
+    Overlapped.OffsetHigh = static_cast<DWORD>(Offset >> 32);
+    auto Result = ReadFile(Handle, Buffer, Bytes, &BytesRead, &Overlapped);
+    if (Result) {
+      return BytesRead;
+    }
+    // Some error, match Linux side.
+    return -1;
+#endif
+  }
+
+  ssize_t PWrite(const void* Buffer, size_t Bytes, uint64_t Offset) {
+    if (Seekable) {
+      LOGMAN_THROW_A_FMT(false, "Can't use positioned ops on a seekable file!");
+      return -1;
+    }
+#ifndef _WIN32
+    return pwrite(Handle, Buffer, Bytes, Offset);
+#else
+    DWORD BytesWritten {};
+    OVERLAPPED Overlapped {};
+    Overlapped.Offset = static_cast<DWORD>(Offset);
+    Overlapped.OffsetHigh = static_cast<DWORD>(Offset >> 32);
+    auto Result = WriteFile(Handle, Buffer, Bytes, &BytesWritten, &Overlapped);
+    if (Result) {
+      return BytesWritten;
     }
     // Some error, match Linux side.
     return -1;
@@ -202,6 +255,22 @@ public:
 #endif
   }
 
+  ssize_t Size() {
+#ifndef _WIN32
+    struct stat st;
+    if (fstat(Handle, &st) != 0) {
+      return -1;
+    }
+    return st.st_size;
+#else
+    LARGE_INTEGER FileSize;
+    if (!GetFileSizeEx(Handle, &FileSize)) {
+      return -1;
+    }
+    return FileSize.QuadPart;
+#endif
+  }
+
   /**
    * @brief Seek the file pointer location.
    *
@@ -211,6 +280,10 @@ public:
    * @return The current file pointer location or -1.
    */
   ssize_t Seek(ssize_t Distance, SeekOp Op) {
+    if (!Seekable) {
+      LOGMAN_THROW_A_FMT(false, "Can't use non-positioned ops on a non-seekable file!");
+      return -1;
+    }
 #ifndef _WIN32
     return lseek(Handle, Distance, TranslateSeek(Op));
 #else
@@ -227,10 +300,11 @@ public:
 
 protected:
 
-  File(FileHandleType Handle, bool ShouldClose)
+  File(FileHandleType Handle, bool ShouldClose, bool Seekable = true)
     : ShouldClose {ShouldClose}
     , IsValidHandle {true}
-    , Handle {Handle} {}
+    , Handle {Handle}
+    , Seekable {Seekable} {}
 private:
   bool TryLock() {
     if (Locked) {
@@ -257,6 +331,7 @@ private:
   bool IsValidHandle {};
 
   FileHandleType Handle {};
+  bool Seekable = true;
   bool Locked = false;
 #ifndef _WIN32
   static constexpr int DEFAULT_USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;

@@ -111,10 +111,16 @@ DLLEXPORT_FUNC(HANDLE, CreateFileW,
 DLLEXPORT_FUNC(WINBOOL, WriteFile,
                (HANDLE hFile, const void* lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped)) {
   IO_STATUS_BLOCK IOSB;
+  LARGE_INTEGER ByteOffset;
+  PLARGE_INTEGER ByteOffsetPtr = nullptr;
   if (lpOverlapped) {
-    UNIMPLEMENTED();
+    if (lpOverlapped->hEvent) {
+      UNIMPLEMENTED();
+    }
+    ByteOffset.QuadPart = (static_cast<LONGLONG>(lpOverlapped->OffsetHigh) << 32) | lpOverlapped->Offset;
+    ByteOffsetPtr = &ByteOffset;
   }
-  NTSTATUS Status = NtWriteFile(hFile, nullptr, nullptr, nullptr, &IOSB, lpBuffer, nNumberOfBytesToWrite, nullptr, nullptr);
+  NTSTATUS Status = NtWriteFile(hFile, nullptr, nullptr, nullptr, &IOSB, lpBuffer, nNumberOfBytesToWrite, ByteOffsetPtr, nullptr);
   if (lpNumberOfBytesWritten) {
     *lpNumberOfBytesWritten = static_cast<DWORD>(IOSB.Information);
   }
@@ -133,6 +139,18 @@ DLLEXPORT_FUNC(WINBOOL, WriteConsoleA,
 DLLEXPORT_FUNC(WINBOOL, WriteConsoleW,
                (HANDLE hConsoleOutput, CONST void* lpBuffer, DWORD nNumberOfCharsToWrite, LPDWORD lpNumberOfCharsWritten, void* lpReserved)) {
   UNIMPLEMENTED();
+}
+
+DLLEXPORT_FUNC(WINBOOL, GetFileSizeEx, (HANDLE hFile, PLARGE_INTEGER lpFileSize)) {
+  IO_STATUS_BLOCK IOSB;
+  FILE_STANDARD_INFORMATION StandardInfo;
+  if (NTSTATUS Status = NtQueryInformationFile(hFile, &IOSB, &StandardInfo, sizeof(StandardInfo), FileStandardInformation); Status) {
+    return WinAPIReturn(Status);
+  }
+  if (lpFileSize) {
+    *lpFileSize = StandardInfo.EndOfFile;
+  }
+  return true;
 }
 
 DLLEXPORT_FUNC(WINBOOL, SetFilePointerEx, (HANDLE hFile, LARGE_INTEGER liDistanceToMove, PLARGE_INTEGER lpNewFilePointer, DWORD dwMoveMethod)) {
@@ -173,10 +191,17 @@ DLLEXPORT_FUNC(WINBOOL, SetFilePointerEx, (HANDLE hFile, LARGE_INTEGER liDistanc
 DLLEXPORT_FUNC(WINBOOL, ReadFile,
                (HANDLE hFile, void* lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped)) {
   IO_STATUS_BLOCK IOSB;
+  LARGE_INTEGER ByteOffset;
+  PLARGE_INTEGER ByteOffsetPtr = nullptr;
   if (lpOverlapped) {
-    UNIMPLEMENTED();
+    if (lpOverlapped->hEvent) {
+      // no actual async-overlapped, just enough for PRead
+      UNIMPLEMENTED();
+    }
+    ByteOffset.QuadPart = (static_cast<LONGLONG>(lpOverlapped->OffsetHigh) << 32) | lpOverlapped->Offset;
+    ByteOffsetPtr = &ByteOffset;
   }
-  NTSTATUS Status = NtReadFile(hFile, nullptr, nullptr, nullptr, &IOSB, lpBuffer, nNumberOfBytesToRead, nullptr, nullptr);
+  NTSTATUS Status = NtReadFile(hFile, nullptr, nullptr, nullptr, &IOSB, lpBuffer, nNumberOfBytesToRead, ByteOffsetPtr, nullptr);
   if (lpNumberOfBytesRead) {
     *lpNumberOfBytesRead = static_cast<DWORD>(IOSB.Information);
   }
