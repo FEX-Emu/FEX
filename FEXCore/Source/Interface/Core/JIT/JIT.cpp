@@ -892,6 +892,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   ThreadState->JITGuardOverflowArgument = FEXCore::ToUnderlying(RestartOptions::Control::NeedsLargerJITSpace);
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
+  LOGMAN_THROW_A_FMT(GetCursorOffset() == 0, "Needs to be zero");
 
   // Put the code header at the start of the data block.
   ARMEmitter::BackwardLabel JITCodeHeaderLabel {};
@@ -1080,36 +1081,35 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   }
 
   SetCursorOffset(JITRIPEntriesLocation - CodeData.BlockBegin);
-  Align();
+  // Make sure code is 16B aligned on the tail.
+  // Can't use Align16B here as vl64pair can cause non-4byte alignment.
+  Align(16);
 
-  CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
+  // Beginning of emission is guaranteed to be offset zero. So the code data size is just the current cursor offset.
+  CodeData.Size = GetCursorOffset();
 
   // Finalize and write block tail data
   JITBlockTail.Size = CodeData.Size;
   {
-    auto PrevCur = GetCursorOffset();
     memcpy(JITBlockTailLocation, &JITBlockTail, sizeof(JITBlockTail));
     SetCursorOffset(JITBlockTailLocation - CodeData.BlockBegin + offsetof(JITCodeTail, RIP));
     PlaceNamedSymbolLiteral(InsertGuestRIPLiteral(JITBlockTail.RIP));
-    SetCursorOffset(PrevCur);
-  }
 
-  // Make sure code is 16B aligned on the tail.
-  Align16B();
+    // Emitter buffer is no longer used, guard against misuse by setting to nullptr.
+    SetBuffer(nullptr, 0);
+  }
 
   // Migrate the compile output from temporary storage to the actual CodeBuffer.
   {
-    // Query size of generated code
-    const auto TempSize = GetCursorOffset();
-    LOGMAN_THROW_A_FMT(TempSize % 16 == 0, "Needs to be 16B aligned!");
+    LOGMAN_THROW_A_FMT(CodeData.Size % 16 == 0, "Needs to be 16B aligned!");
 
-    auto AllocatedInfo = AllocateCodeBufferInSharedCache(TempSize);
-
+    auto AllocatedInfo = AllocateCodeBufferInSharedCache(CodeData.Size);
     // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
-    SetBuffer(AllocatedInfo.BufferAllocationOffset, Size);
+    LOGMAN_THROW_A_FMT((reinterpret_cast<uintptr_t>(AllocatedInfo.BufferAllocationOffset) % 16) == 0, "Allocated buffer wasn't 16B "
+                                                                                                      "aligned?");
 
     // Adjust host addresses
-    const auto Delta = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
+    const auto Delta = AllocatedInfo.BufferAllocationOffset - CodeData.BlockBegin;
     CodeData.BlockBegin += Delta;
     for (auto& EntryPoint : CodeData.EntryPoints) {
       EntryPoint.second += Delta;
@@ -1126,7 +1126,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     }
 
     // Copy over CodeBuffer contents
-    memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer, TempSize);
+    memcpy(AllocatedInfo.BufferAllocationOffset, TempCodeBuffer, CodeData.Size);
   }
 
   TempCodeBufferAllocator.DelayedDisownBuffer();
