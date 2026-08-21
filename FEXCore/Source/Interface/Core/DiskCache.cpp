@@ -43,7 +43,7 @@ namespace DiskCache {
     if (!ReadOnly) {
       Modes = Modes | File::FileModes::WRITE | File::FileModes::CREATE;
     }
-    FD = fextl::make_unique<File::File>(FileName.c_str(), Modes);
+    FD = fextl::make_unique<File::File>(FileName.c_str(), Modes, false);
     if (!FD->IsValid()) {
       FD.reset();
       return false;
@@ -51,7 +51,7 @@ namespace DiskCache {
 
     bool Valid = false;
     bool TookLock = false;
-    ssize_t Size = FD->Seek(0, File::SeekOp::END);
+    ssize_t Size = FD->Size();
 
     if (Size < FOZ_REF_MAGIC_SIZE && !ReadOnly) {
       if (!FD->Lock(OPEN_LOCK_TIMEOUT_MS)) {
@@ -59,16 +59,15 @@ namespace DiskCache {
         return false;
       }
       TookLock = true;
-      // seek in case someone else made it while we waited above
-      Size = FD->Seek(0, File::SeekOp::END);
+      // check size again in case someone else made it while we waited
+      Size = FD->Size();
     }
 
     if (Size == 0 && !ReadOnly) {
-      Valid = FD->Write(MesaFOZ::stream_reference_magic_and_version, FOZ_REF_MAGIC_SIZE) == FOZ_REF_MAGIC_SIZE;
+      Valid = FD->PWrite(MesaFOZ::stream_reference_magic_and_version, FOZ_REF_MAGIC_SIZE, 0) == FOZ_REF_MAGIC_SIZE;
     } else {
-      FD->Seek(0, File::SeekOp::BEGIN);
       uint8_t magic[FOZ_REF_MAGIC_SIZE];
-      if (FD->Read(magic, FOZ_REF_MAGIC_SIZE) == FOZ_REF_MAGIC_SIZE &&
+      if (FD->PRead(magic, FOZ_REF_MAGIC_SIZE, 0) == FOZ_REF_MAGIC_SIZE &&
           memcmp(magic, MesaFOZ::stream_reference_magic_and_version, FOZ_REF_MAGIC_SIZE - 1) == 0) {
         int version = magic[FOZ_REF_MAGIC_SIZE - 1];
         Valid = version <= MesaFOZ::FOSSILIZE_FORMAT_VERSION && version >= MesaFOZ::FOSSILIZE_FORMAT_MIN_COMPAT_VERSION;
@@ -85,41 +84,34 @@ namespace DiskCache {
     return Valid;
   }
 
-  bool FOZFile::ReadNextBlob(MesaFOZ::foz_payload_key& OutKey, MesaFOZ::foz_payload_header& OutHeader, fextl::vector<uint8_t>& OutBlob) {
-    if (FD->Read(OutKey.bytes, sizeof(OutKey.bytes)) != sizeof(OutKey.bytes)) {
+  ssize_t FOZFile::Size() {
+    return FD ? FD->Size() : -1;
+  }
+
+  bool FOZFile::ReadAll(fextl::vector<uint8_t>& Out) {
+    ssize_t FileSize = Size();
+    if (FileSize < FOZ_REF_MAGIC_SIZE) {
       return false;
     }
-    if (FD->Read(&OutHeader, sizeof(OutHeader)) != sizeof(OutHeader)) {
-      return false;
-    }
-    OutBlob.resize(OutHeader.payload_size);
-    if (FD->Read(OutBlob.data(), OutBlob.size()) != (ssize_t)OutBlob.size()) {
-      return false;
-    }
-    return true;
+    Out.resize((size_t)FileSize - FOZ_REF_MAGIC_SIZE);
+    return FD->PRead(Out.data(), Out.size(), FOZ_REF_MAGIC_SIZE) == (ssize_t)Out.size();
   }
 
   bool FOZFile::ReadBlob(uint64_t Offset, std::span<uint8_t> OutBlob) {
-    ssize_t SeekRet = FD->Seek(Offset, File::SeekOp::BEGIN);
-    if (SeekRet < 0) {
+    if (FD->PRead(OutBlob.data(), OutBlob.size(), Offset) != (ssize_t)OutBlob.size()) {
       return false;
     }
-    if (FD->Read(OutBlob.data(), OutBlob.size()) != (ssize_t)OutBlob.size()) {
-      return false;
-    }
-
     return true;
   }
 
   bool FOZFile::WriteBlob(const MesaFOZ::foz_payload_key& Key, std::span<const std::span<const uint8_t>> BlobChunks, uint64_t& OutBlobOffset) {
-    uint64_t WriteOffset = 0;
-    ssize_t SeekRet = FD->Seek(0, File::SeekOp::END);
-    if (SeekRet < 0) {
+    ssize_t FileSize = FD->Size();
+    if (FileSize < 0) {
       return false;
     }
-    WriteOffset = (uint64_t)SeekRet;
+    uint64_t WriteOffset = (uint64_t)FileSize;
 
-    if (FD->Write(Key.bytes, sizeof(Key.bytes)) != sizeof(Key.bytes)) {
+    if (FD->PWrite(Key.bytes, sizeof(Key.bytes), WriteOffset) != sizeof(Key.bytes)) {
       return false;
     }
     WriteOffset += sizeof(Key.bytes);
@@ -134,7 +126,7 @@ namespace DiskCache {
                                                .crc = 0, // todo? maybe
                                                .uncompressed_size = (uint32_t)TotalBlobSize};
 
-    if (FD->Write(&ScratchHeader, sizeof(ScratchHeader)) != sizeof(ScratchHeader)) {
+    if (FD->PWrite(&ScratchHeader, sizeof(ScratchHeader), WriteOffset) != sizeof(ScratchHeader)) {
       return false;
     }
     WriteOffset += sizeof(ScratchHeader);
@@ -145,9 +137,10 @@ namespace DiskCache {
       if (Chunk.size() == 0) {
         continue;
       }
-      if (FD->Write(Chunk.data(), Chunk.size()) != (ssize_t)Chunk.size()) {
+      if (FD->PWrite(Chunk.data(), Chunk.size(), WriteOffset) != (ssize_t)Chunk.size()) {
         return false;
       }
+      WriteOffset += Chunk.size();
     }
 
     return true;
@@ -166,19 +159,40 @@ namespace DiskCache {
   }
 
   void IndexedDB::PopulateIndex(Index& CacheIndex) {
-    MesaFOZ::foz_payload_key Key;
-    MesaFOZ::foz_payload_header Header;
-    fextl::vector<uint8_t> Blob;
+    fextl::vector<uint8_t> Data;
+    if (!IndexFOZ.ReadAll(Data)) {
+      return;
+    }
 
-    while (IndexFOZ.ReadNextBlob(Key, Header, Blob)) {
-      if (Blob.size() != sizeof(MesaFOZ::mesa_index_db_file_entry)) {
+    ssize_t CacheFOZSize = CacheFOZ.Size();
+    if (CacheFOZSize < 0) {
+      return;
+    }
+
+    const uint8_t* IndexDataStart = Data.data();
+    const size_t IndexDataSize = Data.size();
+    size_t ReadOffset = 0;
+    while (ReadOffset + sizeof(MesaFOZ::foz_payload_key) + sizeof(MesaFOZ::foz_payload_header) <= IndexDataSize) {
+      const auto* FOZKey = reinterpret_cast<const MesaFOZ::foz_payload_key*>(IndexDataStart + ReadOffset);
+      ReadOffset += sizeof(MesaFOZ::foz_payload_key);
+      const auto* FOZHeader = reinterpret_cast<const MesaFOZ::foz_payload_header*>(IndexDataStart + ReadOffset);
+      ReadOffset += sizeof(MesaFOZ::foz_payload_header);
+
+      if (FOZHeader->payload_size != sizeof(MesaFOZ::mesa_index_db_file_entry) || ReadOffset + FOZHeader->payload_size > IndexDataSize) {
         break;
       }
-      MesaFOZ::mesa_index_db_file_entry* IndexEntry = (MesaFOZ::mesa_index_db_file_entry*)Blob.data();
-      if (IndexEntry->hash != XXH3_64bits(Key.bytes, FOSSILIZE_BLOB_HASH_LENGTH)) {
+      const auto* IndexBlobPayload = reinterpret_cast<const MesaFOZ::mesa_index_db_file_entry*>(IndexDataStart + ReadOffset);
+      ReadOffset += FOZHeader->payload_size;
+
+      if (IndexBlobPayload->hash != XXH3_64bits(FOZKey->bytes, FOSSILIZE_BLOB_HASH_LENGTH)) {
         break;
       }
-      CacheIndex.insert({IndexEntry->hash, {this, IndexEntry->cache_db_file_offset, IndexEntry->size}});
+      // skip corrupt (carefully) so we don't have to figure that out in the hot path later
+      if (IndexBlobPayload->cache_db_file_offset > (uint64_t)CacheFOZSize ||
+          IndexBlobPayload->size > (uint64_t)CacheFOZSize - IndexBlobPayload->cache_db_file_offset) {
+        continue;
+      }
+      CacheIndex.insert({IndexBlobPayload->hash, {this, IndexBlobPayload->cache_db_file_offset, IndexBlobPayload->size}});
     }
     // could truncate/delete index if we don't end up perfectly at end here
   }
@@ -187,15 +201,18 @@ namespace DiskCache {
     return CacheFOZ.ReadBlob(Offset, OutBlob);
   }
 
-  bool IndexedDB::StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const std::span<const uint8_t>> BlobChunks, Index& Index) {
+  bool IndexedDB::StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const uint8_t> Blob, Index& Index, std::mutex& IndexMutex) {
     if (ReadOnly) {
       // shouldn't happen
       return false;
     }
     uint64_t Hash = XXH3_64bits(Key.bytes, FOSSILIZE_BLOB_HASH_LENGTH);
-    if (Index.contains(Hash)) {
-      // shouldn't really happen.. assert or something?
-      return true;
+    {
+      std::lock_guard Guard(IndexMutex);
+      if (Index.contains(Hash)) {
+        // shouldn't really happen.. assert or something?
+        return true;
+      }
     }
 
     if (!CacheFOZ.Lock(STORE_LOCK_TIMEOUT_MS) || !IndexFOZ.Lock(STORE_LOCK_TIMEOUT_MS)) {
@@ -205,6 +222,7 @@ namespace DiskCache {
     }
 
     // write cache side first so we get offset for index
+    std::span<const uint8_t> BlobChunks[] = {Blob};
     uint64_t BlobOffset = 0;
     if (!CacheFOZ.WriteBlob(Key, BlobChunks, BlobOffset)) {
       CacheFOZ.Unlock();
@@ -212,13 +230,8 @@ namespace DiskCache {
       return false;
     }
 
-    uint64_t TotalBlobSize = 0;
-    for (const std::span<const uint8_t>& Chunk : BlobChunks) {
-      TotalBlobSize += Chunk.size();
-    }
-
     MesaFOZ::mesa_index_db_file_entry IndexEntry {.hash = Hash,
-                                                  .size = (uint32_t)TotalBlobSize,
+                                                  .size = (uint32_t)Blob.size(),
                                                   .last_access_time = 0, // todo..
                                                   .cache_db_file_offset = BlobOffset};
 
@@ -233,7 +246,8 @@ namespace DiskCache {
     CacheFOZ.Unlock();
     IndexFOZ.Unlock();
 
-    Index[Hash] = {this, BlobOffset, (uint32_t)TotalBlobSize};
+    std::lock_guard Guard(IndexMutex);
+    Index[Hash] = {this, BlobOffset, (uint32_t)Blob.size()};
     return true;
   }
 
@@ -300,13 +314,16 @@ namespace DiskCache {
       // advance to next
       RONames.remove_prefix(Delim + 1);
     }
+
+    if (IsWritingDiskCache()) {
+      Writer = fextl::make_unique<WorkQueueThread>();
+    }
   }
 
   std::optional<CodeHitData> DiskCache::Lookup(Core::InternalThreadState* Thread, const ExecutableFileSectionInfo& Region, uint64_t GuestRIP) {
     if (!IsReadingDiskCache()) {
       return std::nullopt;
     }
-    std::lock_guard Guard(Lock);
     uint64_t ModuleOffset = GuestRIP - Region.FileStartVA;
 
     // todo move key making to a helper once we have options and stuff (see Store)
@@ -314,12 +331,18 @@ namespace DiskCache {
     memcpy(Key.bytes, &ModuleOffset, sizeof(ModuleOffset));
 
     uint64_t Hash = XXH3_64bits(Key.bytes, FOSSILIZE_BLOB_HASH_LENGTH);
-    auto It = Index.find(Hash);
-    if (It == Index.end()) {
-      // definite miss
-      return std::nullopt;
+
+    IndexEntry Entry;
+    {
+      std::lock_guard Guard(IndexLock);
+      auto It = Index.find(Hash);
+      if (It == Index.end()) {
+        // definite miss
+        return std::nullopt;
+      }
+      // we can't hold onto the iterator, the map may shift while we don't hold the lock
+      Entry = It->second;
     }
-    const IndexEntry& Entry = It->second;
     // found a key hash match, could still be a miss, read the blob and verify more
     CodeHitData HitData;
     HitData.Blob.resize(Entry.Size);
@@ -405,6 +428,25 @@ namespace DiskCache {
     return HitData;
   }
 
+  static inline bool IsRelocationInBlock(const FEXCore::CPU::Relocation& Reloc, const CPU::CPUBackend::CompiledCode& CompiledCode) {
+    return Reloc.Header.Offset >= CompiledCode.HostCodeOffset && Reloc.Header.Offset < CompiledCode.HostCodeOffset + CompiledCode.Size;
+  }
+
+  struct DiskCache::CacheStoreWorkItem final : WorkQueueThread::WorkItem {
+    DiskCache* Self;
+    IndexedDB* DB;
+    MesaFOZ::foz_payload_key Key;
+    fextl::vector<uint8_t> Blob;
+    CacheStoreWorkItem(DiskCache* Self, IndexedDB* DB, const MesaFOZ::foz_payload_key& Key, fextl::vector<uint8_t>&& Blob)
+      : Self(Self)
+      , DB(DB)
+      , Key(Key)
+      , Blob(std::move(Blob)) {}
+    void Run() override {
+      DB->StoreCacheBlob(Key, Blob, Self->Index, Self->IndexLock);
+    }
+  };
+
   bool DiskCache::Store(Core::InternalThreadState* Thread, const ExecutableFileSectionInfo& Region, uint64_t GuestRIP,
                         std::span<const uint8_t> GuestCode, const CPU::CPUBackend::CompiledCode& CompiledCode,
                         std::span<const FEXCore::CPU::Relocation> Relocations, const Frontend::Decoder::DecodedBlockInformation* DecodedBlockInfo) {
@@ -414,13 +456,12 @@ namespace DiskCache {
     if (!DecodedBlockInfo) {
       return false;
     }
-    std::lock_guard Guard(Lock);
 
     // check for any reloc targets outside of our jurisdiction
     // todo what are they exactly? caching those blocks is great when it works, so need to figure this out and make finer-grained if we can
     if (RelocationFilter) {
       for (const auto& Reloc : Relocations) {
-        if (Reloc.Header.Offset < CompiledCode.HostCodeOffset || Reloc.Header.Offset >= CompiledCode.HostCodeOffset + CompiledCode.Size) {
+        if (!IsRelocationInBlock(Reloc, CompiledCode)) {
           continue;
         }
         if (Reloc.Header.Type != CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL && Reloc.Header.Type != CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE) {
@@ -438,23 +479,70 @@ namespace DiskCache {
       }
     }
 
-    // pack entrypoints to disk format
-    fextl::vector<BlobEntryPoint> CacheEntryPoints;
-    CacheEntryPoints.reserve(CompiledCode.EntryPoints.size());
-
-    for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
-      CacheEntryPoints.push_back({GuestAddr - Region.FileStartVA, uint32_t(HostAddr - CompiledCode.BlockBegin)});
-    }
-
-    // pack relocations to disk format
-    fextl::vector<BlobSmallRelocation> SmallRelocs;
-    fextl::vector<BlobThunkRelocation> ThunkRelocs;
-
-    // todo discover sizes first and reserve vecs?
-
+    uint32_t SmallRelocCount = 0;
+    uint32_t ThunkRelocCount = 0;
     for (const auto& Reloc : Relocations) {
       // relocs aren't cleared every time if IsGeneratingCache, so filter just in case
-      if (Reloc.Header.Offset < CompiledCode.HostCodeOffset || Reloc.Header.Offset >= CompiledCode.HostCodeOffset + CompiledCode.Size) {
+      if (!IsRelocationInBlock(Reloc, CompiledCode)) {
+        continue;
+      }
+      if (Reloc.Header.Type == CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE) {
+        ThunkRelocCount++;
+      } else {
+        SmallRelocCount++;
+      }
+    }
+
+    const uint32_t EntryPointCount = (uint32_t)CompiledCode.EntryPoints.size();
+    const uint32_t TouchedGuestPagesCount = DecodedBlockInfo ? (uint32_t)DecodedBlockInfo->CodePages.size() : 0;
+
+    const size_t HeaderOffset = 0;
+    const size_t HostCodeOffset = HeaderOffset + sizeof(BlobFixedHeader);
+    const size_t EntryPointsOffset = HostCodeOffset + CompiledCode.Size;
+    const size_t SmallRelocsOffset = EntryPointsOffset + EntryPointCount * sizeof(BlobEntryPoint);
+    const size_t ThunkRelocsOffset = SmallRelocsOffset + SmallRelocCount * sizeof(BlobSmallRelocation);
+    const size_t TouchedGuestPagesOffset = ThunkRelocsOffset + ThunkRelocCount * sizeof(BlobThunkRelocation);
+    const size_t GuestCodeOffset = TouchedGuestPagesOffset + TouchedGuestPagesCount * sizeof(int64_t);
+    const size_t TotalSize = GuestCodeOffset + GuestCode.size();
+
+    // we'll copy everything into here and pass it to the Writer, then return to caller quickly
+    fextl::vector<uint8_t> Blob;
+    Blob.resize(TotalSize);
+    uint8_t* BlobData = Blob.data();
+
+    uint64_t ModuleOffset = GuestRIP - Region.FileStartVA;
+
+    // todo also copy/hash options that affect codegen into the key
+    // todo should try to keep the key ascii i think?
+    MesaFOZ::foz_payload_key Key = {};
+    memcpy(Key.bytes, &ModuleOffset, sizeof(ModuleOffset));
+
+    BlobFixedHeader Header {
+      .GuestSize = (uint32_t)GuestCode.size(),
+      .HostSize = (uint32_t)CompiledCode.Size,
+      .EntryPointCount = EntryPointCount,
+      .SmallRelocCount = SmallRelocCount,
+      .ThunkRelocCount = ThunkRelocCount,
+      .TouchedGuestPagesCount = TouchedGuestPagesCount,
+      .GuestHash = XXH3_128bits(GuestCode.data(), GuestCode.size()),
+    };
+    memcpy(BlobData + HeaderOffset, &Header, sizeof(Header));
+    memcpy(BlobData + HostCodeOffset, CompiledCode.BlockBegin, CompiledCode.Size);
+
+    // pack and relocate entrypoints
+    auto* EntryPoints = reinterpret_cast<BlobEntryPoint*>(BlobData + EntryPointsOffset);
+    uint32_t EntryIdx = 0;
+    for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
+      EntryPoints[EntryIdx++] = {GuestAddr - Region.FileStartVA, uint32_t(HostAddr - CompiledCode.BlockBegin)};
+    }
+
+    // pack relocations
+    auto* SmallRelocs = reinterpret_cast<BlobSmallRelocation*>(BlobData + SmallRelocsOffset);
+    auto* ThunkRelocs = reinterpret_cast<BlobThunkRelocation*>(BlobData + ThunkRelocsOffset);
+    uint32_t SmallIdx = 0;
+    uint32_t ThunkIdx = 0;
+    for (const auto& Reloc : Relocations) {
+      if (!IsRelocationInBlock(Reloc, CompiledCode)) {
         continue;
       }
       // re-relocate :harold:
@@ -468,7 +556,7 @@ namespace DiskCache {
         SmallReloc.Offset = LocalOffset;
         SmallReloc.Type = uint8_t(Reloc.Header.Type);
         SmallReloc.Named.Symbol = uint32_t(Reloc.NamedSymbolLiteral.Symbol);
-        SmallRelocs.push_back(SmallReloc);
+        SmallRelocs[SmallIdx++] = SmallReloc;
         break;
       }
       case CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
@@ -476,7 +564,7 @@ namespace DiskCache {
         SmallReloc.Offset = LocalOffset;
         SmallReloc.Type = uint8_t(Reloc.Header.Type);
         SmallReloc.RIPLiteral.GuestRIP = Reloc.GuestRIP.GuestRIP - GuestRIP;
-        SmallRelocs.push_back(SmallReloc);
+        SmallRelocs[SmallIdx++] = SmallReloc;
         break;
       }
       case CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE: {
@@ -485,7 +573,7 @@ namespace DiskCache {
         SmallReloc.Type = uint8_t(Reloc.Header.Type);
         SmallReloc.RIPMove.RegisterIndex = Reloc.GuestRIP.RegisterIndex;
         SmallReloc.RIPMove.GuestRIP = Reloc.GuestRIP.GuestRIP - GuestRIP;
-        SmallRelocs.push_back(SmallReloc);
+        SmallRelocs[SmallIdx++] = SmallReloc;
         break;
       }
       case CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE: {
@@ -493,50 +581,25 @@ namespace DiskCache {
         BigReloc.Offset = LocalOffset;
         BigReloc.RegisterIndex = Reloc.NamedThunkMove.RegisterIndex;
         memcpy(BigReloc.SymbolHash, &Reloc.NamedThunkMove.Symbol, sizeof(BigReloc.SymbolHash));
-        ThunkRelocs.push_back(BigReloc);
+        ThunkRelocs[ThunkIdx++] = BigReloc;
         break;
       }
       }
     }
 
-    // pack touched pages, relative to GuestRIP
+    // relocate touched pages relative to GuestRIP
     // in theory we could save some size here, unlikely we need all 64bits
-    fextl::vector<int64_t> GuestPageOffsets;
-    if (DecodedBlockInfo) {
-      GuestPageOffsets.reserve(DecodedBlockInfo->CodePages.size());
-      for (auto& GuestPage : DecodedBlockInfo->CodePages) {
-        GuestPageOffsets.push_back(GuestPage - GuestRIP);
-      }
+    auto* PageOffsets = reinterpret_cast<int64_t*>(BlobData + TouchedGuestPagesOffset);
+    uint32_t PageIdx = 0;
+    for (auto GuestPage : DecodedBlockInfo->CodePages) {
+      PageOffsets[PageIdx++] = GuestPage - GuestRIP;
     }
 
-    uint64_t ModuleOffset = GuestRIP - Region.FileStartVA;
+    memcpy(BlobData + GuestCodeOffset, GuestCode.data(), GuestCode.size());
 
-    // todo also copy/hash options that affect codegen into the key
-    // todo should try to keep the key ascii i think?
-    MesaFOZ::foz_payload_key Key = {};
-    memcpy(Key.bytes, &ModuleOffset, sizeof(ModuleOffset));
-
-    BlobFixedHeader Header {
-      .GuestSize = (uint32_t)GuestCode.size(),
-      .HostSize = (uint32_t)CompiledCode.Size,
-      .EntryPointCount = (uint32_t)CacheEntryPoints.size(),
-      .SmallRelocCount = (uint32_t)SmallRelocs.size(),
-      .ThunkRelocCount = (uint32_t)ThunkRelocs.size(),
-      .TouchedGuestPagesCount = (uint32_t)GuestPageOffsets.size(),
-      .GuestHash = XXH3_128bits(GuestCode.data(), GuestCode.size()),
-    };
-
-    std::span<const uint8_t> BlobChunks[] = {
-      {(const uint8_t*)&Header, sizeof(Header)},
-      {(const uint8_t*)CompiledCode.BlockBegin, CompiledCode.Size},
-      {(const uint8_t*)CacheEntryPoints.data(), CacheEntryPoints.size() * sizeof(BlobEntryPoint)},
-      {(const uint8_t*)SmallRelocs.data(), SmallRelocs.size() * sizeof(BlobSmallRelocation)},
-      {(const uint8_t*)ThunkRelocs.data(), ThunkRelocs.size() * sizeof(BlobThunkRelocation)},
-      {(const uint8_t*)GuestPageOffsets.data(), GuestPageOffsets.size() * sizeof(int64_t)},
-      GuestCode,
-    };
-
-    return RWCacheDB->StoreCacheBlob(Key, BlobChunks, Index);
+    // hand the rest off to the writer thread
+    Writer->QueueWork(fextl::make_unique<CacheStoreWorkItem>(this, RWCacheDB.get(), Key, std::move(Blob)));
+    return true;
   }
 
 } // namespace DiskCache
