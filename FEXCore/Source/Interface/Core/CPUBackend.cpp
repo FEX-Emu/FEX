@@ -307,7 +307,7 @@ namespace CPU {
 
   CPUBackend::~CPUBackend() = default;
 
-  auto CPUBackend::GetEmptySharedCodeBuffer() -> CodeBuffer* {
+  auto CPUBackend::AcquireNewSharedCodeBuffer() -> CodeBuffer* {
     auto PrevCodeBuffer = CurrentCodeBuffer;
 
     // Resize the code buffer and reallocate our code size
@@ -339,11 +339,8 @@ namespace CPU {
 
   bool CPUBackend::IsAddressInCodeBuffer(uintptr_t Address) const {
     const auto CheckCodeBuffer = [](const CodeBuffer& Buffer, uintptr_t Address) {
-      const auto BufferPtr = reinterpret_cast<uintptr_t>(Buffer.Ptr);
-
-      // The last page of the code buffer is protected, so we need to exclude it from the valid range
-      // when checking if the address is in the code buffer.
-      const uintptr_t LastPageAddr = AlignDown(BufferPtr + Buffer.AllocatedSize - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+      const auto BufferPtr = reinterpret_cast<uintptr_t>(Buffer.GetBufferBase());
+      const uintptr_t LastPageAddr = BufferPtr + Buffer.UsableSize();
       return (Address >= BufferPtr && Address < LastPageAddr);
     };
 
