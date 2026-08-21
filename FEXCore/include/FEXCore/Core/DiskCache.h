@@ -7,6 +7,7 @@
 #include "Interface/Core/CPUBackend.h"
 #include "FEXCore/Config/Config.h"
 #include "FEXCore/Utils/File.h"
+#include "FEXCore/Utils/WorkQueueThread.h"
 #include "FEXCore/fextl/memory.h"
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_set.h>
@@ -123,7 +124,8 @@ namespace DiskCache {
       }
       return FD->Unlock();
     }
-    bool ReadNextBlob(MesaFOZ::foz_payload_key& OutKey, MesaFOZ::foz_payload_header& OutHeader, fextl::vector<uint8_t>& OutBlob);
+    ssize_t Size();
+    bool ReadAll(fextl::vector<uint8_t>& Out); // from first blob
     bool ReadBlob(uint64_t Offset, std::span<uint8_t> OutBlob);
     bool WriteBlob(const MesaFOZ::foz_payload_key& Key, std::span<const std::span<const uint8_t>> BlobChunks, uint64_t& OutBlobOffset);
 
@@ -140,11 +142,11 @@ namespace DiskCache {
     bool Open(const fextl::string& CacheDBName, bool ReadOnly);
     void PopulateIndex(Index& CacheIndex);
     bool ReadCacheBlob(uint64_t Offset, std::span<uint8_t> OutBlob);
-    bool StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const std::span<const uint8_t>> BlobChunks, Index& CacheIndex);
+    bool StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const uint8_t> Blob, Index& CacheIndex, std::mutex& IndexMutex);
 
   private:
-    // give up after 2ms of trying to store - when we have an async thread we can increase this
-    static constexpr uint32_t STORE_LOCK_TIMEOUT_MS = 2;
+    // stores run on the Writer, so returning quick isn't as important
+    static constexpr uint32_t STORE_LOCK_TIMEOUT_MS = 1000;
 
     FOZFile CacheFOZ;
     FOZFile IndexFOZ;
@@ -174,7 +176,11 @@ namespace DiskCache {
     fextl::vector<fextl::unique_ptr<IndexedDB>> ROCacheDBs;
     fextl::unique_ptr<IndexedDB> RWCacheDB;
     Index Index;
-    std::mutex Lock;
+    std::mutex IndexLock;
+    struct CacheStoreWorkItem;
+
+    // the Writer holds references to all this stuff above and needs to be last
+    fextl::unique_ptr<WorkQueueThread> Writer;
 
     FEX_CONFIG_OPT(EnableDiskCache, DISKCACHE);
     FEX_CONFIG_OPT(RelocationFilter, DISKCACHERELOCATIONFILTER);
