@@ -81,7 +81,9 @@ void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   const auto Style = DisableOutputColors ? fmt::text_style {} : LogMan::DebugLevelStyle(Level);
   const auto Output = fextl::fmt::format("{} {}\n", fmt::styled(LogMan::DebugLevelStr(Level), Style), Message);
   write(OutputFD, Output.c_str(), Output.size());
-  fsync(OutputFD);
+  if (Level == LogMan::DebugLevels::ASSERT) {
+    fsync(OutputFD);
+  }
 }
 
 void AssertHandler(const char* Message) {
