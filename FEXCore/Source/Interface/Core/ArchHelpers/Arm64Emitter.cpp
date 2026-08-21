@@ -1123,6 +1123,7 @@ void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
 
 void Arm64Emitter::Align16B() {
   uint64_t CurrentOffset = GetCursorAddress<uint64_t>();
+  LOGMAN_THROW_A_FMT((CurrentOffset & 3) == 0, "Can't Align16B code that isn't 4-byte aligned!");
   for (uint64_t i = (-CurrentOffset & 0xF); i != 0; i -= 4) {
     nop();
   }
