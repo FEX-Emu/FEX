@@ -675,10 +675,8 @@ void Arm64JITCore::ClearCache() {
   auto PrevCodeBuffer = CurrentCodeBuffer;
   auto lk = PrevCodeBuffer->LookupCache->AcquireWriteLock();
 
-  auto CodeBuffer = GetEmptySharedCodeBuffer();
-  SetBuffer(CodeBuffer->Ptr, CodeBuffer->AllocatedSize);
-
-  ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache, lk);
+  auto CodeBuffer = AcquireNewSharedCodeBuffer();
+  ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CodeBuffer->LookupCache, lk);
 }
 
 Arm64JITCore::~Arm64JITCore() {}
@@ -1117,7 +1115,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       EntryPoint.second += Delta;
     }
     CodeBegin += Delta;
-    CodeData.HostCodeOffset = CodeData.BlockBegin - CurrentCodeBuffer->Ptr;
+    CodeData.HostCodeOffset = CodeData.BlockBegin - CurrentCodeBuffer->GetBufferBase();
 
     // Offset the relocations based on how far forward they moved from the temp buffer to the new buffer.
     // TODO: Relocations should instead be relocated based on the block entrypoint instead of the codebuffer base.
@@ -1179,7 +1177,7 @@ CPUBackend::CompiledCode Arm64JITCore::LoadCachedCode(std::span<const uint8_t> H
   CPUBackend::CompiledCode Result;
   Result.BlockBegin = Dest;
   Result.Size = HostBytes.size();
-  Result.HostCodeOffset = Dest - CurrentCodeBuffer->Ptr;
+  Result.HostCodeOffset = Dest - CurrentCodeBuffer->GetBufferBase();
   for (const auto& Ep : EntryPoints) {
     Result.EntryPoints[Ep.GuestRIP] = Dest + Ep.HostOffset;
   }

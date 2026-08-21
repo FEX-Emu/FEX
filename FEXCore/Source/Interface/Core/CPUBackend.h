@@ -149,8 +149,9 @@ namespace CPU {
 
     FEXCore::Core::InternalThreadState* ThreadState;
 
+    // Acquires a new shared code buffer, setting `CurrentCodeBuffer` and returning a pointer to it.
     [[nodiscard]]
-    CodeBuffer* GetEmptySharedCodeBuffer();
+    CodeBuffer* AcquireNewSharedCodeBuffer();
 
     // This is the code buffer containing the main code under execution by this thread.
     // CheckCodeBufferUpdate must be used before compiling new code.

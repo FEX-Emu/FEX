@@ -337,7 +337,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
 
       Guest -= SourceBinary.FileStartVA;
       ::write(fd, &Guest, sizeof(Guest));
-      uint64_t HostCode = Host->HostCode - reinterpret_cast<uintptr_t>(CodeBuffer->Ptr);
+      uint64_t HostCode = Host->HostCode - reinterpret_cast<uintptr_t>(CodeBuffer->GetBufferBase());
       ::write(fd, &HostCode, sizeof(HostCode));
       uint64_t NumCodePages = Host->CodePages.size();
       ::write(fd, &NumCodePages, sizeof(NumCodePages));
@@ -361,8 +361,8 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   }
 
   // Dump the host code (relocated for position-independent serialization)
-  std::span CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->Ptr),
-                           reinterpret_cast<std::byte*>(CodeBuffer->Ptr) + CodeBuffer->GetAllocatedSize());
+  std::span CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->GetBufferBase()),
+                           reinterpret_cast<std::byte*>(CodeBuffer->GetBufferBase()) + CodeBuffer->GetAllocatedSize());
   if (!ApplyCodeRelocations(SerializedBaseAddress, CodeBufferData, Relocations, 0, true)) {
     LOGMAN_THROW_A_FMT(false, "Failed to apply code relocations");
     return false;
@@ -427,11 +427,12 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   while (CachedCode.size_bytes() > NewCodeBuffer->UsableSize()) {
     ValidationCTX->ClearCodeCache(ValidationThread.get());
     NewCodeBuffer = ValidationCTX->GetLatest();
-    LogMan::Msg::IFmt("Increased cache validation code buffer size to {} MiB", NewCodeBuffer->AllocatedSize / 1024 / 1024);
+    LogMan::Msg::IFmt("Increased cache validation code buffer size to {} MiB", NewCodeBuffer->GetAllocatedSize() / 1024 / 1024);
   }
 
   std::span<std::byte> CodeBufferRangeRef =
-    std::as_writable_bytes(std::span {NewCodeBuffer->Ptr, NewCodeBuffer->Ptr + NewCodeBuffer->UsableSize()}).subspan(0, CachedCode.size_bytes());
+    std::as_writable_bytes(std::span {NewCodeBuffer->GetBufferBase(), NewCodeBuffer->GetBufferBase() + NewCodeBuffer->UsableSize()})
+      .subspan(0, CachedCode.size_bytes());
 
   while (!GuestBlocks.empty()) {
     auto [CompiledBlocks, _, _2, _3, _4] = ValidationCTX->CompileCode(ValidationThread.get(), *GuestBlocks.begin(), 0 /* TODO: Set MaxInst? */);
@@ -501,7 +502,7 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
 
   // Reset Context state for next validation
   ValidationThread->LookupCache->ClearCache(ValidationThread->LookupCache->AcquireWriteLock());
-  NewCodeBuffer->CodeBufferOffset = NewCodeBuffer->Ptr;
+  NewCodeBuffer->Reset();
 
   LogMan::Msg::IFmt("            successfully validated cache");
 }

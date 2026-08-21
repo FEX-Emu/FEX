@@ -21,13 +21,6 @@ struct GuestToHostMap;
 
 namespace FEXCore::CPU {
 struct CodeBuffer {
-  uint8_t* Ptr;
-  uint8_t* CodeBufferEnd;
-  size_t AllocatedSize; // including guard page; see UsableSize()
-
-  // Code buffer allocation information.
-  std::atomic<uint8_t*> CodeBufferOffset {};
-
   fextl::unique_ptr<GuestToHostMap> LookupCache;
 
   CodeBuffer(size_t Size);
@@ -37,11 +30,6 @@ struct CodeBuffer {
   CodeBuffer& operator=(CodeBuffer&&) = delete;
 
   ~CodeBuffer();
-
-  /// Returns the number of bytes available for storing code
-  size_t UsableSize() const {
-    return AllocatedSize - FEXCore::Utils::FEX_PAGE_SIZE;
-  }
 
   // Atomically allocate a fixed size buffer out of the current allocated codebuffer.
   // Lockless because it's just a linear allocator.
@@ -78,9 +66,33 @@ struct CodeBuffer {
     };
   }
 
+  // Returns the total number of bytes available for storing code
+  size_t UsableSize() const {
+    return AllocatedSize - FEXCore::Utils::FEX_PAGE_SIZE;
+  }
+
+  // Returns the num of bytes currently allocated from the allocator.
   size_t GetAllocatedSize() const {
     return CodeBufferOffset - Ptr;
   }
+
+  // Trivially reset the allocator.
+  void Reset() {
+    CodeBufferOffset = Ptr;
+  }
+
+  // Returns the base of the buffer.
+  uint8_t* GetBufferBase() const {
+    return Ptr;
+  }
+
+private:
+  uint8_t* Ptr;
+  uint8_t* CodeBufferEnd;
+  size_t AllocatedSize; // including guard page; see UsableSize()
+
+  // Code buffer allocation information.
+  std::atomic<uint8_t*> CodeBufferOffset {};
 };
 
 /**
