@@ -70,6 +70,7 @@ set(SRCS
   Utils/LongJump.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp
+  Utils/WorkQueueThread.cpp
   Utils/Profiler.cpp)
 
 if (ARCHITECTURE_arm64)
