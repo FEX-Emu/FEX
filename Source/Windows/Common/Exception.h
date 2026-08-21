@@ -42,6 +42,13 @@ static inline EXCEPTION_RECORD HandleGuestException(FEXCore::Core::CpuStateFrame
     case FEXCore::X86State::X86_TRAPNO_GP:
       if ((Fault.err_code & 0b111) == 0b010) {
         switch (Fault.err_code >> 3) {
+        case 3:
+          Rip += 2;
+          Dst.ExceptionAddress = reinterpret_cast<void*>(Rip - 1);
+          Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
+          Dst.NumberParameters = 1;
+          Dst.ExceptionInformation[0] = 0;
+          return Dst;
         case 0x29:
           Dst.ExceptionCode = STATUS_STACK_BUFFER_OVERRUN;
           Dst.ExceptionAddress = reinterpret_cast<void*>(Rip);
