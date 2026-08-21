@@ -70,6 +70,11 @@ struct ThreadStats {
   uint64_t AccumulatedCacheWriteLockTime;
 
   uint64_t AccumulatedJITCount;
+
+  uint64_t AccumulatedDiskCacheHitCount;
+  uint64_t AccumulatedDiskCacheMissCount;
+  uint64_t AccumulatedDiskCacheLookupTime;
+  uint64_t Padding;
 };
 
 // Ensure 16-byte alignment to take advantage of ARM single-copy atomicity.
