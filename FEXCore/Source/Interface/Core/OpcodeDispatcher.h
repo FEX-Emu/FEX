@@ -1119,7 +1119,7 @@ public:
   void InvalidOp(OpcodeArgs);
   void NoExecOp(OpcodeArgs);
 
-  void SetPackedRFLAG(bool Lower8, Ref Src);
+  void SetPackedRFLAG(bool Lower8, Ref Src, uint32_t FlagsMask = ~0U);
   Ref GetPackedRFLAG(uint32_t FlagsMask = ~0U);
 
   void SetMultiblock(bool _Multiblock) {
