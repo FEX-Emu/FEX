@@ -19,7 +19,7 @@
       "ExpectedArm64ASM": [
         "sub w20, w6, #0x1 (1)",
         "and w4, w20, w6",
-        "cmp x6, #0x0 (0)",
+        "cmp w6, #0x0 (0)",
         "cset x20, ne",
         "cmp w4, #0x0 (0)",
         "rmif x20, #63, #nzCv"
@@ -47,7 +47,7 @@
       "ExpectedArm64ASM": [
         "sub w20, w6, #0x1 (1)",
         "eor w4, w20, w6",
-        "cmp x6, #0x0 (0)",
+        "cmp w6, #0x0 (0)",
         "cset x20, ne",
         "cmp w4, #0x0 (0)",
         "rmif x20, #63, #nzCv"

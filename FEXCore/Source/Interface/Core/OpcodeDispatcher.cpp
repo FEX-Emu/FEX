@@ -1774,7 +1774,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   InvalidatePF_AF();
 
   // CF set according to the Src
-  auto CFInv = To01(OpSize::i64Bit, Src);
+  auto CFInv = To01(Size, Src);
 
   // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
   // and O) while setting S.
@@ -1792,7 +1792,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
 
   StoreResultGPR(Op, Result);
 
-  auto CFInv = To01(OpSize::i64Bit, Src);
+  auto CFInv = To01(Size, Src);
 
   SetNZ_ZeroCV(Size, Result);
   SetCFInverted(CFInv);
