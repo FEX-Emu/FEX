@@ -667,7 +667,6 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
     SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
   } else {
-    // OF, SF, AF, PF all undefined
     SetCFDirect(HostFlag_CF);
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(HostFlag_ZF);
 
@@ -675,6 +674,12 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
     // TODO: This could perhaps be optimized?
     auto PF = _Xor(OpSize::i32Bit, HostFlag_Unordered, Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PF);
+
+    // Intel: OF, SF, and AF set to zero
+    // AMD:   no mention of OF, SF and AF but actual hardware seems to always zero
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_RAW_LOC>(Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Constant(0));
   }
 
   // Set Invalid Operation flag when unordered (NaN comparison)
