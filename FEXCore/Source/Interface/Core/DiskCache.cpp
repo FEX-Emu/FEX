@@ -545,15 +545,13 @@ namespace DiskCache {
       if (!IsRelocationInBlock(Reloc, CompiledCode)) {
         continue;
       }
-      // re-relocate :harold:
-      uint32_t LocalOffset = uint32_t(Reloc.Header.Offset - CompiledCode.HostCodeOffset);
 
       switch (Reloc.Header.Type) {
       // it's important to zero-init the element completely so we don't have garbage in unused fields
       // this way, the caches stay deterministic across machines
       case CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
         BlobSmallRelocation SmallReloc = {};
-        SmallReloc.Offset = LocalOffset;
+        SmallReloc.Offset = Reloc.Header.Offset;
         SmallReloc.Type = uint8_t(Reloc.Header.Type);
         SmallReloc.Named.Symbol = uint32_t(Reloc.NamedSymbolLiteral.Symbol);
         SmallRelocs[SmallIdx++] = SmallReloc;
@@ -561,7 +559,7 @@ namespace DiskCache {
       }
       case CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
         BlobSmallRelocation SmallReloc = {};
-        SmallReloc.Offset = LocalOffset;
+        SmallReloc.Offset = Reloc.Header.Offset;
         SmallReloc.Type = uint8_t(Reloc.Header.Type);
         SmallReloc.RIPLiteral.GuestRIP = Reloc.GuestRIP.GuestRIP - GuestRIP;
         SmallRelocs[SmallIdx++] = SmallReloc;
@@ -569,7 +567,7 @@ namespace DiskCache {
       }
       case CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE: {
         BlobSmallRelocation SmallReloc = {};
-        SmallReloc.Offset = LocalOffset;
+        SmallReloc.Offset = Reloc.Header.Offset;
         SmallReloc.Type = uint8_t(Reloc.Header.Type);
         SmallReloc.RIPMove.RegisterIndex = Reloc.GuestRIP.RegisterIndex;
         SmallReloc.RIPMove.GuestRIP = Reloc.GuestRIP.GuestRIP - GuestRIP;
@@ -578,7 +576,7 @@ namespace DiskCache {
       }
       case CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE: {
         BlobThunkRelocation BigReloc = {};
-        BigReloc.Offset = LocalOffset;
+        BigReloc.Offset = Reloc.Header.Offset;
         BigReloc.RegisterIndex = Reloc.NamedThunkMove.RegisterIndex;
         memcpy(BigReloc.SymbolHash, &Reloc.NamedThunkMove.Symbol, sizeof(BigReloc.SymbolHash));
         ThunkRelocs[ThunkIdx++] = BigReloc;
