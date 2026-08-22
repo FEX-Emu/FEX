@@ -867,7 +867,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   if (Region && Region->FileStartVA != 0) {
     Hit = DiskCache.Lookup(Thread, *Region, GuestRIP);
     if (Hit) {
-      DiskCacheHitRelocationsApplied = CodeCache.ApplyCodeRelocations(GuestRIP, std::as_writable_bytes(Hit->HostCode), Hit->Relocations, 0, false);
+      DiskCacheHitRelocationsApplied = CodeCache.ApplyCodeRelocations(GuestRIP, std::as_writable_bytes(Hit->HostCode), Hit->Relocations, false);
 
       if (DiskCacheHitRelocationsApplied && LoadDiskCacheCode) {
         auto LoadedCode = Thread->CPUBackend->LoadCachedCode(Hit->HostCode, Hit->EntryPoints);

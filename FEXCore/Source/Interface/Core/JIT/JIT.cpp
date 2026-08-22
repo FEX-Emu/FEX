@@ -1117,14 +1117,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     CodeBegin += Delta;
     CodeData.HostCodeOffset = CodeData.BlockBegin - CurrentCodeBuffer->GetBufferBase();
 
-    // Offset the relocations based on how far forward they moved from the temp buffer to the new buffer.
-    // TODO: Relocations should instead be relocated based on the block entrypoint instead of the codebuffer base.
-    // This would make this relocation movement here get deleted and then `CodeCache::HandleRelocations` can just handle it.
-    const size_t AllocationOffset = AllocatedInfo.BufferAllocationOffset - AllocatedInfo.BufferBase;
-    for (std::size_t Idx = PrevNumAllocations; Idx != Relocations.size(); ++Idx) {
-      Relocations[Idx].Header.Offset += AllocationOffset;
-    }
-
     // Copy over CodeBuffer contents
     memcpy(AllocatedInfo.BufferAllocationOffset, TempCodeBuffer, CodeData.Size);
   }
