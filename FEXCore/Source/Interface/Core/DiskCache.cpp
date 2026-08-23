@@ -316,7 +316,7 @@ namespace DiskCache {
     }
 
     if (IsWritingDiskCache()) {
-      Writer = fextl::make_unique<WorkQueueThread>();
+      Writer = fextl::make_unique<WorkQueueThread>(true);
     }
   }
 

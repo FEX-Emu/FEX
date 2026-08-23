@@ -6,6 +6,8 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LongJump.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXHeaderUtils/Syscalls.h>
+#include <sys/resource.h>
 
 namespace FEX::LinuxEmulation::Threads {
 void* StackTracker::AllocateStackObject() {
@@ -195,10 +197,11 @@ namespace PThreads {
 
   class PThread final : public FEXCore::Threads::Thread {
   public:
-    PThread(StackTracker* STracker, FEXCore::Threads::ThreadFunc Func, void* Arg)
+    PThread(StackTracker* STracker, FEXCore::Threads::ThreadFunc Func, void* Arg, bool LowPriority)
       : STracker {STracker}
       , UserFunc {Func}
-      , UserArg {Arg} {
+      , UserArg {Arg}
+      , LowPriority {LowPriority} {
       pthread_attr_t Attr {};
       Stack = STracker->AllocateStackObject();
       // pthreads allocates its dtv region behind our back and there is nothing we can do about it.
@@ -257,6 +260,10 @@ namespace PThreads {
       return Stack;
     }
 
+    bool GetLowPriority() const {
+      return LowPriority;
+    }
+
     StackTracker* GetStackTracker() const {
       return STracker;
     }
@@ -287,6 +294,7 @@ namespace PThreads {
     FEXCore::Threads::ThreadFunc UserFunc;
     void* UserArg;
     void* Stack {};
+    bool LowPriority {};
 
     // Use FEXCore's UncheckedLongJump to avoid fortification checks.
     // This avoids a false positive since glibc does not understand stack pivots.
@@ -304,6 +312,10 @@ namespace PThreads {
     FEXCore::UncheckedLongJump::JumpBuf exit_resolver {};
 
     bool LongJumpExit {};
+
+    if (Thread->GetLowPriority()) {
+      setpriority(PRIO_PROCESS, FHU::Syscalls::gettid(), 19);
+    }
 
     if (FEXCore::UncheckedLongJump::SetJump(exit_resolver) == 0) {
       Thread->SetupLongJump(&exit_resolver);
@@ -354,8 +366,8 @@ namespace PThreads {
 
   static StackTracker* STracker {};
 
-  static fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg) {
-    return fextl::make_unique<PThread>(STracker, Func, Arg);
+  static fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg, bool LowPriority) {
+    return fextl::make_unique<PThread>(STracker, Func, Arg, LowPriority);
   }
 
   static void CleanupAfterFork_PThread() {
