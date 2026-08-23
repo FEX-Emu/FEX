@@ -71,8 +71,13 @@ struct CodeBuffer {
     return AllocatedSize - FEXCore::Utils::FEX_PAGE_SIZE;
   }
 
+  // Returns the full size of the buffer, including the guard page.
+  size_t TotalAllocationSize() const {
+    return AllocatedSize;
+  }
+
   // Returns the num of bytes currently allocated from the allocator.
-  size_t GetAllocatedSize() const {
+  size_t AllocatedSpaceUsed() const {
     return CodeBufferOffset - Ptr;
   }
 
