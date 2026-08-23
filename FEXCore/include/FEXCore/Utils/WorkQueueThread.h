@@ -18,7 +18,7 @@ public:
     virtual void Run() = 0;
   };
 
-  WorkQueueThread();
+  WorkQueueThread(bool LowPriority = false);
   ~WorkQueueThread();
 
   void QueueWork(fextl::unique_ptr<WorkItem> Work);

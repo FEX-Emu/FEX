@@ -7,7 +7,7 @@ namespace FEXCore::Threads {
 using ThreadFunc = void* (*)(void* user_ptr);
 
 class Thread;
-using CreateThreadFunc = fextl::unique_ptr<Thread> (*)(ThreadFunc Func, void* Arg);
+using CreateThreadFunc = fextl::unique_ptr<Thread> (*)(ThreadFunc Func, void* Arg, bool LowPriority);
 using CleanupAfterForkFunc = void (*)();
 
 struct Pointers {
@@ -28,7 +28,7 @@ public:
    * @name Calls provided API functions
    * @{ */
 
-  static fextl::unique_ptr<Thread> Create(ThreadFunc Func, void* Arg);
+  static fextl::unique_ptr<Thread> Create(ThreadFunc Func, void* Arg, bool LowPriority = false);
 
   static void CleanupAfterFork();
 
