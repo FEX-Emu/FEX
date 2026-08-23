@@ -88,7 +88,7 @@ fextl::shared_ptr<CodeBuffer> SharedCodeBufferManager::StartLargerCodeBuffer() {
     return GetLatest();
   }
 
-  auto NewCodeBufferSize = GetLatest()->GetAllocatedSize();
+  auto NewCodeBufferSize = GetLatest()->TotalAllocationSize();
   NewCodeBufferSize = std::min<size_t>(NewCodeBufferSize * 2, MAX_CODE_SIZE);
   return AllocateNew(NewCodeBufferSize);
 }

@@ -314,7 +314,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   std::ranges::copy(GIT_HASH, header.FEXVersion);
   header.NumBlocks = LookupCache.BlockList.size();
   header.NumCodePages = LookupCache.CodePages.size();
-  header.CodeBufferSize = FEXCore::AlignUp(CodeBuffer->GetAllocatedSize(), Utils::FEX_PAGE_SIZE);
+  header.CodeBufferSize = FEXCore::AlignUp(CodeBuffer->AllocatedSpaceUsed(), Utils::FEX_PAGE_SIZE);
   header.NumRelocations = Relocations.size();
   header.SerializedBaseAddress = SerializedBaseAddress;
   ::write(fd, &header, sizeof(header));
@@ -362,7 +362,7 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
 
   // Dump the host code (relocated for position-independent serialization)
   std::span CodeBufferData(reinterpret_cast<std::byte*>(CodeBuffer->GetBufferBase()),
-                           reinterpret_cast<std::byte*>(CodeBuffer->GetBufferBase()) + CodeBuffer->GetAllocatedSize());
+                           reinterpret_cast<std::byte*>(CodeBuffer->GetBufferBase()) + CodeBuffer->AllocatedSpaceUsed());
   if (!ApplyCodeRelocations(SerializedBaseAddress, CodeBufferData, Relocations, 0, true)) {
     LOGMAN_THROW_A_FMT(false, "Failed to apply code relocations");
     return false;
@@ -427,7 +427,7 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   while (CachedCode.size_bytes() > NewCodeBuffer->UsableSize()) {
     ValidationCTX->ClearCodeCache(ValidationThread.get());
     NewCodeBuffer = ValidationCTX->GetLatest();
-    LogMan::Msg::IFmt("Increased cache validation code buffer size to {} MiB", NewCodeBuffer->GetAllocatedSize() / 1024 / 1024);
+    LogMan::Msg::IFmt("Increased cache validation code buffer size to {} MiB", NewCodeBuffer->TotalAllocationSize() / 1024 / 1024);
   }
 
   std::span<std::byte> CodeBufferRangeRef =
@@ -448,10 +448,10 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   }));
   (void)ApplyCodeRelocations(Section.FileStartVA, CodeBufferRangeRef, NewRelocations, 0, false);
 
-  if (NewCodeBuffer->GetAllocatedSize() <= CodeBufferRangeRef.size()) {
+  if (NewCodeBuffer->AllocatedSpaceUsed() <= CodeBufferRangeRef.size()) {
     // Reference compilation produced fewer bytes than our cache, so validation is going to fail.
     // Make sure we don't output any garbage bytes though.
-    CodeBufferRangeRef = CodeBufferRangeRef.subspan(0, NewCodeBuffer->GetAllocatedSize());
+    CodeBufferRangeRef = CodeBufferRangeRef.subspan(0, NewCodeBuffer->AllocatedSpaceUsed());
   }
 
   auto [Mismatch, _] = std::mismatch(CodeBufferRangeRef.begin(), CodeBufferRangeRef.end(), CachedCode.begin());
