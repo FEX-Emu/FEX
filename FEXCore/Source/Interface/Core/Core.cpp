@@ -865,6 +865,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   bool DiskCacheHitRelocationsApplied = false;
   bool LoadDiskCacheCode = true;
   if (Region && Region->FileStartVA != 0) {
+    FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedDiskCacheLookupTime);
     Hit = DiskCache.Lookup(Thread, *Region, GuestRIP);
     if (Hit) {
       DiskCacheHitRelocationsApplied = CodeCache.ApplyCodeRelocations(GuestRIP, std::as_writable_bytes(Hit->HostCode), Hit->Relocations, 0, false);
@@ -888,10 +889,12 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
           }
 
           uint64_t ModuleOffset = GuestRIP - Region->FileStartVA;
+          FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedDiskCacheHitCount, 1);
           return reinterpret_cast<uintptr_t>(LoadedCode.EntryPoints[ModuleOffset]);
         }
       }
     }
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedDiskCacheMissCount, 1);
   }
 
   // Accumulate a JIT count now, as even if another thread raced us, it should count as a compile.
