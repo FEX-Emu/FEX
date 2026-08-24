@@ -38,7 +38,15 @@ namespace detail {
 #define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
 #define OPT_STRENUM(group, enum, json, default) const uint64_t P(enum) = FEXCore::ToUnderlying(P(default));
 #include <FEXCore/Config/ConfigValues.inl>
+  constexpr static std::array<std::string_view, FEXCore::Config::ConfigOption::CONFIG_MAX> option_names = {
+#define OPT_BASE(type, group, enum, json, default) #json,
+#include <FEXCore/Config/ConfigValues.inl>
+  };
 } // namespace detail
+
+std::string_view GetConfigJSONName(FEXCore::Config::ConfigOption option) {
+  return FEXCore::Config::detail::option_names[option];
+}
 
 enum Paths {
   PATH_DATA_DIR_LOCAL = 0,
@@ -511,4 +519,44 @@ void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, StringArray
   }
 }
 template void Value<StringArrayType>::GetListIfExists(FEXCore::Config::ConfigOption Option, StringArrayType* List);
+
+fextl::string SerializeForCache() {
+  fextl::string Config {};
+
+  auto append_string_triple = [](fextl::string& Config, std::string_view Key, ConfigOption Option, auto Value) {
+    Config.append(Key);
+    Config.append(1, '\0');
+    Config.append(fextl::fmt::format("{}", FEXCore::ToUnderlying(Option)));
+    Config.append(1, '\0');
+    Config.append(fextl::fmt::format("{}", Value));
+    Config.append(1, '\0');
+  };
+
+  const auto SerializeValue = [&Config, append_string_triple]<typename T, ConfigOption Option>(auto ConfigVal, const auto Default) {
+    if constexpr (Option == ConfigOption::CONFIG_ENV || Option == ConfigOption::CONFIG_HOSTENV || Option == ConfigOption::CONFIG_ADDITIONALARGUMENTS ||
+                  Option == ConfigOption::CONFIG_APP_CONFIG_NAME || Option == ConfigOption::CONFIG_APP_FILENAME ||
+                  Option == ConfigOption::CONFIG_IS64BIT_MODE || Option == ConfigOption::CONFIG_INTERPRETER_INSTALLED ||
+                  Option == ConfigOption::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS || Option == ConfigOption::CONFIG_HOSTFEATURES) {
+      // Skip environment variables, meta arguments, and HostFeatures.
+      return;
+    }
+
+    append_string_triple(Config, FEXCore::Config::GetConfigJSONName(Option), Option, ConfigVal());
+  };
+
+#define OPT_BASE(type, group, enum, json, default) \
+  SerializeValue.template operator()<type, CONFIG_##enum>(FEXCore::Config::Get_##enum(), default);
+#define OPT_STR(group, enum, json, default) \
+  SerializeValue.template operator()<fextl::string, CONFIG_##enum>(FEXCore::Config::Get_##enum(), default);
+#define OPT_STRARRAY(group, enum, json, default) // Unsupported.
+#define OPT_STRENUM(group, enum, json, default)  // Unsupported.
+#include <FEXCore/Config/ConfigValues.inl>
+  return Config;
+}
+
+FEX_DEFAULT_VISIBILITY bool CheckConfigMatches(std::string_view Config) {
+  // Serialize current config and just check if it matches.
+  return SerializeForCache() == Config;
+}
+
 } // namespace FEXCore::Config

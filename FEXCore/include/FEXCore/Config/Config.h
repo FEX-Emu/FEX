@@ -36,6 +36,7 @@ namespace Handler {
 enum ConfigOption {
 #define OPT_BASE(type, group, enum, json, default) CONFIG_##enum,
 #include <FEXCore/Config/ConfigValues.inl>
+  CONFIG_MAX,
 };
 
 #define ENUMDEFINES
@@ -230,6 +231,8 @@ FEX_DEFAULT_VISIBILITY std::optional<T> GetConv(ConfigOption Option);
 FEX_DEFAULT_VISIBILITY std::optional<fextl::string*> Get(ConfigOption Option);
 FEX_DEFAULT_VISIBILITY void Set(ConfigOption Option, std::string_view Data);
 FEX_DEFAULT_VISIBILITY void Erase(ConfigOption Option);
+FEX_DEFAULT_VISIBILITY fextl::string SerializeForCache();
+FEX_DEFAULT_VISIBILITY bool CheckConfigMatches(std::string_view Config);
 
 template<typename T>
 class FEX_DEFAULT_VISIBILITY Value {
