@@ -1347,7 +1347,7 @@ FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() const {
 
 CPUIDEmu::CPUIDEmu(const FEXCore::Context::ContextImpl* ctx)
   : CTX {ctx}
-  , SupportsCPUIndexInTPIDRRO {CTX->HostFeatures.SupportsCPUIndexInTPIDRRO}
+  , SupportsCPUIndexInTPIDRRO {CTX->HostFeatures.SupportsCPUIndexInTPIDRRO != 0}
   , GetCPUID {GetCPUID_Syscall} {
   Cores = CTX->HostFeatures.CPUMIDRs.size();
 

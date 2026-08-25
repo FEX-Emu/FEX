@@ -543,11 +543,10 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.PreferZVAForVZero = false;
 
   if (CTR) {
-    HostFeatures.DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
-    HostFeatures.ICacheLineSize = 4 << (CTR & 0xF);
+    HostFeatures.DCacheLineLog2 = (CTR >> 16) & 0xF;
   } else {
-    HostFeatures.DCacheLineSize = 64;
-    HostFeatures.ICacheLineSize = 64;
+    // 64-bytes
+    HostFeatures.DCacheLineLog2 = 4;
   }
 
   if (!HostFeatures.SupportsAtomics) {
