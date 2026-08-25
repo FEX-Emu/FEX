@@ -660,7 +660,7 @@ int main(int argc, char** argv, char** const envp) {
   if (!CTX->InitCore()) {
     return -1;
   }
-  auto ParentThread = CTX->CreateThread(0, 0);
+  auto ParentThread = CTX->CreateThread();
 
   // GDT data
   FEXCore::Core::CPUState::gdt_segment gdt[32] {};

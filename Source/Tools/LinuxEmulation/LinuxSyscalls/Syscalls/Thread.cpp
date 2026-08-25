@@ -89,7 +89,7 @@ static void* ThreadHandler(void* Data) {
 
 FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
   uint64_t flags = args->args.flags;
-  auto NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &Frame->State, args->args.parent_tid,
+  auto NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(&Frame->State, args->args.parent_tid,
                                                               FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame));
 
   NewThread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
@@ -185,7 +185,7 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
 
   if (flags & CLONE_THREAD) {
     // Overwrite thread
-    Thread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &Frame->State, GuestArgs->parent_tid,
+    Thread = FEX::HLE::_SyscallHandler->TM.CreateThread(&Frame->State, GuestArgs->parent_tid,
                                                         FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame));
 
     Thread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
