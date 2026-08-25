@@ -598,7 +598,7 @@ void BTCpuThreadInit() {
   static constexpr size_t DefaultWow64CS {4};
   std::scoped_lock Lock(ThreadCreationMutex);
   FEX::Windows::InitCRTThread();
-  auto* Thread = CTX->CreateThread(0, 0);
+  auto* Thread = CTX->CreateThread();
 
   // Default segment setup.
   auto Frame = Thread->CurrentFrame;

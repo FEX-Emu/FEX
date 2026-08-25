@@ -922,7 +922,7 @@ NTSTATUS ThreadInit() {
   CPUArea.EmulatorStackLimit() = EmulatorStack;
   CPUArea.EmulatorStackBase() = EmulatorStack + EmulatorStackSize;
 
-  auto* Thread = CTX->CreateThread(0, 0);
+  auto* Thread = CTX->CreateThread();
 
   // Default segment setup.
   auto Frame = Thread->CurrentFrame;

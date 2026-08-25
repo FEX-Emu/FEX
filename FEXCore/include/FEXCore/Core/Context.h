@@ -113,15 +113,12 @@ public:
    * @brief Create a new thread object that doesn't inherit any state.
    * Used to create FEX thread objects in preparation for creating a true OS thread.
    *
-   * @param InitialRIP The starting RIP of this thread
-   * @param StackPointer The starting RSP of this thread
    * @param NewThreadState The thread state to inherit from if not nullptr.
    *
    * @return A new InternalThreadState object for using with a new guest thread.
    */
 
-  FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState*
-  CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState = nullptr) = 0;
+  FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(const FEXCore::Core::CPUState* NewThreadState = nullptr) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void DestroyThread(FEXCore::Core::InternalThreadState* Thread) = 0;
 #ifndef _WIN32

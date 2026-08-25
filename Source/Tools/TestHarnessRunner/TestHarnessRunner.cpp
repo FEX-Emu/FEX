@@ -343,7 +343,8 @@ int main(int argc, char** argv, char** const envp) {
       return -ENOEXEC;
     }
 
-    auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), 0);
+    auto ParentThread = SyscallHandler->TM.CreateThread();
+    ParentThread->Thread->CurrentFrame->State.rip = Loader.DefaultRIP();
     SyscallHandler->TM.TrackThread(ParentThread);
     SignalDelegation->RegisterTLSState(ParentThread);
 
@@ -379,7 +380,7 @@ int main(int argc, char** argv, char** const envp) {
   else {
     // Run as host
     SupportsAVX = true;
-    auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), 0);
+    auto ParentThread = SyscallHandler->TM.CreateThread();
     SyscallHandler->TM.TrackThread(ParentThread);
     SignalDelegation->RegisterTLSState(ParentThread);
 

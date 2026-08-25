@@ -155,32 +155,32 @@ public:
   void SetXMMRegistersFromState(FEXCore::Core::InternalThreadState* Thread, const __uint128_t* XMM_Low, const __uint128_t* YMM_High) override;
 
   /**
-   * @brief Used to create FEX thread objects in preparation for creating a true OS thread. Does set a TID or PID.
+   * @brief Used to create FEX thread objects in preparation for creating a true OS thread.
    *
-   * @param InitialRIP The starting RIP of this thread
-   * @param StackPointer The starting RSP of this thread
    * @param NewThreadState The initial thread state to setup for our state, if inheriting.
    *
    * @return The InternalThreadState object that tracks all of the emulated thread's state
    *
    * Usecases:
    *  Parent thread Creation:
-   *    - Thread = CreateThread(InitialRIP, InitialStack, nullptr, 0);
+   *    - Thread = CreateThread();
+   *    - Thread->CurrentFrame->State.rip = InitialRIP;
+   *    - Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = InitialStack;
    *    - CTX->ExecuteThread(Thread);
    *  OS thread Creation:
-   *    - Thread = CreateThread(0, 0, NewState, PPID);
+   *    - Thread = CreateThread(NewState);
    *    - Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
    *    - ThreadHandler calls `CTX->ExecuteThread(Thread)`
    *  OS fork (New thread created with a clone of thread state):
    *    - clone{2, 3}
-   *    - Thread = CreateThread(0, 0, CopyOfThreadState, PPID);
+   *    - Thread = CreateThread(CopyOfThreadState);
    *    - ExecuteThread(Thread); // Starts executing without creating another host thread
    *  Thunk callback executing guest code from native host thread
-   *    - Thread = CreateThread(0, 0, NewState, PPID);
+   *    - Thread = CreateThread(NewState);
    *    - HandleCallback(Thread, RIP);
    */
 
-  FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState) override;
+  FEXCore::Core::InternalThreadState* CreateThread(const FEXCore::Core::CPUState* NewThreadState) override;
 
   /**
    * @brief Destroys this FEX thread object and stops tracking it internally

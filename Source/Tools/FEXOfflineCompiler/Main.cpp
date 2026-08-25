@@ -173,7 +173,7 @@ static constexpr size_t DefaultCS {4};
 #endif
 
 static FEXCore::Core::InternalThreadState* SetupCompileThread(FEXCore::Context::Context& CTX, bool Is64Bit) {
-  auto Thread = CTX.CreateThread(0, 0);
+  auto Thread = CTX.CreateThread();
 
   auto Frame = Thread->CurrentFrame;
   Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &gdt[0];

@@ -573,7 +573,7 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   // Create a thread without a RIP or stack pointer setup initially.
-  auto ParentThread = SyscallHandler->TM.CreateThread(0, 0);
+  auto ParentThread = SyscallHandler->TM.CreateThread();
   SyscallHandler->TM.TrackThread(ParentThread);
   SignalDelegation->RegisterTLSState(ParentThread);
   ThunkHandler->RegisterTLSState(ParentThread);

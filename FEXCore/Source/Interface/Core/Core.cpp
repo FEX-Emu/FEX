@@ -414,15 +414,11 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   Thread->PassManager->Finalize();
 }
 
-FEXCore::Core::InternalThreadState*
-ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState) {
+FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(const FEXCore::Core::CPUState* NewThreadState) {
   FEXCore::Core::InternalThreadState* Thread = new FEXCore::Core::InternalThreadState {
     .CTX = this,
   };
   FEXCore::Allocator::VirtualName("FEXMem_ThreadState", Thread, sizeof(*Thread));
-
-  Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
-  Thread->CurrentFrame->State.rip = InitialRIP;
 
   // Copy over the new thread state to the new object
   if (NewThreadState) {

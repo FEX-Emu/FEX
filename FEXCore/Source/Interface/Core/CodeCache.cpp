@@ -406,7 +406,7 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
       ERROR_AND_DIE_FMT("Failed to create cache load validation context");
     }
 
-    ValidationThread.reset(ValidationCTX->CreateThread(0, 0, nullptr));
+    ValidationThread.reset(ValidationCTX->CreateThread(nullptr));
 
     auto Frame = ValidationThread->CurrentFrame;
     Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &ValidationGDT[0];
