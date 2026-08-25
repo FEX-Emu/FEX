@@ -2375,7 +2375,7 @@ private:
   void CalculateFlags_MUL(IR::OpSize SrcSize, Ref Res, Ref High);
   void CalculateFlags_UMUL(Ref High);
   void CalculateFlags_Logical(IR::OpSize SrcSize, Ref Res);
-  void CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
+  void CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift, bool DoubleWide = false);
   void CalculateFlags_ShiftRightImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
   void CalculateFlags_ShiftRightDoubleImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
   void CalculateFlags_ShiftRightImmediateCommon(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);

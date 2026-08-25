@@ -1526,7 +1526,7 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
       Res = _Extr(OpSizeFromSrc(Op), Dest, Src, Size - Shift);
     }
 
-    CalculateFlags_ShiftLeftImmediate(OpSizeFromSrc(Op), Res, Dest, Shift);
+    CalculateFlags_ShiftLeftImmediate(OpSizeFromSrc(Op), Res, Dest, Shift, true);
     CalculateDeferredFlags();
     StoreResultGPR(Op, Res);
   } else if (Shift == 0 && Size == 32) {
