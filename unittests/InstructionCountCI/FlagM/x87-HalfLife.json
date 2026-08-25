@@ -14,7 +14,7 @@
   "Instructions": {
     "Block1": {
       "x86InstructionCount": 70,
-      "ExpectedInstructionCount": 412,
+      "ExpectedInstructionCount": 413,
       "x86Insts": [
         "sub esp,0x2c",
         "mov ecx,dword [esp + 0x34]",
@@ -88,9 +88,7 @@
         "fucomi st0,st1"
       ],
       "ExpectedArm64ASM": [
-        "subs w20, w8, #0x2c (44)",
-        "mov x27, x8",
-        "mov x8, x20",
+        "sub w8, w8, #0x2c (44)",
         "ldr w7, [x8, #52]",
         "ldr w5, [x8, #48]",
         "ldr w4, [x8, #56]",
@@ -198,6 +196,7 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",
+        "mov w27, #0x0",
         "strb wzr, [x28, #1049]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v2.16b",
@@ -475,6 +474,8 @@
         "rmif x21, #63, #nzCv",
         "rmif x22, #62, #nZcv",
         "eor w26, w20, #0x1",
+        "rmif xzr, #0, #nzcV",
+        "rmif xzr, #61, #Nzcv",
         "strb w20, [x28, #1040]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x5 (5)",
@@ -504,7 +505,7 @@
     },
     "Block2": {
       "x86InstructionCount": 37,
-      "ExpectedInstructionCount": 213,
+      "ExpectedInstructionCount": 215,
       "x86Insts": [
         "sub esp,0x1c",
         "mov edx,dword [esp + 0x20]",
@@ -545,8 +546,7 @@
         "fucomi st0,st0"
       ],
       "ExpectedArm64ASM": [
-        "mvn w27, w8",
-        "subs w8, w8, #0x1c (28)",
+        "sub w8, w8, #0x1c (28)",
         "ldr w5, [x8, #32]",
         "ldr w4, [x8, #36]",
         "ldr s2, [x5]",
@@ -569,6 +569,7 @@
         "mov v3.16b, v0.16b",
         "ldr q4, [x28, #3696]",
         "bic v3.16b, v3.16b, v4.16b",
+        "mov w27, #0x0",
         "strb wzr, [x28, #1049]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v2.16b",
@@ -737,6 +738,8 @@
         "rmif x21, #63, #nzCv",
         "rmif x22, #62, #nZcv",
         "eor w26, w20, #0x1",
+        "rmif xzr, #0, #nzcV",
+        "rmif xzr, #61, #Nzcv",
         "strb w20, [x28, #1040]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x6 (6)",
@@ -1170,7 +1173,7 @@
     },
     "Block5": {
       "x86InstructionCount": 49,
-      "ExpectedInstructionCount": 300,
+      "ExpectedInstructionCount": 303,
       "x86Insts": [
         "fld dword [esp + 0x80]",
         "fsub dword [esp + 0x7c]",
@@ -1275,6 +1278,7 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",
+        "mov w27, #0x0",
         "strb wzr, [x28, #1049]",
         "ldr s4, [x8, #124]",
         "str x30, [sp, #-16]!",
@@ -1502,6 +1506,8 @@
         "rmif x21, #63, #nzCv",
         "rmif x22, #62, #nZcv",
         "eor w26, w20, #0x1",
+        "rmif xzr, #0, #nzcV",
+        "rmif xzr, #61, #Nzcv",
         "strb w20, [x28, #1040]",
         "cset x20, hi",
         "strb w20, [x8, #48]",
@@ -1527,7 +1533,7 @@
     },
     "Block6": {
       "x86InstructionCount": 39,
-      "ExpectedInstructionCount": 294,
+      "ExpectedInstructionCount": 295,
       "x86Insts": [
         "push ebp",
         "push edi",
@@ -1572,9 +1578,7 @@
       "ExpectedArm64ASM": [
         "stp w11, w9, [x8, #-8]!",
         "stp w6, w10, [x8, #-8]!",
-        "subs w20, w8, #0x4 (4)",
-        "mov x27, x8",
-        "mov x8, x20",
+        "sub w8, w8, #0x4 (4)",
         "ldr w7, [x8, #32]",
         "ldr w6, [x8, #36]",
         "ldr w4, [x8, #28]",
@@ -1815,6 +1819,7 @@
         "ldr x30, [sp], #16",
         "mov v5.16b, v0.16b",
         "movi v6.2d, #0x0",
+        "mov w27, #0x0",
         "strb wzr, [x28, #1049]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v5.16b",
@@ -1833,6 +1838,8 @@
         "rmif x21, #63, #nzCv",
         "rmif x22, #62, #nZcv",
         "eor w26, w20, #0x1",
+        "rmif xzr, #0, #nzcV",
+        "rmif xzr, #61, #Nzcv",
         "strb w20, [x28, #1040]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x4 (4)",

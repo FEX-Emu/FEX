@@ -2131,16 +2131,16 @@ private:
   }
 
   // Compares two floats and sets flags for a COMISS instruction
-  void Comiss(IR::OpSize ElementSize, Ref Src1, Ref Src2, bool InvalidateAF = false) {
+  void Comiss(IR::OpSize ElementSize, Ref Src1, Ref Src2) {
     // First, set flags according to Arm FCMP.
     HandleNZCVWrite();
     _FCmp(ElementSize, Src1, Src2);
     CFInverted = false;
-    ComissFlags(InvalidateAF);
+    ComissFlags();
   }
 
   // Sets flags for a COMISS instruction
-  void ComissFlags(bool InvalidateAF = false) {
+  void ComissFlags() {
     LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
 
     // We need to set PF according to the unordered flag. We'd rather do this
@@ -2155,12 +2155,15 @@ private:
     Ref V_inv = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC, true);
     SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(V_inv);
 
-    if (!InvalidateAF) {
-      // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so
-      // PF[4] is 0 so the XOR with PF will have no effect, so setting the AF
-      // byte to zero will indeed zero AF as intended.
-      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Constant(0));
-    }
+    // Intel: OF, SF, and AF set to zero
+    // AMD:   no mention of OF, SF and AF but actual hardware seems to always zero
+    //
+    // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so
+    // PF[4] is 0 so the XOR with PF will have no effect, so setting the AF
+    // byte to zero will indeed zero AF as intended.
+    // OF and SF are zeroed:
+    // _AXFLAG always produces N=0 (SF), V=0 (OF)
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Constant(0));
 
     // Convert NZCV from the Arm representation to an eXternal representation
     // that's totally not a euphemism for x86, nuh-uh. But maps to exactly we

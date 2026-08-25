@@ -367,7 +367,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpD
   } else {
     HandleNZCVWrite();
     _F80CmpValue(b);
-    ComissFlags(true /* InvalidateAF */);
+    ComissFlags();
   }
 
   if (PopTwice) {
