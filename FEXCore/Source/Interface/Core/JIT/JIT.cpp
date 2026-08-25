@@ -616,11 +616,11 @@ void Arm64JITCore::Op_NoOp(const IR::IROp_Header* IROp, IR::Ref Node) {}
 Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread)
   : CPUBackend(*ctx, Thread)
   , Arm64Emitter(ctx)
-  , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE128}
-  , HostSupportsSVE256 {ctx->HostFeatures.SupportsSVE256}
+  , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE128 != 0}
+  , HostSupportsSVE256 {ctx->HostFeatures.SupportsSVE256 != 0}
   , HostSupportsAVX256 {ctx->HostFeatures.SupportsAVX && ctx->HostFeatures.SupportsSVE256}
-  , HostSupportsRPRES {ctx->HostFeatures.SupportsRPRES}
-  , HostSupportsAFP {ctx->HostFeatures.SupportsAFP}
+  , HostSupportsRPRES {ctx->HostFeatures.SupportsRPRES != 0}
+  , HostSupportsAFP {ctx->HostFeatures.SupportsAFP != 0}
   , CTX {ctx}
   , TempCodeBufferAllocator(ctx->CPUBackendAllocator, 0) {
 
