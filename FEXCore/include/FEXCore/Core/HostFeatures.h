@@ -14,7 +14,7 @@ namespace FEXCore {
  */
 struct HostFeatures {
   // Changes code generation slightly.
-  enum class HostTypeEnum {
+  enum class HostTypeEnum : uint32_t {
     Unknown,
     Linux,
     Wow64,
