@@ -242,6 +242,9 @@ public:
 
       if (AveragePerSecond >= DynamicL1CacheIncreaseCountHeuristic()) {
         if (CurrentL1Entries < MAX_L1_ENTRIES) {
+          // Entries whose address has the new mask bit set would be unreachable by InvalidateCache
+          FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(L1Pointer), CurrentL1Entries * sizeof(LookupCacheEntry), false);
+
           CurrentL1Entries <<= 1;
           L1PointerMask = CurrentL1Entries - 1;
 
