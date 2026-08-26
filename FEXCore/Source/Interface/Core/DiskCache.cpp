@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+#include "FEXCore/Config/Config.h"
+#include "FEXCore/fextl/string.h"
 #include "FEXHeaderUtils/Filesystem.h"
 #include "FEXCore/Core/DiskCache.h"
 #include "FEXCore/Utils/LogManager.h"
@@ -9,6 +11,7 @@
 #include "FEXCore/fextl/memory.h"
 #include <cstdint>
 #include <cstring>
+#include <charconv>
 
 namespace FEXCore {
 
@@ -158,7 +161,7 @@ namespace DiskCache {
     return true;
   }
 
-  void IndexedDB::PopulateIndex(Index& CacheIndex) {
+  void IndexedDB::PopulateIndex(Index& CacheIndex, bool& FoundMetadata) {
     fextl::vector<uint8_t> Data;
     if (!IndexFOZ.ReadAll(Data)) {
       return;
@@ -184,15 +187,21 @@ namespace DiskCache {
       const auto* IndexBlobPayload = reinterpret_cast<const MesaFOZ::mesa_index_db_file_entry*>(IndexDataStart + ReadOffset);
       ReadOffset += FOZHeader->payload_size;
 
-      if (IndexBlobPayload->hash != XXH3_64bits(FOZKey->bytes, FOSSILIZE_BLOB_HASH_LENGTH)) {
-        break;
-      }
       // skip corrupt (carefully) so we don't have to figure that out in the hot path later
       if (IndexBlobPayload->cache_db_file_offset > (uint64_t)CacheFOZSize ||
           IndexBlobPayload->size > (uint64_t)CacheFOZSize - IndexBlobPayload->cache_db_file_offset) {
         continue;
       }
-      CacheIndex.insert({IndexBlobPayload->hash, {this, IndexBlobPayload->cache_db_file_offset, IndexBlobPayload->size}});
+      if (FOZKey->bytes[39] != 0xFF) {
+        uint64_t Key;
+        std::from_chars(reinterpret_cast<const char*>(FOZKey->bytes), reinterpret_cast<const char*>(&FOZKey->bytes[16]), Key, 16);
+        if (IndexBlobPayload->hash != Key) {
+          continue;
+        }
+        CacheIndex.insert({IndexBlobPayload->hash, {this, IndexBlobPayload->cache_db_file_offset, IndexBlobPayload->size}});
+      } else {
+        FoundMetadata = true;
+      }
     }
     // could truncate/delete index if we don't end up perfectly at end here
   }
@@ -206,7 +215,12 @@ namespace DiskCache {
       // shouldn't happen
       return false;
     }
-    uint64_t Hash = XXH3_64bits(Key.bytes, FOSSILIZE_BLOB_HASH_LENGTH);
+    uint64_t Hash;
+    if (Key.bytes[39] != 0xFF) {
+      std::from_chars(reinterpret_cast<const char*>(Key.bytes), reinterpret_cast<const char*>(&Key.bytes[16]), Hash, 16);
+    } else {
+      Hash = ~0;
+    }
     {
       std::lock_guard Guard(IndexMutex);
       if (Index.contains(Hash)) {
@@ -269,7 +283,7 @@ namespace DiskCache {
       return false;
     }
 
-    CurDB->PopulateIndex(Index);
+    CurDB->PopulateIndex(Index, FoundMetadata);
 
     if (ReadOnly) {
       ROCacheDBs.push_back(std::move(CurDB));
@@ -287,17 +301,35 @@ namespace DiskCache {
       return;
     }
 
-    // todo grab all CTX options that can change compilation here + any environmental/hw things and hash into a bucket key
+    fextl::string SerializedConfig = FEXCore::Config::SerializeForCache();
+
+    fextl::vector<uint8_t> BucketBytes;
+    uint64_t HostFeaturesHash = CTX->HostFeatures.HashForCaching();
+    BucketBytes.resize(sizeof(FormatVersion) + sizeof(CTX->Config.Is64BitMode) + sizeof(HostFeaturesHash) + SerializedConfig.size() + 2);
+    *BucketBytes.data() = FormatVersion;
+    *(BucketBytes.data() + 1) = CTX->Config.Is64BitMode;
+    memcpy(BucketBytes.data() + 2, &HostFeaturesHash, sizeof(HostFeaturesHash));
+    memcpy(BucketBytes.data() + 6, SerializedConfig.data(), SerializedConfig.size());
+    // todo add host features affecting codegen here too
+    BucketHash = XXH3_128bits(BucketBytes.data(), BucketBytes.size());
 
     fextl::string BasePath = BasePathOverride();
     if (BasePath.empty()) {
-      // todo put bucket hash in that path
       BasePath = FEXCore::Config::GetCacheDirectory() + "DiskCache/";
+      BasePath += fextl::fmt::format("{:016x}{:016x}", BucketHash.high64, BucketHash.low64) + "/";
     }
     FHU::Filesystem::CreateDirectories(BasePath);
 
     fextl::string RWDBBasePath = BasePath + "RWCacheDB";
     OpenCacheDB(RWDBBasePath, false);
+
+    if (RWCacheDB && !FoundMetadata) {
+      // we just opened a fresh cache, add a metadata blob
+      MesaFOZ::foz_payload_key MetadataKey;
+      memset(MetadataKey.bytes, 0xFF, sizeof(MetadataKey));
+      RWCacheDB->StoreCacheBlob(MetadataKey, {BucketBytes.data(), BucketBytes.size()}, Index, IndexLock);
+      Index.clear();
+    }
 
     std::string_view RONames = RODBNames();
     while (!RONames.empty()) {
@@ -320,17 +352,22 @@ namespace DiskCache {
     }
   }
 
+  uint64_t DiskCache::MakeBlobKey(const uint64_t ModuleOffset) {
+    struct {
+      uint64_t ModuleOffset;
+      XXH128_hash_t BucketHash;
+    } BlobKeyBytes = {ModuleOffset, BucketHash};
+
+    return XXH3_64bits(&BlobKeyBytes, sizeof(BlobKeyBytes));
+  }
+
   std::optional<CodeHitData> DiskCache::Lookup(Core::InternalThreadState* Thread, const ExecutableFileSectionInfo& Region, uint64_t GuestRIP) {
     if (!IsReadingDiskCache()) {
       return std::nullopt;
     }
     uint64_t ModuleOffset = GuestRIP - Region.FileStartVA;
 
-    // todo move key making to a helper once we have options and stuff (see Store)
-    MesaFOZ::foz_payload_key Key = {};
-    memcpy(Key.bytes, &ModuleOffset, sizeof(ModuleOffset));
-
-    uint64_t Hash = XXH3_64bits(Key.bytes, FOSSILIZE_BLOB_HASH_LENGTH);
+    uint64_t Hash = MakeBlobKey(ModuleOffset);
 
     IndexEntry Entry;
     {
@@ -502,10 +539,10 @@ namespace DiskCache {
 
     uint64_t ModuleOffset = GuestRIP - Region.FileStartVA;
 
-    // todo also copy/hash options that affect codegen into the key
-    // todo should try to keep the key ascii i think?
+    uint64_t BlobKey = MakeBlobKey(ModuleOffset);
     MesaFOZ::foz_payload_key Key = {};
-    memcpy(Key.bytes, &ModuleOffset, sizeof(ModuleOffset));
+    fextl::string BlobName = fextl::fmt::format("{:016x}", BlobKey);
+    memcpy(Key.bytes, BlobName.data(), BlobName.size());
 
     BlobFixedHeader Header {
       .GuestSize = (uint32_t)GuestCode.size(),
