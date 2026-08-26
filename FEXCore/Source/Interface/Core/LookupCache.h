@@ -220,7 +220,7 @@ public:
     }
 
     if (HostPtr && DynamicL1Cache()) {
-      UpdateDynamicL1Stats(Thread);
+      UpdateDynamicL1Stats(Thread, Address, HostPtr);
     }
 
     FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedCacheMissCount, 1);
@@ -228,7 +228,7 @@ public:
     return HostPtr;
   }
 
-  void UpdateDynamicL1Stats(FEXCore::Core::InternalThreadState* Thread) {
+  void UpdateDynamicL1Stats(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddress, uint64_t HostCode) {
     // If host pointer was found in L2 or L3, then add it to the counter.
     // Keeping track not L1 misses, but specifically L2/L3 hits.
     ++L2L3CacheHits;
@@ -251,6 +251,9 @@ public:
           // Update the thread's L1 pointer mask to increase how much cache it uses.
           // Since we're in C-code, this is safe to update here.
           Thread->CurrentFrame->State.L1Mask = GetScaledL1PointerMask();
+
+          // If L1 was just shrunk, then we just removed our cached entry. Add it back.
+          AddL1Entry(GuestAddress, HostCode);
         }
       } else if (AveragePerSecond < DynamicL1CacheDecreaseCountHeuristic()) {
         if (CurrentL1Entries > MIN_L1_ENTRIES) {
@@ -383,15 +386,19 @@ public:
   }
 
 private:
+  void AddL1Entry(uint64_t GuestAddress, uint64_t HostCode) {
+    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[GuestAddress & L1PointerMask];
+    L1Entry.GuestCode = GuestAddress;
+    L1Entry.HostCode = HostCode;
+  }
+
   void CacheBlockMapping(uint64_t Address, const GuestToHostMap::BlockEntry& Entry, bool L1Only, const LookupCacheBaseLockToken& lk) {
     for (const auto& CodePage : Entry.CodePages) {
       CachedCodePages[CodePage >> 12].insert(Address);
     }
 
     // Do L1
-    auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1PointerMask];
-    L1Entry.GuestCode = Address;
-    L1Entry.HostCode = Entry.HostCode;
+    AddL1Entry(Address, Entry.HostCode);
 
     if (!DisableL2Cache() && !L1Only) {
       // Do ful map
