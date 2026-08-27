@@ -1297,6 +1297,7 @@ DEF_OP(VFAddP) {
   const auto Op = IROp->C<IR::IROp_VFAddP>();
   const auto OpSize = IROp->Size;
 
+  const auto IsScalar = OpSize == IR::OpSize::i64Bit;
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
@@ -1327,6 +1328,8 @@ DEF_OP(VFAddP) {
 
     // Merge upper half with lower half.
     splice<ARMEmitter::OpType::Destructive>(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), PRED_TMP_16B, Dst.Z(), VTMP2.Z());
+  } else if (IsScalar) {
+    faddp(SubRegSize, Dst.D(), VectorLower.D(), VectorUpper.D());
   } else {
     faddp(SubRegSize, Dst.Q(), VectorLower.Q(), VectorUpper.Q());
   }
