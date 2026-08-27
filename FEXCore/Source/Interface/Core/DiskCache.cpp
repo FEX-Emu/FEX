@@ -303,14 +303,16 @@ namespace DiskCache {
 
     fextl::string SerializedConfig = FEXCore::Config::SerializeForCache();
 
+    struct __attribute__((packed)) {
+      uint8_t FormatVersion;
+      uint8_t Is64BitMode;
+      uint64_t HostFeaturesHash;
+    } BucketHeader = {FormatVersion, CTX->Config.Is64BitMode, CTX->HostFeatures.HashForCaching()};
+
     fextl::vector<uint8_t> BucketBytes;
-    uint64_t HostFeaturesHash = CTX->HostFeatures.HashForCaching();
-    BucketBytes.resize(sizeof(FormatVersion) + sizeof(CTX->Config.Is64BitMode) + sizeof(HostFeaturesHash) + SerializedConfig.size() + 2);
-    *BucketBytes.data() = FormatVersion;
-    *(BucketBytes.data() + 1) = CTX->Config.Is64BitMode;
-    memcpy(BucketBytes.data() + 2, &HostFeaturesHash, sizeof(HostFeaturesHash));
-    memcpy(BucketBytes.data() + 6, SerializedConfig.data(), SerializedConfig.size());
-    // todo add host features affecting codegen here too
+    BucketBytes.resize(sizeof(BucketHeader) + SerializedConfig.size());
+    memcpy(BucketBytes.data(), &BucketHeader, sizeof(BucketHeader));
+    memcpy(BucketBytes.data() + sizeof(BucketHeader), SerializedConfig.data(), SerializedConfig.size());
     BucketHash = XXH3_128bits(BucketBytes.data(), BucketBytes.size());
 
     fextl::string BasePath = BasePathOverride();
