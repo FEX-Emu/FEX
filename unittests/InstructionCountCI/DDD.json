@@ -60,7 +60,7 @@
         "strb w20, [x28, #1202]",
         "ldr d2, [x28, #1072]",
         "fcvtzs v2.2s, v2.2s",
-        "uzp1 v2.4h, v2.4h, v2.4h",
+        "sqxtn v2.4h, v2.4s",
         "sxtl v2.4s, v2.4h",
         "str d2, [x28, #1056]",
         "strh w20, [x28, #1064]"
