@@ -145,7 +145,7 @@
         "ldr d3, [x28, #1072]",
         "dup v4.2s, v2.s[1]",
         "fsub s2, s2, s4",
-        "faddp v3.4s, v3.4s, v3.4s",
+        "faddp v3.2s, v3.2s, v3.2s",
         "mov v2.s[1], v3.s[0]",
         "str d2, [x28, #1056]",
         "strh w20, [x28, #1064]"
