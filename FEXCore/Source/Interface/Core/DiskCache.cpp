@@ -4,6 +4,7 @@
 #include "FEXCore/fextl/string.h"
 #include "FEXHeaderUtils/Filesystem.h"
 #include "FEXCore/Core/DiskCache.h"
+#include "FEXCore/Core/DiskCacheFileMapper.h"
 #include "FEXCore/Utils/LogManager.h"
 #include "Interface/Context/Context.h"
 #include "FEXCore/HLE/SyscallHandler.h"
@@ -37,6 +38,8 @@ namespace DiskCache {
     };
 
   } // namespace MesaFOZ
+
+  static FileMapperFunc FileMapper = nullptr;
 
   bool FOZFile::Open(const fextl::string& FOZFileName, bool ReadOnly) {
     FileName = FOZFileName;
@@ -157,6 +160,12 @@ namespace DiskCache {
       return false;
     }
 
+    File::File::FileHandleType CacheFileHandle = CacheFOZ.GetHandle();
+    if (FileMapper && CacheFileHandle != (File::File::FileHandleType)-1) {
+      CacheFileMapping = reinterpret_cast<uint8_t*>(FileMapper(CacheFileHandle, ReadOnly ? CacheFOZ.Size() : BIG_MAPPING_SIZE));
+      CacheFileSize = CacheFOZ.Size();
+    }
+
     this->ReadOnly = ReadOnly;
     return true;
   }
@@ -207,7 +216,16 @@ namespace DiskCache {
   }
 
   bool IndexedDB::ReadCacheBlob(uint64_t Offset, std::span<uint8_t> OutBlob) {
-    return CacheFOZ.ReadBlob(Offset, OutBlob);
+    if (CacheFileMapping && (ReadOnly || Offset + OutBlob.size() <= BIG_MAPPING_SIZE)) {
+      if (Offset + OutBlob.size() > CacheFileSize) {
+        return false;
+      }
+      // todo could reduce copies by having a private mapping for relocs, etc
+      memcpy(OutBlob.data(), CacheFileMapping + Offset, OutBlob.size());
+      return true;
+    } else {
+      return CacheFOZ.ReadBlob(Offset, OutBlob);
+    }
   }
 
   bool IndexedDB::StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const uint8_t> Blob, Index& Index, std::mutex& IndexMutex) {
@@ -260,6 +278,11 @@ namespace DiskCache {
     CacheFOZ.Unlock();
     IndexFOZ.Unlock();
 
+    // publish new file size for memory-mapped reads
+    if (CacheFileMapping) {
+      CacheFileSize = BlobOffset + Blob.size();
+    }
+
     std::lock_guard Guard(IndexMutex);
     Index[Hash] = {this, BlobOffset, (uint32_t)Blob.size()};
     return true;
@@ -294,6 +317,10 @@ namespace DiskCache {
     return true;
   }
 
+  FEX_DEFAULT_VISIBILITY void SetFileMapper(FileMapperFunc Func) {
+    FileMapper = Func;
+  }
+
   void DiskCache::Init(FEXCore::Context::ContextImpl* CTX) {
     this->CTX = CTX;
 
@@ -321,6 +348,10 @@ namespace DiskCache {
       BasePath += fextl::fmt::format("{:016x}{:016x}", BucketHash.high64, BucketHash.low64) + "/";
     }
     FHU::Filesystem::CreateDirectories(BasePath);
+
+    if (!MapDiskCacheFiles) {
+      FileMapper = nullptr;
+    }
 
     fextl::string RWDBBasePath = BasePath + "RWCacheDB";
     OpenCacheDB(RWDBBasePath, false);

@@ -26,6 +26,9 @@ unixlib_handle_t UnixLibHandle {};
 
 decltype(__wine_unix_call_dispatcher) UnixCallDispatcher {};
 
+using wine_server_handle_to_fd_t = NTSTATUS(CDECL*)(HANDLE, unsigned int, int*, unsigned int*);
+static wine_server_handle_to_fd_t WineServerHandleToFd {};
+
 #ifdef ARCHITECTURE_arm64ec
 // On ARM64EC, indirect calls go through __os_arm64x_dispatch_icall which invokes
 // FEX's custom call checker. Use a naked trampoline to bypass the dispatch mechanism
@@ -88,6 +91,7 @@ namespace Illegal {
 
 bool Init(HMODULE NtDll) {
   const auto Sym = GetProcAddress(NtDll, "__wine_unix_call_dispatcher");
+  WineServerHandleToFd = reinterpret_cast<wine_server_handle_to_fd_t>(GetProcAddress(NtDll, "wine_server_handle_to_fd"));
 
   if (!Sym) {
     return false;
@@ -134,12 +138,12 @@ bool Init(HMODULE NtDll) {
   return true;
 }
 
-static bool UnixLibAvailable() {
+bool Available() {
   return UnixLibHandle != 0;
 }
 
 bool TryEnableHardwareTSO() {
-  if (UnixLibAvailable()) {
+  if (Available()) {
     // UnixLib path.
     FEXUnixLib_SetHardwareTSOControlArgs Args {
       .Enable = true,
@@ -155,7 +159,7 @@ bool TryEnableHardwareTSO() {
 }
 
 bool SetKernelUnalignedAtomicControl(uint64_t Flags) {
-  if (UnixLibAvailable()) {
+  if (Available()) {
     // UnixLib path.
     FEXUnixLib_SetKernelUnalignedAtomicControl Args {
       .Flags = Flags,
@@ -169,7 +173,7 @@ bool SetKernelUnalignedAtomicControl(uint64_t Flags) {
 }
 
 void VirtualTHPControl(const void* Ptr, size_t Size, FEXCore::Allocator::THPControl Control) {
-  if (UnixLibAvailable()) {
+  if (Available()) {
     // UnixLib path.
     FEXUnixLib_Madvise Args {
       .Addr = Ptr,
@@ -190,7 +194,7 @@ void VirtualName(const char* Name, const void* Ptr, size_t Size) {
     return;
   }
 
-  if (UnixLibAvailable()) {
+  if (Available()) {
     // UnixLib path.
     FEXUnixLib_SetVMAName Args {
       .Addr = Ptr,
@@ -209,7 +213,7 @@ void VirtualName(const char* Name, const void* Ptr, size_t Size) {
 }
 
 SHMSlotResult AllocateSHMSlots(void* SHMBase, uint32_t MapSize, uint32_t MaxSize) {
-  if (UnixLibAvailable()) {
+  if (Available()) {
     // UnixLib path.
     FEXUnixLib_GetSHMStatsVMA Args {
       .SHMBase = SHMBase,
@@ -277,7 +281,7 @@ SHMSlotResult AllocateSHMSlots(void* SHMBase, uint32_t MapSize, uint32_t MaxSize
 }
 
 void DeleteSHMStatsFile() {
-  if (UnixLibAvailable()) {
+  if (Available()) {
     // UnixLib path.
     Call(FEXUnixLibFunctions::DeleteSHMStatsFile, nullptr);
     return;
@@ -285,6 +289,27 @@ void DeleteSHMStatsFile() {
 
   // Legacy Proton path.
   DeleteFileA(fextl::fmt::format("/dev/shm/fex-{}-stats", Illegal::linux_getpid()).c_str());
+}
+
+void* MapFile(HANDLE FileHandle, uint64_t MapSize) {
+  if (Available() && WineServerHandleToFd) {
+    FEXUnixLib_MapFile Args {
+      .FD = -1,
+      .MapSize = MapSize,
+    };
+
+    // this is a dup equivalent
+    auto Result = WineServerHandleToFd(FileHandle, FILE_READ_DATA, &Args.FD, nullptr);
+    if (Result != STATUS_SUCCESS || Args.FD == -1) {
+      return nullptr;
+    }
+
+    if (Call(FEXUnixLibFunctions::MapFile, &Args) == STATUS_SUCCESS) {
+      return Args.Result;
+    }
+  }
+
+  return nullptr;
 }
 
 } // namespace FEX::Windows::UnixLib

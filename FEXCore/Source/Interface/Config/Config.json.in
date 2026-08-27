@@ -140,6 +140,13 @@
           "Enables disk caching for code blocks"
         ]
       },
+      "DiskCacheFileMapping": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Maps cache files for faster reading"
+        ]
+      },
       "DiskCacheRelocationFilter": {
         "Type": "bool",
         "Default": "true",
