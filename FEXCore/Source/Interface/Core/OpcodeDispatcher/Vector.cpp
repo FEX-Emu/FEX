@@ -3592,6 +3592,16 @@ void OpDispatchBuilder::PF2IWOp(OpcodeArgs) {
   StoreResultFPR_WithOpSize(Op, Op->Dest, Src, Size);
 }
 
+void OpDispatchBuilder::PF2IDOp(OpcodeArgs) {
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  const auto Size = OpSizeFromDst(Op);
+
+  Src = _Vector_FToZS(Size, OpSize::i32Bit, Src);
+
+  StoreResultFPR_WithOpSize(Op, Op->Dest, Src, Size);
+}
+
 void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
