@@ -67,7 +67,7 @@
       ]
     },
     "pf2id mm0, mm1": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0x0f 0x0f 0x1d"
       ],
@@ -76,7 +76,6 @@
         "mov w20, #0xffff",
         "strb w20, [x28, #1202]",
         "ldr d2, [x28, #1072]",
-        "frint32z v2.4s, v2.4s",
         "fcvtzs v2.2s, v2.2s",
         "str d2, [x28, #1056]",
         "strh w20, [x28, #1064]"
