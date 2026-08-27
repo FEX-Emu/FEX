@@ -520,6 +520,9 @@ void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, StringArray
 }
 template void Value<StringArrayType>::GetListIfExists(FEXCore::Config::ConfigOption Option, StringArrayType* List);
 
+#define CONFIG_AFFECTSCODEGEN
+#include <FEXCore/Config/ConfigOptions.inl>
+
 fextl::string SerializeForCache() {
   fextl::string Config {};
 
@@ -533,16 +536,10 @@ fextl::string SerializeForCache() {
   };
 
   const auto SerializeValue = [&Config, append_string_triple]<typename T, ConfigOption Option>(auto ConfigVal, const auto Default) {
-    if constexpr (Option == ConfigOption::CONFIG_ENV || Option == ConfigOption::CONFIG_HOSTENV ||
-                  Option == ConfigOption::CONFIG_ADDITIONALARGUMENTS || Option == ConfigOption::CONFIG_APP_CONFIG_NAME ||
-                  Option == ConfigOption::CONFIG_APP_FILENAME || Option == ConfigOption::CONFIG_IS64BIT_MODE ||
-                  Option == ConfigOption::CONFIG_INTERPRETER_INSTALLED || Option == ConfigOption::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS ||
-                  Option == ConfigOption::CONFIG_HOSTFEATURES || Option == ConfigOption::CONFIG_CPUFEATUREREGISTERS) {
-      // Skip environment variables, meta arguments, and HostFeatures.
-      // Also skip CPUFeatureRegisters because it contains unfiltered data that is used in HostFeatures.
+    if (!Config_AffectsCodeGen[FEXCore::ToUnderlying(Option)]) {
+      // Skip everything that the config says doesn't affect codegen.
       return;
     }
-
     append_string_triple(Config, FEXCore::Config::GetConfigJSONName(Option), Option, ConfigVal());
   };
 
