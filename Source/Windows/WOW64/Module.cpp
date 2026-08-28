@@ -449,26 +449,26 @@ public:
         ULONG32 Args;
       }* StackArgs = reinterpret_cast<StackLayout*>(ReturnRSP);
 
-      ReturnRSP += sizeof(StackLayout);
+      Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP + sizeof(StackLayout);
+      Frame->State.rip = ReturnRIP;
 
       const auto TLS = GetTLS();
       Context::UnlockJITContext(TLS);
       ReturnRAX = static_cast<uint64_t>(WineUnixCall(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
       Context::LockJITContext(TLS);
+      Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
     } else if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall) {
       const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
+
+      Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP;
+      Frame->State.rip = ReturnRIP;
 
       const auto TLS = GetTLS();
       Context::UnlockJITContext(TLS);
       Wow64ProcessPendingCrossProcessItems();
       ReturnRAX = static_cast<uint64_t>(Wow64SystemServiceEx(static_cast<UINT>(EntryRAX), reinterpret_cast<UINT*>(ReturnRSP + 4)));
       Context::LockJITContext(TLS);
-    }
-    // If a new context has been set, use it directly and don't return to the syscall caller
-    if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall || Frame->State.rip == (uint64_t)BridgeInstrs::UnixCall) {
       Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
-      Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP;
-      Frame->State.rip = ReturnRIP;
     }
 
     // NORETURNEDRESULT causes this result to be ignored since we restore all registers back from memory after a syscall anyway
