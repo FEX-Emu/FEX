@@ -69,6 +69,10 @@ public:
     ShouldClose = IsValidHandle;
   }
 
+  FileHandleType GetHandle() {
+    return Handle;
+  }
+
   /**
    * @brief Write Bytes to File
    *

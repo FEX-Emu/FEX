@@ -28,6 +28,7 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/DiskCacheFileMapper.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -191,6 +192,16 @@ void Shutdown(fextl::vector<FEXCore::Allocator::MemoryRegion>&& MemoryRegions) {
   FEXCore::Allocator::ReclaimMemoryRegion(MemoryRegions);
 }
 } // namespace FEX::Allocator
+
+static void* DiskCacheFilemapper(FEXCore::File::File::FileHandleType Handle, uint64_t MapSize) {
+  int mapFD = dup(Handle);
+  void* Result = FEXCore::Allocator::mmap(nullptr, MapSize, PROT_READ, MAP_SHARED | MAP_NORESERVE, mapFD, 0);
+  close(mapFD);
+  if (Result == (void*)-1) {
+    return nullptr;
+  }
+  return Result;
+}
 
 bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
   int FD {-1};
@@ -520,6 +531,8 @@ int main(int argc, char** argv, char** const envp) {
 
   // Setup Thread handlers, so FEXCore can create threads.
   auto StackTracker = FEX::LinuxEmulation::Threads::SetupThreadHandlers();
+
+  FEXCore::DiskCache::SetFileMapper(DiskCacheFilemapper);
 
   auto MemoryRegions = FEX::Allocator::InitMemoryRegions(Loader.Is64BitMode());
   auto Allocator = FEX::Allocator::InitAllocator(Loader.Is64BitMode());

@@ -124,6 +124,9 @@ namespace DiskCache {
       }
       return FD->Unlock();
     }
+    File::File::FileHandleType GetHandle() {
+      return FD ? FD->GetHandle() : (File::File::FileHandleType)-1;
+    }
     ssize_t Size();
     bool ReadAll(fextl::vector<uint8_t>& Out); // from first blob
     bool ReadBlob(uint64_t Offset, std::span<uint8_t> OutBlob);
@@ -147,8 +150,11 @@ namespace DiskCache {
   private:
     // stores run on the Writer, so returning quick isn't as important
     static constexpr uint32_t STORE_LOCK_TIMEOUT_MS = 1000;
+    static constexpr uint64_t BIG_MAPPING_SIZE = 1ULL << 33;
 
     FOZFile CacheFOZ;
+    uint8_t* CacheFileMapping = nullptr;
+    std::atomic<uint64_t> CacheFileSize;
     FOZFile IndexFOZ;
     bool ReadOnly = false;
   };
@@ -187,6 +193,7 @@ namespace DiskCache {
     fextl::unique_ptr<WorkQueueThread> Writer;
 
     FEX_CONFIG_OPT(EnableDiskCache, DISKCACHE);
+    FEX_CONFIG_OPT(MapDiskCacheFiles, DISKCACHEFILEMAPPING);
     FEX_CONFIG_OPT(RelocationFilter, DISKCACHERELOCATIONFILTER);
     FEX_CONFIG_OPT(BasePathOverride, DISKCACHEPATH);
     FEX_CONFIG_OPT(RODBNames, DISKCACHERODBNAMES);
