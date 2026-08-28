@@ -155,6 +155,7 @@
       "DiskCacheFileMapping": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Maps cache files for faster reading"
         ]
