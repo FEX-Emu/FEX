@@ -451,45 +451,18 @@ namespace DiskCache {
       return std::nullopt;
     }
 
-    HitData.HostCode = {HitData.Blob.data() + sizeof(Header), Header.HostSize};
-    HitData.EntryPoints = {reinterpret_cast<const BlobEntryPoint*>(HitData.Blob.data() + sizeof(Header) + Header.HostSize), Header.EntryPointCount};
+    uint32_t BlobOffset = sizeof(Header);
 
-    auto* SmallRelocs = reinterpret_cast<const BlobSmallRelocation*>(
-      HitData.Blob.data() + sizeof(Header) + Header.HostSize + Header.EntryPointCount * sizeof(BlobEntryPoint));
-    auto* ThunkRelocs = reinterpret_cast<const BlobThunkRelocation*>(
-      reinterpret_cast<const uint8_t*>(SmallRelocs) + Header.SmallRelocCount * sizeof(BlobSmallRelocation));
+    HitData.HostCode = {HitData.Blob.data() + BlobOffset, Header.HostSize};
+    BlobOffset += Header.HostSize;
+    HitData.EntryPoints = {reinterpret_cast<const BlobEntryPoint*>(HitData.Blob.data() + BlobOffset), Header.EntryPointCount};
+    BlobOffset += Header.EntryPointCount * sizeof(BlobEntryPoint);
+    HitData.SmallRelocs = {reinterpret_cast<const BlobSmallRelocation*>(HitData.Blob.data() + BlobOffset), Header.SmallRelocCount};
+    BlobOffset += Header.SmallRelocCount * sizeof(BlobSmallRelocation);
+    HitData.ThunkRelocs = {reinterpret_cast<const BlobThunkRelocation*>(HitData.Blob.data() + BlobOffset), Header.ThunkRelocCount};
+    BlobOffset += Header.ThunkRelocCount * sizeof(BlobThunkRelocation);
 
-    HitData.Relocations.reserve(Header.SmallRelocCount + Header.ThunkRelocCount);
-    for (uint32_t i = 0; i < Header.SmallRelocCount; ++i) {
-      const auto& SmallReloc = SmallRelocs[i];
-      FEXCore::CPU::Relocation Reloc = FEXCore::CPU::Relocation::Default();
-      Reloc.Header.Type = (CPU::RelocationTypes)SmallReloc.Type;
-      Reloc.Header.Offset = SmallReloc.Offset;
-      switch (SmallReloc.Type) {
-      case uint8_t(CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL):
-        Reloc.NamedSymbolLiteral.Symbol = CPU::RelocNamedSymbolLiteral::NamedSymbol(SmallReloc.Named.Symbol);
-        break;
-      case uint8_t(CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL): Reloc.GuestRIP.GuestRIP = SmallReloc.RIPLiteral.GuestRIP; break;
-      case uint8_t(CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE):
-        Reloc.GuestRIP.RegisterIndex = SmallReloc.RIPMove.RegisterIndex;
-        Reloc.GuestRIP.GuestRIP = SmallReloc.RIPMove.GuestRIP;
-        break;
-      default: return std::nullopt;
-      }
-      HitData.Relocations.push_back(Reloc);
-    }
-    for (uint32_t i = 0; i < Header.ThunkRelocCount; ++i) {
-      const auto& BigReloc = ThunkRelocs[i];
-      FEXCore::CPU::Relocation Reloc = FEXCore::CPU::Relocation::Default();
-      Reloc.NamedThunkMove.Header.Offset = BigReloc.Offset;
-      Reloc.NamedThunkMove.Header.Type = CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE;
-      Reloc.NamedThunkMove.RegisterIndex = BigReloc.RegisterIndex;
-      memcpy(&Reloc.NamedThunkMove.Symbol, BigReloc.SymbolHash, sizeof(BigReloc.SymbolHash));
-      HitData.Relocations.push_back(Reloc);
-    }
-
-    auto* PageOffsets =
-      reinterpret_cast<const int64_t*>(reinterpret_cast<const uint8_t*>(ThunkRelocs) + Header.ThunkRelocCount * sizeof(BlobThunkRelocation));
+    auto* PageOffsets = reinterpret_cast<const int64_t*>(HitData.Blob.data() + BlobOffset);
     HitData.GuestPages.reserve(Header.TouchedGuestPagesCount);
     for (uint32_t i = 0; i < Header.TouchedGuestPagesCount; ++i) {
       HitData.GuestPages.push_back(GuestRIP + PageOffsets[i]);
