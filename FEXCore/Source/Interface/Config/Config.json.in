@@ -4,6 +4,7 @@
       "Multiblock": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Controls multiblock code compilation",
           "Can cause long JIT compilation times and stutter"
@@ -12,6 +13,7 @@
       "MaxInst": {
         "Type": "int32",
         "Default": "5000",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Maximum number of instruction to store in a block"
         ]
@@ -19,6 +21,7 @@
       "EnableCodeCachingWIP": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Enable the code caching subsystem"
         ]
@@ -26,6 +29,7 @@
       "EnableLazyCodeCachingWIP": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Enable lazy loading of chunks in code caches"
         ]
@@ -33,6 +37,7 @@
       "EnableCodeCacheValidation": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Enable expensive validation when loading code caches"
         ]
@@ -40,6 +45,8 @@
       "HostFeatures": {
         "Type": "strenum",
         "Default": "FEXCore::Config::HostFeatures::OFF",
+        "AffectsCodeGen": "true",
+        "Comment": "Technically affects codegen, but this is serialized elsewhere.",
         "Enums": {
           "ENABLESVE": "enablesve",
           "DISABLESVE": "disablesve",
@@ -115,6 +122,7 @@
       "SmallTSCScale": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Scales the cycle counter on systems that have low frequencies."
         ]
@@ -122,6 +130,7 @@
       "HideHybrid": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Hides hybrid CPU core arrangement."
         ]
@@ -129,6 +138,8 @@
       "CPUFeatureRegisters": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
+        "Comment": "Technically affects codegen, but this is serialized in to HostFeatures.",
         "Desc": [
           "Allows overriding cpu feature flags for manual testing"
         ]
@@ -136,6 +147,7 @@
       "DiskCache": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Enables disk caching for code blocks"
         ]
@@ -150,6 +162,7 @@
       "DiskCacheRelocationFilter": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Don't cache blocks with relocations pointing outside of any known region"
         ]
@@ -157,6 +170,7 @@
       "DiskCachePath": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Optional base directory override for disk cache"
         ]
@@ -164,6 +178,7 @@
       "DiskCacheRODBNames": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Optional list of extra read-only disk cache DBs to consider"
         ]
@@ -173,6 +188,7 @@
       "RootFS": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Which Root filesystem prefix to use",
           "This can be a filesystem path",
@@ -187,6 +203,7 @@
       "ThunkHostLibs": {
         "Type": "str",
         "Default": "@CMAKE_INSTALL_FULL_LIBDIR@/fex-emu/HostThunks",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Folder to find the host-side thunking libraries."
         ]
@@ -194,6 +211,7 @@
       "ThunkGuestLibs": {
         "Type": "str",
         "Default": "@CMAKE_INSTALL_PREFIX@/share/fex-emu/GuestThunks",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Folder to find the guest-side thunking libraries."
         ]
@@ -201,6 +219,7 @@
       "ThunkConfig": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "A json file specifying where to overlay the thunks.",
           "This can be a filesystem path",
@@ -215,6 +234,7 @@
       "Env": {
         "Type": "strarray",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Adds an environment variable to the emulated environment."
         ]
@@ -222,6 +242,7 @@
       "HostEnv": {
         "Type": "strarray",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Adds an environment variable to the host environment.",
           "This can be useful for setting environment variables that thunks can pick up.",
@@ -231,6 +252,7 @@
       "AdditionalArguments": {
         "Type": "strarray",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Allows the user to pass additional arguments to the application"
         ]
@@ -238,6 +260,7 @@
       "DisableL2Cache": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Disables FEXCore's JIT L2 cache lookup. Saving memory.",
           "Can potentially introduce more stutters."
@@ -246,6 +269,7 @@
       "DynamicL1Cache": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Switches FEXCore's JIT L1 cache to be dynamically sized. Saving memory.",
           "Can potentially introduce more stutters."
@@ -254,6 +278,7 @@
       "DynamicL1CacheIncreaseCountHeuristic": {
         "Type": "uint64",
         "Default": "250",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Threshold of lookups per second that the L1 dynamic cache should increase its size.",
           "Lower numbers means more aggressive scaling upward to the maximum size.",
@@ -265,6 +290,7 @@
       "DynamicL1CacheDecreaseCountHeuristic": {
         "Type": "uint64",
         "Default": "50",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Threshold of lookups per second that the L1 dynamic cache should decrease its size.",
           "The higher the number, the more aggressively it reduces the L1 cache size.",
@@ -278,6 +304,7 @@
       "SingleStep": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Single stepping configuration."
         ]
@@ -285,6 +312,7 @@
       "GdbServer": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Enables the GDB server."
         ]
@@ -292,6 +320,7 @@
       "DumpIR": {
         "Type": "str",
         "Default": "no",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Folder to dump the IR in to.",
           "[no, stdout, stderr, server, <Folder>]"
@@ -300,6 +329,7 @@
       "PassManagerDumpIR": {
         "Type": "strenum",
         "Default": "FEXCore::Config::PassManagerDumpIR::OFF",
+        "AffectsCodeGen": "false",
         "Enums": {
           "BEFOREOPT": "beforeopt",
           "AFTEROPT": "afteropt",
@@ -318,6 +348,7 @@
       "DumpGPRs": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "When the test harness ends, print the GPR state."
         ]
@@ -325,6 +356,7 @@
       "O0": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Disables optimizations passes for debugging."
         ]
@@ -332,6 +364,7 @@
       "GlobalJITNaming": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Uses JITSymbols to name all JIT state as one symbol",
           "Useful for querying how much time is spent inside of the JIT",
@@ -341,6 +374,7 @@
       "LibraryJITNaming": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Uses JITSymbols to name JIT symbols grouped by library",
           "Useful for querying how much time is spent in each guest library",
@@ -350,6 +384,7 @@
       "BlockJITNaming": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Uses JITSymbols to name JIT symbols",
           "Useful for determining hot blocks of code",
@@ -359,6 +394,7 @@
       "GDBSymbols": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Integrates with GDB using the JIT interface.",
           "Needs the fex jit loader in GDB, which can be loaded via `jit-reader-load libFEXGDBReader.so.`",
@@ -369,6 +405,7 @@
       "InjectLibSegFault": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Sets the environment variable LD_PRELOAD=libSegFault.so",
           "This allows the user to very easily enable libSegFault without dealing with environment variables",
@@ -380,6 +417,7 @@
       "Disassemble": {
         "Type": "strenum",
         "Default": "FEXCore::Config::Disassemble::OFF",
+        "AffectsCodeGen": "false",
         "Enums": {
           "DISPATCHER": "dispatcher",
           "BLOCKS": "blocks",
@@ -396,6 +434,7 @@
       "X86Disassemble": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Enables x86/x86-64 guest disassembly output for compiled blocks.",
           "Requires FEX to be built with -DENABLE_ZYDIS=TRUE"
@@ -404,6 +443,7 @@
       "ForceSVEWidth": {
         "Type": "uint32",
         "Default": "0",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Allows overriding the SVE width in the vixl simulator.",
           "Useful as a debugging feature."
@@ -412,6 +452,7 @@
       "DisableTelemetry": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Disables telemetry at runtime.",
           "Useful for CI instcountCI mostly"
@@ -422,6 +463,7 @@
       "SilentLog": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Disables logging"
         ]
@@ -429,6 +471,7 @@
       "OutputLog": {
         "Type": "str",
         "Default": "server",
+        "AffectsCodeGen": "false",
         "Desc": [
           "File to write FEX output to.",
           "[stderr, server, <Filename>]"
@@ -437,6 +480,7 @@
       "TelemetryDirectory": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Redirects the telemetry folder that FEX usually writes to.",
           "By default telemetry data is stored in {$FEX_APP_DATA_LOCATION,{$XDG_DATA_HOME,$HOME}/fex-emu/Telemetry/}"
@@ -445,6 +489,7 @@
       "ProfileStats": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Enables FEX's low-overhead sampling profile statistics.",
           "Requires a supported version of Mangohud to see the results"
@@ -453,6 +498,7 @@
       "EnableGpuvisProfiling": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Enables profiling when FEX was built with the gpuvis profiler backend."
         ]
@@ -462,6 +508,7 @@
       "SMCChecks": {
         "Type": "uint8",
         "Default": "FEXCore::Config::CONFIG_SMC_MTRACK",
+        "AffectsCodeGen": "true",
         "TextDefault": "mtrack",
         "ArgumentHandler": "SMCCheckHandler",
         "Desc": [
@@ -474,6 +521,7 @@
       "TSOEnabled": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Controls TSO IR ops.",
           "Highly likely to break any multithreaded application if disabled."
@@ -482,6 +530,7 @@
       "VectorTSOEnabled": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "true",
         "Desc": [
           "When TSO emulation is enabled, controls if vector loadstores should also be atomic."
         ]
@@ -489,6 +538,7 @@
       "MemcpySetTSOEnabled": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "true",
         "Desc": [
           "When TSO emulation is enabled, controls if memcpy and memset should also be atomic.",
           "Only affects REP MOVS and REP STOS instructions"
@@ -497,6 +547,7 @@
       "HalfBarrierTSOEnabled": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "true",
         "Desc": [
           "When TSO emulation is enabled, controls if unaligned loads and stores should be backpatched to half-barrier atomics.",
           "Can be dangerous due to aligned loadstores through the same code now become non-atomic."
@@ -505,6 +556,7 @@
       "StrictInProcessSplitLocks": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Strict global lock when handling an unaligned atomic that crosses a 16-byte or cacheline granularity",
           "This is required to ensure a split-lock doesn't tear inside the process"
@@ -513,6 +565,7 @@
       "KernelUnalignedAtomicBackpatching": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "false",
         "Desc": [
           "When the kernel unaligned atomic handler is enabled, use backpatching to reduce kernel context switches."
         ]
@@ -520,6 +573,7 @@
       "VolatileMetadata": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Use volatile metadata in PE files to inform TSO instructions when available.",
           "When metadata is unavailable falls back to the currently enabled TSO options."
@@ -528,6 +582,7 @@
       "X87ReducedPrecision": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Emulates X87 floating point using 64-bit precision. This reduces emulation accuracy and may result in rendering bugs."
         ]
@@ -535,6 +590,7 @@
       "StallProcess": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Forces a process to stall out on initialization",
           "Useful for a process that keeps restarting and doesn't work"
@@ -543,6 +599,7 @@
       "HideHypervisorBit": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Hides the hypervisor CPUID bit when set.",
           "Should only be used for applications that have issues with this set."
@@ -551,6 +608,7 @@
       "StartupSleep": {
         "Type": "uint32",
         "Default": "0",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Sleeps the process at startup for a duration of seconds.",
           "Useful if an application crashes too quickly to attach a debugger."
@@ -559,6 +617,7 @@
       "StartupSleepProcName": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Contrains the startup sleep to only apply to processes that match this name."
         ]
@@ -566,6 +625,7 @@
       "MonoHacks": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Permits a hook-based SMC approach and smaller JIT blocks when mono is detected."
         ]
@@ -575,6 +635,7 @@
       "ServerSocketPath": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Override for a FEXServer socket path. Only useful for chroots."
         ]
@@ -582,6 +643,7 @@
       "NeedsSeccomp": {
         "Type": "bool",
         "Default": "false",
+        "AffectsCodeGen": "false",
         "Desc": [
           "Disables inline syscalls in order to support seccomp handling"
         ]
@@ -589,6 +651,7 @@
       "ExtendedVolatileMetadata": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "true",
         "Desc": [
           "Configuration provided volatile metadata. Only implemented for WoW64/arm64ec.",
           "Limited in its use but can be handy.",
@@ -613,15 +676,18 @@
     "Misc": {
       "INTERPRETER_INSTALLED": {
         "Type": "bool",
-        "Default": "false"
+        "Default": "false",
+        "AffectsCodeGen": "false"
       },
       "APP_FILENAME": {
         "Type": "str",
-        "Default": ""
+        "Default": "",
+        "AffectsCodeGen": "false"
       },
       "APP_CONFIG_NAME": {
         "Type": "str",
         "Default": "",
+        "AffectsCodeGen": "false",
         "Desc": [
           "This is the application config name that has been loaded.",
           "This differs from APP_FILENAME in two ways",
@@ -632,15 +698,28 @@
       },
       "IS64BIT_MODE": {
         "Type": "bool",
-        "Default": "false"
+        "Default": "false",
+        "AffectsCodeGen": "false",
+        "Comment": "Technically affects codegen, but this is serialized elsewhere."
       },
       "DISABLE_VIXL_INDIRECT_RUNTIME_CALLS": {
         "Type": "bool",
         "Default": "true",
+        "AffectsCodeGen": "false",
+        "Comment": "Technically affects codegen, but only shows up in the test harness.",
         "Desc": [
           "This option is used for the InstructionCountCI so it can generate the same codegen between Arm64 hosts and vixl simulator hosts.",
           "Vixl simulator indirect runtime calls are a special hlt instruction with metadata after it. Effectively making a custom call instruction.",
           "With visual simulator calls disabled, the code generation would be the same as on a native Arm64 host, but running the code is broken."
+        ]
+      },
+      "CONFIG_VERSION": {
+        "Type": "uint32",
+        "Default": "0",
+        "AffectsCodeGen": "true",
+        "Comment": [
+          "Meta option that if config has ever changed definitions dramatically enough that we can rev the version.",
+          "Be mindful that this will invalidate all caches!"
         ]
       }
     }
