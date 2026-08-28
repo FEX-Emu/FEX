@@ -680,6 +680,9 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
     SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_SF_RAW_LOC>(Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Constant(0));
+
+    // C1 set to 0
+    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
   }
 
   // Set Invalid Operation flag when unordered (NaN comparison)

@@ -368,6 +368,9 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpD
     HandleNZCVWrite();
     _F80CmpValue(b);
     ComissFlags();
+
+    // C1 set to 0
+    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
   }
 
   if (PopTwice) {
