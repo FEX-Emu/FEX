@@ -416,16 +416,17 @@ static fextl::string RecoverGuestProgramFilename(fextl::string Program, bool Exe
     // Only in the case that FEX is executing an FD will the program argument potentially be a symlink.
     // This symlink will be in the style of `/dev/fd/<FD>`.
     //
-    // If the argument /is/ a symlink then resolve its path to get the original application name.
-    if (FHU::Symlinks::IsSymlink(Program)) {
+    // If the argument /is/ a symlink then resolve its path continuously until the original application name.
+    while (FHU::Symlinks::IsSymlink(Program)) {
       char Filename[PATH_MAX];
       auto SymlinkPath = FHU::Symlinks::ResolveSymlink(Program, Filename);
-      if (SymlinkPath.starts_with('/')) {
-        // This file was executed through an FD.
-        // Remove the ` (deleted)` text if the file was deleted after the fact.
-        // Otherwise just get the symlink without the deleted text.
-        return fextl::string {SymlinkPath.substr(0, SymlinkPath.rfind(" (deleted)"))};
+      if (!SymlinkPath.starts_with('/')) {
+        break;
       }
+      // This file was executed through an FD.
+      // Remove the ` (deleted)` text if the file was deleted after the fact.
+      // Otherwise just get the symlink without the deleted text.
+      Program = fextl::string {SymlinkPath.substr(0, SymlinkPath.rfind(" (deleted)"))};
     }
   }
 #endif
