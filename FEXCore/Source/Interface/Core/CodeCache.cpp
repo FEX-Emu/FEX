@@ -507,6 +507,70 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
   LogMan::Msg::IFmt("            successfully validated cache");
 }
 
+static inline void ApplySymbolLiteralRelocation(ContextImpl& CTX, const CPU::RelocNamedSymbolLiteral::NamedSymbol Symbol,
+                                                uint64_t GuestEntry, CPU::Arm64Emitter& Emitter, bool ForStorage) {
+  // Generate a literal so we can place it
+  uint64_t Pointer = ForStorage ? 0 : GetNamedSymbolLiteral(CTX, Symbol);
+  Emitter.dc64(Pointer);
+}
+
+static inline bool
+ApplyThunkMoveRelocation(ContextImpl& CTX, const IR::SHA256Sum* Symbol, uint32_t RegisterIndex, CPU::Arm64Emitter& Emitter, bool ForStorage) {
+  uint64_t Pointer = ForStorage ? 0 : reinterpret_cast<uint64_t>(CTX.ThunkHandler->LookupThunk(*Symbol));
+  if (Pointer == ~0ULL) {
+    return false;
+  }
+  // TODO: Pointers are required to fit within 48-bit VA space.
+  // But forcing 6-byte broke relocations.
+  Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Pointer, CPU::Arm64Emitter::PadType::DOPAD);
+  return true;
+}
+
+static inline void ApplyRIPLiteralRelocation(ContextImpl& CTX, uint64_t GuestRIP, uint64_t GuestEntry, CPU::Arm64Emitter& Emitter) {
+  Emitter.dc64(GuestEntry + GuestRIP);
+}
+
+static inline void
+ApplyRIPMoveRelocation(ContextImpl& CTX, uint64_t GuestRIP, uint8_t RegisterIndex, uint64_t GuestEntry, CPU::Arm64Emitter& Emitter) {
+  uint64_t Pointer = GuestRIP + GuestEntry;
+  // TODO: Pointers are required to fit within 48-bit VA space.
+  // But forcing 6-byte broke relocations.
+  Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Pointer, CPU::Arm64Emitter::PadType::DOPAD);
+}
+
+bool CodeCache::ApplyPackedCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
+                                           std::span<const DiskCache::BlobSmallRelocation> SmallRelocs,
+                                           std::span<const DiskCache::BlobThunkRelocation> ThunkRelocs, bool ForStorage) {
+  CPU::Arm64Emitter Emitter(&CTX, Code.data(), Code.size_bytes());
+  for (auto& Reloc : SmallRelocs) {
+    LOGMAN_THROW_A_FMT(Reloc.Offset < Code.size_bytes(), "Invalid relocation offset");
+    Emitter.SetCursorOffset(Reloc.Offset);
+    switch ((CPU::RelocationTypes)Reloc.Type) {
+    case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
+      ApplySymbolLiteralRelocation(CTX, (CPU::RelocNamedSymbolLiteral::NamedSymbol)Reloc.Named.Symbol, GuestEntry, Emitter, ForStorage);
+      break;
+    }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
+      ApplyRIPLiteralRelocation(CTX, Reloc.RIPLiteral.GuestRIP, GuestEntry, Emitter);
+      break;
+    }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE: {
+      ApplyRIPMoveRelocation(CTX, Reloc.RIPMove.GuestRIP, Reloc.RIPMove.RegisterIndex, GuestEntry, Emitter);
+      break;
+    }
+    default: ERROR_AND_DIE_FMT("Unknown packed relocation type {}", ToUnderlying((CPU::RelocationTypes)Reloc.Type));
+    }
+  }
+  for (auto& Reloc : ThunkRelocs) {
+    LOGMAN_THROW_A_FMT(Reloc.Offset < Code.size_bytes(), "Invalid relocation offset");
+    Emitter.SetCursorOffset(Reloc.Offset);
+    if (!ApplyThunkMoveRelocation(CTX, (const IR::SHA256Sum*)Reloc.SymbolHash, Reloc.RegisterIndex, Emitter, ForStorage)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
                                      std::span<const FEXCore::CPU::Relocation> EntryRelocations, bool ForStorage) {
   CPU::Arm64Emitter Emitter(&CTX, Code.data(), Code.size_bytes());
@@ -517,31 +581,21 @@ bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> C
 
     switch (Reloc.Header.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
-      // Generate a literal so we can place it
-      uint64_t Pointer = ForStorage ? 0 : GetNamedSymbolLiteral(CTX, Reloc.NamedSymbolLiteral.Symbol);
-      Emitter.dc64(Pointer);
+      ApplySymbolLiteralRelocation(CTX, Reloc.NamedSymbolLiteral.Symbol, GuestEntry, Emitter, ForStorage);
       break;
     }
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE: {
-      uint64_t Pointer = ForStorage ? 0 : reinterpret_cast<uint64_t>(CTX.ThunkHandler->LookupThunk(Reloc.NamedThunkMove.Symbol));
-      if (Pointer == ~0ULL) {
+      if (!ApplyThunkMoveRelocation(CTX, &Reloc.NamedThunkMove.Symbol, Reloc.NamedThunkMove.RegisterIndex, Emitter, ForStorage)) {
         return false;
       }
-      // TODO: Pointers are required to fit within 48-bit VA space.
-      // But forcing 6-byte broke relocations.
-      Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.NamedThunkMove.RegisterIndex), Pointer,
-                           CPU::Arm64Emitter::PadType::DOPAD);
       break;
     }
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
-      Emitter.dc64(GuestEntry + Reloc.GuestRIP.GuestRIP);
+      ApplyRIPLiteralRelocation(CTX, Reloc.GuestRIP.GuestRIP, GuestEntry, Emitter);
       break;
     }
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE: {
-      uint64_t Pointer = Reloc.GuestRIP.GuestRIP + GuestEntry;
-      // TODO: Pointers are required to fit within 48-bit VA space.
-      // But forcing 6-byte broke relocations.
-      Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.GuestRIP.RegisterIndex), Pointer, CPU::Arm64Emitter::PadType::DOPAD);
+      ApplyRIPMoveRelocation(CTX, Reloc.GuestRIP.GuestRIP, Reloc.GuestRIP.RegisterIndex, GuestEntry, Emitter);
       break;
     }
 

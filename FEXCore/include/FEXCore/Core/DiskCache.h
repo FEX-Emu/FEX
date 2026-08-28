@@ -96,7 +96,8 @@ namespace DiskCache {
     fextl::vector<uint8_t> Blob;
     std::span<uint8_t> HostCode;
     std::span<const BlobEntryPoint> EntryPoints;
-    fextl::vector<FEXCore::CPU::Relocation> Relocations;
+    std::span<const BlobSmallRelocation> SmallRelocs;
+    std::span<const BlobThunkRelocation> ThunkRelocs;
     fextl::vector<uint64_t> GuestPages;
 
     // the spans above point to memory owned by the Blob vec, so it's important this can't be copied
