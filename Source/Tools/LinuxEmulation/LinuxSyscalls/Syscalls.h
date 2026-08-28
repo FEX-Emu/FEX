@@ -253,6 +253,12 @@ public:
   void TrackMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot);
   void TrackMadvise(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int advice);
 
+  // Both mtrack modes write-protect pages that code has been translated from; they differ only
+  // in whether host writes into guest memory lift that protection up front.
+  bool PageTrackingSMCChecks() {
+    return SMCChecks == FEXCore::Config::CONFIG_SMC_MTRACK || SMCChecks == FEXCore::Config::CONFIG_SMC_MTRACK_PROACTIVE;
+  }
+
   void InvalidateCodeRangeIfNecessary(FEXCore::Core::InternalThreadState* Thread, uint64_t Base, uint64_t Length, bool CheckPendingVMAResources) {
     if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
       TM.InvalidateGuestCodeRange(Thread, Base, Length);
@@ -283,6 +289,7 @@ public:
 
   ///// VMA (Virtual Memory Area) tracking /////
   static bool HandleSegfault(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext);
+  void UnprotectSMCWriteRange(FEXCore::Core::InternalThreadState* Thread, void* Address, size_t Length);
   void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
   void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
   std::optional<FEXCore::ExecutableFileSectionInfo>
@@ -368,6 +375,9 @@ private:
 
   fextl::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler {};
   std::atomic<uint64_t> AnonSharedId {1};
+
+  bool UnprotectSMCRangeLocked(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Top);
+  bool UnprotectSMCPageLocked(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address);
 };
 
 #define SYSCALL_ERRNO()              \

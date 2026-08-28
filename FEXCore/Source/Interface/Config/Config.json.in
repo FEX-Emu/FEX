@@ -468,7 +468,8 @@
           "Checks code for modification before execution.",
           "\tnone: No checks",
           "\tmtrack: Page tracking based invalidation (default)",
-          "\tfull: Validate code before every run (slow)"
+          "\tfull: Validate code before every run (slow)",
+          "\tmtrack_proactive: mtrack, and unprotect guest buffers before the kernel writes to them"
         ]
       },
       "TSOEnabled": {
@@ -646,4 +647,3 @@
     }
   }
 }
-
