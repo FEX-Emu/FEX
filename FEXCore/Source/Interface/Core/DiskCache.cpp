@@ -190,24 +190,33 @@ namespace DiskCache {
       const auto* FOZHeader = reinterpret_cast<const MesaFOZ::foz_payload_header*>(IndexDataStart + ReadOffset);
       ReadOffset += sizeof(MesaFOZ::foz_payload_header);
 
-      if (FOZHeader->payload_size != sizeof(MesaFOZ::mesa_index_db_file_entry) || ReadOffset + FOZHeader->payload_size > IndexDataSize) {
+      uint32_t IndexBlobSize = sizeof(MesaFOZ::mesa_index_db_file_entry) + sizeof(IndexExtraBlob);
+
+      if (FOZHeader->payload_size != IndexBlobSize || ReadOffset + FOZHeader->payload_size > IndexDataSize) {
         break;
       }
-      const auto* IndexBlobPayload = reinterpret_cast<const MesaFOZ::mesa_index_db_file_entry*>(IndexDataStart + ReadOffset);
-      ReadOffset += FOZHeader->payload_size;
+      const auto* IndexBlobCommon = reinterpret_cast<const MesaFOZ::mesa_index_db_file_entry*>(IndexDataStart + ReadOffset);
+      ReadOffset += sizeof(MesaFOZ::mesa_index_db_file_entry);
+      const auto* IndexBlobExtra = reinterpret_cast<const IndexExtraBlob*>(IndexDataStart + ReadOffset);
+      ReadOffset += sizeof(IndexExtraBlob);
 
       // skip corrupt (carefully) so we don't have to figure that out in the hot path later
-      if (IndexBlobPayload->cache_db_file_offset > (uint64_t)CacheFOZSize ||
-          IndexBlobPayload->size > (uint64_t)CacheFOZSize - IndexBlobPayload->cache_db_file_offset) {
+      if (IndexBlobCommon->cache_db_file_offset > (uint64_t)CacheFOZSize ||
+          IndexBlobCommon->size > (uint64_t)CacheFOZSize - IndexBlobCommon->cache_db_file_offset) {
+        continue;
+      }
+      if (IndexBlobExtra->GuestSize + sizeof(BlobFixedHeader) > IndexBlobCommon->size) {
         continue;
       }
       if (FOZKey->bytes[39] != 0xFF) {
         uint64_t Key;
         std::from_chars(reinterpret_cast<const char*>(FOZKey->bytes), reinterpret_cast<const char*>(&FOZKey->bytes[16]), Key, 16);
-        if (IndexBlobPayload->hash != Key) {
+        if (IndexBlobCommon->hash != Key) {
           continue;
         }
-        CacheIndex.insert({IndexBlobPayload->hash, {this, IndexBlobPayload->cache_db_file_offset, IndexBlobPayload->size}});
+        CacheIndex.insert(
+          {IndexBlobCommon->hash,
+           {this, IndexBlobCommon->cache_db_file_offset, IndexBlobCommon->size, IndexBlobExtra->GuestSize, IndexBlobExtra->GuestHash}});
       } else {
         FoundMetadata = true;
       }
@@ -228,7 +237,8 @@ namespace DiskCache {
     }
   }
 
-  bool IndexedDB::StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const uint8_t> Blob, Index& Index, std::mutex& IndexMutex) {
+  bool IndexedDB::StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const uint8_t> Blob, Index& Index, std::mutex& IndexMutex,
+                                 IndexExtraBlob IndexBlob) {
     if (ReadOnly) {
       // shouldn't happen
       return false;
@@ -267,7 +277,10 @@ namespace DiskCache {
                                                   .last_access_time = 0, // todo..
                                                   .cache_db_file_offset = BlobOffset};
 
-    std::span<const uint8_t> IndexBlobChunks[] = {{(const uint8_t*)&IndexEntry, sizeof(IndexEntry)}};
+    std::span<const uint8_t> IndexBlobChunks[] = {
+      {(const uint8_t*)&IndexEntry, sizeof(IndexEntry)},
+      {(const uint8_t*)&IndexBlob, sizeof(IndexBlob)},
+    };
     uint64_t UnusedIndexBlobOffset = 0;
     if (!IndexFOZ.WriteBlob(Key, IndexBlobChunks, UnusedIndexBlobOffset)) {
       CacheFOZ.Unlock();
@@ -284,7 +297,7 @@ namespace DiskCache {
     }
 
     std::lock_guard Guard(IndexMutex);
-    Index[Hash] = {this, BlobOffset, (uint32_t)Blob.size()};
+    Index[Hash] = {this, BlobOffset, (uint32_t)Blob.size(), IndexBlob.GuestSize, IndexBlob.GuestHash};
     return true;
   }
 
@@ -360,7 +373,7 @@ namespace DiskCache {
       // we just opened a fresh cache, add a metadata blob
       MesaFOZ::foz_payload_key MetadataKey;
       memset(MetadataKey.bytes, 0xFF, sizeof(MetadataKey));
-      RWCacheDB->StoreCacheBlob(MetadataKey, {BucketBytes.data(), BucketBytes.size()}, Index, IndexLock);
+      RWCacheDB->StoreCacheBlob(MetadataKey, {BucketBytes.data(), BucketBytes.size()}, Index, IndexLock, {});
       Index.clear();
     }
 
@@ -413,18 +426,7 @@ namespace DiskCache {
       // we can't hold onto the iterator, the map may shift while we don't hold the lock
       Entry = It->second;
     }
-    // found a key hash match, could still be a miss, read the blob and verify more
-    CodeHitData HitData;
-    HitData.Blob.resize(Entry.Size);
-    if (!Entry.DB->ReadCacheBlob(Entry.Offset, HitData.Blob)) {
-      return std::nullopt;
-    }
-
-    if (Entry.Size < sizeof(BlobFixedHeader)) {
-      return std::nullopt;
-    }
-    BlobFixedHeader Header;
-    memcpy(&Header, HitData.Blob.data(), sizeof(Header));
+    // found a key hash match, could still be a miss, check guest hash
 
     // do we have enough room in our live code to even hash GuestSize worth?
     auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, GuestRIP);
@@ -432,22 +434,39 @@ namespace DiskCache {
       return std::nullopt;
     }
     uint64_t Available = RangeInfo.Base + RangeInfo.Size - GuestRIP;
-    if (Available < Header.GuestSize) {
+    if (Available < Entry.GuestSize) {
       return std::nullopt;
     }
 
-    XXH128_hash_t LiveGuestHash = XXH3_128bits(reinterpret_cast<void*>(GuestRIP), Header.GuestSize);
-    if (std::memcmp(&LiveGuestHash, &Header.GuestHash, sizeof(Header.GuestHash)) != 0) {
+    XXH128_hash_t LiveGuestHash = XXH3_128bits(reinterpret_cast<void*>(GuestRIP), Entry.GuestSize);
+    if (!XXH128_isEqual(LiveGuestHash, Entry.GuestHash)) {
       // LogMan::Msg::IFmt("hash mismatch! length {:d}", Header.GuestSize);
       return std::nullopt;
     }
     // LogMan::Msg::IFmt("hash ok! length {:d}", Header.GuestSize);
 
-    // this seems to be a full hit, lastly, check the entry is big enough to have everything (except maybe GuestCode)
+    // this seems to be a full hit, pull from disk and check the entry is big enough to have everything (except GuestCode)
+    CodeHitData HitData;
+    uint32_t EntrySizeWithoutGuestCode = Entry.Size - Entry.GuestSize;
+    HitData.Blob.resize(EntrySizeWithoutGuestCode);
+    if (!Entry.DB->ReadCacheBlob(Entry.Offset, HitData.Blob)) {
+      return std::nullopt;
+    }
+
+    if (EntrySizeWithoutGuestCode < sizeof(BlobFixedHeader)) {
+      return std::nullopt;
+    }
+    BlobFixedHeader Header;
+    memcpy(&Header, HitData.Blob.data(), sizeof(Header));
+
     uint32_t SizeNeeded = sizeof(Header) + Header.HostSize + Header.EntryPointCount * (sizeof(uint64_t) + sizeof(uint32_t));
     SizeNeeded += Header.SmallRelocCount * sizeof(BlobSmallRelocation) + Header.ThunkRelocCount * sizeof(BlobThunkRelocation) +
                   Header.TouchedGuestPagesCount * sizeof(uint64_t);
-    if (Entry.Size < SizeNeeded) {
+    if (EntrySizeWithoutGuestCode != SizeNeeded) {
+      return std::nullopt;
+    }
+
+    if (Entry.GuestSize != Header.GuestSize || !XXH128_isEqual(Header.GuestHash, Entry.GuestHash)) {
       return std::nullopt;
     }
 
@@ -481,13 +500,15 @@ namespace DiskCache {
     IndexedDB* DB;
     MesaFOZ::foz_payload_key Key;
     fextl::vector<uint8_t> Blob;
-    CacheStoreWorkItem(DiskCache* Self, IndexedDB* DB, const MesaFOZ::foz_payload_key& Key, fextl::vector<uint8_t>&& Blob)
+    IndexExtraBlob IndexBlob;
+    CacheStoreWorkItem(DiskCache* Self, IndexedDB* DB, const MesaFOZ::foz_payload_key& Key, fextl::vector<uint8_t>&& Blob, IndexExtraBlob IndexBlob)
       : Self(Self)
       , DB(DB)
       , Key(Key)
-      , Blob(std::move(Blob)) {}
+      , Blob(std::move(Blob))
+      , IndexBlob(IndexBlob) {}
     void Run() override {
-      DB->StoreCacheBlob(Key, Blob, Self->Index, Self->IndexLock);
+      DB->StoreCacheBlob(Key, Blob, Self->Index, Self->IndexLock, IndexBlob);
     }
   };
 
@@ -631,8 +652,9 @@ namespace DiskCache {
 
     memcpy(BlobData + GuestCodeOffset, GuestCode.data(), GuestCode.size());
 
+    IndexExtraBlob IndexBlob {Header.GuestHash, Header.GuestSize};
     // hand the rest off to the writer thread
-    Writer->QueueWork(fextl::make_unique<CacheStoreWorkItem>(this, RWCacheDB.get(), Key, std::move(Blob)));
+    Writer->QueueWork(fextl::make_unique<CacheStoreWorkItem>(this, RWCacheDB.get(), Key, std::move(Blob), IndexBlob));
     return true;
   }
 
