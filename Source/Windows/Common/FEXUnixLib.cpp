@@ -44,51 +44,6 @@ static NTSTATUS __attribute__((naked)) TrampolineCall(unixlib_handle_t, unsigned
       : "memory");
 }
 #endif
-// This code path will eventually crash once Wine and the kernel implements `userspace syscall dispatch`.
-// FEX will need to switch over to using WINE's unixlib syscall approach then.
-namespace Illegal {
-  __attribute__((naked)) uint64_t prctl(int op, uint64_t attr, const void* addr, size_t size, const char* Name) {
-    asm volatile(R"(
-      mov x8, 167; // prctl
-      svc #0;
-      ret;
-    )" ::
-                   : "memory");
-  }
-
-  __attribute__((naked)) uint64_t madvise(const void* addr, size_t size, int advice) {
-    asm volatile(R"(
-      mov x8, 233; // madvise
-      svc #0;
-      ret;
-    )" ::
-                   : "memory");
-  }
-
-  __attribute__((naked)) uint64_t linux_getpid() {
-    asm volatile(R"(
-    mov x8, 172;
-    svc #0;
-    ret;
-    )" ::
-                   : "r0", "r8");
-  }
-
-  void VirtualName(const char* Name, const void* Ptr, size_t Size) {
-    if (SupportsVirtualName) {
-      auto Result = prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Ptr, Size, Name);
-      if (Result != 0) {
-        // Disable any additional attempts.
-        SupportsVirtualName = false;
-      }
-    }
-  }
-
-  void VirtualTHPControl(const void* Ptr, size_t Size, FEXCore::Allocator::THPControl Control) {
-    madvise(Ptr, Size, Control == FEXCore::Allocator::THPControl::Disable ? MADV_NOHUGEPAGE : MADV_HUGEPAGE);
-  }
-} // namespace Illegal
-
 bool Init(HMODULE NtDll) {
   const auto Sym = GetProcAddress(NtDll, "__wine_unix_call_dispatcher");
   WineServerHandleToFd = reinterpret_cast<wine_server_handle_to_fd_t>(GetProcAddress(NtDll, "wine_server_handle_to_fd"));
@@ -143,152 +98,86 @@ bool Available() {
 }
 
 bool TryEnableHardwareTSO() {
-  if (Available()) {
-    // UnixLib path.
-    FEXUnixLib_SetHardwareTSOControlArgs Args {
-      .Enable = true,
-    };
-
-    return Call(FEXUnixLibFunctions::SetHardwareTSOControl, &Args) == STATUS_SUCCESS;
+  if (!Available()) {
+    return false;
   }
 
-  // Legacy Proton path.
-  BOOL Enable = TRUE;
-  NTSTATUS Status = NtSetInformationProcess(NtCurrentProcess(), ProcessFexHardwareTso, &Enable, sizeof(Enable));
-  return Status == STATUS_SUCCESS;
+  FEXUnixLib_SetHardwareTSOControlArgs Args {
+    .Enable = true,
+  };
+
+  return Call(FEXUnixLibFunctions::SetHardwareTSOControl, &Args) == STATUS_SUCCESS;
 }
 
 bool SetKernelUnalignedAtomicControl(uint64_t Flags) {
-  if (Available()) {
-    // UnixLib path.
-    FEXUnixLib_SetKernelUnalignedAtomicControl Args {
-      .Flags = Flags,
-    };
-
-    return Call(FEXUnixLibFunctions::SetKernelUnalignedAtomicControl, &Args) == STATUS_SUCCESS;
+  if (!Available()) {
+    return false;
   }
 
-  // Legacy Proton path.
-  return NtSetInformationProcess(NtCurrentProcess(), ProcessFexUnalignAtomic, &Flags, sizeof(Flags)) == STATUS_SUCCESS;
+  FEXUnixLib_SetKernelUnalignedAtomicControl Args {
+    .Flags = Flags,
+  };
+
+  return Call(FEXUnixLibFunctions::SetKernelUnalignedAtomicControl, &Args) == STATUS_SUCCESS;
 }
 
 void VirtualTHPControl(const void* Ptr, size_t Size, FEXCore::Allocator::THPControl Control) {
-  if (Available()) {
-    // UnixLib path.
-    FEXUnixLib_Madvise Args {
-      .Addr = Ptr,
-      .Size = Size,
-      .Advise = Control == FEXCore::Allocator::THPControl::Disable ? MADV_NOHUGEPAGE : MADV_HUGEPAGE,
-    };
-
-    Call(FEXUnixLibFunctions::Madvise, &Args);
+  if (!Available()) {
     return;
   }
 
-  // Legacy Proton path.
-  Illegal::VirtualTHPControl(Ptr, Size, Control);
+  FEXUnixLib_Madvise Args {
+    .Addr = Ptr,
+    .Size = Size,
+    .Advise = Control == FEXCore::Allocator::THPControl::Disable ? MADV_NOHUGEPAGE : MADV_HUGEPAGE,
+  };
+
+  Call(FEXUnixLibFunctions::Madvise, &Args);
 }
 
 void VirtualName(const char* Name, const void* Ptr, size_t Size) {
-  if (!SupportsVirtualName) {
+  if (!SupportsVirtualName || !Available()) {
     return;
   }
 
-  if (Available()) {
-    // UnixLib path.
-    FEXUnixLib_SetVMAName Args {
-      .Addr = Ptr,
-      .Size = Size,
-      .Name = Name,
-    };
+  FEXUnixLib_SetVMAName Args {
+    .Addr = Ptr,
+    .Size = Size,
+    .Name = Name,
+  };
 
-    if (Call(FEXUnixLibFunctions::SetVMAName, &Args) != STATUS_SUCCESS) {
-      SupportsVirtualName = false;
-    }
-    return;
+  if (Call(FEXUnixLibFunctions::SetVMAName, &Args) != STATUS_SUCCESS) {
+    SupportsVirtualName = false;
   }
-
-  // Legacy Proton path.
-  Illegal::VirtualName(Name, Ptr, Size);
 }
 
 SHMSlotResult AllocateSHMSlots(void* SHMBase, uint32_t MapSize, uint32_t MaxSize) {
-  if (Available()) {
-    // UnixLib path.
-    FEXUnixLib_GetSHMStatsVMA Args {
-      .SHMBase = SHMBase,
-      .MapSize = MapSize,
-      .MaxSize = MaxSize,
+  if (!Available()) {
+    return {};
+  }
+
+  FEXUnixLib_GetSHMStatsVMA Args {
+    .SHMBase = SHMBase,
+    .MapSize = MapSize,
+    .MaxSize = MaxSize,
+  };
+
+  if (Call(FEXUnixLibFunctions::GetSHMStatsVMA, &Args) == STATUS_SUCCESS) {
+    return {
+      .SHMBase = Args.SHMBase,
+      .MappedSize = Args.MapSize,
     };
-
-    if (Call(FEXUnixLibFunctions::GetSHMStatsVMA, &Args) == STATUS_SUCCESS) {
-      return {
-        .SHMBase = Args.SHMBase,
-        .MappedSize = Args.MapSize,
-      };
-    }
-
-    return {};
   }
 
-  // Legacy Proton path.
-  // Magic WINE+FEX path.
-  if (SHMBase == nullptr || UsingNTQueryPath) {
-    MEMORY_FEX_STATS_SHM_INFORMATION Info {
-      .shm_base = SHMBase,
-      .map_size = MapSize,
-      .max_size = MaxSize,
-    };
-    size_t Length {};
-    auto Result = NtQueryVirtualMemory(NtCurrentProcess(), nullptr, MemoryFexStatsShm, &Info, sizeof(Info), &Length);
-    if (!Result) {
-      UsingNTQueryPath = true;
-      return {
-        .SHMBase = Info.shm_base,
-        .MappedSize = MapSize,
-      };
-    }
-  }
-
-  // Opaque handle path, doesn't support resizing.
-  auto handle = CreateFileA(fextl::fmt::format("/dev/shm/fex-{}-stats", Illegal::linux_getpid()).c_str(), GENERIC_READ | GENERIC_WRITE,
-                            FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-
-  // Create the section mapping for the file handle for the full size.
-  HANDLE SectionMapping;
-  LARGE_INTEGER SectionSize {{MaxSize}};
-  auto Result = NtCreateSection(&SectionMapping, SECTION_EXTEND_SIZE | SECTION_MAP_READ | SECTION_MAP_WRITE, nullptr, &SectionSize,
-                                PAGE_READWRITE, SEC_COMMIT, handle);
-  if (Result != STATUS_SUCCESS) {
-    CloseHandle(handle);
-    return {};
-  }
-
-  // Section mapping is used from now on.
-  CloseHandle(handle);
-
-  // Now actually map the view of the section.
-  void* Base = nullptr;
-  size_t FullSize = MaxSize;
-  Result = NtMapViewOfSection(SectionMapping, NtCurrentProcess(), &Base, 0, 0, nullptr, &FullSize, ViewUnmap, MEM_RESERVE | MEM_TOP_DOWN,
-                              PAGE_READWRITE);
-  if (Result != STATUS_SUCCESS) {
-    CloseHandle(SectionMapping);
-    return {};
-  }
-
-  return {.SHMBase = Base, .MappedSize = MaxSize};
+  return {};
 }
 
 void DeleteSHMStatsFile() {
-  if (Available()) {
-    // UnixLib path.
-    Call(FEXUnixLibFunctions::DeleteSHMStatsFile, nullptr);
+  if (!Available()) {
     return;
   }
 
-  // Legacy Proton path.
-  DeleteFileA(fextl::fmt::format("/dev/shm/fex-{}-stats", Illegal::linux_getpid()).c_str());
+  Call(FEXUnixLibFunctions::DeleteSHMStatsFile, nullptr);
 }
 
 void* MapFile(HANDLE FileHandle, uint64_t MapSize) {
