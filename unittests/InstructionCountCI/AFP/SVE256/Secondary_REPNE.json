@@ -6,7 +6,8 @@
       "SVE256",
       "AFP"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "cvtsi2sd xmm0, eax": {

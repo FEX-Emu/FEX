@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 #include "DummyHandlers.h"
 #include "Common/HostFeatures.h"
-#include "FEXCore/Core/Context.h"
-#include "FEXCore/Debug/InternalThreadState.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/File.h>
 #include <FEXCore/Utils/FileLoading.h>
@@ -11,6 +12,10 @@
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
 #include <sys/stat.h>
+
+namespace FEXCore::DiskCache {
+uint16_t GetFormatVersion();
+}
 
 namespace CodeSize {
 class CodeSizeValidation final {
@@ -224,6 +229,7 @@ struct TestInfo {
 
 struct TestHeader {
   uint64_t Bitness;
+  uint64_t BinaryCacheVersion;
   uint64_t NumTests {};
   uint64_t EnabledHostFeatures;
   uint64_t DisabledHostFeatures;
@@ -287,7 +293,34 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
     CurrentTest = reinterpret_cast<const TestInfo*>(&CurrentTest->Code[CurrentTest->CodeSize]);
   }
 
+  auto ExpectedFormatVersion = FEXCore::DiskCache::GetFormatVersion();
+  if (TestHeaderData->BinaryCacheVersion != ExpectedFormatVersion) {
+    // Disk cache binary version updated but failed to update instcount ci tracking.
+    LogMan::Msg::EFmt("Fail: TestHarness binary cache version is '{}' but test json is '{}'", ExpectedFormatVersion,
+                      TestHeaderData->BinaryCacheVersion);
+    LogMan::Msg::EFmt("Fail: Please run `ninja instcountci_tests ; ninja instcountci_update_tests` and commit with `git commit -m "
+                      "\"InstcountCI: Update\"` to update instcount CI files");
+    TestsPassed = false;
+  }
+
   if (UpdatedInstructionCountsPath) {
+    if (!TestsPassed && TestHeaderData->BinaryCacheVersion == ExpectedFormatVersion) {
+      // Binary cache versions matched but instructions mismatched. Need to update the format version.
+      // Print a message warning about this otherwise we'll forget about it.
+      LogMan::Msg::EFmt("Fail: Excuse me ma'am, sir, or other unworldly being that is running this software.");
+      LogMan::Msg::EFmt("Fail: InstcountCI results have changed but the FEXCore::DiskCache::FormatVersion hasn't been updated!");
+      LogMan::Msg::EFmt("Fail: This means with your change you are invalidating disk cache entries for everyone. Be sure to know the "
+                        "consequences!");
+      LogMan::Msg::EFmt("Fail: Please increment that number, recompile everything and rerun `ninja instcountci_tests ; ninja "
+                        "instcountci_update_tests`");
+      LogMan::Msg::EFmt("Fail: DiskCache version should be incremented from '{}' to '{}'", ExpectedFormatVersion, ExpectedFormatVersion + 1);
+
+      // Unlink the file, to ensure it doesn't update with `instcountci_update_tests`
+      unlink(UpdatedInstructionCountsPath);
+
+      return TestsPassed;
+    }
+
     // Unlink the file.
     unlink(UpdatedInstructionCountsPath);
 
@@ -301,6 +334,12 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
     }
 
     FD.Write("{\n", 2);
+
+    FD.Write(fextl::fmt::format("\t\"{}\": {{\n", "Features"));
+    FD.Write(fextl::fmt::format("\t\t\"{}\": {}\n", "BinaryCacheVersion", ExpectedFormatVersion));
+    FD.Write(fextl::fmt::format("\t}},\n"));
+
+    FD.Write(fextl::fmt::format("\t\"{}\": {{\n", "Instructions"));
 
     CurrentTest = TestsStart;
     for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
@@ -329,6 +368,8 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
 
     // Print a null member
     FD.Write(fextl::fmt::format("\t\"\": \"\""));
+
+    FD.Write(fextl::fmt::format("\t}}\n"));
 
     FD.Write("}\n", 2);
   }

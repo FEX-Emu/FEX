@@ -8,7 +8,8 @@
       "AFP",
       "FLAGM",
       "FLAGM2"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Comment": [
     "Instructions in this table that are marked optimal don't have their flag calculation part of this assumption",

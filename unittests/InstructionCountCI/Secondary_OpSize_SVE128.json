@@ -7,7 +7,8 @@
     "DisabledHostFeatures": [
       "SVE256",
       "AFP"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "psrlw xmm0, xmm1": {

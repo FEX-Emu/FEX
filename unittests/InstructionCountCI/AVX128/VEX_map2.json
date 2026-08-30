@@ -8,7 +8,8 @@
       "FLAGM2",
       "SVE128",
       "SVE256"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vpshufb xmm0, xmm1, xmm2": {

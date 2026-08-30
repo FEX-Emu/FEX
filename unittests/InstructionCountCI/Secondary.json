@@ -11,7 +11,8 @@
       "AFP",
       "FLAGM",
       "FLAGM2"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Comment": [
     "MMX instructions are defined as optimal without SRA being used for these instructions.",

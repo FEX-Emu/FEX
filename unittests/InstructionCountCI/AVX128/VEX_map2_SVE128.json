@@ -9,7 +9,8 @@
       "FLAGM",
       "FLAGM2",
       "SVE256"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vmovntdqa xmm0, [rax]": {

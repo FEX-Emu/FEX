@@ -8,7 +8,8 @@
     "DisabledHostFeatures": [
       "SVE256",
       "AFP"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "sha1nexte xmm0, xmm1": {

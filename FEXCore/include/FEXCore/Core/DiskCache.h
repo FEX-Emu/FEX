@@ -177,7 +177,6 @@ namespace DiskCache {
     uint64_t MakeBlobKey(const uint64_t ModuleOffset);
 
     FEXCore::Context::ContextImpl* CTX;
-    static const uint16_t FormatVersion = 3;
     XXH128_hash_t BucketHash;
     fextl::vector<fextl::unique_ptr<IndexedDB>> ROCacheDBs;
     fextl::unique_ptr<IndexedDB> RWCacheDB;
@@ -195,6 +194,11 @@ namespace DiskCache {
     FEX_CONFIG_OPT(BasePathOverride, DISKCACHEPATH);
     FEX_CONFIG_OPT(RODBNames, DISKCACHERODBNAMES);
   };
+
+  // TODO: This header is in global installed header path, but uses internal headers.
+  // Migrate this once that is fixed.
+  static constexpr uint16_t FormatVersion = 3;
+  FEX_DEFAULT_VISIBILITY uint16_t GetFormatVersion();
 
 } // namespace DiskCache
 

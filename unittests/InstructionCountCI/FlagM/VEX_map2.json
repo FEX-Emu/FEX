@@ -9,7 +9,8 @@
     "DisabledHostFeatures": [
       "AFP",
       "SVEBITPERM"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vtestps xmm0, xmm1": {

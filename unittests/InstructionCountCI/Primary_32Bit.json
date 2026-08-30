@@ -8,7 +8,8 @@
       "AFP",
       "FlagM",
       "FlagM2"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "push es": {

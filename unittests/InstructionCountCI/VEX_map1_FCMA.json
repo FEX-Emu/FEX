@@ -7,7 +7,8 @@
       "AFP",
       "FCMA"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vaddsubpd xmm0, xmm1, xmm2": {

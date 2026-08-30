@@ -8,7 +8,8 @@
       "FLAGM2",
       "SVE256",
       "SVE128"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vpsrlw xmm0, xmm1, 0": {

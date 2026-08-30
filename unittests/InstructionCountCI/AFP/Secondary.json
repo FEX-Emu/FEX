@@ -7,7 +7,8 @@
     "DisabledHostFeatures": [
       "SVE128",
       "SVE256"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "cvtpi2ps xmm0, [rax]": {

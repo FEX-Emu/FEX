@@ -11,7 +11,8 @@
       "FCMA",
       "RPRES",
       "AFP"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vucomiss xmm0, xmm1": {

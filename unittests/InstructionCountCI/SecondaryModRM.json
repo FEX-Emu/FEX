@@ -10,7 +10,8 @@
       "AFP",
       "FLAGM",
       "FLAGM2"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "xgetbv": {
