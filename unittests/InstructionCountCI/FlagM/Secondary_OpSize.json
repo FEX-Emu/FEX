@@ -10,7 +10,8 @@
       "SVE256",
       "AFP",
       "FCMA"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "ucomisd xmm0, xmm1": {

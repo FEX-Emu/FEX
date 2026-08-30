@@ -11,7 +11,8 @@
       "FCMA",
       "FLAGM",
       "FLAGM2"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "movupd xmm0, xmm0": {

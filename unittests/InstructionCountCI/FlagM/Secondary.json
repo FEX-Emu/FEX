@@ -10,7 +10,8 @@
       "SVE256",
       "RPRES",
       "AFP"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "ucomiss xmm0, xmm1": {

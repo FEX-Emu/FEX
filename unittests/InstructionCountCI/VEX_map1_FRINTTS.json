@@ -12,7 +12,8 @@
       "AFP",
       "FLAGM",
       "FLAGM2"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vcvttss2si eax, xmm0": {

@@ -12,7 +12,8 @@
       "SVE128",
       "SVE256",
       "AFP"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "fadd dword [rax]": {

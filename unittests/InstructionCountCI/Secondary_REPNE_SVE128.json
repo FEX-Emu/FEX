@@ -9,7 +9,8 @@
       "SVE256",
       "FCMA",
       "AFP"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "cvtpd2dq xmm0, xmm1": {

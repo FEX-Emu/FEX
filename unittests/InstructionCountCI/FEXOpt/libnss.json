@@ -11,7 +11,8 @@
       "SVE256",
       "RPRES",
       "AFP"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Comment": [],
   "Instructions": {

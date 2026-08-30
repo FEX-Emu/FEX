@@ -11,7 +11,8 @@
       "FLAGM2",
       "FRINTTS",
       "CSSC"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "movss xmm0, xmm1": {

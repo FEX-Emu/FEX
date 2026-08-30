@@ -10,7 +10,8 @@
       "FLAGM",
       "FLAGM2",
       "RPRES"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "fstp tword [rax]": {

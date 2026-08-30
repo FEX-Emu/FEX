@@ -6,7 +6,8 @@
       "SVE256",
       "AFP"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vroundss xmm0, xmm1, 00000000b": {

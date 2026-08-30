@@ -12,7 +12,8 @@
       "FLAGM2",
       "SVE256",
       "SVE128"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vmovups xmm0, xmm0": {

@@ -6,7 +6,8 @@
       "AFP",
       "SVE256",
       "SVE128"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "vpermq ymm0, ymm1, 1": {

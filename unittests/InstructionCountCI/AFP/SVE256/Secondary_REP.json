@@ -8,7 +8,8 @@
     ],
     "DisabledHostFeatures": [
       "RPRES"
-    ]
+    ],
+    "BinaryCacheVersion": 3
   },
   "Instructions": {
     "cvtsi2ss xmm0, eax": {
