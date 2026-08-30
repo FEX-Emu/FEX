@@ -75,6 +75,14 @@ BigCoreIDs = {
         tuple([0x51, 0x800]): "cortex-a73", # Kryo 2xx Gold
         tuple([0x51, 0x802]): "cortex-a75", # Kryo 3xx Gold
         tuple([0x51, 0x804]): "cortex-a76", # Kryo 4xx Gold
+        tuple([0x51, 0x001]): # Oryon-1
+            [ ["cortex-a78", "0.0"],
+              ["oryon-1", "19.0"], # Only exists in clang 19.0 or newer.
+            ],
+        tuple([0x51, 0x002]): # Oryon-3 is unknown to clang for now.
+            [ ["cortex-a78", "0.0"],
+              ["oryon-1", "19.0"], # Only exists in clang 19.0 or newer.
+            ],
         # Apple M1 Parallels hypervisor
         tuple([0x41, 0x0]):
             [ ["apple-a13", "0.0"], # If we aren't on 12.0+
