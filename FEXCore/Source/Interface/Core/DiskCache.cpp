@@ -636,6 +636,9 @@ namespace DiskCache {
     return true;
   }
 
+  uint16_t GetFormatVersion() {
+    return FormatVersion;
+  }
 } // namespace DiskCache
 
 } // namespace FEXCore
