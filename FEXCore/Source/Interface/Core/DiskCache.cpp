@@ -331,7 +331,7 @@ namespace DiskCache {
     fextl::string SerializedConfig = FEXCore::Config::SerializeForCache();
 
     struct __attribute__((packed)) {
-      uint8_t FormatVersion;
+      uint16_t FormatVersion;
       uint8_t Is64BitMode;
       uint64_t HostFeaturesHash;
     } BucketHeader = {FormatVersion, CTX->Config.Is64BitMode, CTX->HostFeatures.HashForCaching()};
@@ -444,9 +444,9 @@ namespace DiskCache {
     // LogMan::Msg::IFmt("hash ok! length {:d}", Header.GuestSize);
 
     // this seems to be a full hit, lastly, check the entry is big enough to have everything (except maybe GuestCode)
-    uint32_t SizeNeeded = sizeof(Header) + Header.HostSize + Header.EntryPointCount * sizeof(BlobEntryPoint);
+    uint32_t SizeNeeded = sizeof(Header) + Header.HostSize + Header.EntryPointCount * (sizeof(uint64_t) + sizeof(uint32_t));
     SizeNeeded += Header.SmallRelocCount * sizeof(BlobSmallRelocation) + Header.ThunkRelocCount * sizeof(BlobThunkRelocation) +
-                  Header.TouchedGuestPagesCount * sizeof(int64_t);
+                  Header.TouchedGuestPagesCount * sizeof(uint64_t);
     if (Entry.Size < SizeNeeded) {
       return std::nullopt;
     }
@@ -455,17 +455,22 @@ namespace DiskCache {
 
     HitData.HostCode = {HitData.Blob.data() + BlobOffset, Header.HostSize};
     BlobOffset += Header.HostSize;
-    HitData.EntryPoints = {reinterpret_cast<const BlobEntryPoint*>(HitData.Blob.data() + BlobOffset), Header.EntryPointCount};
-    BlobOffset += Header.EntryPointCount * sizeof(BlobEntryPoint);
+    HitData.GuestPages = {reinterpret_cast<uint64_t*>(HitData.Blob.data() + BlobOffset), Header.TouchedGuestPagesCount};
+    BlobOffset += Header.TouchedGuestPagesCount * sizeof(uint64_t);
+    HitData.EntryPointRIPs = {reinterpret_cast<uint64_t*>(HitData.Blob.data() + BlobOffset), Header.EntryPointCount};
+    BlobOffset += Header.EntryPointCount * sizeof(uint64_t);
+    HitData.EntryPointHostOffsets = {reinterpret_cast<const uint32_t*>(HitData.Blob.data() + BlobOffset), Header.EntryPointCount};
+    BlobOffset += Header.EntryPointCount * sizeof(uint32_t);
     HitData.SmallRelocs = {reinterpret_cast<const BlobSmallRelocation*>(HitData.Blob.data() + BlobOffset), Header.SmallRelocCount};
     BlobOffset += Header.SmallRelocCount * sizeof(BlobSmallRelocation);
     HitData.ThunkRelocs = {reinterpret_cast<const BlobThunkRelocation*>(HitData.Blob.data() + BlobOffset), Header.ThunkRelocCount};
     BlobOffset += Header.ThunkRelocCount * sizeof(BlobThunkRelocation);
 
-    auto* PageOffsets = reinterpret_cast<const int64_t*>(HitData.Blob.data() + BlobOffset);
-    HitData.GuestPages.reserve(Header.TouchedGuestPagesCount);
-    for (uint32_t i = 0; i < Header.TouchedGuestPagesCount; ++i) {
-      HitData.GuestPages.push_back(GuestRIP + PageOffsets[i]);
+    for (auto& PageOffset : HitData.GuestPages) {
+      PageOffset += GuestRIP;
+    }
+    for (auto& EntryPointRip : HitData.EntryPointRIPs) {
+      EntryPointRip += GuestRIP;
     }
 
     return HitData;
@@ -518,7 +523,6 @@ namespace DiskCache {
     uint32_t SmallRelocCount = 0;
     uint32_t ThunkRelocCount = 0;
     for (const auto& Reloc : Relocations) {
-      // relocs aren't cleared every time if IsGeneratingCache, so filter just in case
       if (Reloc.Header.Type == CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE) {
         ThunkRelocCount++;
       } else {
@@ -531,11 +535,12 @@ namespace DiskCache {
 
     const size_t HeaderOffset = 0;
     const size_t HostCodeOffset = HeaderOffset + sizeof(BlobFixedHeader);
-    const size_t EntryPointsOffset = HostCodeOffset + CompiledCode.Size;
-    const size_t SmallRelocsOffset = EntryPointsOffset + EntryPointCount * sizeof(BlobEntryPoint);
+    const size_t TouchedGuestPagesOffset = HostCodeOffset + CompiledCode.Size;
+    const size_t EntryPointRIPsOffset = TouchedGuestPagesOffset + TouchedGuestPagesCount * sizeof(uint64_t);
+    const size_t EntryPointHostOffsetsOffset = EntryPointRIPsOffset + EntryPointCount * sizeof(uint64_t);
+    const size_t SmallRelocsOffset = EntryPointHostOffsetsOffset + EntryPointCount * sizeof(uint32_t);
     const size_t ThunkRelocsOffset = SmallRelocsOffset + SmallRelocCount * sizeof(BlobSmallRelocation);
-    const size_t TouchedGuestPagesOffset = ThunkRelocsOffset + ThunkRelocCount * sizeof(BlobThunkRelocation);
-    const size_t GuestCodeOffset = TouchedGuestPagesOffset + TouchedGuestPagesCount * sizeof(int64_t);
+    const size_t GuestCodeOffset = ThunkRelocsOffset + ThunkRelocCount * sizeof(BlobThunkRelocation);
     const size_t TotalSize = GuestCodeOffset + GuestCode.size();
 
     // we'll copy everything into here and pass it to the Writer, then return to caller quickly
@@ -562,11 +567,21 @@ namespace DiskCache {
     memcpy(BlobData + HeaderOffset, &Header, sizeof(Header));
     memcpy(BlobData + HostCodeOffset, CompiledCode.BlockBegin, CompiledCode.Size);
 
+    // relocate touched pages relative to GuestRIP
+    auto* PageOffsets = reinterpret_cast<uint64_t*>(BlobData + TouchedGuestPagesOffset);
+    uint32_t PageIdx = 0;
+    for (auto GuestPage : DecodedBlockInfo->CodePages) {
+      PageOffsets[PageIdx++] = GuestPage - GuestRIP;
+    }
+
     // pack and relocate entrypoints
-    auto* EntryPoints = reinterpret_cast<BlobEntryPoint*>(BlobData + EntryPointsOffset);
+    auto* EntryRIPs = reinterpret_cast<uint64_t*>(BlobData + EntryPointRIPsOffset);
+    auto* EntryHostOffsets = reinterpret_cast<uint32_t*>(BlobData + EntryPointHostOffsetsOffset);
     uint32_t EntryIdx = 0;
     for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
-      EntryPoints[EntryIdx++] = {GuestAddr - Region.FileStartVA, uint32_t(HostAddr - CompiledCode.BlockBegin)};
+      EntryRIPs[EntryIdx] = GuestAddr - GuestRIP;
+      EntryHostOffsets[EntryIdx] = uint32_t(HostAddr - CompiledCode.BlockBegin);
+      EntryIdx++;
     }
 
     // pack relocations
@@ -612,14 +627,6 @@ namespace DiskCache {
         break;
       }
       }
-    }
-
-    // relocate touched pages relative to GuestRIP
-    // in theory we could save some size here, unlikely we need all 64bits
-    auto* PageOffsets = reinterpret_cast<int64_t*>(BlobData + TouchedGuestPagesOffset);
-    uint32_t PageIdx = 0;
-    for (auto GuestPage : DecodedBlockInfo->CodePages) {
-      PageOffsets[PageIdx++] = GuestPage - GuestRIP;
     }
 
     memcpy(BlobData + GuestCodeOffset, GuestCode.data(), GuestCode.size());

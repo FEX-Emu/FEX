@@ -868,26 +868,29 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
         CodeCache.ApplyPackedCodeRelocations(GuestRIP, std::as_writable_bytes(Hit->HostCode), Hit->SmallRelocs, Hit->ThunkRelocs, false);
 
       if (DiskCacheHitRelocationsApplied && LoadDiskCacheCode) {
-        auto LoadedCode = Thread->CPUBackend->LoadCachedCode(Hit->HostCode, Hit->EntryPoints);
+        auto LoadedCode = Thread->CPUBackend->LoadCachedCode(Hit->HostCode);
         if (LoadedCode.BlockBegin) {
-
-          // annoying to unpack a different copy here, maybe better way to do this
-          fextl::set<uint64_t> EntryPoints;
-          for (auto [GuestOffset, HostAddr] : LoadedCode.EntryPoints) {
-            EntryPoints.insert(GuestOffset + Region->FileStartVA);
-          }
-          for (auto CodePage : Hit->GuestPages) {
-            if (Thread->LookupCache->AddBlockExecutableRange(Thread, EntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
+          for (auto& CodePage : Hit->GuestPages) {
+            if (Thread->LookupCache->AddBlockExecutableRange(Thread, Hit->EntryPointRIPs, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
               SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
             }
           }
-          for (auto [GuestOffset, HostAddr] : LoadedCode.EntryPoints) {
-            Thread->LookupCache->AddBlockMapping(Thread, GuestOffset + Region->FileStartVA, Hit->GuestPages, HostAddr);
+
+          LOGMAN_THROW_A_FMT(Hit->EntryPointRIPs.size() == Hit->EntryPointHostOffsets.size(), "Mismatched Disk Cache entrypoint pairs!");
+
+          uintptr_t CachedHostCode = 0;
+          for (size_t i = 0; i < Hit->EntryPointRIPs.size(); i++) {
+            void* HostAddr = LoadedCode.BlockBegin + Hit->EntryPointHostOffsets[i];
+            Thread->LookupCache->AddBlockMapping(Thread, Hit->EntryPointRIPs[i], Hit->GuestPages, HostAddr);
+            if (Hit->EntryPointRIPs[i] == GuestRIP) {
+              CachedHostCode = reinterpret_cast<uintptr_t>(HostAddr);
+            }
           }
 
-          uint64_t ModuleOffset = GuestRIP - Region->FileStartVA;
+          LOGMAN_THROW_A_FMT(CachedHostCode != 0, "Couldn't find GuestRIP in Disk Cache entrypoints!");
+
           FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedDiskCacheHitCount, 1);
-          return reinterpret_cast<uintptr_t>(LoadedCode.EntryPoints[ModuleOffset]);
+          return CachedHostCode;
         }
       }
     }
