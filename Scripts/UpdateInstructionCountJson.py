@@ -10,7 +10,10 @@ def insert_before(d, key, item):
     items.insert(list(d.keys()).index(key), item)
     return dict(items)
 
-def update_performance_numbers(performance_json_path, performance_json, new_json_numbers):
+def update_performance_numbers(performance_json_path, performance_json, new_json_numbers, new_cache_version):
+
+    performance_json["Features"]["BinaryCacheVersion"] = new_cache_version
+
     for key, items in new_json_numbers.items():
         if len(key) == 0:
             continue
@@ -64,11 +67,19 @@ def main():
         if not isinstance(performance_json_data, dict):
             raise TypeError('JSON data must be a dict')
 
-        new_json_numbers_data = json.loads(new_json_numbers_text)
+        new_json_numbers_base = json.loads(new_json_numbers_text)
+
+        features = new_json_numbers_base["Features"]
+        if not isinstance(features, dict):
+            raise TypeError('features JSON data must be a dict')
+
+        new_cache_version = features["BinaryCacheVersion"]
+
+        new_json_numbers_data = new_json_numbers_base["Instructions"]
         if not isinstance(new_json_numbers_data, dict):
             raise TypeError('JSON data must be a dict')
 
-        return update_performance_numbers(performance_json_path, performance_json_data, new_json_numbers_data)
+        return update_performance_numbers(performance_json_path, performance_json_data, new_json_numbers_data, new_cache_version)
     except ValueError as ve:
         logging.error(f'JSON error: {ve}')
         return 1

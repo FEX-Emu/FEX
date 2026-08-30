@@ -96,6 +96,7 @@ def GetHostFeatures(data):
     return HostFeaturesData
 
 def parse_json_data(json_filepath, json_filename, json_data, output_binary_path):
+    BinaryCacheVersion = 0
     Bitness = 64
     EnabledHostFeatures = HostFeatures.FEATURE_ANY
     DisabledHostFeatures = HostFeatures.FEATURE_ANY
@@ -105,6 +106,9 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
         items = json_data["Features"]
         if ("Bitness" in items):
             Bitness = int(items["Bitness"])
+
+        if ("BinaryCacheVersion" in items):
+            BinaryCacheVersion = int(items["BinaryCacheVersion"])
 
         if ("EnabledHostFeatures" in items):
             EnabledHostFeatures = GetHostFeatures(items["EnabledHostFeatures"])
@@ -177,6 +181,7 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
         # struct TestInfo;
         # struct DataHeader {
         #   uint64_t Bitness;
+        #   uint64_t BinaryCacheVersion;
         #   uint64_t NumTests;
         #   uint64_t EnabledHostFeatures;
         #   uint64_t DisabledHostFeatures;
@@ -197,6 +202,7 @@ def parse_json_data(json_filepath, json_filename, json_data, output_binary_path)
 
     # Add the header
     MemData += struct.pack('Q', Bitness)
+    MemData += struct.pack('Q', BinaryCacheVersion)
     MemData += struct.pack('Q', len(TestDataMap))
     MemData += struct.pack('Q', EnabledHostFeatures.value)
     MemData += struct.pack('Q', DisabledHostFeatures.value)
