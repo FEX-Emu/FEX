@@ -1157,7 +1157,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   return std::move(CodeData);
 }
 
-CPUBackend::CompiledCode Arm64JITCore::LoadCachedCode(std::span<const uint8_t> HostBytes, std::span<const DiskCache::BlobEntryPoint> EntryPoints) {
+CPUBackend::CompiledCode Arm64JITCore::LoadCachedCode(std::span<const uint8_t> HostBytes) {
   // we stored it aligned, better still be?
   LOGMAN_THROW_A_FMT(HostBytes.size() % 16 == 0, "Needs to be 16B aligned!");
   auto AllocatedInfo = AllocateCodeBufferInSharedCache(HostBytes.size());
@@ -1170,9 +1170,6 @@ CPUBackend::CompiledCode Arm64JITCore::LoadCachedCode(std::span<const uint8_t> H
   Result.BlockBegin = Dest;
   Result.Size = HostBytes.size();
   Result.HostCodeOffset = Dest - CurrentCodeBuffer->GetBufferBase();
-  for (const auto& Ep : EntryPoints) {
-    Result.EntryPoints[Ep.GuestRIP] = Dest + Ep.HostOffset;
-  }
   return Result;
 }
 

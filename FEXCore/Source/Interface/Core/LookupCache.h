@@ -13,6 +13,7 @@
 #include <FEXCore/fextl/memory_resource.h>
 
 #include <cstdint>
+#include <span>
 #include <stddef.h>
 #include <utility>
 #include <mutex>
@@ -93,13 +94,15 @@ struct GuestToHostMap {
   GuestToHostMap();
 
   // Adds to Guest -> Host code mapping
-  const BlockEntry& AddBlockMapping(uint64_t Address, const fextl::vector<uint64_t>& CodePages, void* HostCode, const LookupCacheWriteLockToken&) {
+  const BlockEntry& AddBlockMapping(uint64_t Address, std::span<const uint64_t> CodePages, void* HostCode, const LookupCacheWriteLockToken&) {
     // This may replace an existing mapping
     // NOTE: Generally no previous entry should exist, however there is one exception:
     //       If the backend updates the active thread's CodeBuffer, the new associated LookupCache
     //       may already contain the block address. Since is comparatively rare, we'll just leak
     //       one of the two blocks in this case.
-    return BlockList.insert_or_assign(Address, BlockEntry {(uintptr_t)HostCode, CodePages}).first->second;
+    return BlockList
+      .insert_or_assign(Address, BlockEntry {(uintptr_t)HostCode, fextl::vector<uint64_t>(CodePages.begin(), CodePages.end())})
+      .first->second;
   }
 
   const BlockEntry* FindBlock(uint64_t Address, const LookupCacheReadLockToken&) {
@@ -281,7 +284,7 @@ public:
 
   // Appends a list of Block {Address} to CodePages [Start, Start + Length)
   // Returns true if new pages are marked as containing code
-  bool AddBlockExecutableRange(FEXCore::Core::InternalThreadState* Thread, const fextl::set<uint64_t>& Addresses, uint64_t Start, uint64_t Length) {
+  bool AddBlockExecutableRange(FEXCore::Core::InternalThreadState* Thread, auto& Addresses, uint64_t Start, uint64_t Length) {
     std::optional<FEXCore::SHMStats::AccumulationBlock<uint64_t>> LockTime(
       Thread->ThreadStats ? &Thread->ThreadStats->AccumulatedCacheWriteLockTime : nullptr);
     auto lk = Shared->AcquireWriteLock();
@@ -291,7 +294,7 @@ public:
   }
 
   // Adds to Guest -> Host code mapping
-  void AddBlockMapping(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, const fextl::vector<uint64_t>& CodePages, void* HostCode) {
+  void AddBlockMapping(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, std::span<const uint64_t> CodePages, void* HostCode) {
     std::optional<FEXCore::SHMStats::AccumulationBlock<uint64_t>> LockTime(
       Thread->ThreadStats ? &Thread->ThreadStats->AccumulatedCacheWriteLockTime : nullptr);
     auto lk = Shared->AcquireWriteLock();

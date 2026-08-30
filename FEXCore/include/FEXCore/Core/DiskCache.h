@@ -62,11 +62,6 @@ namespace DiskCache {
     XXH128_hash_t GuestHash;
   };
 
-  struct __attribute__((packed)) BlobEntryPoint {
-    uint64_t GuestRIP; // todo those have been made relative since i wrote this, can we get away with less size here?
-    uint32_t HostOffset;
-  };
-
   // packed struct for types 0, 2 and 3. type 1 is bigger and separate below
   struct __attribute__((packed)) BlobSmallRelocation {
     uint32_t Offset;
@@ -95,10 +90,11 @@ namespace DiskCache {
   struct CodeHitData {
     fextl::vector<uint8_t> Blob;
     std::span<uint8_t> HostCode;
-    std::span<const BlobEntryPoint> EntryPoints;
+    std::span<uint64_t> GuestPages;
+    std::span<uint64_t> EntryPointRIPs;
+    std::span<const uint32_t> EntryPointHostOffsets;
     std::span<const BlobSmallRelocation> SmallRelocs;
     std::span<const BlobThunkRelocation> ThunkRelocs;
-    fextl::vector<uint64_t> GuestPages;
 
     // the spans above point to memory owned by the Blob vec, so it's important this can't be copied
     CodeHitData() = default;
@@ -181,7 +177,7 @@ namespace DiskCache {
     uint64_t MakeBlobKey(const uint64_t ModuleOffset);
 
     FEXCore::Context::ContextImpl* CTX;
-    static const uint8_t FormatVersion = 1;
+    static const uint16_t FormatVersion = 3;
     XXH128_hash_t BucketHash;
     fextl::vector<fextl::unique_ptr<IndexedDB>> ROCacheDBs;
     fextl::unique_ptr<IndexedDB> RWCacheDB;
