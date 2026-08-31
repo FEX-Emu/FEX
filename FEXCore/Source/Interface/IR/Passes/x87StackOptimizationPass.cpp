@@ -579,6 +579,8 @@ inline void X87StackOptimization::UpdateTopForPop_Slow() {
     std::rotate(begin, std::next(begin), std::end(container));
   };
 
+  SetX87ValidTag(0, false);
+
   // Pop the top of the x87 stack
   GetOffsetTopWithCache_Slow(1);
   PopContainer(TopOffsetCache);
@@ -1050,9 +1052,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         break;
       }
       case OP_POPSTACKDESTROY: {
-        if (SlowPath) {
-          SetX87ValidTag(0, false);
-        }
         StackPop();
         break;
       }
