@@ -14,7 +14,7 @@
       "RPRES",
       "AFP"
     ],
-    "BinaryCacheVersion": 3
+    "BinaryCacheVersion": 4
   },
   "Comment": [
     "These are instruction combinations that could be more optimal if FEX optimized for them"
