@@ -28,6 +28,8 @@ namespace Handler {
       return "1";
     } else if (Value == "full") {
       return "2";
+    } else if (Value == "mtrack_proactive") {
+      return "3";
     }
     return "0";
   }
@@ -46,6 +48,10 @@ enum ConfigSMCChecks {
   CONFIG_SMC_NONE,
   CONFIG_SMC_MTRACK,
   CONFIG_SMC_FULL,
+  // mtrack, plus guest buffers are unprotected before the kernel is asked to write into them.
+  // Appended rather than ordered next to mtrack so the numeric values of the other modes,
+  // which configuration files may spell out directly, keep their meaning.
+  CONFIG_SMC_MTRACK_PROACTIVE,
 };
 
 enum class LayerType {

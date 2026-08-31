@@ -209,8 +209,26 @@ uint64_t SyscallPassthrough7(FEXCore::Core::CpuStateFrame* Frame, uint64_t arg1,
 }
 #endif
 
+static uint64_t Read(FEXCore::Core::CpuStateFrame* Frame, int fd, void* buf, size_t count) {
+  // FEX write-protects guest pages it has translated code from and relies on SIGSEGV to
+  // invalidate and unprotect them. A host syscall cannot raise that signal, so a read whose
+  // destination is protected fails with EFAULT instead of faulting.
+  //
+  // Unprotect up front rather than recovering after the fact. Reissuing a read is not
+  // generally safe -- a datagram socket drops the message when the copy faults, eventfd and
+  // timerfd clear their counters first, /proc/kmsg advances the log cursor -- and deciding
+  // which descriptors are replayable means classifying every file_operations in the kernel.
+  // Doing the work before the syscall removes that question entirely.
+  //
+  // This does nothing unless SMCChecks is mtrack_proactive, which is opted into per
+  // application, so no other guest pays for it.
+  _SyscallHandler->UnprotectSMCWriteRange(Frame->Thread, buf, count);
+
+  return SyscallPassthrough3<SYSCALL_DEF(read)>(Frame, fd, reinterpret_cast<uint64_t>(buf), count);
+}
+
 static void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL(read, SyscallPassthrough3<SYSCALL_DEF(read)>);
+  REGISTER_SYSCALL_IMPL(read, Read);
   REGISTER_SYSCALL_IMPL(write, SyscallPassthrough3<SYSCALL_DEF(write)>);
   REGISTER_SYSCALL_IMPL(lseek, SyscallPassthrough3<SYSCALL_DEF(lseek)>);
   REGISTER_SYSCALL_IMPL(sched_yield, SyscallPassthrough0<SYSCALL_DEF(sched_yield)>);

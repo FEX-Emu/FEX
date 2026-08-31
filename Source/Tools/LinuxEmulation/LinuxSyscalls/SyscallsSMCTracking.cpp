@@ -12,6 +12,7 @@ $end_info$
 #include "Common/FEXServerClient.h"
 #include "Common/FileMappingBaseAddress.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <sys/file.h>
 #include <sys/mman.h>
@@ -39,6 +40,110 @@ static void HandleSegfaultForCodeCacheFinalization(FEXCore::Core::InternalThread
   if (!RangeToFinalize.empty()) {
     Thread.CTX->GetCodeCache().FinalizeCodePages(Code, RangeToFinalize);
   }
+}
+
+// Restores write permission over [Base, Top) and invalidates any code translated from it,
+// undoing what MarkGuestExecutableRange applied. Returns whether the range intersected a
+// mapping the guest may write to; false means a write here is a genuine guest fault rather
+// than an SMC one.
+//
+// This iterates VMA entries rather than pages, mirroring MarkGuestExecutableRange. A mapping
+// therefore costs one invalidation and one mprotect however many pages of it the range spans,
+// and pages belonging to no mapping are skipped instead of probed one at a time.
+//
+// Every writable mapping in range is unprotected, without trying to narrow that to mappings
+// that look like they could hold code. Executability cannot be inferred after the fact: under
+// the READ_IMPLIES_EXEC personality a readable mapping is translatable, and the guest can clear
+// that personality with personality(2) before issuing the read, leaving a protected mapping
+// that no longer looks executable. Narrowing correctly would mean tracking which ranges are
+// actually protected.
+bool SyscallHandler::UnprotectSMCRangeLocked(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Top) {
+  auto UnprotectRegion = [](uintptr_t Start, uintptr_t Length) {
+    auto Result = mprotect(reinterpret_cast<void*>(Start), Length, PROT_READ | PROT_WRITE);
+    LogMan::Throw::AFmt(Result == 0, "mprotect({}, {}) failed", Start, Length);
+  };
+
+  bool Unprotected = false;
+
+  // Find the first mapping at or after the range ends, or ::end(), then walk backwards.
+  auto Mapping = VMATracking.VMAs.lower_bound(Top);
+
+  while (Mapping != VMATracking.VMAs.begin()) {
+    Mapping--;
+
+    const auto MapBase = Mapping->first;
+    const auto MapTop = MapBase + Mapping->second.Length;
+
+    if (MapTop <= Base) {
+      // Mapping ends before the range starts, exit
+      break;
+    }
+
+    // MarkGuestExecutableRange only ever protects mappings the guest can write to.
+    if (!Mapping->second.Prot.Writable) {
+      continue;
+    }
+
+    const auto RangeBase = std::max(MapBase, Base);
+    const auto RangeSize = std::min(MapTop, Top) - RangeBase;
+    Unprotected = true;
+
+    if (Mapping->second.Flags.Shared) {
+      LOGMAN_THROW_A_FMT(Mapping->second.Resource, "VMA tracking error");
+
+      const auto OffsetBase = RangeBase - MapBase + Mapping->second.Offset;
+      const auto OffsetTop = OffsetBase + RangeSize;
+
+      auto VMA = Mapping->second.Resource->FirstVMA;
+      LOGMAN_THROW_A_FMT(VMA, "VMA tracking error");
+
+      do {
+        const auto VMAOffsetBase = VMA->Offset;
+        const auto VMAOffsetTop = VMA->Offset + VMA->Length;
+
+        if (VMAOffsetBase < OffsetTop && VMAOffsetTop > OffsetBase) {
+          const auto MirroredOffset = std::max(VMAOffsetBase, OffsetBase);
+          const auto MirroredSize = std::min(OffsetTop, VMAOffsetTop) - MirroredOffset;
+          const auto MirroredBase = MirroredOffset - VMAOffsetBase + VMA->Base;
+
+          if (VMA->Prot.Writable) {
+            TM.InvalidateGuestCodeRange(Thread, MirroredBase, MirroredSize, UnprotectRegion);
+          } else {
+            TM.InvalidateGuestCodeRange(Thread, MirroredBase, MirroredSize);
+          }
+        }
+      } while ((VMA = VMA->ResourceNextVMA));
+    } else {
+      TM.InvalidateGuestCodeRange(Thread, RangeBase, RangeSize, UnprotectRegion);
+    }
+
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
+  }
+
+  return Unprotected;
+}
+
+bool SyscallHandler::UnprotectSMCPageLocked(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address) {
+  const auto PageBase = FEXCore::AlignDown(Address, FEXCore::Utils::FEX_PAGE_SIZE);
+  return UnprotectSMCRangeLocked(Thread, PageBase, PageBase + FEXCore::Utils::FEX_PAGE_SIZE);
+}
+
+// A host write into guest memory cannot raise the SIGSEGV that normally lifts an SMC
+// protection, so the kernel reports EFAULT instead. Callers about to hand a guest buffer to
+// the kernel as a destination use this to lift the protection up front.
+void SyscallHandler::UnprotectSMCWriteRange(FEXCore::Core::InternalThreadState* Thread, void* Address, size_t Length) {
+  if (SMCChecks != FEXCore::Config::CONFIG_SMC_MTRACK_PROACTIVE || Length == 0) {
+    return;
+  }
+
+  const auto Start = reinterpret_cast<uintptr_t>(Address);
+  const auto End = Start + Length;
+  if (End < Start) {
+    return;
+  }
+
+  auto Lock = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
+  UnprotectSMCRangeLocked(Thread, Start & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::AlignUp(End, FEXCore::Utils::FEX_PAGE_SIZE));
 }
 
 // Handles segfaults from:
@@ -77,43 +182,9 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, 
       return true;
     }
 
-    // If the mapping wasn't writable, it can't be handled here
-    if (!Entry->second.Prot.Writable) {
+    if (!_SyscallHandler->UnprotectSMCPageLocked(Thread, FaultAddress)) {
       return false;
     }
-
-    auto FaultBase = FEXCore::AlignDown(FaultAddress, FEXCore::Utils::FEX_PAGE_SIZE);
-
-    auto UnprotectRegionCallback = [](uintptr_t Start, uintptr_t Length) {
-      auto rv = mprotect((void*)Start, Length, PROT_READ | PROT_WRITE);
-      LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
-    };
-
-    if (Entry->second.Flags.Shared) {
-      LOGMAN_THROW_A_FMT(Entry->second.Resource, "VMA tracking error");
-
-      auto Offset = FaultBase - Entry->first + Entry->second.Offset;
-
-      auto VMA = Entry->second.Resource->FirstVMA;
-      LOGMAN_THROW_A_FMT(VMA, "VMA tracking error");
-
-      // Flush all mirrors, remap the page writable as needed
-      do {
-        if (VMA->Offset <= Offset && (VMA->Offset + VMA->Length) > Offset) {
-          auto FaultBaseMirrored = Offset - VMA->Offset + VMA->Base;
-
-          if (VMA->Prot.Writable) {
-            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FEXCore::Utils::FEX_PAGE_SIZE, UnprotectRegionCallback);
-          } else {
-            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FEXCore::Utils::FEX_PAGE_SIZE);
-          }
-        }
-      } while ((VMA = VMA->ResourceNextVMA));
-    } else {
-      _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBase, FEXCore::Utils::FEX_PAGE_SIZE, UnprotectRegionCallback);
-    }
-
-    FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
 
     auto CTX = Thread->CTX;
     if (CTX->IsAddressInCodeBuffer(Thread, ArchHelpers::Context::GetPc(ucontext)) && !CTX->IsCurrentBlockSingleInst(Thread) &&
@@ -138,7 +209,7 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
   const auto Top = FEXCore::AlignUp(Start + Length, FEXCore::Utils::FEX_PAGE_SIZE);
 
   {
-    if (SMCChecks != FEXCore::Config::CONFIG_SMC_MTRACK) {
+    if (!PageTrackingSMCChecks()) {
       return;
     }
 
