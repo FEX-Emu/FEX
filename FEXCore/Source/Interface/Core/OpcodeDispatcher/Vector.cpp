@@ -3243,9 +3243,10 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
   auto NewFCW = _LoadMemGPR(OpSize::i16Bit, MemBase, OpSize::i16Bit);
   _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
+  Ref Top {};
   {
     auto NewFSW = _LoadMemGPR(OpSize::i16Bit, MemBase, Constant(2), OpSize::i16Bit, MemOffsetType::SXTX, 1);
-    ReconstructX87StateFromFSW_Helper(NewFSW);
+    Top = ReconstructX87StateFromFSW_Helper(NewFSW);
   }
 
   {
@@ -3254,10 +3255,21 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
     _StoreContextGPR(OpSize::i8Bit, NewFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   }
 
-  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
-    auto MMRegs = LoadMemPairFPR(OpSize::i128Bit, MemBase, i * 16 + 32);
-    _StoreContextFPR(OpSize::i128Bit, MMRegs.Low, MMBaseOffset() + i * 16);
-    _StoreContextFPR(OpSize::i128Bit, MMRegs.High, MMBaseOffset() + (i + 1) * 16);
+  auto SevenConst = Constant(7);
+  auto low = Constant(~0ULL);
+  auto high = Constant(0xFFFF);
+  Ref Mask = _VLoadTwoGPRs(low, high);
+  const auto StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
+    Ref Reg = _LoadMemFPR(OpSize::i128Bit, MemBase, Constant(16 * i + 32), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    // Mask off the top bits
+    Reg = _VAnd(OpSize::i128Bit, Reg, Mask);
+    if (ReducedPrecisionMode) {
+      // Convert to double precision
+      Reg = _F80CVT(OpSize::i64Bit, Reg);
+    }
+    _StoreContextFPRIndexed(Reg, Top, StoreSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit));
+    Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 }
 
