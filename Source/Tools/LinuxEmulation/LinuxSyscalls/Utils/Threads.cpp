@@ -197,11 +197,11 @@ namespace PThreads {
 
   class PThread final : public FEXCore::Threads::Thread {
   public:
-    PThread(StackTracker* STracker, FEXCore::Threads::ThreadFunc Func, void* Arg, bool LowPriority)
+    PThread(StackTracker* STracker, FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags)
       : STracker {STracker}
       , UserFunc {Func}
       , UserArg {Arg}
-      , LowPriority {LowPriority} {
+      , Flags {Flags} {
       pthread_attr_t Attr {};
       Stack = STracker->AllocateStackObject();
       // pthreads allocates its dtv region behind our back and there is nothing we can do about it.
@@ -216,7 +216,15 @@ namespace PThreads {
       // `set_tid_address` address construct. If the stack is reused before the address is set to zero, then glibc won't initialize the new thread's
       // DTV/TLS region, resulting in TLS usage crashing.
       pthread_attr_setstacksize(&Attr, PTHREAD_STACK_MIN);
+      uint64_t OldMask;
+      bool BlockingSignals = Flags.Internal;
+      if (BlockingSignals) {
+        OldMask = HLE::ThreadManager::SetSignalMask(~0ULL);
+      }
       pthread_create(&Thread, &Attr, InitializeThread, this);
+      if (BlockingSignals) {
+        HLE::ThreadManager::SetSignalMask(OldMask);
+      }
       pthread_attr_destroy(&Attr);
     }
 
@@ -260,8 +268,8 @@ namespace PThreads {
       return Stack;
     }
 
-    bool GetLowPriority() const {
-      return LowPriority;
+    FEXCore::Threads::Flags GetFlags() const {
+      return Flags;
     }
 
     StackTracker* GetStackTracker() const {
@@ -294,7 +302,7 @@ namespace PThreads {
     FEXCore::Threads::ThreadFunc UserFunc;
     void* UserArg;
     void* Stack {};
-    bool LowPriority {};
+    FEXCore::Threads::Flags Flags {};
 
     // Use FEXCore's UncheckedLongJump to avoid fortification checks.
     // This avoids a false positive since glibc does not understand stack pivots.
@@ -313,7 +321,7 @@ namespace PThreads {
 
     bool LongJumpExit {};
 
-    if (Thread->GetLowPriority()) {
+    if (Thread->GetFlags().LowPriority) {
       setpriority(PRIO_PROCESS, FHU::Syscalls::gettid(), 19);
     }
 
@@ -366,8 +374,9 @@ namespace PThreads {
 
   static StackTracker* STracker {};
 
-  static fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg, bool LowPriority) {
-    return fextl::make_unique<PThread>(STracker, Func, Arg, LowPriority);
+  static fextl::unique_ptr<FEXCore::Threads::Thread>
+  CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags) {
+    return fextl::make_unique<PThread>(STracker, Func, Arg, Flags);
   }
 
   static void CleanupAfterFork_PThread() {
