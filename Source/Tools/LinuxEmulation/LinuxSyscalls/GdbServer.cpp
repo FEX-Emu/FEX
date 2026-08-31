@@ -1482,9 +1482,7 @@ static void* ThreadHandler(void* Arg) {
 }
 
 void GdbServer::StartThread() {
-  uint64_t OldMask = HLE::ThreadManager::SetSignalMask(~0ULL);
-  gdbServerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
-  HLE::ThreadManager::SetSignalMask(OldMask);
+  gdbServerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this, {.Internal = true});
 }
 
 void GdbServer::OpenListenSocket() {

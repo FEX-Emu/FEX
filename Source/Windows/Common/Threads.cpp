@@ -13,13 +13,15 @@ namespace FEX::Windows {
 namespace WinThreadImpl {
   class Thread final : public FEXCore::Threads::Thread {
   public:
-    Thread(FEXCore::Threads::ThreadFunc Func, void* Arg, bool LowPriority)
+    Thread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags)
       : UserFunc {Func}
       , UserArg {Arg}
-      , LowPriority {LowPriority} {
+      , Flags {Flags} {
       // hide everything from guest, don't initialize anything, we'll do that manually in RunThread()
-      const ULONG CreateFlags = THREAD_CREATE_FLAGS_SKIP_THREAD_ATTACH | THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER |
-                                THREAD_CREATE_FLAGS_SKIP_LOADER_INIT | THREAD_CREATE_FLAGS_BYPASS_PROCESS_FREEZE;
+      ULONG CreateFlags = THREAD_CREATE_FLAGS_SKIP_THREAD_ATTACH | THREAD_CREATE_FLAGS_SKIP_LOADER_INIT | THREAD_CREATE_FLAGS_BYPASS_PROCESS_FREEZE;
+      if (Flags.Internal) {
+        CreateFlags |= THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER;
+      }
       NTSTATUS Status = NtCreateThreadEx(&Handle, THREAD_ALL_ACCESS, nullptr, GetCurrentProcess(),
                                          reinterpret_cast<PRTL_THREAD_START_ROUTINE>(&Thread::RunThread), this, CreateFlags, 0, 0, 0, nullptr);
       if (Status < 0) {
@@ -62,14 +64,14 @@ namespace WinThreadImpl {
       }
     }
 
-    bool GetLowPriority() const {
-      return LowPriority;
+    FEXCore::Threads::Flags GetFlags() const {
+      return Flags;
     }
 
   private:
     static void RunThread(Thread* This) {
       This->TID = GetCurrentThreadId();
-      if (This->GetLowPriority()) {
+      if (This->GetFlags().LowPriority) {
         LONG Priority = THREAD_BASE_PRIORITY_IDLE;
         NtSetInformationThread(NtCurrentThread(), ThreadBasePriority, &Priority, sizeof(Priority));
       }
@@ -82,14 +84,14 @@ namespace WinThreadImpl {
 
     FEXCore::Threads::ThreadFunc UserFunc;
     void* UserArg;
-    bool LowPriority {};
+    FEXCore::Threads::Flags Flags {};
     HANDLE Handle {};
     DWORD TID {};
     void* ReturnValue {};
   };
 
-  fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread(FEXCore::Threads::ThreadFunc Func, void* Arg, bool LowPriority) {
-    return fextl::make_unique<Thread>(Func, Arg, LowPriority);
+  fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags) {
+    return fextl::make_unique<Thread>(Func, Arg, Flags);
   }
 
   void CleanupAfterFork() {}

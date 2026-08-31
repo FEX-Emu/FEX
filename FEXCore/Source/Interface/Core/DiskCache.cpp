@@ -381,7 +381,8 @@ namespace DiskCache {
     }
 
     if (IsWritingDiskCache()) {
-      Writer = fextl::make_unique<WorkQueueThread>(true);
+      FEXCore::Threads::Flags WriterThreadFlags = {.LowPriority = true, .Internal = true};
+      Writer = fextl::make_unique<WorkQueueThread>(WriterThreadFlags);
     }
   }
 
