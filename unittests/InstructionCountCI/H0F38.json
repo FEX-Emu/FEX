@@ -10,7 +10,7 @@
       "FLAGM2",
       "CRYPTO"
     ],
-    "BinaryCacheVersion": 3
+    "BinaryCacheVersion": 4
   },
   "Instructions": {
     "pshufb mm0, mm1": {
