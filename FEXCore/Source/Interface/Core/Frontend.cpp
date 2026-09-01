@@ -1380,107 +1380,67 @@ const Decoder::DecodeStream Decoder::AdjustAddrForSpecialRegion(const uint8_t* _
 }
 
 bool Decoder::CheckIfCacheable(FEXCore::Core::InternalThreadState& Thread, const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst) {
-  DecodeInstructionsAtEntry(&Thread, InstStream, PC, MaxInst);
+  SetupDecodeInstructionsAtEntry(&Thread, PC, MaxInst);
+  DecodeLoop(InstStream);
   bool Uncacheable = HitBadRelocation;
   DelayedDisownBuffer();
   return !Uncacheable;
 }
 
-void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thread, const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst) {
-  FEXCORE_PROFILE_SCOPED("DecodeInstructions");
-  BlockInfo.TotalInstructionCount = 0;
-  BlockInfo.Blocks.clear();
-  VisitedBlocks.clear();
-  // Reset internal state management
-  DecodedSize = 0;
-  MaxCondBranchForward = 0;
-  MaxCondBranchBackwards = ~0ULL;
-  DecodedBuffer = PoolObject.ReownOrClaimBuffer();
+void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
+  while (!FinalInstruction && (Paused || !BlocksToDecode.empty())) {
+    bool Pausing = false;
+    fextl::vector<DecodedBlocks>::iterator BlockIt;
+    if (!Paused || BlockResume == -1) {
+      auto BlockDecodeIt = BlocksToDecode.begin();
+      uint64_t RIPToDecode = *BlockDecodeIt;
+      BlocksToDecode.erase(BlockDecodeIt);
+      VisitedBlocks.emplace(RIPToDecode);
 
-  // Decode operating mode from thread's CS segment.
-  const auto CSSegment = Core::CPUState::GetSegmentFromIndex(Thread->CurrentFrame->State, Thread->CurrentFrame->State.cs_idx);
-  BlockInfo.Is64BitMode = CSSegment->L == 1;
-  LOGMAN_THROW_A_FMT(BlockInfo.Is64BitMode == CTX->Config.Is64BitMode, "Expected operating mode to not change at runtime!");
+      auto BlockSuccIt = std::lower_bound(BlockInfo.Blocks.begin(), BlockInfo.Blocks.end(), RIPToDecode,
+                                          [](const auto& a, uint64_t Address) { return a.Entry < Address; });
 
-  EntryPoint = PC;
-  BlockInfo.EntryPoints = {PC};
+      LOGMAN_THROW_A_FMT(BlockSuccIt == BlockInfo.Blocks.end() || BlockSuccIt->Entry != RIPToDecode, "unexpected");
 
-  uint64_t TotalInstructions {};
+      NextBlockStartAddress = ~0ULL;
+      if (!BlocksToDecode.empty()) {
+        // We just erased the lowest, the front is then the second lowest
+        NextBlockStartAddress = *BlocksToDecode.begin();
+      }
+      if (BlockSuccIt != BlockInfo.Blocks.end() && BlockSuccIt->Entry < NextBlockStartAddress) {
+        NextBlockStartAddress = BlockSuccIt->Entry;
+      }
 
-  SectionMinAddress = 0;
-  SectionMaxAddress = ~0ULL;
-  Relocations = nullptr;
+      LOGMAN_THROW_A_FMT(NextBlockStartAddress == ~0ULL || NextBlockStartAddress > RIPToDecode, "unexpected");
 
-  if (CTX->GetCodeCache().IsGeneratingCache || EnableCodeCacheValidation) {
-    // If generating cache, attempt to load section bounds and relocations
-    if (auto SectionInfo = CTX->SyscallHandler->LookupExecutableFileSection(Thread, EntryPoint)) {
-      SectionMinAddress = SectionInfo->FileStartVA;
-      SectionMaxAddress = SectionInfo->EndVA;
-      Relocations = &SectionInfo->FileInfo.Relocations;
-    }
-  }
+      // Insert the block now so it can be looked up and split if necessary on a backward edge
+      BlockIt = BlockInfo.Blocks.emplace(BlockSuccIt);
 
-  DecodedMinAddress = EntryPoint;
-  DecodedMaxAddress = EntryPoint;
+      BlockIt->Entry = RIPToDecode;
+      BlockIt->Size = 0;
+      BlockIt->IsEntryPoint = EntryBlock;
 
-  // Entry is a jump target
-  BlocksToDecode = {PC};
+      PCOffset = 0;
+      BlockStartOffset = DecodedSize;
+      EraseBlock = true; // Unset once the block contains an instruction
 
-  uint64_t CurrentCodePage = PC & FEXCore::Utils::FEX_PAGE_MASK;
+      BlockIt->DecodedInstructions = &DecodedBuffer[BlockStartOffset];
+      BlockIt->NumInstructions = 0;
 
-  BlockInfo.CodePages = {CurrentCodePage};
-
-  if (MaxInst == 0) {
-    MaxInst = CTX->Config.MaxInstPerBlock;
-  }
-
-  bool EntryBlock {true};
-  bool FinalInstruction {false};
-
-  while (!FinalInstruction && !BlocksToDecode.empty()) {
-    auto BlockDecodeIt = BlocksToDecode.begin();
-    uint64_t RIPToDecode = *BlockDecodeIt;
-    BlocksToDecode.erase(BlockDecodeIt);
-    VisitedBlocks.emplace(RIPToDecode);
-
-    auto BlockSuccIt = std::lower_bound(BlockInfo.Blocks.begin(), BlockInfo.Blocks.end(), RIPToDecode,
-                                        [](const auto& a, uint64_t Address) { return a.Entry < Address; });
-
-    LOGMAN_THROW_A_FMT(BlockSuccIt == BlockInfo.Blocks.end() || BlockSuccIt->Entry != RIPToDecode, "unexpected");
-
-    NextBlockStartAddress = ~0ULL;
-    if (!BlocksToDecode.empty()) {
-      // We just erased the lowest, the front is then the second lowest
-      NextBlockStartAddress = *BlocksToDecode.begin();
-    }
-    if (BlockSuccIt != BlockInfo.Blocks.end() && BlockSuccIt->Entry < NextBlockStartAddress) {
-      NextBlockStartAddress = BlockSuccIt->Entry;
+      // Do a bit of pointer math to figure out where we are in code
+      InstStream = AdjustAddrForSpecialRegion(_InstStream, EntryPoint, RIPToDecode);
+    } else if (BlockResume != -1) {
+      BlockIt = BlockInfo.Blocks.begin() + BlockResume;
+      BlockResume = -1;
     }
 
-    LOGMAN_THROW_A_FMT(NextBlockStartAddress == ~0ULL || NextBlockStartAddress > RIPToDecode, "unexpected");
-
-    // Insert the block now so it can be looked up and split if necessary on a backward edge
-    auto BlockIt = BlockInfo.Blocks.emplace(BlockSuccIt);
-
-    BlockIt->Entry = RIPToDecode;
-    BlockIt->Size = 0;
-    BlockIt->IsEntryPoint = EntryBlock;
-
-    uint64_t PCOffset = 0;
-    uint64_t BlockStartOffset = DecodedSize;
-    bool EraseBlock = true; // Unset once the block contains an instruction
-
-    BlockIt->DecodedInstructions = &DecodedBuffer[BlockStartOffset];
-    BlockIt->NumInstructions = 0;
-
-    // Do a bit of pointer math to figure out where we are in code
-    InstStream = AdjustAddrForSpecialRegion(_InstStream, EntryPoint, RIPToDecode);
+    Paused = false;
 
     while (1) {
       InstructionSize = 0;
 
       // MAX_INST_SIZE assumes worst case
-      auto OpAddress = RIPToDecode + PCOffset;
+      auto OpAddress = BlockIt->Entry + PCOffset;
       auto OpMaxAddress = OpAddress + MAX_INST_SIZE;
 
       auto OpMinPage = OpAddress & FEXCore::Utils::FEX_PAGE_MASK;
@@ -1548,6 +1508,15 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
         break;
       }
 
+      if (GuestSizePause) {
+        if (GuestSizePause > DecodeInst->InstSize) {
+          GuestSizePause -= DecodeInst->InstSize;
+        } else {
+          GuestSizePause = 0;
+          Pausing = true;
+        }
+      }
+
       // Check if we need to end the entire multiblock
       FinalInstruction = DecodedSize >= MaxInst || DecodedSize >= DefaultDecodedBufferSize || TotalInstructions >= MaxInst;
       if (FinalInstruction) {
@@ -1569,6 +1538,17 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
 
       PCOffset += DecodeInst->InstSize;
       InstStream += DecodeInst->InstSize;
+
+      if (Pausing) {
+        Pausing = false;
+        Paused = true;
+        BlockResume = BlockIt - BlockInfo.Blocks.begin();
+        break;
+      }
+    }
+
+    if (Paused) {
+      break;
     }
 
     // NOTE: BlockIt is only valid here in the EraseBlock case
@@ -1580,6 +1560,16 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
 
     CurrentBlockTargets.clear();
     EntryBlock = false;
+
+    if (Pausing && !BlocksToDecode.empty() && !FinalInstruction) {
+      Paused = true;
+      BlockResume = -1;
+      break;
+    }
+  }
+
+  if (Paused) {
+    return;
   }
 
   BlockInfo.TotalInstructionCount = TotalInstructions;
@@ -1587,6 +1577,60 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thre
   for (auto& Block : BlockInfo.Blocks) {
     Block.IsEntryPoint = BlockInfo.EntryPoints.contains(Block.Entry);
   }
+}
+
+void Decoder::SetupDecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t PC, uint64_t MaxInst) {
+  FEXCORE_PROFILE_SCOPED("DecodeInstructions");
+  BlockInfo.TotalInstructionCount = 0;
+  BlockInfo.Blocks.clear();
+  VisitedBlocks.clear();
+  // Reset internal state management
+  Paused = false;
+  BlockResume = -1;
+  DecodedSize = 0;
+  if (MaxInst == 0) {
+    MaxInst = CTX->Config.MaxInstPerBlock;
+  }
+  this->MaxInst = MaxInst;
+  MaxCondBranchForward = 0;
+  MaxCondBranchBackwards = ~0ULL;
+  DecodedBuffer = PoolObject.ReownOrClaimBuffer();
+
+  // Decode operating mode from thread's CS segment.
+  const auto CSSegment = Core::CPUState::GetSegmentFromIndex(Thread->CurrentFrame->State, Thread->CurrentFrame->State.cs_idx);
+  BlockInfo.Is64BitMode = CSSegment->L == 1;
+  LOGMAN_THROW_A_FMT(BlockInfo.Is64BitMode == CTX->Config.Is64BitMode, "Expected operating mode to not change at runtime!");
+
+  EntryPoint = PC;
+  BlockInfo.EntryPoints = {PC};
+
+  TotalInstructions = 0;
+
+  SectionMinAddress = 0;
+  SectionMaxAddress = ~0ULL;
+  Relocations = nullptr;
+
+  if (CTX->GetCodeCache().IsGeneratingCache || EnableCodeCacheValidation) {
+    // If generating cache, attempt to load section bounds and relocations
+    if (auto SectionInfo = CTX->SyscallHandler->LookupExecutableFileSection(Thread, EntryPoint)) {
+      SectionMinAddress = SectionInfo->FileStartVA;
+      SectionMaxAddress = SectionInfo->EndVA;
+      Relocations = &SectionInfo->FileInfo.Relocations;
+    }
+  }
+
+  DecodedMinAddress = EntryPoint;
+  DecodedMaxAddress = EntryPoint;
+
+  // Entry is a jump target
+  BlocksToDecode = {PC};
+
+  CurrentCodePage = PC & FEXCore::Utils::FEX_PAGE_MASK;
+
+  BlockInfo.CodePages = {CurrentCodePage};
+
+  EntryBlock = true;
+  FinalInstruction = false;
 }
 
 } // namespace FEXCore::Frontend

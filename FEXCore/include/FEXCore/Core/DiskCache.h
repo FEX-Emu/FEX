@@ -67,7 +67,6 @@ namespace DiskCache {
     uint32_t EntryPointCount;
     uint32_t SmallRelocCount;
     uint32_t ThunkRelocCount;
-    uint32_t TouchedGuestPagesCount;
     XXH128_hash_t GuestHash;
   };
 
@@ -99,7 +98,7 @@ namespace DiskCache {
   struct CodeHitData {
     fextl::vector<uint8_t> Blob;
     std::span<uint8_t> HostCode;
-    std::span<uint64_t> GuestPages;
+    std::span<const uint64_t> GuestPages;
     std::span<uint64_t> EntryPointRIPs;
     std::span<const uint32_t> EntryPointHostOffsets;
     std::span<const BlobSmallRelocation> SmallRelocs;
@@ -170,8 +169,9 @@ namespace DiskCache {
   public:
     void Init(FEXCore::Context::ContextImpl* CTX);
 
-    std::optional<CodeHitData> Lookup(Core::InternalThreadState* Thread, const ExecutableFileSectionInfo& Region, uint64_t GuestRIP);
-    bool Store(Core::InternalThreadState* Thread, const ExecutableFileSectionInfo& Region, uint64_t GuestRIP,
+    std::optional<CodeHitData> Lookup(Core::InternalThreadState* Thread, std::optional<ExecutableFileSectionInfo> Region, uint64_t GuestRIP,
+                                      std::optional<uint64_t>& GuestCodeKey);
+    bool Store(Core::InternalThreadState* Thread, std::optional<ExecutableFileSectionInfo> Region, uint64_t GuestRIP, uint64_t GuestCodeKey,
                std::span<const uint8_t> GuestCode, const CPU::CPUBackend::CompiledCode& CompiledCode,
                std::span<const FEXCore::CPU::Relocation> Relocations, const Frontend::Decoder::DecodedBlockInformation* DecodedBlockInfo);
 
@@ -201,13 +201,16 @@ namespace DiskCache {
     FEX_CONFIG_OPT(EnableDiskCache, DISKCACHE);
     FEX_CONFIG_OPT(MapDiskCacheFiles, DISKCACHEFILEMAPPING);
     FEX_CONFIG_OPT(RelocationFilter, DISKCACHERELOCATIONFILTER);
+    FEX_CONFIG_OPT(AnonCaching, DISKCACHEANONCACHING);
     FEX_CONFIG_OPT(BasePathOverride, DISKCACHEPATH);
     FEX_CONFIG_OPT(RODBNames, DISKCACHERODBNAMES);
   };
 
+  static constexpr uint16_t AnonPrefixGuestBytes = 64;
+
   // TODO: This header is in global installed header path, but uses internal headers.
   // Migrate this once that is fixed.
-  static constexpr uint16_t FormatVersion = 10;
+  static constexpr uint16_t FormatVersion = 11;
   FEX_DEFAULT_VISIBILITY uint16_t GetFormatVersion();
 
 } // namespace DiskCache

@@ -2,6 +2,8 @@
 
 #define XXH_STATIC_LINKING_ONLY
 
+#include "FEXCore/Utils/TypeDefines.h"
+#include "Interface/Core/Frontend.h"
 #include "FEXCore/Config/Config.h"
 #include "FEXCore/fextl/string.h"
 #include "FEXHeaderUtils/Filesystem.h"
@@ -237,6 +239,9 @@ namespace DiskCache {
           if (!ExtentsValid) {
             continue;
           }
+        } else {
+          NewEntry.GuestExtents.push_back(0);
+          NewEntry.GuestExtents.push_back(IndexBlobExtra->GuestSize);
         }
         CacheIndex.insert({IndexBlobCommon->hash, {std::move(NewEntry)}});
       } else {
@@ -325,6 +330,9 @@ namespace DiskCache {
       NewEntry.GuestExtents.resize(IndexBlobHeader->GuestExtentsCount);
       memcpy(NewEntry.GuestExtents.data(), reinterpret_cast<const uint32_t*>(IndexBlob.data() + sizeof(IndexExtraBlobHeader)),
              IndexBlobHeader->GuestExtentsCount * sizeof(uint32_t));
+    } else {
+      NewEntry.GuestExtents.push_back(0);
+      NewEntry.GuestExtents.push_back(IndexBlobHeader->GuestSize);
     }
     std::lock_guard Guard(IndexMutex);
     Index.insert_or_assign(Hash, std::move(NewEntry));
@@ -431,22 +439,44 @@ namespace DiskCache {
     }
   }
 
-  uint64_t DiskCache::MakeBlobKey(const uint64_t ModuleOffset) {
+  uint64_t DiskCache::MakeBlobKey(const uint64_t CodeKey) {
     struct {
-      uint64_t ModuleOffset;
+      uint64_t CodeKey;
       XXH128_hash_t BucketHash;
-    } BlobKeyBytes = {ModuleOffset, BucketHash};
+    } BlobKeyBytes = {CodeKey, BucketHash};
 
     return XXH3_64bits(&BlobKeyBytes, sizeof(BlobKeyBytes));
   }
 
-  std::optional<CodeHitData> DiskCache::Lookup(Core::InternalThreadState* Thread, const ExecutableFileSectionInfo& Region, uint64_t GuestRIP) {
+  std::optional<CodeHitData> DiskCache::Lookup(Core::InternalThreadState* Thread, std::optional<ExecutableFileSectionInfo> Region,
+                                               uint64_t GuestRIP, std::optional<uint64_t>& GuestCodeKey) {
     if (!IsReadingDiskCache()) {
       return std::nullopt;
     }
-    uint64_t ModuleOffset = GuestRIP - Region.FileStartVA;
+    if (Region && Region->FileStartVA) {
+      GuestCodeKey = GuestRIP - Region->FileStartVA;
+    } else {
+      if (!AnonCaching) {
+        return std::nullopt;
+      }
+      Thread->FrontendDecoder->DecodeLoop(reinterpret_cast<const uint8_t*>(GuestRIP), AnonPrefixGuestBytes);
+      XXH3_state_t HashState;
+      XXH3_64bits_reset(&HashState);
+      for (auto& SubBlock : Thread->FrontendDecoder->GetDecodedBlockInfo()->Blocks) {
+        XXH3_64bits_update(&HashState, reinterpret_cast<const uint8_t*>(SubBlock.Entry), SubBlock.Size);
+        if (SubBlock.BlockStatus != Frontend::Decoder::DecodedBlockStatus::SUCCESS) {
+          return std::nullopt;
+        }
+      }
+      GuestCodeKey = XXH3_64bits_digest(&HashState);
+      // if (TotalSize < AnonPrefixGuestBytes) {
+      //   GuestCodeKey = 0;
+      //   return std::nullopt;
+      // }
+      // LogMan::Msg::IFmt("anon lookup! length {:d} {}", GuestCodeKey, TotalSize);
+    }
 
-    uint64_t Hash = MakeBlobKey(ModuleOffset);
+    uint64_t Hash = MakeBlobKey(*GuestCodeKey);
 
     IndexEntry Entry;
     {
@@ -479,16 +509,22 @@ namespace DiskCache {
     //     LogMan::Msg::IFmt("extent {} {}", Entry.GuestExtents[i], Entry.GuestExtents[i]+Entry.GuestExtents[i+1]);
     //   }
     // }
-    if (Entry.GuestExtents.size() == 0) {
-      LiveGuestHash = XXH3_128bits(reinterpret_cast<void*>(GuestRIP), Entry.GuestSize);
-    } else {
-      XXH3_state_t HashState;
-      XXH3_128bits_reset(&HashState);
-      for (uint32_t i = 0; i < Entry.GuestExtents.size(); i += 2) {
-        XXH3_128bits_update(&HashState, reinterpret_cast<uint8_t*>(GuestRIP) + Entry.GuestExtents[i], Entry.GuestExtents[i + 1]);
+    fextl::vector<uint64_t> GuestPages;
+
+    XXH3_state_t HashState;
+    XXH3_128bits_reset(&HashState);
+    for (uint32_t i = 0; i < Entry.GuestExtents.size(); i += 2) {
+      XXH3_128bits_update(&HashState, reinterpret_cast<uint8_t*>(GuestRIP) + Entry.GuestExtents[i], Entry.GuestExtents[i + 1]);
+      uint64_t FirstPage = (Entry.GuestExtents[i] + GuestRIP) & Utils::FEX_PAGE_MASK;
+      uint64_t LastPage = (Entry.GuestExtents[i] + Entry.GuestExtents[i + 1] + GuestRIP) & Utils::FEX_PAGE_MASK;
+      for (uint64_t Page = FirstPage; Page <= LastPage; Page += Utils::FEX_PAGE_SIZE) {
+        if (GuestPages.size() == 0 || Page != GuestPages.back()) {
+          GuestPages.push_back(Page);
+        }
       }
-      LiveGuestHash = XXH3_128bits_digest(&HashState);
     }
+    LiveGuestHash = XXH3_128bits_digest(&HashState);
+
     if (!XXH128_isEqual(LiveGuestHash, Entry.GuestHash)) {
       // LogMan::Msg::IFmt("hash mismatch! length {:d}", Header.GuestSize);
       return std::nullopt;
@@ -498,8 +534,10 @@ namespace DiskCache {
     // this seems to be a full hit, pull from disk and check the entry is big enough to have everything (except GuestCode)
     CodeHitData HitData;
     uint32_t EntrySizeWithoutGuestCode = Entry.Size - Entry.GuestSize;
-    HitData.Blob.resize(EntrySizeWithoutGuestCode);
-    if (!Entry.DB->ReadCacheBlob(Entry.Offset, HitData.Blob)) {
+    HitData.Blob.resize(GuestPages.size() * sizeof(uint64_t) + EntrySizeWithoutGuestCode);
+    memcpy(HitData.Blob.data(), GuestPages.data(), GuestPages.size() * sizeof(uint64_t));
+    uint32_t BlobOffset = GuestPages.size() * sizeof(uint64_t);
+    if (!Entry.DB->ReadCacheBlob(Entry.Offset, {HitData.Blob.data() + BlobOffset, EntrySizeWithoutGuestCode})) {
       return std::nullopt;
     }
 
@@ -507,11 +545,11 @@ namespace DiskCache {
       return std::nullopt;
     }
     BlobFixedHeader Header;
-    memcpy(&Header, HitData.Blob.data(), sizeof(Header));
+    memcpy(&Header, HitData.Blob.data() + BlobOffset, sizeof(Header));
+    BlobOffset += sizeof(Header);
 
     uint32_t SizeNeeded = sizeof(Header) + Header.HostSize + Header.EntryPointCount * (sizeof(uint64_t) + sizeof(uint32_t));
-    SizeNeeded += Header.SmallRelocCount * sizeof(BlobSmallRelocation) + Header.ThunkRelocCount * sizeof(BlobThunkRelocation) +
-                  Header.TouchedGuestPagesCount * sizeof(uint64_t);
+    SizeNeeded += Header.SmallRelocCount * sizeof(BlobSmallRelocation) + Header.ThunkRelocCount * sizeof(BlobThunkRelocation);
     if (EntrySizeWithoutGuestCode != SizeNeeded) {
       return std::nullopt;
     }
@@ -520,12 +558,8 @@ namespace DiskCache {
       return std::nullopt;
     }
 
-    uint32_t BlobOffset = sizeof(Header);
-
     HitData.HostCode = {HitData.Blob.data() + BlobOffset, Header.HostSize};
     BlobOffset += Header.HostSize;
-    HitData.GuestPages = {reinterpret_cast<uint64_t*>(HitData.Blob.data() + BlobOffset), Header.TouchedGuestPagesCount};
-    BlobOffset += Header.TouchedGuestPagesCount * sizeof(uint64_t);
     HitData.EntryPointRIPs = {reinterpret_cast<uint64_t*>(HitData.Blob.data() + BlobOffset), Header.EntryPointCount};
     BlobOffset += Header.EntryPointCount * sizeof(uint64_t);
     HitData.EntryPointHostOffsets = {reinterpret_cast<const uint32_t*>(HitData.Blob.data() + BlobOffset), Header.EntryPointCount};
@@ -535,9 +569,8 @@ namespace DiskCache {
     HitData.ThunkRelocs = {reinterpret_cast<const BlobThunkRelocation*>(HitData.Blob.data() + BlobOffset), Header.ThunkRelocCount};
     BlobOffset += Header.ThunkRelocCount * sizeof(BlobThunkRelocation);
 
-    for (auto& PageOffset : HitData.GuestPages) {
-      PageOffset += GuestRIP;
-    }
+    HitData.GuestPages = {reinterpret_cast<uint64_t*>(HitData.Blob.data()), GuestPages.size()};
+
     for (auto& EntryPointRip : HitData.EntryPointRIPs) {
       EntryPointRip += GuestRIP;
     }
@@ -563,8 +596,8 @@ namespace DiskCache {
     }
   };
 
-  bool DiskCache::Store(Core::InternalThreadState* Thread, const ExecutableFileSectionInfo& Region, uint64_t GuestRIP,
-                        std::span<const uint8_t> GuestCode, const CPU::CPUBackend::CompiledCode& CompiledCode,
+  bool DiskCache::Store(Core::InternalThreadState* Thread, std::optional<ExecutableFileSectionInfo> Region, uint64_t GuestRIP,
+                        uint64_t GuestCodeKey, std::span<const uint8_t> GuestCode, const CPU::CPUBackend::CompiledCode& CompiledCode,
                         std::span<const FEXCore::CPU::Relocation> Relocations, const Frontend::Decoder::DecodedBlockInformation* DecodedBlockInfo) {
     if (!IsWritingDiskCache()) {
       return false;
@@ -572,20 +605,19 @@ namespace DiskCache {
     if (!DecodedBlockInfo) {
       return false;
     }
-
     // check for any reloc targets outside of our jurisdiction
     // todo what are they exactly? caching those blocks is great when it works, so need to figure this out and make finer-grained if we can
-    if (RelocationFilter) {
+    if (RelocationFilter && Region) {
       for (const auto& Reloc : Relocations) {
         if (Reloc.Header.Type != CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL && Reloc.Header.Type != CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE) {
           continue;
         }
         uint64_t Target = Reloc.GuestRIP.GuestRIP;
-        if (Target >= Region.BeginVA && Target < Region.EndVA) {
+        if (Target >= Region->BeginVA && Target < Region->EndVA) {
           continue;
         }
         auto TargetSection = CTX->SyscallHandler->LookupExecutableFileSection(Thread, Target);
-        if (!TargetSection || TargetSection->FileInfo.FileId != Region.FileInfo.FileId) {
+        if (!TargetSection || TargetSection->FileInfo.FileId != Region->FileInfo.FileId) {
           // we don't know where it's pointing, so we don't know how to encode the offset, so we can't cache atm
           return false;
         }
@@ -606,6 +638,9 @@ namespace DiskCache {
     uint64_t CurStartExtent = 0, CurEndExtent = 0;
     const Frontend::Decoder::DecodedBlocks* LastBlock = nullptr;
     for (auto& SubBlock : DecodedBlockInfo->Blocks) {
+      if (SubBlock.BlockStatus != Frontend::Decoder::DecodedBlockStatus::SUCCESS) {
+        return false;
+      }
       if (!CurStartExtent) {
         CurStartExtent = SubBlock.Entry;
         CurEndExtent = SubBlock.Entry + SubBlock.Size;
@@ -635,12 +670,10 @@ namespace DiskCache {
     // }
 
     const uint32_t EntryPointCount = (uint32_t)CompiledCode.EntryPoints.size();
-    const uint32_t TouchedGuestPagesCount = DecodedBlockInfo ? (uint32_t)DecodedBlockInfo->CodePages.size() : 0;
 
     const size_t HeaderOffset = 0;
     const size_t HostCodeOffset = HeaderOffset + sizeof(BlobFixedHeader);
-    const size_t TouchedGuestPagesOffset = HostCodeOffset + CompiledCode.Size;
-    const size_t EntryPointRIPsOffset = TouchedGuestPagesOffset + TouchedGuestPagesCount * sizeof(uint64_t);
+    const size_t EntryPointRIPsOffset = HostCodeOffset + CompiledCode.Size;
     const size_t EntryPointHostOffsetsOffset = EntryPointRIPsOffset + EntryPointCount * sizeof(uint64_t);
     const size_t SmallRelocsOffset = EntryPointHostOffsetsOffset + EntryPointCount * sizeof(uint32_t);
     const size_t ThunkRelocsOffset = SmallRelocsOffset + SmallRelocCount * sizeof(BlobSmallRelocation);
@@ -652,9 +685,7 @@ namespace DiskCache {
     Blob.resize(TotalSize);
     uint8_t* BlobData = Blob.data();
 
-    uint64_t ModuleOffset = GuestRIP - Region.FileStartVA;
-
-    uint64_t BlobKey = MakeBlobKey(ModuleOffset);
+    uint64_t BlobKey = MakeBlobKey(GuestCodeKey);
     MesaFOZ::foz_payload_key Key = {};
     fextl::string BlobName = fextl::fmt::format("{:016x}", BlobKey);
     memcpy(Key.bytes, BlobName.data(), BlobName.size());
@@ -665,7 +696,6 @@ namespace DiskCache {
       .EntryPointCount = EntryPointCount,
       .SmallRelocCount = SmallRelocCount,
       .ThunkRelocCount = ThunkRelocCount,
-      .TouchedGuestPagesCount = TouchedGuestPagesCount,
     };
 
     if (ExactGuestCodeExtents.size() == 0) {
@@ -680,13 +710,6 @@ namespace DiskCache {
     }
     memcpy(BlobData + HeaderOffset, &Header, sizeof(Header));
     memcpy(BlobData + HostCodeOffset, CompiledCode.BlockBegin, CompiledCode.Size);
-
-    // relocate touched pages relative to GuestRIP
-    auto* PageOffsets = reinterpret_cast<uint64_t*>(BlobData + TouchedGuestPagesOffset);
-    uint32_t PageIdx = 0;
-    for (auto GuestPage : DecodedBlockInfo->CodePages) {
-      PageOffsets[PageIdx++] = GuestPage - GuestRIP;
-    }
 
     // pack and relocate entrypoints
     auto* EntryRIPs = reinterpret_cast<uint64_t*>(BlobData + EntryPointRIPsOffset);
