@@ -9,7 +9,7 @@
       "FlagM",
       "FlagM2"
     ],
-    "BinaryCacheVersion": 5
+    "BinaryCacheVersion": 6
   },
   "Instructions": {
     "push es": {

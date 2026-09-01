@@ -8,7 +8,7 @@
       "RPRES",
       "AFP"
     ],
-    "BinaryCacheVersion": 5
+    "BinaryCacheVersion": 6
   },
   "Comment": [
     "Instructions that explicitly push against the limits of ARM's loadstore instructions"
