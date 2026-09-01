@@ -108,15 +108,11 @@ ExitFunctionSuspendPoint:
   Name:; \
     adrp x16, WineSyscallDispatcher; \
     ldr x16, [x16, HASH:lo12:WineSyscallDispatcher]; \
-    cbz x16, 1f; \
     mov x9, x30; \
     adrp x8, WineIdName; \
     ldr x8, [x8, HASH:lo12:WineIdName]; \
     blr x16; \
     ret; \
-  1:; \
-    svc HASH WindowsId; \
-    ret
 
   // Allows for continuing from a full native context, as the NTDLL NtContinue export takes in an x64 context with EC and
   // the conversion to that loses the ARM64EC ABI-disallowed registers that FEX uses.

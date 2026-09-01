@@ -808,63 +808,109 @@ uint32_t SyscallHandler::CalculateGuestKernelVersion() {
   return std::max(LinuxVersion::KernelVersion(5, 15), std::min(LinuxVersion::KernelVersion(6, 11), GetHostKernelVersion()));
 }
 
-uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) {
-  // Grab the return address which will be inside the JIT.
-  const uint64_t JITPC = reinterpret_cast<uint64_t>(__builtin_extract_return_addr(__builtin_return_address(0)));
+template<bool Is64Bit>
+void SyscallHandler::HandleSyscallImpl(FEXCore::Core::CpuStateFrame* Frame, uint64_t JITPC) {
+  auto SetResult = [](FEXCore::Core::CpuStateFrame* Frame, uint64_t Result) {
+    const auto Mask = Is64Bit ? ~0ULL : ~0U;
+    auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
 
-  const auto SeccompResult = SeccompEmulator.ExecuteFilter(Frame, JITPC, Args);
+    Thread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = Result & Mask;
+  };
 
-  if (SeccompResult.EarlyReturn) {
-    return SeccompResult.Result;
+  if (SeccompEmulator.HasFilter(Frame)) {
+    FEX::HLE::SyscallArguments Args {
+      .Argument =
+        {
+          GetArg(Is64Bit, Frame, 0),
+          GetArg(Is64Bit, Frame, 1),
+          GetArg(Is64Bit, Frame, 2),
+          GetArg(Is64Bit, Frame, 3),
+          GetArg(Is64Bit, Frame, 4),
+          GetArg(Is64Bit, Frame, 5),
+          GetArg(Is64Bit, Frame, 6),
+        },
+    };
+    const auto SeccompResult = SeccompEmulator.ExecuteFilter(Frame, JITPC, &Args);
+
+    if (SeccompResult.EarlyReturn) {
+      SetResult(Frame, SeccompResult.Result);
+      return;
+    }
   }
 
-  if (Args->Argument[0] >= Definitions.size()) {
-    return -ENOSYS;
+  const auto SyscallNum = GetArg(Is64Bit, Frame, 0);
+  if (SyscallNum >= Definitions.size()) {
+    SetResult(Frame, -ENOSYS);
+    return;
   }
 
-  auto& Def = Definitions[Args->Argument[0]];
+  auto& Def = Definitions[SyscallNum];
   uint64_t Result {};
   switch (Def.NumArgs) {
   case 0: Result = std::invoke(Def.Ptr0, Frame); break;
-  case 1: Result = std::invoke(Def.Ptr1, Frame, Args->Argument[1]); break;
-  case 2: Result = std::invoke(Def.Ptr2, Frame, Args->Argument[1], Args->Argument[2]); break;
-  case 3: Result = std::invoke(Def.Ptr3, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3]); break;
-  case 4: Result = std::invoke(Def.Ptr4, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4]); break;
+  case 1: Result = std::invoke(Def.Ptr1, Frame, GetArg(Is64Bit, Frame, 1)); break;
+  case 2: Result = std::invoke(Def.Ptr2, Frame, GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2)); break;
+  case 3: Result = std::invoke(Def.Ptr3, Frame, GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), GetArg(Is64Bit, Frame, 3)); break;
+  case 4:
+    Result =
+      std::invoke(Def.Ptr4, Frame, GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), GetArg(Is64Bit, Frame, 3), GetArg(Is64Bit, Frame, 4));
+    break;
   case 5:
-    Result = std::invoke(Def.Ptr5, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5]);
+    Result = std::invoke(Def.Ptr5, Frame, GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), GetArg(Is64Bit, Frame, 3),
+                         GetArg(Is64Bit, Frame, 4), GetArg(Is64Bit, Frame, 5));
     break;
   case 6:
-    Result = std::invoke(Def.Ptr6, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5],
-                         Args->Argument[6]);
+    Result = std::invoke(Def.Ptr6, Frame, GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), GetArg(Is64Bit, Frame, 3),
+                         GetArg(Is64Bit, Frame, 4), GetArg(Is64Bit, Frame, 5), GetArg(Is64Bit, Frame, 6));
     break;
   // for missing syscalls
-  case 255: return std::invoke(Def.Ptr1, Frame, Args->Argument[0]);
+  case 255: Result = std::invoke(Def.Ptr1, Frame, GetArg(Is64Bit, Frame, 0)); break;
   default:
-    LOGMAN_MSG_A_FMT("Unhandled syscall: {}", Args->Argument[0]);
-    return -1;
+    LOGMAN_MSG_A_FMT("Unhandled syscall: {}", GetArg(Is64Bit, Frame, 0));
+    Result = -ENOSYS;
     break;
   }
 #ifdef DEBUG_STRACE
-  Strace(Args, Result);
+  Strace(Frame, Result);
 #endif
-  return Result;
+  SetResult(Frame, Result);
+}
+
+void SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) {
+  // Grab the return address which will be inside the JIT.
+  const uint64_t JITPC = reinterpret_cast<uint64_t>(__builtin_extract_return_addr(__builtin_return_address(0)));
+  const auto Is64Bit = Is64BitMode();
+
+  // TODO: At some point these will be runtime selectable based on `syscall` versus `int 0x80` entrypoint.
+  if (Is64Bit) {
+    HandleSyscallImpl<true>(Frame, JITPC);
+  } else {
+    HandleSyscallImpl<false>(Frame, JITPC);
+  }
 }
 
 #ifdef DEBUG_STRACE
-void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments* Args, uint64_t Ret) {
-  auto& Def = Definitions[Args->Argument[0]];
+void SyscallHandler::Strace(FEXCore::Core::CpuStateFrame* Frame, uint64_t Ret) {
+  const auto Is64Bit = Is64BitMode();
+  auto& Def = Definitions[GetArg(Is64Bit, Frame, 0)];
   switch (Def.NumArgs) {
   case 0: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Ret); break;
-  case 1: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Ret); break;
-  case 2: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Ret); break;
-  case 3: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret); break;
-  case 4: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret); break;
+  case 1: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), GetArg(Is64Bit, Frame, 1), Ret); break;
+  case 2: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), Ret); break;
+  case 3:
+    LogMan::Msg::DFmt(Def.StraceFmt.c_str(), GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), GetArg(Is64Bit, Frame, 3), Ret);
+    break;
+  case 4:
+    LogMan::Msg::DFmt(Def.StraceFmt.c_str(), GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), GetArg(Is64Bit, Frame, 3),
+                      GetArg(Is64Bit, Frame, 4), Ret);
+    break;
   case 5:
-    LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Ret);
+    LogMan::Msg::DFmt(Def.StraceFmt.c_str(), GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), GetArg(Is64Bit, Frame, 3),
+                      GetArg(Is64Bit, Frame, 4), GetArg(Is64Bit, Frame, 5), Ret);
     break;
   case 6:
-    LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5],
-                      Args->Argument[6], Ret);
+    LogMan::Msg::DFmt(Def.StraceFmt.c_str(), GetArg(Is64Bit, Frame, 1), GetArg(Is64Bit, Frame, 2), GetArg(Is64Bit, Frame, 3),
+                      GetArg(Is64Bit, Frame, 4), GetArg(Is64Bit, Frame, 5), GetArg(Is64Bit, Frame, 6), Ret);
     break;
   default: break;
   }

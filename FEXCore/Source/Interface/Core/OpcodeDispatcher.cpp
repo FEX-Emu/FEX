@@ -36,48 +36,12 @@ using X86Tables::OpToIndex;
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
 void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
-  constexpr size_t SyscallArgs = 7;
-  using SyscallArray = std::array<uint64_t, SyscallArgs>;
-
-  size_t NumArguments {};
-  const SyscallArray* GPRIndexes {};
-  static constexpr SyscallArray GPRIndexes_64 = {
-    FEXCore::X86State::REG_RAX, FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_RDX,
-    FEXCore::X86State::REG_R10, FEXCore::X86State::REG_R8,  FEXCore::X86State::REG_R9,
-  };
-  static constexpr SyscallArray GPRIndexes_32 = {
-    FEXCore::X86State::REG_RAX, FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RCX, FEXCore::X86State::REG_RDX,
-    FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_RBP,
-  };
-
-  const auto OSABI = CTX->SyscallHandler->GetOSABI();
-  if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX64) {
-    NumArguments = GPRIndexes_64.size();
-    GPRIndexes = &GPRIndexes_64;
-  } else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX32) {
-    NumArguments = GPRIndexes_32.size();
-    GPRIndexes = &GPRIndexes_32;
-  } else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_GENERIC) {
-    // All registers will be spilled before the syscall and filled afterwards so no JIT-side argument handling is necessary.
-    NumArguments = 0;
-    GPRIndexes = nullptr;
-  } else {
-    ERROR_AND_DIE_FMT("Unhandled OSABI syscall");
-  }
-
   // Calculate flags early.
   CalculateDeferredFlags();
 
   const auto GPRSize = GetGPROpSize();
   auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
   _StoreContextGPR(GPRSize, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
-
-  Ref Arguments[SyscallArgs] {
-    InvalidNode, InvalidNode, InvalidNode, InvalidNode, InvalidNode, InvalidNode, InvalidNode,
-  };
-  for (size_t i = 0; i < NumArguments; ++i) {
-    Arguments[i] = LoadGPRRegister(GPRIndexes->at(i));
-  }
 
   if (IsSyscallInst) {
     // If this is the `Syscall` instruction rather than `int 0x80` then we need to do some additional work.
@@ -94,12 +58,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
   }
 
   FlushRegisterCache();
-  auto SyscallOp = _Syscall(Arguments[0], Arguments[1], Arguments[2], Arguments[3], Arguments[4], Arguments[5], Arguments[6]);
-
-  // Generic ABI doesn't store result in RAX.
-  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_GENERIC) {
-    StoreGPRRegister(X86State::REG_RAX, SyscallOp);
-  }
+  _Syscall();
 
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_BLOCK_END) {
     // RIP could have been updated after coming back from the Syscall.
@@ -5051,11 +5010,6 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RDPIDOp(OpcodeArgs) {
-  if (CTX->HostFeatures.HostType != FEXCore::HostFeatures::HostTypeEnum::Linux && !CTX->HostFeatures.SupportsCPUIndexInTPIDRRO) {
-    // RDTSCP is unsupported on Win32 platforms if TPIDRRO isn't supported.
-    UnimplementedOp(Op);
-    return;
-  }
   StoreResultGPR(Op, _ProcessorID());
 }
 

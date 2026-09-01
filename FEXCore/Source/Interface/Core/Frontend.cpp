@@ -69,7 +69,6 @@ static uint32_t MapVEXToReg(uint8_t vvvv, bool HasXMM) {
 Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
   : Thread {Thread}
   , CTX {static_cast<FEXCore::Context::ContextImpl*>(Thread->CTX)}
-  , OSABI {CTX->SyscallHandler ? CTX->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN}
   , PoolObject {CTX->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {
 
   FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
@@ -1358,7 +1357,8 @@ const Decoder::DecodeStream Decoder::AdjustAddrForSpecialRegion(const uint8_t* _
   constexpr uint64_t VSyscall_Base = 0xFFFF'FFFF'FF60'0000ULL;
   constexpr uint64_t VSyscall_End = VSyscall_Base + 0x1000;
 
-  if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX64 && RIP >= VSyscall_Base && RIP < VSyscall_End) {
+  if (BlockInfo.Is64BitMode && CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Linux && RIP >= VSyscall_Base &&
+      RIP < VSyscall_End) {
     // VSyscall
     // This doesn't exist on AArch64 and on x86_64 hosts this is emulated with faults to a region mapped with --xp permissions
     // Offset     0: vgettimeofday

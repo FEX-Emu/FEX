@@ -9,6 +9,7 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
+#include "LinuxSyscalls/ThreadManager.h"
 
 #include <atomic>
 #include <csignal>
@@ -20,23 +21,16 @@ struct sock_fprog;
 struct seccomp_data;
 struct seccomp_notif_sizes;
 
-namespace FEXCore {
-
-namespace Core {
-  struct CpuStateFrame;
-}
-
-namespace HLE {
-  struct SyscallArguments;
-}
-
-} // namespace FEXCore
+namespace FEXCore::Core {
+struct CpuStateFrame;
+} // namespace FEXCore::Core
 
 namespace FEX::HLE {
 
 class SignalDelegator;
 class SyscallHandler;
 struct ThreadStateObject;
+struct SyscallArguments;
 
 using SeccompFilterFunc = uint64_t (*)(uint32_t Acc, uint32_t Index, uint32_t Tmp, uint32_t Tmp2, void* Data);
 struct SeccompFilterInfo final {
@@ -65,7 +59,13 @@ public:
     bool EarlyReturn {};
     uint64_t Result;
   };
-  ExecuteFilterResult ExecuteFilter(FEXCore::Core::CpuStateFrame* Frame, uint64_t JITPC, FEXCore::HLE::SyscallArguments* Args);
+  ExecuteFilterResult ExecuteFilter(FEXCore::Core::CpuStateFrame* Frame, uint64_t JITPC, FEX::HLE::SyscallArguments* Args);
+
+  bool HasFilter(FEXCore::Core::CpuStateFrame* Frame) const {
+    auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+    return !Thread->Filters.empty();
+  }
+
   int GetKillSignal() const {
     return CurrentKillSignal;
   }

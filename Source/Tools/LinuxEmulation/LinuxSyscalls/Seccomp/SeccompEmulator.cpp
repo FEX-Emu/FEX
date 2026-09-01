@@ -316,15 +316,13 @@ void SeccompEmulator::DeserializeFilters(FEXCore::Core::CpuStateFrame* Frame, in
 }
 
 SeccompEmulator::ExecuteFilterResult
-SeccompEmulator::ExecuteFilter(FEXCore::Core::CpuStateFrame* Frame, uint64_t JITPC, FEXCore::HLE::SyscallArguments* Args) {
-  auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
-
-  if (Thread->Filters.empty()) {
+SeccompEmulator::ExecuteFilter(FEXCore::Core::CpuStateFrame* Frame, uint64_t JITPC, FEX::HLE::SyscallArguments* Args) {
+  if (!HasFilter(Frame)) {
     // Seccomp not installed. Allow it.
     return {false, 0};
   }
-
   // Reconstruct the RIP from the JITPC.
+  auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
   const uint64_t RIP = Thread->Thread->CTX->RestoreRIPFromHostPC(Frame->Thread, JITPC);
 
   const auto Arch = Is64BitMode() ? AUDIT_ARCH_X86_64 : AUDIT_ARCH_I386;

@@ -29,7 +29,6 @@ x32SyscallHandler::x32SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::S
                                      FEX::HLE::ThunkHandler* ThunkHandler, fextl::unique_ptr<MemAllocator> Allocator)
   : SyscallHandler {ctx, _SignalDelegation, ThunkHandler}
   , AllocHandler {std::move(Allocator)} {
-  OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX32;
   RegisterSyscallHandlers();
 }
 

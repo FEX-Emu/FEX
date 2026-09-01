@@ -326,11 +326,10 @@
       "CallbackReturn": {
         "HasSideEffects": true
       },
-      "GPR = Syscall GPR:$SyscallID, GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5": {
+      "Syscall": {
         "HasSideEffects": true,
         "Desc": ["Dispatches a guest syscall through to the SyscallHandler class"
-                ],
-        "DestSize": "OpSize::i64Bit"
+                ]
       },
 
       "Thunk GPR:$ArgPtr, SHA256Sum:$ThunkNameHash": {
