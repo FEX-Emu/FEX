@@ -479,13 +479,9 @@ private:
 
 class SimpleSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
-  SimpleSyscallHandler() {
-    // Just claim to be linux 64-bit for simplicity.
-    OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX64;
-  }
-  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+  SimpleSyscallHandler() = default;
+  void HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) override {
     // Don't do anything
-    return 0;
   }
 
   // These are no-ops implementations of the SyscallHandler API

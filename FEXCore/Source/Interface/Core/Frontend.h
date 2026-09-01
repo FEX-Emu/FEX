@@ -19,9 +19,6 @@
 namespace FEXCore::Context {
 class ContextImpl;
 }
-namespace FEXCore::HLE {
-enum class SyscallOSABI;
-}
 
 namespace FEXCore::Frontend {
 class Decoder final {
@@ -89,7 +86,6 @@ private:
 
   FEXCore::Core::InternalThreadState* Thread;
   FEXCore::Context::ContextImpl* CTX;
-  const FEXCore::HLE::SyscallOSABI OSABI {};
 
   FEX_CONFIG_OPT(EnableCodeCacheValidation, ENABLECODECACHEVALIDATION);
 

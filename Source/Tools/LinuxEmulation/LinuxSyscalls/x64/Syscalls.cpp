@@ -15,8 +15,6 @@ namespace FEX::HLE::x64 {
 
 x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler)
   : SyscallHandler {ctx, _SignalDelegation, ThunkHandler} {
-  OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX64;
-
   RegisterSyscallHandlers();
 }
 

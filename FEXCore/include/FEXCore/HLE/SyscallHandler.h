@@ -17,29 +17,6 @@ struct CpuStateFrame;
 } // namespace FEXCore::Core
 
 namespace FEXCore::HLE {
-struct SyscallArguments {
-  static constexpr std::size_t MAX_ARGS = 7;
-  uint64_t Argument[MAX_ARGS];
-};
-
-struct SyscallABI {
-  // Expectation is that the backend will be aware of how to modify the arguments based on numbering
-  // Only GPRs expected
-  uint8_t NumArgs;
-  // If the syscall has a return then it should be stored in the ABI specific syscall register
-  // Linux = RAX
-  bool HasReturn;
-
-  int32_t HostSyscallNumber;
-};
-
-enum class SyscallOSABI {
-  OS_UNKNOWN,
-  OS_LINUX64,
-  OS_LINUX32,
-  OS_GENERIC, // No JIT-side argument handling, spill/fill all regs.
-};
-
 struct ExecutableRangeInfo {
   uint64_t Base;
   uint64_t Size;
@@ -53,11 +30,8 @@ class SyscallHandler {
 public:
   virtual ~SyscallHandler() = default;
 
-  virtual uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) = 0;
+  virtual void HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) = 0;
 
-  SyscallOSABI GetOSABI() const {
-    return OSABI;
-  }
   virtual void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {}
   virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {}
   virtual void MarkOvercommitRange(uint64_t Start, uint64_t Length) {}
@@ -72,8 +46,5 @@ public:
   }
 
   virtual void SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {}
-
-protected:
-  SyscallOSABI OSABI;
 };
 } // namespace FEXCore::HLE

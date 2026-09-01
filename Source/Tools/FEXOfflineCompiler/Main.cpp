@@ -65,14 +65,11 @@ class AOTSyscallHandler : public FEXCore::HLE::SyscallHandler {
 class AOTSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEX::HLE::SyscallMmapInterface {
 #endif
 public:
-  AOTSyscallHandler(FEXCore::Context::Context& CTX, FEXCore::HLE::SyscallOSABI SyscallOSABI)
-    : CTX(CTX) {
-    OSABI = SyscallOSABI;
-  }
+  AOTSyscallHandler(FEXCore::Context::Context& CTX)
+    : CTX(CTX) {}
 
-  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+  void HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) override {
     // Don't do anything
-    return 0;
   }
 
   FEXCore::Context::Context& CTX;
@@ -427,8 +424,7 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
 #ifdef _WIN32
   OvercommitTracker = std::make_unique<FEX::Windows::OvercommitTracker>(IsWine);
 
-  auto SyscallOSABI = FEXCore::HLE::SyscallOSABI::OS_GENERIC;
-  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(*CTX, SyscallOSABI);
+  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(*CTX);
 
   SyscallHandler->VAFileStart =
     TryMapImage(SyscallHandler->InvalidationTracker, SyscallHandler->ImageTracker, Binary.FileId, Binary).value_or(0);
@@ -441,8 +437,7 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
 #else
   Loader.CalculateHWCaps(CTX.get());
 
-  auto SyscallOSABI = Is64Bit ? FEXCore::HLE::SyscallOSABI::OS_LINUX64 : FEXCore::HLE::SyscallOSABI::OS_LINUX32;
-  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(*CTX, SyscallOSABI);
+  auto SyscallHandler = std::make_unique<AOTSyscallHandler>(*CTX);
 
   // Populate relocations from ELF file
   {

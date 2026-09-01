@@ -277,11 +277,9 @@ DEF_OP(CondJump) {
 }
 
 DEF_OP(Syscall) {
-  auto Op = IROp->C<IR::IROp_Syscall>();
   // Arguments are passed as follows:
   // X0: SyscallHandler
   // X1: ThreadState
-  // X2: Pointer to SyscallArguments
 
   PushDynamicRegs(TMP1);
 
@@ -300,31 +298,18 @@ DEF_OP(Syscall) {
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GPRSpillMask & 0xFFFF);
   str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
-  uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
-  sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
-  for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++i) {
-    if (Op->Header.Args[i].IsInvalid()) {
-      continue;
-    }
-    str(GetReg(Op->Header.Args[i]).X(), ARMEmitter::Reg::rsp, i * 8);
-  }
-
   ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.SyscallHandlerObj));
   ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.SyscallHandlerFunc));
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, STATE.R());
 
-  // SP supporting move
-  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::rsp, 0);
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
     GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(ARMEmitter::Reg::r3);
   } else {
     blr(ARMEmitter::Reg::r3);
   }
 
-  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
-
-  // Result is now in x0
   // Fix the stack and any values that were stepped on
+  // Syscall result is in any static register that the frontend desired.
   FillStaticRegs({
     .OptionalReg = ARMEmitter::Reg::r1,
     .OptionalReg2 = ARMEmitter::Reg::r2,
@@ -337,14 +322,6 @@ DEF_OP(Syscall) {
   str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
   PopDynamicRegs();
-
-  const auto OSABI = CTX->SyscallHandler->GetOSABI();
-
-  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_GENERIC) {
-    // Move result to its destination register.
-    // Only if `NORETURNEDRESULT` wasn't set, otherwise we might overwrite the CPUState refilled with `FillStaticRegs`
-    mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
-  }
 }
 
 DEF_OP(Thunk) {

@@ -11,9 +11,8 @@ namespace FEX::DummyHandlers {
 
 class DummySyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
-  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+  void HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) override {
     // Don't do anything
-    return 0;
   }
 
   // These are no-ops implementations of the SyscallHandler API

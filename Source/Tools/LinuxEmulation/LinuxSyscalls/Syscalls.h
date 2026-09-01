@@ -69,6 +69,10 @@ namespace Core {
 } // namespace FEXCore
 
 namespace FEX::HLE {
+struct SyscallArguments {
+  static constexpr std::size_t MAX_ARGS = 7;
+  uint64_t Argument[MAX_ARGS];
+};
 
 class SyscallHandler;
 class SignalDelegator;
@@ -124,8 +128,7 @@ public:
 
   virtual ~SyscallHandler();
 
-  // In the case that the syscall doesn't hit the optimized path then we still need to go here
-  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) final override;
+  void HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) final override;
 
   void DefaultProgramBreak(uint64_t Base, uint64_t Size);
   void DeserializeSeccompFD(FEX::HLE::ThreadStateObject* Thread, int FD) {
@@ -362,12 +365,36 @@ private:
   bool NeedToCheckXID {true};
 
 #ifdef DEBUG_STRACE
-  void Strace(FEXCore::HLE::SyscallArguments* Args, uint64_t Ret);
+  void Strace(FEXCore::Core::CpuStateFrame* Frame, uint64_t Ret);
 #endif
   fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> GenerateMap(std::string_view GuestBinaryFile, std::string_view GuestBinaryFileId) override;
 
   fextl::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler {};
   std::atomic<uint64_t> AnonSharedId {1};
+
+  static inline uint64_t GetArg(bool Is64Bit, FEXCore::Core::CpuStateFrame* Frame, size_t Arg) {
+    constexpr size_t SyscallArgs = 7;
+    using SyscallArray = std::array<uint64_t, SyscallArgs>;
+
+    static constexpr SyscallArray GPRIndexes_64 = {
+      FEXCore::X86State::REG_RAX, FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_RDX,
+      FEXCore::X86State::REG_R10, FEXCore::X86State::REG_R8,  FEXCore::X86State::REG_R9,
+    };
+
+    static constexpr SyscallArray GPRIndexes_32 = {
+      FEXCore::X86State::REG_RAX, FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RCX, FEXCore::X86State::REG_RDX,
+      FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_RBP,
+    };
+
+    const auto Index = Is64Bit ? GPRIndexes_64[Arg] : GPRIndexes_32[Arg];
+    const auto Mask = Is64Bit ? ~0ULL : ~0U;
+    const auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+
+    return Thread->Thread->CurrentFrame->State.gregs[Index] & Mask;
+  };
+
+  template<bool Is64Bit>
+  void HandleSyscallImpl(FEXCore::Core::CpuStateFrame* Frame, uint64_t JITPC);
 };
 
 #define SYSCALL_ERRNO()              \

@@ -10,7 +10,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 4
+    "BinaryCacheVersion": 5
   },
   "Instructions": {
     "add al, 1": {

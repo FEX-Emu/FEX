@@ -513,11 +513,9 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
 
 class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
-  ECSyscallHandler() {
-    OSABI = FEXCore::HLE::SyscallOSABI::OS_GENERIC;
-  }
+  ECSyscallHandler() = default;
 
-  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+  void HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) override {
     ProcessPendingCrossProcessEmulatorWork();
 
     // Manually raise an exeption with the current JIT state packed into a native context, ntdll handles this and

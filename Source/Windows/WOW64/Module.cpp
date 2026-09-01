@@ -417,6 +417,20 @@ bool HandleSuspendInterrupt(TLS TLS, CONTEXT* Context, uint64_t FaultAddress) {
 }
 } // namespace Context
 
+// Calls a 1-argument function `Func` setting the parent unwind frame information to the given SP and PC
+__attribute__((naked)) extern "C" uint64_t SEHFrameTrampoline1Args(void* Arg0, void* Func, uint64_t Sp, uint64_t Pc) {
+  asm(".seh_proc SEHFrameTrampoline1Args;"
+      "stp x2, x3, [sp, #-0x10]!;"
+      ".seh_pushframe;"
+      "stp x29, x30, [sp, #-0x10]!;"
+      ".seh_save_fplr_x 16;"
+      ".seh_endprologue;"
+      "blr x1;"
+      "ldp x29, x30, [sp], 0x20;"
+      "ret;"
+      ".seh_endproc;");
+}
+
 // Calls a 2-argument function `Func` setting the parent unwind frame information to the given SP and PC
 __attribute__((naked)) extern "C" uint64_t SEHFrameTrampoline2Args(void* Arg0, void* Arg1, void* Func, uint64_t Sp, uint64_t Pc) {
   asm(".seh_proc SEHFrameTrampoline2Args;"
@@ -433,11 +447,9 @@ __attribute__((naked)) extern "C" uint64_t SEHFrameTrampoline2Args(void* Arg0, v
 
 class WowSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
-  WowSyscallHandler() {
-    OSABI = FEXCore::HLE::SyscallOSABI::OS_GENERIC;
-  }
+  WowSyscallHandler() = default;
 
-  static uint64_t HandleSyscallImpl(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) {
+  static void HandleSyscallImpl(FEXCore::Core::CpuStateFrame* Frame) {
     const uint64_t ReturnRIP = *(uint32_t*)(Frame->State.gregs[FEXCore::X86State::REG_RSP]); // Return address from the stack
     uint64_t ReturnRSP = Frame->State.gregs[FEXCore::X86State::REG_RSP] + 4;                 // Stack pointer after popping return address
     uint64_t ReturnRAX = 0;
@@ -470,20 +482,16 @@ public:
       Context::LockJITContext(TLS);
       Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
     }
-
-    // NORETURNEDRESULT causes this result to be ignored since we restore all registers back from memory after a syscall anyway
-    return 0;
   }
 
-  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+  void HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) override {
     const auto TLS = GetTLS();
     // Stash the the context pointer on the stack, as Simulate can be called from this syscall handler which would overwrite it
     CONTEXT* EntryContext = TLS.EntryContext();
     // Call the syscall handler with unwind information pointing to Simulate as its caller
-    uint64_t Ret = SEHFrameTrampoline2Args(reinterpret_cast<void*>(Frame), reinterpret_cast<void*>(Args),
-                                           reinterpret_cast<void*>(&HandleSyscallImpl), EntryContext->Sp, EntryContext->Pc);
+    uint64_t Ret =
+      SEHFrameTrampoline1Args(reinterpret_cast<void*>(Frame), reinterpret_cast<void*>(&HandleSyscallImpl), EntryContext->Sp, EntryContext->Pc);
     TLS.EntryContext() = EntryContext;
-    return Ret;
   }
 
   std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState*, uint64_t Address) override {
