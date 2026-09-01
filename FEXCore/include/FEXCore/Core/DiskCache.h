@@ -52,11 +52,13 @@ namespace DiskCache {
     uint32_t Size;
     uint32_t GuestSize;
     XXH128_hash_t GuestHash;
+    fextl::vector<uint32_t> GuestExtents;
   };
 
-  struct __attribute__((packed)) IndexExtraBlob {
+  struct __attribute__((packed)) IndexExtraBlobHeader {
     XXH128_hash_t GuestHash;
     uint32_t GuestSize;
+    uint32_t GuestExtentsCount;
   };
 
   struct __attribute__((packed)) BlobFixedHeader {
@@ -150,7 +152,7 @@ namespace DiskCache {
     void PopulateIndex(Index& CacheIndex, bool& FoundMetadata);
     bool ReadCacheBlob(uint64_t Offset, std::span<uint8_t> OutBlob);
     bool StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const uint8_t> Blob, Index& CacheIndex, std::mutex& IndexMutex,
-                        IndexExtraBlob IndexBlob);
+                        std::span<const uint8_t> IndexBlob);
 
   private:
     // stores run on the Writer, so returning quick isn't as important
@@ -205,7 +207,7 @@ namespace DiskCache {
 
   // TODO: This header is in global installed header path, but uses internal headers.
   // Migrate this once that is fixed.
-  static constexpr uint16_t FormatVersion = 5;
+  static constexpr uint16_t FormatVersion = 6;
   FEX_DEFAULT_VISIBILITY uint16_t GetFormatVersion();
 
 } // namespace DiskCache
