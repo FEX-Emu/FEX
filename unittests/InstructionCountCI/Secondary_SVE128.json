@@ -8,7 +8,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 4
+    "BinaryCacheVersion": 5
   },
   "Instructions": {
     "movmskps eax, xmm0": {
