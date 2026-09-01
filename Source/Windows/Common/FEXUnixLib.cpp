@@ -20,7 +20,6 @@
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 
 namespace FEX::Windows::UnixLib {
-static bool UsingNTQueryPath {};
 static bool SupportsVirtualName {true};
 unixlib_handle_t UnixLibHandle {};
 
