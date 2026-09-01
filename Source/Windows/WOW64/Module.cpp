@@ -489,8 +489,7 @@ public:
     // Stash the the context pointer on the stack, as Simulate can be called from this syscall handler which would overwrite it
     CONTEXT* EntryContext = TLS.EntryContext();
     // Call the syscall handler with unwind information pointing to Simulate as its caller
-    uint64_t Ret =
-      SEHFrameTrampoline1Args(reinterpret_cast<void*>(Frame), reinterpret_cast<void*>(&HandleSyscallImpl), EntryContext->Sp, EntryContext->Pc);
+    SEHFrameTrampoline1Args(reinterpret_cast<void*>(Frame), reinterpret_cast<void*>(&HandleSyscallImpl), EntryContext->Sp, EntryContext->Pc);
     TLS.EntryContext() = EntryContext;
   }
 
