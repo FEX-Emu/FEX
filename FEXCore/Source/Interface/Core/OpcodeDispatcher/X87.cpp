@@ -727,6 +727,9 @@ void OpDispatchBuilder::X87ModifySTP(OpcodeArgs, bool Inc) {
   } else {
     _DecStackTop();
   }
+
+  // C1 set to 0
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
 }
 
 // Operations dealing with loading and storing environment pieces
