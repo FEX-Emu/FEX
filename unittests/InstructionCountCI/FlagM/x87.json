@@ -11,7 +11,7 @@
       "CSSC",
       "AFP"
     ],
-    "BinaryCacheVersion": 6
+    "BinaryCacheVersion": 7
   },
   "Instructions": {
     "fadd dword [rax]": {
@@ -71,7 +71,7 @@
       ]
     },
     "fcom dword [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xd8 !11b /2"
       ],
@@ -104,11 +104,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomp dword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 39,
       "Comment": [
         "0xd8 !11b /3"
       ],
@@ -141,6 +143,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -641,7 +645,7 @@
       ]
     },
     "fcom st0, st0": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xd8 11b 0xd0 /2"
       ],
@@ -666,11 +670,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcom st0, st1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xd8 11b 0xd1 /2"
       ],
@@ -699,11 +705,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcom st0, st2": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xd8 11b 0xd2 /2"
       ],
@@ -732,11 +740,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcom st0, st3": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xd8 11b 0xd3 /2"
       ],
@@ -765,11 +775,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcom st0, st4": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xd8 11b 0xd4 /2"
       ],
@@ -798,11 +810,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcom st0, st5": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xd8 11b 0xd5 /2"
       ],
@@ -831,11 +845,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcom st0, st6": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xd8 11b 0xd6 /2"
       ],
@@ -864,11 +880,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcom st0, st7": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xd8 11b 0xd7 /2"
       ],
@@ -897,11 +915,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomp st0, st0": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xd8 11b 0xd8 /3"
       ],
@@ -926,6 +946,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -938,7 +960,7 @@
       ]
     },
     "fcomp st0, st1": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 33,
       "Comment": [
         "0xd8 11b 0xd9 /3"
       ],
@@ -967,6 +989,8 @@
         "strb wzr, [x28, #1049]",
         "strb w22, [x28, #1050]",
         "strb w24, [x28, #1054]",
+        "ldrb w23, [x28, #1040]",
+        "orr w22, w23, w22",
         "strb w22, [x28, #1040]",
         "strb w21, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
@@ -977,7 +1001,7 @@
       ]
     },
     "fcomp st0, st2": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xd8 11b 0xda /3"
       ],
@@ -1006,6 +1030,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -1018,7 +1044,7 @@
       ]
     },
     "fcomp st0, st3": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xd8 11b 0xdb /3"
       ],
@@ -1047,6 +1073,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -1059,7 +1087,7 @@
       ]
     },
     "fcomp st0, st4": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xd8 11b 0xdc /3"
       ],
@@ -1088,6 +1116,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -1100,7 +1130,7 @@
       ]
     },
     "fcomp st0, st5": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xd8 11b 0xdd /3"
       ],
@@ -1129,6 +1159,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -1141,7 +1173,7 @@
       ]
     },
     "fcomp st0, st6": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xd8 11b 0xde /3"
       ],
@@ -1170,6 +1202,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -1182,7 +1216,7 @@
       ]
     },
     "fcomp st0, st7": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xd8 11b 0xdf /3"
       ],
@@ -1211,6 +1245,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -2489,7 +2525,7 @@
       ]
     },
     "ftst": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 25,
       "Comment": [
         "0xd9 11b 0xe4 /4"
       ],
@@ -2516,6 +2552,8 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
@@ -3110,7 +3148,7 @@
       ]
     },
     "ficom dword [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xda !11b /2"
       ],
@@ -3143,11 +3181,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "ficomp dword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 39,
       "Comment": [
         "0xda !11b /3"
       ],
@@ -3180,6 +3220,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -3920,7 +3962,7 @@
       ]
     },
     "fucompp": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 37,
       "Comment": [
         "0xda 11b 0xe9 /5"
       ],
@@ -3949,6 +3991,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -4763,7 +4807,7 @@
       ]
     },
     "fucomi st0, st0": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 26,
       "Comment": [
         "0xdb 11b 0xe8 /5"
       ],
@@ -4791,11 +4835,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucomi st0, st1": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xe9 /5"
       ],
@@ -4827,11 +4873,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucomi st0, st2": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xea /5"
       ],
@@ -4863,11 +4911,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucomi st0, st3": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xeb /5"
       ],
@@ -4899,11 +4949,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucomi st0, st4": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xec /5"
       ],
@@ -4935,11 +4987,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucomi st0, st5": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xed /5"
       ],
@@ -4971,11 +5025,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucomi st0, st6": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xee /5"
       ],
@@ -5007,11 +5063,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucomi st0, st7": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xef /5"
       ],
@@ -5043,11 +5101,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomi st0, st0": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 26,
       "Comment": [
         "0xdb 11b 0xf0 /6"
       ],
@@ -5075,11 +5135,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomi st0, st1": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf1 /6"
       ],
@@ -5111,11 +5173,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomi st0, st2": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf2 /6"
       ],
@@ -5147,11 +5211,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomi st0, st3": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf3 /6"
       ],
@@ -5183,11 +5249,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomi st0, st4": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf4 /6"
       ],
@@ -5219,11 +5287,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomi st0, st5": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf5 /6"
       ],
@@ -5255,11 +5325,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomi st0, st6": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf6 /6"
       ],
@@ -5291,11 +5363,13 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomi st0, st7": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb 11b 0xf7 /6"
       ],
@@ -5327,6 +5401,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
@@ -5387,7 +5463,7 @@
       ]
     },
     "fcom qword [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xdc !11b /2"
       ],
@@ -5420,11 +5496,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fcomp qword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 39,
       "Comment": [
         "0xdc !11b /3"
       ],
@@ -5457,6 +5535,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -7574,7 +7654,7 @@
       ]
     },
     "fucom st0": {
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xdd 11b 0xe0 /4"
       ],
@@ -7599,11 +7679,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucom st1": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xdd 11b 0xe1 /4"
       ],
@@ -7632,11 +7714,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucom st2": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xdd 11b 0xe2 /4"
       ],
@@ -7665,11 +7749,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucom st3": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xdd 11b 0xe3 /4"
       ],
@@ -7698,11 +7784,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucom st4": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xdd 11b 0xe4 /4"
       ],
@@ -7731,11 +7819,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucom st5": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xdd 11b 0xe5 /4"
       ],
@@ -7764,11 +7854,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucom st6": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xdd 11b 0xe6 /4"
       ],
@@ -7797,11 +7889,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucom st7": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xdd 11b 0xe7 /4"
       ],
@@ -7830,11 +7924,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "fucomp st0": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xdd 11b 0xe8 /5"
       ],
@@ -7859,6 +7955,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -7871,7 +7969,7 @@
       ]
     },
     "fucomp st1": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 33,
       "Comment": [
         "0xdd 11b 0xe9 /5"
       ],
@@ -7900,6 +7998,8 @@
         "strb wzr, [x28, #1049]",
         "strb w22, [x28, #1050]",
         "strb w24, [x28, #1054]",
+        "ldrb w23, [x28, #1040]",
+        "orr w22, w23, w22",
         "strb w22, [x28, #1040]",
         "strb w21, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
@@ -7910,7 +8010,7 @@
       ]
     },
     "fucomp st2": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xdd 11b 0xea /5"
       ],
@@ -7939,6 +8039,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -7951,7 +8053,7 @@
       ]
     },
     "fucomp st3": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xdd 11b 0xeb /5"
       ],
@@ -7980,6 +8082,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -7992,7 +8096,7 @@
       ]
     },
     "fucomp st4": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xdd 11b 0xec /5"
       ],
@@ -8021,6 +8125,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -8033,7 +8139,7 @@
       ]
     },
     "fucomp st5": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xdd 11b 0xed /5"
       ],
@@ -8062,6 +8168,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -8074,7 +8182,7 @@
       ]
     },
     "fucomp st6": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xdd 11b 0xee /5"
       ],
@@ -8103,6 +8211,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -8115,7 +8225,7 @@
       ]
     },
     "fucomp st7": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 35,
       "Comment": [
         "0xdd 11b 0xef /5"
       ],
@@ -8144,6 +8254,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -8212,7 +8324,7 @@
       ]
     },
     "ficom word [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xde !11b /2"
       ],
@@ -8245,11 +8357,13 @@
         "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1050]",
         "strb w22, [x28, #1054]",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]"
       ]
     },
     "ficomp word [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 39,
       "Comment": [
         "0xde !11b /3"
       ],
@@ -8282,6 +8396,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -8906,7 +9022,7 @@
       ]
     },
     "fcompp": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 37,
       "Comment": [
         "0xde 11b 0xd9 /3"
       ],
@@ -8935,6 +9051,8 @@
         "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1050]",
         "strb w23, [x28, #1054]",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -9998,7 +10116,7 @@
       ]
     },
     "fisttp word [rax]": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 33,
       "Comment": [
         "0xdf !11b /1"
       ],
@@ -10016,6 +10134,8 @@
         "cmp x21, x24",
         "cset x21, hs",
         "orr x21, x22, x21",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v2.16b",
@@ -10037,7 +10157,7 @@
       ]
     },
     "fist word [rax]": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 25,
       "Comment": [
         "0xdf !11b /2"
       ],
@@ -10055,6 +10175,8 @@
         "cmp x20, x23",
         "cset x20, hs",
         "orr x20, x21, x20",
+        "ldrb w21, [x28, #1040]",
+        "orr w20, w21, w20",
         "strb w20, [x28, #1040]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v2.16b",
@@ -10068,7 +10190,7 @@
       ]
     },
     "fistp word [rax]": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 33,
       "Comment": [
         "0xdf !11b /3"
       ],
@@ -10086,6 +10208,8 @@
         "cmp x21, x24",
         "cset x21, hs",
         "orr x21, x22, x21",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v2.16b",
@@ -10282,7 +10406,7 @@
       ]
     },
     "fucomip st0": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xdf 11b 0xe8 /5"
       ],
@@ -10310,6 +10434,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10322,7 +10448,7 @@
       ]
     },
     "fucomip st1": {
-      "ExpectedInstructionCount": 34,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdf 11b 0xe9 /5"
       ],
@@ -10354,6 +10480,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w23, [x28, #1040]",
+        "orr w22, w23, w22",
         "strb w22, [x28, #1040]",
         "strb w21, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
@@ -10364,7 +10492,7 @@
       ]
     },
     "fucomip st2": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xea /5"
       ],
@@ -10396,6 +10524,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10408,7 +10538,7 @@
       ]
     },
     "fucomip st3": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xeb /5"
       ],
@@ -10440,6 +10570,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10452,7 +10584,7 @@
       ]
     },
     "fucomip st4": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xec /5"
       ],
@@ -10484,6 +10616,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10496,7 +10630,7 @@
       ]
     },
     "fucomip st5": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xed /5"
       ],
@@ -10528,6 +10662,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10540,7 +10676,7 @@
       ]
     },
     "fucomip st6": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xee /5"
       ],
@@ -10572,6 +10708,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10584,7 +10722,7 @@
       ]
     },
     "fucomip st7": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xef /5"
       ],
@@ -10616,6 +10754,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10628,7 +10768,7 @@
       ]
     },
     "fcomip st0": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xdf 11b 0xf0 /6"
       ],
@@ -10656,6 +10796,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10668,7 +10810,7 @@
       ]
     },
     "fcomip st1": {
-      "ExpectedInstructionCount": 34,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdf 11b 0xf1 /6"
       ],
@@ -10700,6 +10842,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w23, [x28, #1040]",
+        "orr w22, w23, w22",
         "strb w22, [x28, #1040]",
         "strb w21, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
@@ -10710,7 +10854,7 @@
       ]
     },
     "fcomip st2": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf2 /6"
       ],
@@ -10742,6 +10886,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10754,7 +10900,7 @@
       ]
     },
     "fcomip st3": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf3 /6"
       ],
@@ -10786,6 +10932,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10798,7 +10946,7 @@
       ]
     },
     "fcomip st4": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf4 /6"
       ],
@@ -10830,6 +10978,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10842,7 +10992,7 @@
       ]
     },
     "fcomip st5": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf5 /6"
       ],
@@ -10874,6 +11024,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10886,7 +11038,7 @@
       ]
     },
     "fcomip st6": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf6 /6"
       ],
@@ -10918,6 +11070,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -10930,7 +11084,7 @@
       ]
     },
     "fcomip st7": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf 11b 0xf7 /6"
       ],
@@ -10962,6 +11116,8 @@
         "mov w27, #0x0",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "ldrb w22, [x28, #1040]",
+        "orr w21, w22, w21",
         "strb w21, [x28, #1040]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",

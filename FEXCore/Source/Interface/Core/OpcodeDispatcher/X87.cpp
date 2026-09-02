@@ -172,8 +172,9 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
     Ref IsOverflow = _NZCVSelect01(CondClass::UGE);
 
     // Set Invalid Operation flag if overflow or special value
+    // The x87 exception flags are sticky. Preserve earlier result
     Ref InvalidFlag = _Or(OpSize::i64Bit, IsSpecial, IsOverflow);
-    SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(InvalidFlag);
+    SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Or(OpSize::i32Bit, GetRFLAG(FEXCore::X86State::X87FLAG_IE_LOC), InvalidFlag));
   }
 
   Data = _F80CVTInt(Size, Data, Truncate);
@@ -683,7 +684,8 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
   }
 
   // Set Invalid Operation flag when unordered (NaN comparison)
-  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(HostFlag_Unordered);
+  // The x87 exception flags are sticky. Preserve earlier result
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Or(OpSize::i32Bit, GetRFLAG(FEXCore::X86State::X87FLAG_IE_LOC), HostFlag_Unordered));
 
   if (PopTwice) {
     _PopStackDestroy();
@@ -708,7 +710,8 @@ void OpDispatchBuilder::FTST(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
 
   // Set Invalid Operation flag when unordered (NaN comparison)
-  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(HostFlag_Unordered);
+  // The x87 exception flags are sticky. Preserve earlier result
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Or(OpSize::i32Bit, GetRFLAG(FEXCore::X86State::X87FLAG_IE_LOC), HostFlag_Unordered));
 }
 
 void OpDispatchBuilder::X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2) {
