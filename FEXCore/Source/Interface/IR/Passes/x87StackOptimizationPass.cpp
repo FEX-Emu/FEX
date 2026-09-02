@@ -272,7 +272,7 @@ private:
   Ref LoadStackValueAtOffset_Slow(uint8_t Offset = 0);
   void StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset = 0, bool SetValid = true);
   // Update Top value in slow path for a pop
-  void UpdateTopForPop_Slow();
+  void UpdateTopForPop_Slow(bool InvalidateTag = true);
   void UpdateTopForPush_Slow();
   // Synchronizes the current simulated stack with the actual values.
   // Returns a new value for Top, that's synchronized between the simulated stack
@@ -573,11 +573,15 @@ void X87StackOptimization::HandleBinopStack(IROps Op64, bool VFOp64, IROps Op80,
   HandleBinopValue(Op64, VFOp64, Op80, DestStackOffset, StackOffset2 != DestStackOffset, StackOffset1, StackNode, Reverse);
 }
 
-inline void X87StackOptimization::UpdateTopForPop_Slow() {
+inline void X87StackOptimization::UpdateTopForPop_Slow(bool InvalidateTag) {
   const auto PopContainer = [](auto& container) {
     const auto begin = std::begin(container);
     std::rotate(begin, std::next(begin), std::end(container));
   };
+
+  if (InvalidateTag) {
+    SetX87ValidTag(0, false);
+  }
 
   // Pop the top of the x87 stack
   GetOffsetTopWithCache_Slow(1);
@@ -1050,9 +1054,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         break;
       }
       case OP_POPSTACKDESTROY: {
-        if (SlowPath) {
-          SetX87ValidTag(0, false);
-        }
         StackPop();
         break;
       }
@@ -1178,7 +1179,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
       case OP_INCSTACKTOP: {
         if (SlowPath) {
-          UpdateTopForPop_Slow();
+          UpdateTopForPop_Slow(false);
         } else {
           StackData.rotate(false);
         }
