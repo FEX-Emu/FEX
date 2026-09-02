@@ -211,6 +211,8 @@ DEF_OP(Print) {
 }
 
 DEF_OP(PrintMsg) {
+  // This isn't relocation aware as it's a debug feature.
+  LOGMAN_THROW_A_FMT(SupportCodeRelocations == false, "Can't PrintMsg when requiring code relocations/caching!");
   auto Op = IROp->C<IR::IROp_PrintMsg>();
 
   PushDynamicRegs(TMP1);

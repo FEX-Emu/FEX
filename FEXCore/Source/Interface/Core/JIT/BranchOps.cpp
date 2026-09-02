@@ -355,6 +355,8 @@ DEF_OP(Thunk) {
 }
 
 DEF_OP(ValidateCode) {
+  // This isn't relocation aware as it's a debug feature.
+  LOGMAN_THROW_A_FMT(SupportCodeRelocations == false, "Can't ValidateCode when requiring code relocations/caching!");
   auto Op = IROp->C<IR::IROp_ValidateCode>();
   auto OldCode = Op->CodeOriginal.data();
   auto Base = GetReg(Op->Header.Args[0]).X();
