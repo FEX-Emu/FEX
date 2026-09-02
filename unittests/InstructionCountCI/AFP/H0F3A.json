@@ -8,7 +8,7 @@
       "SVE128",
       "SVE256"
     ],
-    "BinaryCacheVersion": 7
+    "BinaryCacheVersion": 8
   },
   "Instructions": {
     "roundss xmm0, xmm1, 00000000b": {

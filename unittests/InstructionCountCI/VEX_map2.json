@@ -11,7 +11,7 @@
       "FLAGM2",
       "SVEBITPERM"
     ],
-    "BinaryCacheVersion": 7
+    "BinaryCacheVersion": 8
   },
   "Instructions": {
     "vpshufb xmm0, xmm1, xmm2": {
