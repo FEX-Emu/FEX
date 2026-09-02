@@ -12,7 +12,7 @@
       "RPRES",
       "AFP"
     ],
-    "BinaryCacheVersion": 7
+    "BinaryCacheVersion": 8
   },
   "Instructions": {
     "popcnt ax, bx": {

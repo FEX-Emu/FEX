@@ -11,7 +11,7 @@
       "CSSC",
       "AFP"
     ],
-    "BinaryCacheVersion": 7
+    "BinaryCacheVersion": 8
   },
   "Instructions": {
     "fadd dword [rax]": {
