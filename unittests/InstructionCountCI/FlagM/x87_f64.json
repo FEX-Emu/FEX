@@ -13,7 +13,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 6
+    "BinaryCacheVersion": 7
   },
   "Instructions": {
     "fadd dword [rax]": {
@@ -4090,7 +4090,7 @@
       ]
     },
     "fucomi st0, st0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0xdb 11b 0xe8 /5"
       ],
@@ -4101,11 +4101,12 @@
         "fcmp d2, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fucomi st0, st1": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xe9 /5"
       ],
@@ -4120,11 +4121,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fucomi st0, st2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xea /5"
       ],
@@ -4139,11 +4141,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fucomi st0, st3": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xeb /5"
       ],
@@ -4158,11 +4161,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fucomi st0, st4": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xec /5"
       ],
@@ -4177,11 +4181,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fucomi st0, st5": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xed /5"
       ],
@@ -4196,11 +4201,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fucomi st0, st6": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xee /5"
       ],
@@ -4215,11 +4221,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fucomi st0, st7": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xef /5"
       ],
@@ -4234,11 +4241,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fcomi st0, st0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0xdb 11b 0xf0 /6"
       ],
@@ -4249,11 +4257,12 @@
         "fcmp d2, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fcomi st0, st1": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xf1 /6"
       ],
@@ -4268,11 +4277,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fcomi st0, st2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xf2 /6"
       ],
@@ -4287,11 +4297,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fcomi st0, st3": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xf3 /6"
       ],
@@ -4306,11 +4317,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fcomi st0, st4": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xf4 /6"
       ],
@@ -4325,11 +4337,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fcomi st0, st5": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xf5 /6"
       ],
@@ -4344,11 +4357,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fcomi st0, st6": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xf6 /6"
       ],
@@ -4363,11 +4377,12 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fcomi st0, st7": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xf7 /6"
       ],
@@ -4382,7 +4397,8 @@
         "fcmp d3, d2",
         "cset x26, vc",
         "mov w27, #0x0",
-        "axflag"
+        "axflag",
+        "strb wzr, [x28, #1049]"
       ]
     },
     "fadd qword [rax]": {
@@ -8287,7 +8303,7 @@
       ]
     },
     "fucomip st0": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0xdf 11b 0xe8 /5"
       ],
@@ -8299,6 +8315,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8310,7 +8327,7 @@
       ]
     },
     "fucomip st1": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "0xdf 11b 0xe9 /5"
       ],
@@ -8326,6 +8343,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
         "mov w22, #0x1",
@@ -8335,7 +8353,7 @@
       ]
     },
     "fucomip st2": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xea /5"
       ],
@@ -8351,6 +8369,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8362,7 +8381,7 @@
       ]
     },
     "fucomip st3": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xeb /5"
       ],
@@ -8378,6 +8397,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8389,7 +8409,7 @@
       ]
     },
     "fucomip st4": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xec /5"
       ],
@@ -8405,6 +8425,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8416,7 +8437,7 @@
       ]
     },
     "fucomip st5": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xed /5"
       ],
@@ -8432,6 +8453,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8443,7 +8465,7 @@
       ]
     },
     "fucomip st6": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xee /5"
       ],
@@ -8459,6 +8481,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8470,7 +8493,7 @@
       ]
     },
     "fucomip st7": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xef /5"
       ],
@@ -8486,6 +8509,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8497,7 +8521,7 @@
       ]
     },
     "fcomip st0": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0xdf 11b 0xf0 /6"
       ],
@@ -8509,6 +8533,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8520,7 +8545,7 @@
       ]
     },
     "fcomip st1": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "0xdf 11b 0xf1 /6"
       ],
@@ -8536,6 +8561,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "strb w21, [x28, #1051]",
         "ldrb w21, [x28, #1202]",
         "mov w22, #0x1",
@@ -8545,7 +8571,7 @@
       ]
     },
     "fcomip st2": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xf2 /6"
       ],
@@ -8561,6 +8587,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8572,7 +8599,7 @@
       ]
     },
     "fcomip st3": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xf3 /6"
       ],
@@ -8588,6 +8615,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8599,7 +8627,7 @@
       ]
     },
     "fcomip st4": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xf4 /6"
       ],
@@ -8615,6 +8643,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8626,7 +8655,7 @@
       ]
     },
     "fcomip st5": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xf5 /6"
       ],
@@ -8642,6 +8671,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8653,7 +8683,7 @@
       ]
     },
     "fcomip st6": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xf6 /6"
       ],
@@ -8669,6 +8699,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",
@@ -8680,7 +8711,7 @@
       ]
     },
     "fcomip st7": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "0xdf 11b 0xf7 /6"
       ],
@@ -8696,6 +8727,7 @@
         "cset x26, vc",
         "mov w27, #0x0",
         "axflag",
+        "strb wzr, [x28, #1049]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "strb w21, [x28, #1051]",

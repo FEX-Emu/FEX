@@ -10,12 +10,12 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 6
+    "BinaryCacheVersion": 7
   },
   "Instructions": {
     "Block1": {
       "x86InstructionCount": 70,
-      "ExpectedInstructionCount": 413,
+      "ExpectedInstructionCount": 414,
       "x86Insts": [
         "sub esp,0x2c",
         "mov ecx,dword [esp + 0x34]",
@@ -477,6 +477,7 @@
         "eor w26, w20, #0x1",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1040]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x5 (5)",
@@ -506,7 +507,7 @@
     },
     "Block2": {
       "x86InstructionCount": 37,
-      "ExpectedInstructionCount": 215,
+      "ExpectedInstructionCount": 219,
       "x86Insts": [
         "sub esp,0x1c",
         "mov edx,dword [esp + 0x20]",
@@ -588,6 +589,7 @@
         "eor x21, x21, #0x1",
         "rmif x21, #63, #nzCv",
         "rmif x22, #62, #nZcv",
+        "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1040]",
         "csetm x20, ls",
         "dup v4.2d, x20",
@@ -629,6 +631,7 @@
         "eor x21, x21, #0x1",
         "rmif x21, #63, #nzCv",
         "rmif x22, #62, #nZcv",
+        "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1040]",
         "csetm x20, ls",
         "dup v5.2d, x20",
@@ -670,6 +673,7 @@
         "eor x21, x21, #0x1",
         "rmif x21, #63, #nzCv",
         "rmif x22, #62, #nZcv",
+        "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1040]",
         "csetm x20, ls",
         "dup v6.2d, x20",
@@ -741,6 +745,7 @@
         "eor w26, w20, #0x1",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1040]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x6 (6)",
@@ -1174,7 +1179,7 @@
     },
     "Block5": {
       "x86InstructionCount": 49,
-      "ExpectedInstructionCount": 303,
+      "ExpectedInstructionCount": 304,
       "x86Insts": [
         "fld dword [esp + 0x80]",
         "fsub dword [esp + 0x7c]",
@@ -1509,6 +1514,7 @@
         "eor w26, w20, #0x1",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1040]",
         "cset x20, hi",
         "strb w20, [x8, #48]",
@@ -1534,7 +1540,7 @@
     },
     "Block6": {
       "x86InstructionCount": 39,
-      "ExpectedInstructionCount": 295,
+      "ExpectedInstructionCount": 296,
       "x86Insts": [
         "push ebp",
         "push edi",
@@ -1841,6 +1847,7 @@
         "eor w26, w20, #0x1",
         "rmif xzr, #0, #nzcV",
         "rmif xzr, #61, #Nzcv",
+        "strb wzr, [x28, #1049]",
         "strb w20, [x28, #1040]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x4 (4)",
