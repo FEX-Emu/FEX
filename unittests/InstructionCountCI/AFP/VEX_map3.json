@@ -7,7 +7,7 @@
       "AFP"
     ],
     "DisabledHostFeatures": [],
-    "BinaryCacheVersion": 6
+    "BinaryCacheVersion": 7
   },
   "Instructions": {
     "vroundss xmm0, xmm1, 00000000b": {

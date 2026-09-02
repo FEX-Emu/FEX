@@ -13,7 +13,7 @@
       "FLAGM2",
       "FRINTTS"
     ],
-    "BinaryCacheVersion": 6
+    "BinaryCacheVersion": 7
   },
   "Instructions": {
     "vmovups xmm0, xmm0": {
