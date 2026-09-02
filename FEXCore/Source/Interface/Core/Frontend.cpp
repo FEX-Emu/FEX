@@ -638,10 +638,7 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
     CurrentDest->Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMDst);
   }
 
-  if (Bytes != 0) {
-    LOGMAN_THROW_A_FMT(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
-
-
+  if (Bytes <= 8 && Bytes > 0) {
     auto [Literal, IsRelocation] = ReadData(Bytes);
     if (IsRelocation) {
       DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::LiteralRelocation;
@@ -666,6 +663,11 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
       DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal;
     }
 
+    Bytes = 0;
+  } else {
+    // All real x86 instructions have byte sizes that are 8-bytes or less.
+    // Thunk instruction has an additional 32-byte SHA256 payload that needs to be accounted for.
+    InstructionSize += Bytes;
     Bytes = 0;
   }
 

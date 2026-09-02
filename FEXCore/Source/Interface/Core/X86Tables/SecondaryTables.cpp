@@ -303,7 +303,7 @@ constexpr std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps = []() co
     {0x3E, 1, X86InstInfo{"CALLBACKRET",  TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                                          0}},
 
     // This was originally used by VIA to jump to its alternative instruction set. Used for OP_THUNK
-    {0x3F, 1, X86InstInfo{"ALTINST",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            0}},
+    {0x3F, 1, X86InstInfo{"ALTINST",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            sizeof(IR::SHA256Sum)}},
 #endif
   };
 
