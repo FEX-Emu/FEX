@@ -596,6 +596,8 @@ namespace DiskCache {
     uint32_t ThunkRelocCount = 0;
     for (const auto& Reloc : Relocations) {
       if (Reloc.Header.Type == CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE) {
+        // todo we miss the thunk bytes in the hash extents so need to bail for those for now
+        return false;
         ThunkRelocCount++;
       } else {
         SmallRelocCount++;
