@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <thread>
+#include <utility>
 
 #ifndef _WIN32
 #include <fcntl.h>
@@ -68,6 +69,34 @@ public:
 
     ShouldClose = IsValidHandle;
   }
+
+  File(File&& Other) noexcept
+    : ShouldClose(std::exchange(Other.ShouldClose, false))
+    , IsValidHandle(std::exchange(Other.IsValidHandle, false))
+#ifdef _WIN32
+    , Handle(std::exchange(Other.Handle, INVALID_HANDLE_VALUE))
+#else
+    , Handle(std::exchange(Other.Handle, -1))
+#endif
+    , Seekable(std::exchange(Other.Seekable, false))
+    , Locked(std::exchange(Other.Locked, false)) {
+  }
+
+  File& operator=(File&& Other) noexcept {
+    if (this == &Other) {
+      return *this;
+    }
+
+    std::swap(ShouldClose, Other.ShouldClose);
+    std::swap(IsValidHandle, Other.IsValidHandle);
+    std::swap(Handle, Other.Handle);
+    std::swap(Seekable, Other.Seekable);
+    std::swap(Locked, Other.Locked);
+    return *this;
+  }
+
+  File(const File&) = delete;
+  File& operator=(const File&) = delete;
 
   FileHandleType GetHandle() {
     return Handle;
