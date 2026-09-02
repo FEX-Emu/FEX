@@ -2036,6 +2036,30 @@
           "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
         ]
       },
+
+      "FPR = VRSHRN OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
+        "TiedSource": 0,
+        "Desc": ["Rounding shift right each element and then narrows to the next lower element size",
+                 "Writes result to the bottom half of the destination register, upper half is zeroed"
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize >> 1",
+        "EmitValidation": [
+          "ElementSize >= FEXCore::IR::OpSize::i16Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
+          "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
+        ]
+      },
+
+      "FPR = VRSHRNPair OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$BitShift": {
+        "Desc": ["Rounding shift right and narrow a pair of vectors into one result"],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize >> 1",
+        "EmitValidation": [
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
+          "ElementSize >= FEXCore::IR::OpSize::i16Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
+          "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
+        ]
+      },
       "FPR = VSXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Sign extends elements from the source element size to the next size up"],
         "DestSize": "RegisterSize",

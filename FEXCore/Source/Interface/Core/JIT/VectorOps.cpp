@@ -3335,6 +3335,55 @@ DEF_OP(VUShrNI2) {
   }
 }
 
+DEF_OP(VRSHRN) {
+  const auto Op = IROp->C<IR::IROp_VRSHRN>();
+  const auto OpSize = IROp->Size;
+
+  const auto BitShift = Op->BitShift;
+  const auto SubRegSize = ConvertSubRegSize4(IROp);
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector);
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    rshrnb(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
+    uzp1(SubRegSize, Dst.Z(), Dst.Z(), Dst.Z());
+  } else {
+    rshrn(SubRegSize, Dst.D(), Vector.D(), BitShift);
+  }
+}
+
+DEF_OP(VRSHRNPair) {
+  const auto Op = IROp->C<IR::IROp_VRSHRNPair>();
+  const auto OpSize = IROp->Size;
+
+  const auto BitShift = Op->BitShift;
+  const auto SubRegSize = ConvertSubRegSize4(IROp);
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower);
+  auto VectorUpper = GetVReg(Op->VectorUpper);
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    rshrnb(SubRegSize, VTMP1.Z(), VectorLower.Z(), BitShift);
+    rshrnb(SubRegSize, VTMP2.Z(), VectorUpper.Z(), BitShift);
+    uzp1(SubRegSize, Dst.Z(), VTMP1.Z(), VTMP2.Z());
+  } else {
+    if (Dst == VectorUpper) {
+      // RSHRN writes the lower half and would destroy the upper input.
+      mov(VTMP1.Q(), VectorUpper.Q());
+      VectorUpper = VTMP1;
+    }
+
+    rshrn(SubRegSize, Dst.D(), VectorLower.D(), BitShift);
+    rshrn2(SubRegSize, Dst.Q(), VectorUpper.Q(), BitShift);
+  }
+}
+
 DEF_OP(VSXTL) {
   const auto Op = IROp->C<IR::IROp_VSXTL>();
   const auto OpSize = IROp->Size;

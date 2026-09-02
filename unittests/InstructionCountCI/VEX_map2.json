@@ -11,7 +11,7 @@
       "FLAGM2",
       "SVEBITPERM"
     ],
-    "BinaryCacheVersion": 7
+    "BinaryCacheVersion": 8
   },
   "Instructions": {
     "vpshufb xmm0, xmm1, xmm2": {
@@ -296,26 +296,19 @@
       ]
     },
     "vpmulhrsw xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 2 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
         "smull v2.4s, v17.4h, v18.4h",
         "smull2 v3.4s, v17.8h, v18.8h",
-        "sshr v2.4s, v2.4s, #14",
-        "sshr v3.4s, v3.4s, #14",
-        "movi v4.4s, #0x1",
-        "add v2.4s, v2.4s, v4.4s",
-        "add v3.4s, v3.4s, v4.4s",
-        "shrn v2.4h, v2.4s, #1",
-        "mov v0.16b, v2.16b",
-        "shrn2 v0.8h, v3.4s, #1",
-        "mov v16.16b, v0.16b"
+        "rshrn v16.4h, v2.4s, #15",
+        "rshrn2 v16.8h, v3.4s, #15"
       ]
     },
     "vpmulhrsw ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "Map 2 0b01 0x0b 256-bit"
       ],
@@ -326,17 +319,9 @@
         "smullb z0.s, z17.h, z18.h",
         "smullt z1.s, z17.h, z18.h",
         "zip2 z3.s, z0.s, z1.s",
-        "asr z2.s, z2.s, #14",
-        "asr z3.s, z3.s, #14",
-        "mov z4.s, #1",
-        "add z2.s, z2.s, z4.s",
-        "add z3.s, z3.s, z4.s",
-        "shrnb z2.h, z2.s, #1",
-        "uzp1 z2.h, z2.h, z2.h",
-        "shrnb z1.h, z3.s, #1",
-        "uzp1 z1.h, z1.h, z1.h",
-        "movprfx z16, z2",
-        "splice z16.h, p6, z16.h, z1.h"
+        "rshrnb z0.h, z2.s, #15",
+        "rshrnb z1.h, z3.s, #15",
+        "uzp1 z16.h, z0.h, z1.h"
       ]
     },
     "vpermilps xmm0, xmm1, xmm2": {
