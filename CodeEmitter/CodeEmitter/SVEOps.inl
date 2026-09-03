@@ -270,6 +270,9 @@ public:
   void fcvtxnt(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEFloatConvertOdd(0b00, 0b10, pg, zn, zd);
   }
+  void bfcvtnt(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatConvertOdd(0b10, 0b10, pg, zn, zd);
+  }
   ///< Size is destination size
   void fcvtnt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
@@ -291,8 +294,6 @@ public:
 
     SVEFloatConvertOdd(ConvertedSrcSize, ConvertedDestSize, pg, zn, zd);
   }
-
-  // XXX: BFCVTNT
 
   // SVE2 floating-point pairwise operations
   void faddp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {

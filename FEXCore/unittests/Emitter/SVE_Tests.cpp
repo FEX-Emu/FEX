@@ -294,7 +294,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert pre
   /////< Size is destination size
   // void fcvtlt(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, ARMEmitter::PRegister pg, ARMEmitter::ZRegister zn) {
 
-  // XXX: BFCVTNT
+  TEST_SINGLE(bfcvtnt(ZReg::z30, PReg::p6.Merging(), ZReg::z29), "bfcvtnt z30.h, p6/m, z29.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 floating-point pairwise operations") {
   // TEST_SINGLE(faddp(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z28),   "faddp z30.b, p6/m, z30.b, z28.b");
