@@ -403,6 +403,11 @@ DEF_OP(ValidateCode) {
 }
 
 DEF_OP(ThreadRemoveCodeEntry) {
+  auto Op = IROp->C<IR::IROp_ThreadRemoveCodeEntry>();
+
+  // Move the entry to ABI before saving state.
+  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetReg(Op->Entry));
+
   PushDynamicRegs(TMP4);
   SpillStaticRegs(TMP4);
 
@@ -410,9 +415,6 @@ DEF_OP(ThreadRemoveCodeEntry) {
   // X0: Thread
   // X1: RIP
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, STATE.R());
-
-  // TODO: Relocations don't seem to be wired up to this...?
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry, CPU::Arm64Emitter::PadType::AUTOPAD);
 
   ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.ThreadRemoveCodeEntryFromJIT));
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {

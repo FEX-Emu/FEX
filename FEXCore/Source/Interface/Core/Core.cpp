@@ -650,7 +650,12 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
           Thread->OpDispatcher->StartNewBlock();
-          Thread->OpDispatcher->_ThreadRemoveCodeEntry();
+
+          // Generate a relocatable entry for invalidation purposes.
+          auto EntryReg = Thread->OpDispatcher->_EntrypointOffset(GPRSize, 0);
+          Thread->OpDispatcher->_ThreadRemoveCodeEntry(EntryReg);
+
+          // Exit the function at this instruction after invalidation.
           Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_InlineEntrypointOffset(GPRSize, InstAddress - GuestRIP));
 
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);

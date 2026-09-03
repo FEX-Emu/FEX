@@ -201,7 +201,7 @@
         "DestSize": "OpSize::i64Bit"
       },
 
-      "ThreadRemoveCodeEntry": {
+      "ThreadRemoveCodeEntry GPR:$Entry": {
         "HasSideEffects": true
       },
 
