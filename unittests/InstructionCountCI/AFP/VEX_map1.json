@@ -9,7 +9,7 @@
     "DisabledHostFeatures": [
       "RPRES"
     ],
-    "BinaryCacheVersion": 9
+    "BinaryCacheVersion": 10
   },
   "Instructions": {
     "vsqrtss xmm0, xmm1, xmm2": {
