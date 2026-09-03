@@ -356,48 +356,51 @@ DEF_OP(Thunk) {
 
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
-  auto OldCode = Op->CodeOriginal.data();
-  auto Base = GetReg(Op->Header.Args[0]).X();
+  auto Base = GetReg(Op->Address).X();
   int len = Op->CodeLength;
-  int Offset = 0;
-  ARMEmitter::ForwardLabel Fail;
 
   const auto Dst = GetReg(Node);
+  const auto CRC32Reg = GetReg(Op->crc);
 
-  auto EmitCheck = [&](size_t Size, auto&& LoadData) {
-    while (len >= Size) {
-      LoadData();
-      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
-      cbnz_OrRestart(ARMEmitter::Size::i64Bit, TMP1, &Fail);
-      len -= Size;
-      Offset += Size;
-    }
-  };
+  // Changes to TMP1
+  auto WorkingReg = ARMEmitter::XReg::zr;
+  auto BaseReg = TMP2;
+  auto TmpDataReg = TMP3;
+  mov(ARMEmitter::Size::i64Bit, BaseReg, Base);
 
-  EmitCheck(8, [&]() {
-    ldr(TMP1, Base, Offset);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP2, *(const uint64_t*)(OldCode + Offset));
-  });
+  while (len >= 8) {
+    ldr<ARMEmitter::IndexType::POST>(TmpDataReg, BaseReg, 8);
+    crc32x(TMP1, WorkingReg, TmpDataReg);
+    len -= 8;
+    WorkingReg = TMP1;
+  }
 
-  EmitCheck(4, [&]() {
-    ldr(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint32_t*)(OldCode + Offset));
-  });
+  while (len >= 4) {
+    ldr<ARMEmitter::IndexType::POST>(TmpDataReg.W(), BaseReg, 4);
+    crc32w(TMP1.W(), WorkingReg.W(), TmpDataReg.W());
+    len -= 4;
+    WorkingReg = TMP1;
+  }
 
-  EmitCheck(2, [&]() {
-    ldrh(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint16_t*)(OldCode + Offset));
-  });
+  while (len >= 2) {
+    ldrh<ARMEmitter::IndexType::POST>(TmpDataReg.W(), BaseReg, 2);
+    crc32h(TMP1.W(), WorkingReg.W(), TmpDataReg.W());
+    len -= 2;
+    WorkingReg = TMP1;
+  }
 
-  EmitCheck(1, [&]() {
-    ldrb(TMP1.W(), Base, Offset);
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint8_t*)(OldCode + Offset));
-  });
+  while (len >= 1) {
+    ldrb<ARMEmitter::IndexType::POST>(TmpDataReg.W(), BaseReg, 1);
+    crc32b(TMP1.W(), WorkingReg.W(), TmpDataReg.W());
+    len -= 1;
+    WorkingReg = TMP1;
+  }
+
+  sub(ARMEmitter::Size::i32Bit, Dst, TMP1, CRC32Reg);
 
   ARMEmitter::ForwardLabel End;
-  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 0);
-  b_OrRestart(&End);
-  BindOrRestart(&Fail);
+  cbz_OrRestart(ARMEmitter::Size::i32Bit, Dst, &End);
+
   LoadConstant(ARMEmitter::Size::i32Bit, Dst, 1);
   BindOrRestart(&End);
 }

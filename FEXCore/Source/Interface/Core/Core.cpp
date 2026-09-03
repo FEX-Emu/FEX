@@ -76,6 +76,9 @@ $end_info$
 #include <unordered_map>
 #include <utility>
 #include <xxhash.h>
+#if defined(ARCHITECTURE_arm64)
+#include <arm_acle.h>
+#endif
 
 namespace FEXCore::Context {
 ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
@@ -638,9 +641,28 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL || Block.ForceFullSMCDetection) {
           auto ExistingCodePtr = reinterpret_cast<uint8_t*>(Block.Entry + BlockInstructionsLength);
           auto InstAddressReg = Thread->OpDispatcher->_EntrypointOffset(GPRSize, InstAddress - GuestRIP);
-          std::array<uint8_t, 0x10> CodeOriginal;
-          memcpy(CodeOriginal.data(), ExistingCodePtr, DecodedInfo->InstSize);
-          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(CodeOriginal, InstAddressReg, DecodedInfo->InstSize);
+
+          auto crc32 = [](const uint8_t* Ptr, size_t Size) -> uint32_t {
+#if defined(ARCHITECTURE_arm64)
+            uint32_t Result {};
+#define do_crc(type, suffix)                                               \
+  while (Size >= sizeof(type)) {                                           \
+    Result = __crc32##suffix(Result, *reinterpret_cast<const type*>(Ptr)); \
+    Ptr += sizeof(type);                                                   \
+    Size -= sizeof(type);                                                  \
+  }
+            do_crc(uint64_t, d);
+            do_crc(uint32_t, w);
+            do_crc(uint16_t, h);
+            do_crc(uint8_t, b);
+            return Result;
+#else
+            // Unsupported on non-arm.
+            return 0;
+#endif
+          };
+          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(
+            Thread->OpDispatcher->Constant(crc32(ExistingCodePtr, DecodedInfo->InstSize)), InstAddressReg, DecodedInfo->InstSize);
 
           auto InvalidateCodeCond = Thread->OpDispatcher->CondJump(CodeChanged);
 
