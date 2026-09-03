@@ -12,7 +12,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 10
+    "BinaryCacheVersion": 11
   },
   "Instructions": {
     "fadd dword [rax]": {
@@ -2179,7 +2179,7 @@
       ]
     },
     "fyl2x": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "0xd9 11b 0xf1 /6"
       ],
@@ -2189,8 +2189,8 @@
         "and w21, w21, #0x7",
         "add x22, x28, x21, lsl #4",
         "ldr d2, [x22, #1056]",
-        "add x20, x28, x20, lsl #4",
-        "ldr d3, [x20, #1056]",
+        "add x23, x28, x20, lsl #4",
+        "ldr d3, [x23, #1056]",
         "fmov d0, d3",
         "fmov d1, d2",
         "ldr x0, [x28, #3080]",
@@ -2199,7 +2199,12 @@
         "ldr x30, [sp], #16",
         "fmov d2, d0",
         "strb w21, [x28, #1051]",
-        "str d2, [x22, #1056]"
+        "str d2, [x22, #1056]",
+        "ldrb w21, [x28, #1202]",
+        "mov w22, #0x1",
+        "lsl w20, w22, w20",
+        "bic w20, w21, w20",
+        "strb w20, [x28, #1202]"
       ]
     },
     "fptan": {
@@ -2234,7 +2239,7 @@
       ]
     },
     "fpatan": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "0xd9 11b 0xf3 /6"
       ],
@@ -2242,10 +2247,10 @@
         "ldrb w20, [x28, #1051]",
         "add x21, x28, x20, lsl #4",
         "ldr d2, [x21, #1056]",
-        "add w20, w20, #0x1 (1)",
-        "and w20, w20, #0x7",
-        "add x21, x28, x20, lsl #4",
-        "ldr d3, [x21, #1056]",
+        "add w21, w20, #0x1 (1)",
+        "and w21, w21, #0x7",
+        "add x22, x28, x21, lsl #4",
+        "ldr d3, [x22, #1056]",
         "fmov d0, d3",
         "fmov d1, d2",
         "ldr x0, [x28, #3072]",
@@ -2253,8 +2258,13 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
-        "strb w20, [x28, #1051]",
-        "str d2, [x21, #1056]"
+        "strb w21, [x28, #1051]",
+        "str d2, [x22, #1056]",
+        "ldrb w21, [x28, #1202]",
+        "mov w22, #0x1",
+        "lsl w20, w22, w20",
+        "bic w20, w21, w20",
+        "strb w20, [x28, #1202]"
       ]
     },
     "fxtract": {
@@ -2378,7 +2388,7 @@
       ]
     },
     "fyl2xp1": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "0xd9 11b 0xf9 /7"
       ],
@@ -2388,8 +2398,8 @@
         "and w21, w21, #0x7",
         "add x22, x28, x21, lsl #4",
         "ldr d2, [x22, #1056]",
-        "add x20, x28, x20, lsl #4",
-        "ldr d3, [x20, #1056]",
+        "add x23, x28, x20, lsl #4",
+        "ldr d3, [x23, #1056]",
         "fmov d0, d3",
         "fmov d1, d2",
         "ldr x0, [x28, #3088]",
@@ -2398,7 +2408,12 @@
         "ldr x30, [sp], #16",
         "fmov d2, d0",
         "strb w21, [x28, #1051]",
-        "str d2, [x22, #1056]"
+        "str d2, [x22, #1056]",
+        "ldrb w21, [x28, #1202]",
+        "mov w22, #0x1",
+        "lsl w20, w22, w20",
+        "bic w20, w21, w20",
+        "strb w20, [x28, #1202]"
       ]
     },
     "fsqrt": {

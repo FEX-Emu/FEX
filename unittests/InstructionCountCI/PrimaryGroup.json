@@ -9,7 +9,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 10
+    "BinaryCacheVersion": 11
   },
   "Comment": [
     "Instructions in this table that are marked optimal don't have their flag calculation part of this assumption",
