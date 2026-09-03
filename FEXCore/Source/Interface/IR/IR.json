@@ -195,7 +195,7 @@
         "HasSideEffects": true
       },
 
-      "GPR = ValidateCode Array16:$CodeOriginal, GPR:$Address, u8:$CodeLength": {
+      "GPR = ValidateCode GPR:$crc, GPR:$Address, u8:$CodeLength": {
         "HasSideEffects": true,
         "HasDest": true,
         "DestSize": "OpSize::i64Bit"
