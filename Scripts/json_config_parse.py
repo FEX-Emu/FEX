@@ -87,6 +87,7 @@ class HostFeatures(Flag) :
     FEATURE_CLFLOPT  = (1 << 21)
     FEATURE_FSGSBASE = (1 << 22)
     FEATURE_EMMI     = (1 << 23)
+    FEATURE_AVX_VNNI = (1 << 24)
 
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
@@ -173,6 +174,7 @@ HostFeaturesLookup = {
     "CLFLOPT"  : HostFeatures.FEATURE_CLFLOPT,
     "FSGSBASE" : HostFeatures.FEATURE_FSGSBASE,
     "EMMI"     : HostFeatures.FEATURE_EMMI,
+    "AVX_VNNI" : HostFeatures.FEATURE_AVX_VNNI,
 }
 
 def parse_hexstring(s):

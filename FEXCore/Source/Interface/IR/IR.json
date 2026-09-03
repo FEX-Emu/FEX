@@ -2363,6 +2363,43 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
+      "FPR = VUSDot OpSize:#RegisterSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Unsigned by signed 8-bit dot product, accumulating four products in to each 32-bit element of Acc.",
+                 "Requires FEAT_I8MM."
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "OpSize::i32Bit",
+        "TiedSource": 0,
+        "EmitValidation": [
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
+        ]
+      },
+      "FPR = VSDot OpSize:#RegisterSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Signed 8-bit dot product, accumulating four products in to each 32-bit element of Acc.",
+                 "Requires FEAT_DotProd."
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "OpSize::i32Bit",
+        "TiedSource": 0,
+        "EmitValidation": [
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
+        ]
+      },
+      "FPR = VSAddLP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
+        "Desc": ["Signed add long pairwise. Adds adjacent pairs of elements in to elements of twice the size.",
+                 "ElementSize is the source size"
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize << 1"
+      },
+      "FPR = VSAdALP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Acc, FPR:$Vector": {
+        "Desc": ["Signed add and accumulate long pairwise. Adds adjacent pairs of elements in to the elements of Acc, which are twice the size.",
+                 "ElementSize is the source size"
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize << 1",
+        "TiedSource": 0
+      },
       "FPR = VUMulH OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Wide unsigned multiply returning the high results"],
         "DestSize": "RegisterSize",

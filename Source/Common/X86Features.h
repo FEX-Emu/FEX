@@ -40,6 +40,11 @@ public:
       Feat_vaes = data_7.ecx & (1U << 9);
       Feat_pclmulqdq = Feat_pclmulqdq && (data_7.ecx & (1U << 10));
       Feat_rdpid = data_7.ecx & (1U << 22);
+
+      if (data_7.eax >= 1) {
+        auto data_7_1 = cpuid(0x7, 0x1);
+        Feat_avx_vnni = Feat_avx && (data_7_1.eax & (1U << 4));
+      }
     }
 
     data = cpuid(0x8000'0000U);
@@ -79,6 +84,7 @@ public:
   bool Feat_rdpid {};
   bool Feat_clflopt {};
   bool Feat_fsgsbase {};
+  bool Feat_avx_vnni {};
 
 private:
   struct cpuid_data {

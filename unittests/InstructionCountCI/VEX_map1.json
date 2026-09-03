@@ -4540,8 +4540,8 @@
         "msr nzcv, x0",
         "and z2.d, z3.d, z2.d",
         "addp z2.b, p7/m, z2.b, z2.b",
-        "uzp1 z2.b, z2.b, z2.b",
         "uzp2 z1.b, z2.b, z2.b",
+        "uzp1 z2.b, z2.b, z2.b",
         "splice z2.d, p6, z2.d, z1.d",
         "addp v2.16b, v2.16b, v2.16b",
         "addp v2.8b, v2.8b, v2.8b",
@@ -5357,8 +5357,8 @@
         "zip2 z3.s, z0.s, z1.s",
         "movprfx z0, z2",
         "addp z0.s, p7/m, z0.s, z3.s",
-        "uzp1 z16.s, z0.s, z0.s",
         "uzp2 z1.s, z0.s, z0.s",
+        "uzp1 z16.s, z0.s, z0.s",
         "splice z16.d, p6, z16.d, z1.d"
       ]
     },

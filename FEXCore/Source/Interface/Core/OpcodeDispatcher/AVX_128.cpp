@@ -1470,6 +1470,35 @@ void OpDispatchBuilder::AVX128_VPMADDWD(OpcodeArgs) {
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return PMADDWDOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
+void OpDispatchBuilder::AVX128_VPDPImpl(OpcodeArgs, std::function<Ref(Ref Acc, Ref Src1, Ref Src2)> Helper) {
+  const auto Size = OpSizeFromDst(Op);
+  const auto Is128Bit = Size == OpSize::i128Bit;
+
+  auto Acc = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+  Result.Low = Helper(Acc.Low, Src1.Low, Src2.Low);
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = Helper(Acc.High, Src1.High, Src2.High);
+  }
+
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VPDPBUSD(OpcodeArgs, bool Saturating) {
+  AVX128_VPDPImpl(Op,
+                  [this, Saturating](Ref Acc, Ref Src1, Ref Src2) { return VPDPBUSDOpImpl(OpSize::i128Bit, Acc, Src1, Src2, Saturating); });
+}
+
+void OpDispatchBuilder::AVX128_VPDPWSSD(OpcodeArgs, bool Saturating) {
+  AVX128_VPDPImpl(Op,
+                  [this, Saturating](Ref Acc, Ref Src1, Ref Src2) { return VPDPWSSDOpImpl(OpSize::i128Bit, Acc, Src1, Src2, Saturating); });
+}
+
 void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs, IR::OpSize ElementSize) {
   const auto SrcSize = OpSizeFromSrc(Op);
   const auto Is128Bit = SrcSize == OpSize::i128Bit;

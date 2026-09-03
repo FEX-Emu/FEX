@@ -71,13 +71,15 @@ struct HostFeatures {
   uint32_t Supports3DNow               : 1 {};
   uint32_t SupportsSSE4a               : 1 {};
   uint32_t SupportsMOPS                : 1 {};
+  uint32_t SupportsI8MM                : 1 {};
+  uint32_t SupportsDotProd             : 1 {};
   uint32_t PreferZVAForVZero           : 1 {};
   uint32_t SupportsAFP                 : 1 {};
   uint32_t SupportsFloatExceptions     : 1 {};
   // Flag if this is InstCountCI
   uint32_t IsInstCountCI : 1 {};
   HostTypeEnum HostType  : 2 {};
-  uint32_t pad           : 26 {};
+  uint32_t pad           : 24 {};
 
   // MIDR information
   // Also used for determining number of CPU cores for CPUID

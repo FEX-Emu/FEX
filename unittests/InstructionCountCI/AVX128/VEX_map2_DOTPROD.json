@@ -1,0 +1,131 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "DOTPROD"
+    ],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2",
+      "SVE128",
+      "SVE256",
+      "I8MM"
+    ],
+    "BinaryCacheVersion": 20
+  },
+  "Instructions": {
+    "vpdpbusd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 9,
+      "Comment": [
+        "Map 2 0b01 0x50 128-bit",
+        "vpdpbusd xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x50, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.16b, #0x80",
+        "eor v2.16b, v17.16b, v2.16b",
+        "movi v3.16b, #0x40",
+        "mov v4.16b, v16.16b",
+        "sdot v4.4s, v18.16b, v3.16b",
+        "sdot v4.4s, v18.16b, v3.16b",
+        "mov v16.16b, v4.16b",
+        "sdot v16.4s, v2.16b, v18.16b",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpbusd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 18,
+      "Comment": [
+        "Map 2 0b01 0x50 256-bit",
+        "vpdpbusd ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x50, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.16b, #0x80",
+        "eor v5.16b, v17.16b, v5.16b",
+        "movi v6.16b, #0x40",
+        "mov v7.16b, v16.16b",
+        "sdot v7.4s, v18.16b, v6.16b",
+        "sdot v7.4s, v18.16b, v6.16b",
+        "mov v16.16b, v7.16b",
+        "sdot v16.4s, v5.16b, v18.16b",
+        "movi v5.16b, #0x80",
+        "eor v3.16b, v3.16b, v5.16b",
+        "movi v5.16b, #0x40",
+        "sdot v2.4s, v4.16b, v5.16b",
+        "sdot v2.4s, v4.16b, v5.16b",
+        "sdot v2.4s, v3.16b, v4.16b",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "vpdpbusds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 9,
+      "Comment": [
+        "Map 2 0b01 0x51 128-bit",
+        "vpdpbusds xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x51, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.16b, #0x80",
+        "eor v2.16b, v17.16b, v2.16b",
+        "movi v3.16b, #0x40",
+        "movi v4.2d, #0x0",
+        "sdot v4.4s, v18.16b, v3.16b",
+        "sdot v4.4s, v18.16b, v3.16b",
+        "sdot v4.4s, v2.16b, v18.16b",
+        "sqadd v16.4s, v16.4s, v4.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpbusds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 20,
+      "Comment": [
+        "Map 2 0b01 0x51 256-bit",
+        "vpdpbusds ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x51, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.16b, #0x80",
+        "eor v5.16b, v17.16b, v5.16b",
+        "movi v6.16b, #0x40",
+        "movi v7.2d, #0x0",
+        "mov v8.16b, v7.16b",
+        "sdot v8.4s, v18.16b, v6.16b",
+        "sdot v8.4s, v18.16b, v6.16b",
+        "sdot v8.4s, v5.16b, v18.16b",
+        "sqadd v16.4s, v16.4s, v8.4s",
+        "movi v5.16b, #0x80",
+        "eor v3.16b, v3.16b, v5.16b",
+        "movi v5.16b, #0x40",
+        "sdot v7.4s, v4.16b, v5.16b",
+        "sdot v7.4s, v4.16b, v5.16b",
+        "sdot v7.4s, v3.16b, v4.16b",
+        "sqadd v2.4s, v2.4s, v7.4s",
+        "str q2, [x28, #192]"
+      ]
+    }
+  }
+}

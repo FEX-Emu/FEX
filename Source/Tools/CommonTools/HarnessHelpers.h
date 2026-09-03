@@ -321,6 +321,7 @@ public:
     FEATURE_CLFLOPT = (1 << 21),
     FEATURE_FSGSBASE = (1 << 22),
     FEATURE_EMMI = (1 << 23),
+    FEATURE_AVX_VNNI = (1 << 24),
   };
 
   bool Requires3DNow() const {
@@ -394,6 +395,9 @@ public:
   }
   bool RequiresEMMI() const {
     return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_EMMI;
+  }
+  bool RequiresAVXVNNI() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX_VNNI;
   }
 
 private:
@@ -601,6 +605,9 @@ public:
   }
   bool RequiresEMMI() const {
     return Config.RequiresEMMI();
+  }
+  bool RequiresAVXVNNI() const {
+    return Config.RequiresAVXVNNI();
   }
 
 private:

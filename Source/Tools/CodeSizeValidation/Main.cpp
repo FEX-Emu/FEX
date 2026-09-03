@@ -557,6 +557,8 @@ int main(int argc, char** argv, char** const envp) {
     FEATURE_LRCPC2 = (1U << 15),
     FEATURE_FRINTTS = (1U << 16),
     FEATURE_MOPS = (1U << 17),
+    FEATURE_I8MM = (1U << 18),
+    FEATURE_DOTPROD = (1U << 19),
   };
 
   uint64_t SVEWidth = 0;
@@ -609,6 +611,12 @@ int main(int argc, char** argv, char** const envp) {
   }
   if (TestHeaderData->EnabledHostFeatures & FEATURE_MOPS) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEMOPS);
+  }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_I8MM) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEI8MM);
+  }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_DOTPROD) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEDOTPROD);
   }
 
   if (TestHeaderData->EnabledHostFeatures & FEATURE_TSO) {
@@ -667,6 +675,12 @@ int main(int argc, char** argv, char** const envp) {
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_MOPS) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEMOPS);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_I8MM) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEI8MM);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_DOTPROD) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEDOTPROD);
   }
 
   if (TestHeaderData->DisabledHostFeatures & FEATURE_TSO) {
