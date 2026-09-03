@@ -3420,16 +3420,16 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-ad
   TEST_SINGLE(fmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 3), "fmlslt z30.s, z29.h, z7.h[3]");
   TEST_SINGLE(fmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 7), "fmlslt z30.s, z29.h, z7.h[7]");
 
+  TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 0), "bfmlalb z30.s, z29.h, z7.h[0]");
+  TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 3), "bfmlalb z30.s, z29.h, z7.h[3]");
+  TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 7), "bfmlalb z30.s, z29.h, z7.h[7]");
+
+  TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 0), "bfmlalt z30.s, z29.h, z7.h[0]");
+  TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 3), "bfmlalt z30.s, z29.h, z7.h[3]");
+  TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 7), "bfmlalt z30.s, z29.h, z7.h[7]");
+
   // XXX: vixl's diassembler doesn't support these. Re-enable when it does
   //      or upon switching disassemblers.
-
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 0), "bfmlalb z30.s, z29.h, z7.h[0]");
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 3), "bfmlalb z30.s, z29.h, z7.h[3]");
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 7), "bfmlalb z30.s, z29.h, z7.h[7]");
-
-  // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 0), "bfmlalt z30.s, z29.h, z7.h[0]");
-  // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 3), "bfmlalt z30.s, z29.h, z7.h[3]");
-  // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 7), "bfmlalt z30.s, z29.h, z7.h[7]");
 
   // TEST_SINGLE(bfmlslb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 0), "bfmlslb z30.s, z29.h, z7.h[0]");
   // TEST_SINGLE(bfmlslb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7, 3), "bfmlslb z30.s, z29.h, z7.h[3]");
@@ -3459,20 +3459,20 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-ad
   TEST_SINGLE(fmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "fmlslt z30.s, z29.h, z28.h");
   TEST_SINGLE(fmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "fmlslt z30.s, z29.h, z28.h");
 
+  TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
+  TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
+  TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
+
+  TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
+  TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
+  TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
+
   // XXX: vixl's diassembler doesn't support these. Re-enable when it does
   //      or upon switching disassemblers.
 
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalb z30.s, z29.h, z28.h");
-
-  // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
-  // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
-  // TEST_SINGLE(bfmlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlalt z30.s, z29.h, z28.h");
-
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
-  // TEST_SINGLE(bfmlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
+  // TEST_SINGLE(bfmlslb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
+  // TEST_SINGLE(bfmlslb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
+  // TEST_SINGLE(bfmlslb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslb z30.s, z29.h, z28.h");
 
   // TEST_SINGLE(bfmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslt z30.s, z29.h, z28.h");
   // TEST_SINGLE(bfmlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bfmlslt z30.s, z29.h, z28.h");
