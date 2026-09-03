@@ -4392,6 +4392,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert pre
   TEST_SINGLE(fcvt(SubRegSize::i64Bit, SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvt z30.d, p6/m, z29.s");
 
   TEST_SINGLE(fcvtx(ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvtx z30.s, p6/m, z29.d");
+
+  TEST_SINGLE(bfcvt(ZReg::z30, PReg::p6.Merging(), ZReg::z29), "bfcvt z30.h, p6/m, z29.s");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point unary operations") {
