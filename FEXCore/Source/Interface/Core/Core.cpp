@@ -888,41 +888,34 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   std::optional<ExecutableFileSectionInfo> Region = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
   std::optional<DiskCache::CodeHitData> Hit;
   std::optional<uint64_t> DiskCacheGuestCodeKey;
-  bool DiskCacheHitRelocationsApplied = false;
-  bool LoadDiskCacheCode = true;
   {
     FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedDiskCacheLookupTime);
     Hit = DiskCache.Lookup(Thread, Region, GuestRIP, DiskCacheGuestCodeKey);
-    if (Hit) {
-      DiskCacheHitRelocationsApplied =
-        CodeCache.ApplyPackedCodeRelocations(GuestRIP, std::as_writable_bytes(Hit->HostCode), Hit->SmallRelocs, Hit->ThunkRelocs, false);
-
-      if (DiskCacheHitRelocationsApplied && LoadDiskCacheCode) {
-        auto LoadedCode = Thread->CPUBackend->LoadCachedCode(Hit->HostCode);
-        if (LoadedCode.BlockBegin) {
-          for (auto& CodePage : Hit->GuestPages) {
-            if (Thread->LookupCache->AddBlockExecutableRange(Thread, Hit->EntryPointRIPs, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
-              SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
-            }
+    if (Hit && !DiskCache.IsValidating()) {
+      auto LoadedCode = Thread->CPUBackend->LoadCachedCode(Hit->HostCode);
+      if (LoadedCode.BlockBegin) {
+        for (auto& CodePage : Hit->GuestPages) {
+          if (Thread->LookupCache->AddBlockExecutableRange(Thread, Hit->EntryPointRIPs, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
+            SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
           }
-
-          LOGMAN_THROW_A_FMT(Hit->EntryPointRIPs.size() == Hit->EntryPointHostOffsets.size(), "Mismatched Disk Cache entrypoint pairs!");
-
-          uintptr_t CachedHostCode = 0;
-          for (size_t i = 0; i < Hit->EntryPointRIPs.size(); i++) {
-            void* HostAddr = LoadedCode.BlockBegin + Hit->EntryPointHostOffsets[i];
-            Thread->LookupCache->AddBlockMapping(Thread, Hit->EntryPointRIPs[i], Hit->GuestPages, HostAddr);
-            if (Hit->EntryPointRIPs[i] == GuestRIP) {
-              CachedHostCode = reinterpret_cast<uintptr_t>(HostAddr);
-            }
-          }
-
-          LOGMAN_THROW_A_FMT(CachedHostCode != 0, "Couldn't find GuestRIP in Disk Cache entrypoints!");
-
-          FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedDiskCacheHitCount, 1);
-          Thread->FrontendDecoder->DelayedDisownBuffer();
-          return CachedHostCode;
         }
+
+        LOGMAN_THROW_A_FMT(Hit->EntryPointRIPs.size() == Hit->EntryPointHostOffsets.size(), "Mismatched Disk Cache entrypoint pairs!");
+
+        uintptr_t CachedHostCode = 0;
+        for (size_t i = 0; i < Hit->EntryPointRIPs.size(); i++) {
+          void* HostAddr = LoadedCode.BlockBegin + Hit->EntryPointHostOffsets[i];
+          Thread->LookupCache->AddBlockMapping(Thread, Hit->EntryPointRIPs[i], Hit->GuestPages, HostAddr);
+          if (Hit->EntryPointRIPs[i] == GuestRIP) {
+            CachedHostCode = reinterpret_cast<uintptr_t>(HostAddr);
+          }
+        }
+
+        LOGMAN_THROW_A_FMT(CachedHostCode != 0, "Couldn't find GuestRIP in Disk Cache entrypoints!");
+
+        FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedDiskCacheHitCount, 1);
+        Thread->FrontendDecoder->DelayedDisownBuffer();
+        return CachedHostCode;
       }
     }
     FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedDiskCacheMissCount, 1);
@@ -938,6 +931,10 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   } else if (!DebugData) {
     // DebugData wasn't populated, indicating another thread raced us for compiling this block
     return reinterpret_cast<uintptr_t>(CodePtr);
+  }
+
+  if (DiskCacheGuestCodeKey && Hit && DiskCache.IsValidating()) {
+    DiskCache.Validate(*DiskCacheGuestCodeKey, *Hit, CompiledCode, Region);
   }
 
   // if this ever fires, we need to serialize the offset into disk cache
