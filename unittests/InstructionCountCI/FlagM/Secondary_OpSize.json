@@ -11,7 +11,7 @@
       "AFP",
       "FCMA"
     ],
-    "BinaryCacheVersion": 10
+    "BinaryCacheVersion": 11
   },
   "Instructions": {
     "ucomisd xmm0, xmm1": {
