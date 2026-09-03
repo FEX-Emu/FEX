@@ -33,7 +33,7 @@
       "      - 1b: ECX = MSB",
       "[7]   - Reserved"
     ],
-    "BinaryCacheVersion": 10
+    "BinaryCacheVersion": 11
   },
   "Instructions": {
     "pcmpestrm xmm0, xmm1, 0_0_00_00_00b": {
