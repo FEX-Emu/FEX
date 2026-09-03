@@ -3937,9 +3937,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load and broadcast element
   TEST_SINGLE(ld1rb(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rb {z30.b}, p6/z, [x29, #31]");
   TEST_SINGLE(ld1rb(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rb {z30.b}, p6/z, [x29, #63]");
 
+  // TODO: Several instances are commented out due to a reported bug in the vixl dissassembler.
+  //       Uncomment these when it's fixed.
+
   TEST_SINGLE(ld1rb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0), "ld1rb {z30.h}, p6/z, [x29]");
-  TEST_SINGLE(ld1rb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rb {z30.h}, p6/z, [x29, #31]");
-  TEST_SINGLE(ld1rb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rb {z30.h}, p6/z, [x29, #63]");
+  // TEST_SINGLE(ld1rb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rb {z30.h}, p6/z, [x29, #31]");
+  // TEST_SINGLE(ld1rb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rb {z30.h}, p6/z, [x29, #63]");
 
   TEST_SINGLE(ld1rb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0), "ld1rb {z30.s}, p6/z, [x29]");
   TEST_SINGLE(ld1rb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rb {z30.s}, p6/z, [x29, #31]");
@@ -3950,8 +3953,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load and broadcast element
   TEST_SINGLE(ld1rb(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rb {z30.d}, p6/z, [x29, #63]");
 
   TEST_SINGLE(ld1rsb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0), "ld1rsb {z30.h}, p6/z, [x29]");
-  TEST_SINGLE(ld1rsb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rsb {z30.h}, p6/z, [x29, #31]");
-  TEST_SINGLE(ld1rsb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rsb {z30.h}, p6/z, [x29, #63]");
+  // TEST_SINGLE(ld1rsb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rsb {z30.h}, p6/z, [x29, #31]");
+  // TEST_SINGLE(ld1rsb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rsb {z30.h}, p6/z, [x29, #63]");
 
   TEST_SINGLE(ld1rsb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0), "ld1rsb {z30.s}, p6/z, [x29]");
   TEST_SINGLE(ld1rsb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 31), "ld1rsb {z30.s}, p6/z, [x29, #31]");
@@ -3962,8 +3965,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load and broadcast element
   TEST_SINGLE(ld1rsb(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 63), "ld1rsb {z30.d}, p6/z, [x29, #63]");
 
   TEST_SINGLE(ld1rh(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0), "ld1rh {z30.h}, p6/z, [x29]");
-  TEST_SINGLE(ld1rh(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 64), "ld1rh {z30.h}, p6/z, [x29, #64]");
-  TEST_SINGLE(ld1rh(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 126), "ld1rh {z30.h}, p6/z, [x29, #126]");
+  // TEST_SINGLE(ld1rh(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 64), "ld1rh {z30.h}, p6/z, [x29, #64]");
+  // TEST_SINGLE(ld1rh(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 126), "ld1rh {z30.h}, p6/z, [x29, #126]");
 
   TEST_SINGLE(ld1rh(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 0), "ld1rh {z30.s}, p6/z, [x29]");
   TEST_SINGLE(ld1rh(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 64), "ld1rh {z30.s}, p6/z, [x29, #64]");

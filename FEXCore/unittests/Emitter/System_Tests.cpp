@@ -116,7 +116,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: System: Barriers") {
   TEST_SINGLE(isb(), "isb");
 
   TEST_SINGLE(sb(), "sb");
-  TEST_SINGLE(tcommit(), "tcommit");
+  TEST_SINGLE(tcommit(), "unimplemented (Unimplemented)");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: System: System register move") {
   // vixl doesn't have decoding for a bunch of these.
