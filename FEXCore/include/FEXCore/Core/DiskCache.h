@@ -85,6 +85,11 @@ namespace DiskCache {
         uint8_t RegisterIndex;
         uint64_t GuestRIP;
       } RIPMove;
+      struct __attribute__((packed)) {
+        uint8_t RegisterIndex;
+        uint8_t ValueSize;
+        uint32_t SiteOffset;
+      } PatchableData;
     };
   };
 
@@ -176,10 +181,10 @@ namespace DiskCache {
                std::span<const FEXCore::CPU::Relocation> Relocations, const Frontend::Decoder::DecodedBlockInformation* DecodedBlockInfo);
 
     bool IsWritingDiskCache() const {
-      return (bool)RWCacheDB;
+      return WritingDiskCache;
     }
     bool IsReadingDiskCache() const {
-      return !ROCacheDBs.empty() || RWCacheDB != nullptr;
+      return ReadingDiskCache;
     }
     bool IsValidating() const {
       return Validation;
@@ -189,6 +194,8 @@ namespace DiskCache {
     bool OpenCacheDB(const fextl::string& CacheDBName, bool ReadOnly);
     uint64_t MakeBlobKey(Core::InternalThreadState* Thread, const uint64_t ModuleOffset, bool Writable, bool MonoBackpatcher);
 
+    bool ReadingDiskCache {};
+    bool WritingDiskCache {};
     FEXCore::Context::ContextImpl* CTX;
     XXH128_hash_t BucketHash;
     fextl::vector<fextl::unique_ptr<IndexedDB>> ROCacheDBs;
@@ -214,7 +221,7 @@ namespace DiskCache {
 
   // TODO: This header is in global installed header path, but uses internal headers.
   // Migrate this once that is fixed.
-  static constexpr uint16_t FormatVersion = 16;
+  static constexpr uint16_t FormatVersion = 17;
   FEX_DEFAULT_VISIBILITY uint16_t GetFormatVersion();
 
 } // namespace DiskCache
