@@ -64,6 +64,11 @@ DEF_OP(EntrypointOffset) {
   InsertGuestRIPMove(GetReg(Node), Constant & Mask);
 }
 
+DEF_OP(PatchableGuestData) {
+  auto Op = IROp->C<IR::IROp_PatchableGuestData>();
+  InsertGuestPatchableDataMove(GetReg(Node), Op->Value, Op->SiteAddress, (uint8_t)Op->SiteSize);
+}
+
 DEF_OP(InlineConstant) {
   // nop
 }

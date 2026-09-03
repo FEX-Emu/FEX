@@ -128,6 +128,7 @@ struct DecodedOperand {
     RIPRelativeRelocation,
     Literal,
     LiteralRelocation,
+    LiteralPatchable,
     SIB,
     SIBRelocation
   };
@@ -158,6 +159,9 @@ struct DecodedOperand {
   }
   bool IsLiteralRelocation() const {
     return Type == OpType::LiteralRelocation;
+  }
+  bool IsLiteralPatchable() const {
+    return Type == OpType::LiteralPatchable;
   }
   bool IsSIB() const {
     return Type == OpType::SIB;
@@ -196,6 +200,12 @@ struct DecodedOperand {
       int64_t EntrypointOffset;
     } LiteralRelocation;
 
+    struct {
+      uint64_t Value;
+      uint8_t Size;
+      uint8_t FieldOffset;
+      uint8_t Width;
+    } LiteralPatchable;
     struct {
       int64_t Offset;
       uint8_t Scale;

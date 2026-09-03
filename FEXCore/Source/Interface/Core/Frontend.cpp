@@ -141,6 +141,9 @@ std::pair<uint64_t, bool> Decoder::ReadData(uint8_t Size) {
 
   uint64_t Res = 0;
   uint64_t Address = reinterpret_cast<uint64_t>(InstStream.InstStream + InstructionSize);
+  if (FieldReadCount < sizeof(FieldReads) / sizeof(FieldReads[0])) {
+    FieldReads[FieldReadCount++] = {static_cast<uint8_t>(InstructionSize), Size};
+  }
   if (CheckRangeExecutable(Address, Size)) {
     std::memcpy(&Res, &InstStream.AdjustedInstStream[InstructionSize], Size);
   } else {
@@ -1335,6 +1338,11 @@ void Decoder::AddBranchTarget(uint64_t Target) {
           .BlockStatus = BlockIt->BlockStatus,
         };
 
+        auto MaskIt = std::lower_bound(BlockIt->DataMasks.begin(), BlockIt->DataMasks.end(), SplitAddr,
+                                       [](const DataMask& Mask, uint64_t Addr) { return Mask.FieldAddress < Addr; });
+        SplitBlock.DataMasks.assign(MaskIt, BlockIt->DataMasks.end());
+        BlockIt->DataMasks.erase(MaskIt, BlockIt->DataMasks.end());
+
         BlockIt->Size = SplitOffset;
         BlockIt->NumInstructions = SplitIdx;
 
@@ -1385,6 +1393,52 @@ bool Decoder::CheckIfCacheable(FEXCore::Core::InternalThreadState& Thread, const
   bool Uncacheable = HitBadRelocation;
   DelayedDisownBuffer();
   return !Uncacheable;
+}
+
+void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
+  if (FieldReadCount == 0) {
+    return;
+  }
+
+  // remove this if we ever fixup ValidateCode crc constant after relocations
+  if (CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
+    return;
+  }
+
+  // the masks are needed for the anon lookup prefix decodes as well, not just stores
+  if (!CTX->DiskCache.IsReadingDiskCache() && !CTX->DiskCache.IsWritingDiskCache()) {
+    return;
+  }
+
+  // mov reg,imm
+  if (DecodeInst->OP >= 0xB8 && DecodeInst->OP <= 0xBF) {
+    FEXCore::X86Tables::DecodedOperand* Lit = nullptr;
+    for (auto& Src : DecodeInst->Src) {
+      if (Src.IsLiteral()) {
+        Lit = &Src;
+        break;
+      }
+    }
+    if (!Lit) {
+      return;
+    }
+    const auto& Field = FieldReads[FieldReadCount - 1];
+    if (Field.Size < 4) {
+      return;
+    }
+    // we could filter to certain high values that are more likely to be pointers/etc?
+    // const uint64_t Value = Lit->Data.Literal.Value;
+    // if (Value < 0x1000000ULL) {
+    //   return;
+    // }
+    Block.DataMasks.push_back({OpAddress + Field.Offset, Field.Size});
+
+    Lit->Type = X86Tables::DecodedOperand::OpType::LiteralPatchable;
+    Lit->Data.LiteralPatchable.FieldOffset = Field.Offset;
+    Lit->Data.LiteralPatchable.Width = Field.Size;
+  }
+
+  // todo add a bunch more
 }
 
 void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
@@ -1462,6 +1516,7 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
         BlockInfo.CodePages.insert(CurrentCodePage);
       }
 
+      FieldReadCount = 0;
       BlockIt->BlockStatus = DecodeInstruction(OpAddress);
       if (HitBadRelocation) {
         BlockInfo.TotalInstructionCount = 0;
@@ -1485,6 +1540,11 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
       ++DecodedSize;
       ++BlockIt->NumInstructions;
       BlockIt->Size += DecodeInst->InstSize;
+
+      // if we weren't provided relocations (guest JIT), try to detect what we can
+      if (BlockIt->BlockStatus == DecodedBlockStatus::SUCCESS && BlockInfo.Is64BitMode && !Relocations) {
+        DetectDataMasks(OpAddress, *BlockIt);
+      }
 
       // Can not continue this block at all on invalid instruction
       if (BlockIt->BlockStatus != DecodedBlockStatus::SUCCESS) [[unlikely]] {
@@ -1529,7 +1589,12 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
           // If the branch target is within our multiblock range then we can keep going on
           // We don't want to short circuit this since we want to calculate our ranges still
           // NOTE: This will invalidate BlockIt, this is fine as we immediately break from the loop and EraseBlock cannot be true
-          BlockIt->ForceFullSMCDetection = CTX->AreMonoHacksActive() && IsBranchMonoTailcall(BlockIt->NumInstructions);
+          if (CTX->AreMonoHacksActive() && IsBranchMonoTailcall(BlockIt->NumInstructions)) {
+            BlockIt->ForceFullSMCDetection = true;
+            // todo abandon patching this for now, as the crc will fail and it will lock up redoing it over and over
+            // we should fix the crc at relocation if this is important
+            BlockIt->DataMasks.clear();
+          }
           BranchTargetInMultiblockRange();
         }
 

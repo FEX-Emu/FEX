@@ -85,6 +85,11 @@ namespace DiskCache {
         uint8_t RegisterIndex;
         uint64_t GuestRIP;
       } RIPMove;
+      struct __attribute__((packed)) {
+        uint8_t RegisterIndex;
+        uint8_t ValueSize;
+        uint32_t SiteOffset;
+      } PatchableData;
     };
   };
 
@@ -214,7 +219,7 @@ namespace DiskCache {
 
   // TODO: This header is in global installed header path, but uses internal headers.
   // Migrate this once that is fixed.
-  static constexpr uint16_t FormatVersion = 11;
+  static constexpr uint16_t FormatVersion = 12;
   FEX_DEFAULT_VISIBILITY uint16_t GetFormatVersion();
 
 } // namespace DiskCache

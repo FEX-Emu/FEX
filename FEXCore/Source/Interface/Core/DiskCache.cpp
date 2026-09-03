@@ -460,12 +460,22 @@ namespace DiskCache {
         return std::nullopt;
       }
       Thread->FrontendDecoder->DecodeLoop(reinterpret_cast<const uint8_t*>(GuestRIP), AnonPrefixGuestBytes);
+      const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
+
       XXH3_state_t HashState;
       XXH3_64bits_reset(&HashState);
-      for (auto& SubBlock : Thread->FrontendDecoder->GetDecodedBlockInfo()->Blocks) {
-        XXH3_64bits_update(&HashState, reinterpret_cast<const uint8_t*>(SubBlock.Entry), SubBlock.Size);
+      for (auto& SubBlock : BlockInfo->Blocks) {
         if (SubBlock.BlockStatus != Frontend::Decoder::DecodedBlockStatus::SUCCESS) {
           return std::nullopt;
+        }
+        uint64_t HashStart = SubBlock.Entry;
+        // skip over masked in-block data and data/etc gaps between blocks
+        for (auto& DataMask : SubBlock.DataMasks) {
+          XXH3_64bits_update(&HashState, reinterpret_cast<const uint8_t*>(HashStart), DataMask.FieldAddress - HashStart);
+          HashStart = DataMask.FieldAddress + DataMask.ValueSize;
+        }
+        if (HashStart != SubBlock.Entry + SubBlock.Size) {
+          XXH3_64bits_update(&HashState, reinterpret_cast<const uint8_t*>(HashStart), SubBlock.Size - (HashStart - SubBlock.Entry));
         }
       }
       GuestCodeKey = XXH3_64bits_digest(&HashState);
@@ -614,7 +624,7 @@ namespace DiskCache {
       EntryPointRip += GuestRIP;
     }
 
-    if (!CTX->CodeCache.ApplyPackedCodeRelocations(GuestRIP, std::as_writable_bytes(HitData.HostCode), SmallRelocs, ThunkRelocs, false)) {
+    if (!CTX->CodeCache.ApplyPackedCodeRelocations(GuestRIP, std::as_writable_bytes(HitData.HostCode), SmallRelocs, ThunkRelocs)) {
       return std::nullopt;
     }
 
@@ -716,6 +726,8 @@ namespace DiskCache {
       }
     }
 
+    fextl::set<uint64_t> DataMaskAddresses;
+
     fextl::vector<uint32_t> ExactGuestCodeExtents;
     uint64_t CurStartExtent = 0, CurEndExtent = 0;
     const Frontend::Decoder::DecodedBlocks* LastBlock = nullptr;
@@ -736,6 +748,16 @@ namespace DiskCache {
           CurStartExtent = SubBlock.Entry;
           CurEndExtent = SubBlock.Entry + SubBlock.Size;
         }
+      }
+      // split extents according to data masks as well
+      for (auto& Mask : SubBlock.DataMasks) {
+        if (Mask.FieldAddress > CurStartExtent) {
+          ExactGuestCodeExtents.push_back(CurStartExtent - GuestRIP);
+          ExactGuestCodeExtents.push_back(Mask.FieldAddress - CurStartExtent);
+        }
+        CurStartExtent = Mask.FieldAddress + Mask.ValueSize;
+
+        DataMaskAddresses.insert(Mask.FieldAddress);
       }
       LastBlock = &SubBlock;
     }
@@ -837,6 +859,24 @@ namespace DiskCache {
         SmallRelocs[SmallIdx++] = SmallReloc;
         break;
       }
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE: {
+        BlobSmallRelocation SmallReloc = {};
+        SmallReloc.Offset = Reloc.Header.Offset;
+        SmallReloc.Type = uint8_t(Reloc.Header.Type);
+        SmallReloc.PatchableData.RegisterIndex = Reloc.GuestPatchableData.RegisterIndex;
+        SmallReloc.PatchableData.ValueSize = Reloc.GuestPatchableData.ValueSize;
+        SmallReloc.PatchableData.SiteOffset = uint32_t(Reloc.GuestPatchableData.SiteAddress - GuestRIP);
+        SmallRelocs[SmallIdx++] = SmallReloc;
+
+        // mark the corresponding data mask consumed - we might not find one if they got removed due to the smc workaround
+        // the hash will just fail on lookup later
+        auto It = DataMaskAddresses.find(Reloc.GuestPatchableData.SiteAddress);
+        if (It != DataMaskAddresses.end()) {
+          DataMaskAddresses.erase(It);
+        }
+
+        break;
+      }
       case CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE: {
         BlobThunkRelocation BigReloc = {};
         BigReloc.Offset = Reloc.Header.Offset;
@@ -846,6 +886,12 @@ namespace DiskCache {
         break;
       }
       }
+    }
+
+    if (!DataMaskAddresses.empty()) {
+      LogMan::Msg::IFmt("DiskCache: DataMask unaccounted for! {:x}", GuestCodeKey);
+      // this would mean we omitted contents in the hash that we're not going to patch, which would be loading corrupt code
+      return false;
     }
 
     memcpy(BlobData + GuestCodeOffset, GuestCode.data(), GuestCode.size());

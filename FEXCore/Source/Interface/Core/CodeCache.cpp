@@ -538,16 +538,22 @@ ApplyRIPMoveRelocation(ContextImpl& CTX, uint64_t GuestRIP, uint8_t RegisterInde
   Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Pointer, CPU::Arm64Emitter::PadType::DOPAD);
 }
 
+static inline void ApplyPatchableDataRelocation(uint64_t SiteAddress, uint8_t ValueSize, uint8_t RegisterIndex, CPU::Arm64Emitter& Emitter) {
+  uint64_t Value = 0;
+  memcpy(&Value, reinterpret_cast<const void*>(SiteAddress), ValueSize);
+  Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Value, CPU::Arm64Emitter::PadType::DOPAD);
+}
+
 bool CodeCache::ApplyPackedCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
                                            std::span<const DiskCache::BlobSmallRelocation> SmallRelocs,
-                                           std::span<const DiskCache::BlobThunkRelocation> ThunkRelocs, bool ForStorage) {
+                                           std::span<const DiskCache::BlobThunkRelocation> ThunkRelocs) {
   CPU::Arm64Emitter Emitter(&CTX, Code.data(), Code.size_bytes());
   for (auto& Reloc : SmallRelocs) {
     LOGMAN_THROW_A_FMT(Reloc.Offset < Code.size_bytes(), "Invalid relocation offset");
     Emitter.SetCursorOffset(Reloc.Offset);
     switch ((CPU::RelocationTypes)Reloc.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
-      ApplySymbolLiteralRelocation(CTX, (CPU::RelocNamedSymbolLiteral::NamedSymbol)Reloc.Named.Symbol, GuestEntry, Emitter, ForStorage);
+      ApplySymbolLiteralRelocation(CTX, (CPU::RelocNamedSymbolLiteral::NamedSymbol)Reloc.Named.Symbol, GuestEntry, Emitter, false);
       break;
     }
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
@@ -558,13 +564,18 @@ bool CodeCache::ApplyPackedCodeRelocations(uint64_t GuestEntry, std::span<std::b
       ApplyRIPMoveRelocation(CTX, Reloc.RIPMove.GuestRIP, Reloc.RIPMove.RegisterIndex, GuestEntry, Emitter);
       break;
     }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE: {
+      ApplyPatchableDataRelocation(GuestEntry + Reloc.PatchableData.SiteOffset, Reloc.PatchableData.ValueSize,
+                                   Reloc.PatchableData.RegisterIndex, Emitter);
+      break;
+    }
     default: ERROR_AND_DIE_FMT("Unknown packed relocation type {}", ToUnderlying((CPU::RelocationTypes)Reloc.Type));
     }
   }
   for (auto& Reloc : ThunkRelocs) {
     LOGMAN_THROW_A_FMT(Reloc.Offset < Code.size_bytes(), "Invalid relocation offset");
     Emitter.SetCursorOffset(Reloc.Offset);
-    if (!ApplyThunkMoveRelocation(CTX, (const IR::SHA256Sum*)Reloc.SymbolHash, Reloc.RegisterIndex, Emitter, ForStorage)) {
+    if (!ApplyThunkMoveRelocation(CTX, (const IR::SHA256Sum*)Reloc.SymbolHash, Reloc.RegisterIndex, Emitter, false)) {
       return false;
     }
   }
