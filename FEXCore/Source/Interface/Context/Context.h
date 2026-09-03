@@ -132,7 +132,7 @@ public:
   // Same but on disk cache packed relocations
   [[nodiscard]]
   bool ApplyPackedCodeRelocations(uint64_t GuestDelta, std::span<std::byte> Code, std::span<const DiskCache::BlobSmallRelocation> SmallRelocs,
-                                  std::span<const DiskCache::BlobThunkRelocation> ThunkRelocs, bool ForStorage);
+                                  std::span<const DiskCache::BlobThunkRelocation> ThunkRelocs);
 };
 
 class ContextImpl final : public FEXCore::Context::Context, public CPU::SharedCodeBufferManager {

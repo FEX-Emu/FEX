@@ -25,6 +25,10 @@ enum class RelocationTypes : uint32_t {
   // 4 instruction constant generation
   // Aligned to struct RelocGuestRIP
   RELOC_GUEST_RIP_MOVE,
+
+  // The frontend flagged those regions as patchable by the disk cache
+  // Aligned to struct RelocGuestPatchableData
+  RELOC_GUEST_PATCHABLE_DATA_MOVE,
 };
 
 struct FEX_PACKED RelocationHeader final {
@@ -73,6 +77,20 @@ struct RelocGuestRIP final {
   uint32_t pad2[6] {};
 };
 
+struct RelocGuestPatchableData final {
+  RelocationHeader Header {};
+
+  uint8_t RegisterIndex;
+
+  uint8_t ValueSize;
+
+  char Pad[2];
+
+  uint64_t SiteAddress;
+
+  uint32_t pad2[6] {};
+};
+
 union Relocation {
   // Clang 16 Can't default-initialize this union
   static Relocation Default() {
@@ -93,6 +111,8 @@ union Relocation {
   RelocNamedThunkMove NamedThunkMove;
 
   RelocGuestRIP GuestRIP;
+
+  RelocGuestPatchableData GuestPatchableData;
 };
 
 uint64_t GetNamedSymbolLiteral(FEXCore::Context::ContextImpl&, RelocNamedSymbolLiteral::NamedSymbol);

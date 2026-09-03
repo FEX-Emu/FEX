@@ -160,6 +160,14 @@
           "Maps cache files for faster reading"
         ]
       },
+      "DiskCacheValidation": {
+        "Type": "bool",
+        "Default": "false",
+        "AffectsCodeGen": "false",
+        "Desc": [
+          "Debug mode that does nothing but validate code hits"
+        ]
+      },
       "DiskCacheRelocationFilter": {
         "Type": "bool",
         "Default": "true",

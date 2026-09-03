@@ -32,6 +32,11 @@ public:
     UNIMPLEMENTED_INST,
   };
 
+  struct DataMask final {
+    uint64_t FieldAddress;
+    uint8_t ValueSize;
+  };
+
   // New Frontend decoding
   struct DecodedBlocks final {
     uint64_t Entry {};
@@ -41,6 +46,7 @@ public:
     DecodedBlockStatus BlockStatus;
     bool IsEntryPoint {};
     bool ForceFullSMCDetection {};
+    fextl::vector<DataMask> DataMasks;
   };
 
   struct DecodedBlockInformation final {
@@ -99,6 +105,8 @@ private:
 
   void AddBranchTarget(uint64_t Target);
 
+  void DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block);
+
   bool CheckRangeExecutable(uint64_t Address, uint64_t Size);
 
   uint8_t ReadByte();
@@ -128,6 +136,13 @@ private:
   uint64_t PCOffset {};
   uint64_t BlockStartOffset {};
   bool EraseBlock {};
+
+  struct FieldRead {
+    uint8_t Offset;
+    uint8_t Size;
+  };
+  FieldRead FieldReads[4];
+  uint32_t FieldReadCount {};
 
   uint64_t ExecutableRangeBase {};
   uint64_t ExecutableRangeEnd {};

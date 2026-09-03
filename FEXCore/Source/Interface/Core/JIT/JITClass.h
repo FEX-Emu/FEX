@@ -562,6 +562,8 @@ private:
    */
   void InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constant);
 
+  void InsertGuestPatchableDataMove(ARMEmitter::Register Reg, uint64_t Value, uint64_t SiteAddress, uint8_t ValueSize);
+
   /**
    * @brief Inserts a named symbol as a literal in memory
    *

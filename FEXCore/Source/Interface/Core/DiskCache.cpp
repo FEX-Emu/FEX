@@ -460,12 +460,22 @@ namespace DiskCache {
         return std::nullopt;
       }
       Thread->FrontendDecoder->DecodeLoop(reinterpret_cast<const uint8_t*>(GuestRIP), AnonPrefixGuestBytes);
+      const auto* BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
+
       XXH3_state_t HashState;
       XXH3_64bits_reset(&HashState);
-      for (auto& SubBlock : Thread->FrontendDecoder->GetDecodedBlockInfo()->Blocks) {
-        XXH3_64bits_update(&HashState, reinterpret_cast<const uint8_t*>(SubBlock.Entry), SubBlock.Size);
+      for (auto& SubBlock : BlockInfo->Blocks) {
         if (SubBlock.BlockStatus != Frontend::Decoder::DecodedBlockStatus::SUCCESS) {
           return std::nullopt;
+        }
+        uint64_t HashStart = SubBlock.Entry;
+        // skip over masked in-block data and data/etc gaps between blocks
+        for (auto& DataMask : SubBlock.DataMasks) {
+          XXH3_64bits_update(&HashState, reinterpret_cast<const uint8_t*>(HashStart), DataMask.FieldAddress - HashStart);
+          HashStart = DataMask.FieldAddress + DataMask.ValueSize;
+        }
+        if (HashStart != SubBlock.Entry + SubBlock.Size) {
+          XXH3_64bits_update(&HashState, reinterpret_cast<const uint8_t*>(HashStart), SubBlock.Size - (HashStart - SubBlock.Entry));
         }
       }
       GuestCodeKey = XXH3_64bits_digest(&HashState);
@@ -526,10 +536,47 @@ namespace DiskCache {
     LiveGuestHash = XXH3_128bits_digest(&HashState);
 
     if (!XXH128_isEqual(LiveGuestHash, Entry.GuestHash)) {
-      // LogMan::Msg::IFmt("hash mismatch! length {:d}", Header.GuestSize);
+      if (Validation) {
+        fextl::vector<uint8_t> GuestCode(Entry.GuestSize);
+        if (Entry.Size >= Entry.GuestSize && Entry.DB->ReadCacheBlob(Entry.Offset + Entry.Size - Entry.GuestSize, GuestCode)) {
+          const uint8_t* CachedGuest = GuestCode.data();
+          const uint8_t* LiveGuest = reinterpret_cast<const uint8_t*>(GuestRIP);
+          uint64_t DiffCount = 0;
+          uint64_t DiffOffset = 0;
+          for (uint32_t i = 0; i < Entry.GuestExtents.size(); i += 2) {
+            uint32_t Begin = Entry.GuestExtents[i];
+            uint32_t End = Begin + Entry.GuestExtents[i + 1];
+            bool PreviousByteDiff = false;
+            for (uint32_t Offset = Begin; Offset < End; Offset++) {
+              if (LiveGuest[Offset] != CachedGuest[Offset]) {
+                if (DiffCount == 0) {
+                  DiffOffset = Offset;
+                }
+                if (!PreviousByteDiff) {
+                  DiffCount++;
+                }
+                PreviousByteDiff = true;
+              } else {
+                PreviousByteDiff = false;
+              }
+            }
+          }
+          if (DiffCount) {
+            uint64_t DiffStart = DiffOffset >= 8 ? DiffOffset - 8 : 0;
+            uint64_t DiffContextBytes = std::min<uint64_t>(16, Entry.GuestSize - DiffStart);
+            auto LiveDump = fmt::join(std::span<const uint8_t> {LiveGuest + DiffStart, DiffContextBytes}, " ");
+            auto CacheDump = fmt::join(std::span<const uint8_t> {CachedGuest + DiffStart, DiffContextBytes}, " ");
+            auto KeyPrefix = (Region && Region->FileStartVA) ? "file" : "anon";
+            LogMan::Msg::IFmt("DiskCache: lookup guest hash mismatch key={}-{:x} gsize={}, ndiff={}, first diff: offset={} live=[{:02x}] "
+                              "cached=[{:02x}]",
+                              KeyPrefix, *GuestCodeKey, Entry.GuestSize, DiffCount, DiffOffset, LiveDump, CacheDump);
+          } else {
+            LogMan::Msg::IFmt("DiskCache: guest hash mismatch but no diff?");
+          }
+        }
+      }
       return std::nullopt;
     }
-    // LogMan::Msg::IFmt("hash ok! length {:d}", Header.GuestSize);
 
     // this seems to be a full hit, pull from disk and check the entry is big enough to have everything (except GuestCode)
     CodeHitData HitData;
@@ -564,9 +611,11 @@ namespace DiskCache {
     BlobOffset += Header.EntryPointCount * sizeof(uint64_t);
     HitData.EntryPointHostOffsets = {reinterpret_cast<const uint32_t*>(HitData.Blob.data() + BlobOffset), Header.EntryPointCount};
     BlobOffset += Header.EntryPointCount * sizeof(uint32_t);
-    HitData.SmallRelocs = {reinterpret_cast<const BlobSmallRelocation*>(HitData.Blob.data() + BlobOffset), Header.SmallRelocCount};
+    std::span<const BlobSmallRelocation> SmallRelocs = {reinterpret_cast<const BlobSmallRelocation*>(HitData.Blob.data() + BlobOffset),
+                                                        Header.SmallRelocCount};
     BlobOffset += Header.SmallRelocCount * sizeof(BlobSmallRelocation);
-    HitData.ThunkRelocs = {reinterpret_cast<const BlobThunkRelocation*>(HitData.Blob.data() + BlobOffset), Header.ThunkRelocCount};
+    std::span<const BlobThunkRelocation> ThunkRelocs = {reinterpret_cast<const BlobThunkRelocation*>(HitData.Blob.data() + BlobOffset),
+                                                        Header.ThunkRelocCount};
     BlobOffset += Header.ThunkRelocCount * sizeof(BlobThunkRelocation);
 
     HitData.GuestPages = {reinterpret_cast<uint64_t*>(HitData.Blob.data()), GuestPages.size()};
@@ -575,7 +624,50 @@ namespace DiskCache {
       EntryPointRip += GuestRIP;
     }
 
+    if (!CTX->CodeCache.ApplyPackedCodeRelocations(GuestRIP, std::as_writable_bytes(HitData.HostCode), SmallRelocs, ThunkRelocs)) {
+      return std::nullopt;
+    }
+
     return HitData;
+  }
+
+  void DiskCache::Validate(uint64_t GuestCodeKey, const CodeHitData& Hit, const CPU::CPUBackend::CompiledCode& CompiledCode,
+                           std::optional<ExecutableFileSectionInfo> Region) {
+    if (!Validation) {
+      return;
+    }
+
+    auto KeyPrefix = (Region && Region->FileStartVA) ? "file" : "anon";
+
+    if (Hit.HostCode.size() != CompiledCode.Size) {
+      LogMan::Msg::EFmt("DiskCache: validate host size mismatch key={}-{:x} cached={} live={}", KeyPrefix, GuestCodeKey,
+                        Hit.HostCode.size(), CompiledCode.Size);
+    } else if (memcmp(Hit.HostCode.data(), CompiledCode.BlockBegin, CompiledCode.Size) != 0) {
+      bool PreviousByteDiff = false;
+      size_t FirstDiff = 0;
+      size_t DiffCount = 0;
+      for (size_t i = 0; i < CompiledCode.Size; i++) {
+        if (Hit.HostCode[i] != CompiledCode.BlockBegin[i]) {
+          if (DiffCount == 0) {
+            FirstDiff = i;
+          }
+          if (!PreviousByteDiff) {
+            DiffCount++;
+          }
+          PreviousByteDiff = true;
+        } else {
+          PreviousByteDiff = false;
+        }
+      }
+
+      // align to 4 bytes to read host arm easier
+      const size_t DiffStart = (FirstDiff & ~3ULL) >= 8 ? (FirstDiff & ~3ULL) - 8 : 0;
+      const size_t ContextBytes = std::min<size_t>(16, CompiledCode.Size - DiffStart);
+      LogMan::Msg::EFmt("DiskCache: validate host code mismatch key={}-{:x} size={} firstoffset={} ndiff={} cached=[{:02x}] live=[{:02x}]",
+                        KeyPrefix, GuestCodeKey, CompiledCode.Size, FirstDiff, DiffCount,
+                        fmt::join(std::span<const uint8_t> {Hit.HostCode.data() + DiffStart, ContextBytes}, " "),
+                        fmt::join(std::span<const uint8_t> {CompiledCode.BlockBegin + DiffStart, ContextBytes}, " "));
+    }
   }
 
   struct DiskCache::CacheStoreWorkItem final : WorkQueueThread::WorkItem {
@@ -634,6 +726,8 @@ namespace DiskCache {
       }
     }
 
+    fextl::set<uint64_t> DataMaskAddresses;
+
     fextl::vector<uint32_t> ExactGuestCodeExtents;
     uint64_t CurStartExtent = 0, CurEndExtent = 0;
     const Frontend::Decoder::DecodedBlocks* LastBlock = nullptr;
@@ -654,6 +748,16 @@ namespace DiskCache {
           CurStartExtent = SubBlock.Entry;
           CurEndExtent = SubBlock.Entry + SubBlock.Size;
         }
+      }
+      // split extents according to data masks as well
+      for (auto& Mask : SubBlock.DataMasks) {
+        if (Mask.FieldAddress > CurStartExtent) {
+          ExactGuestCodeExtents.push_back(CurStartExtent - GuestRIP);
+          ExactGuestCodeExtents.push_back(Mask.FieldAddress - CurStartExtent);
+        }
+        CurStartExtent = Mask.FieldAddress + Mask.ValueSize;
+
+        DataMaskAddresses.insert(Mask.FieldAddress);
       }
       LastBlock = &SubBlock;
     }
@@ -755,6 +859,24 @@ namespace DiskCache {
         SmallRelocs[SmallIdx++] = SmallReloc;
         break;
       }
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE: {
+        BlobSmallRelocation SmallReloc = {};
+        SmallReloc.Offset = Reloc.Header.Offset;
+        SmallReloc.Type = uint8_t(Reloc.Header.Type);
+        SmallReloc.PatchableData.RegisterIndex = Reloc.GuestPatchableData.RegisterIndex;
+        SmallReloc.PatchableData.ValueSize = Reloc.GuestPatchableData.ValueSize;
+        SmallReloc.PatchableData.SiteOffset = uint32_t(Reloc.GuestPatchableData.SiteAddress - GuestRIP);
+        SmallRelocs[SmallIdx++] = SmallReloc;
+
+        // mark the corresponding data mask consumed - we might not find one if they got removed due to the smc workaround
+        // the hash will just fail on lookup later
+        auto It = DataMaskAddresses.find(Reloc.GuestPatchableData.SiteAddress);
+        if (It != DataMaskAddresses.end()) {
+          DataMaskAddresses.erase(It);
+        }
+
+        break;
+      }
       case CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE: {
         BlobThunkRelocation BigReloc = {};
         BigReloc.Offset = Reloc.Header.Offset;
@@ -764,6 +886,12 @@ namespace DiskCache {
         break;
       }
       }
+    }
+
+    if (!DataMaskAddresses.empty()) {
+      LogMan::Msg::IFmt("DiskCache: DataMask unaccounted for! {:x}", GuestCodeKey);
+      // this would mean we omitted contents in the hash that we're not going to patch, which would be loading corrupt code
+      return false;
     }
 
     memcpy(BlobData + GuestCodeOffset, GuestCode.data(), GuestCode.size());
