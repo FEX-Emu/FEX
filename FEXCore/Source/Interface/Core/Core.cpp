@@ -816,6 +816,8 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   auto [IRView, TotalInstructions, TotalInstructionsLength, StartAddr, Length, NeedsAddGuestCodeRanges] =
     GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
   if (!IRView) {
+    Thread->FrontendDecoder->ValidateDisownedOrFree();
+    Thread->OpDispatcher->ValidateDisownedOrFree();
     // OpDispatcher IR already released in this case.
     return {{}, nullptr, 0, 0, false};
   }
@@ -829,6 +831,8 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     if (auto Block = Thread->LookupCache->FindBlock(Thread, GuestRIP)) {
       // Raced to compile, release the OpDispatcher IR.
       Thread->OpDispatcher->DelayedDisownBuffer();
+      Thread->FrontendDecoder->ValidateDisownedOrFree();
+      Thread->OpDispatcher->ValidateDisownedOrFree();
       return {.CompiledCode = {.BlockBegin = reinterpret_cast<uint8_t*>(Block), .EntryPoints = {{GuestRIP, reinterpret_cast<uint8_t*>(Block)}}},
               .DebugData = nullptr,
               .StartAddr = 0,
@@ -847,6 +851,8 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   // Release the IR
   Thread->OpDispatcher->DelayedDisownBuffer();
 
+  Thread->FrontendDecoder->ValidateDisownedOrFree();
+  Thread->OpDispatcher->ValidateDisownedOrFree();
   return {
     .CompiledCode = std::move(CompiledCode),
     .DebugData = std::move(DebugData),
@@ -921,6 +927,9 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 
           FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedDiskCacheHitCount, 1);
           Thread->FrontendDecoder->DelayedDisownBuffer();
+
+          Thread->FrontendDecoder->ValidateDisownedOrFree();
+          Thread->OpDispatcher->ValidateDisownedOrFree();
           return CachedHostCode;
         }
       }
@@ -1024,6 +1033,9 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   if (!CodeCache.IsGeneratingCache) {
     Thread->CPUBackend->ClearRelocations();
   }
+
+  Thread->FrontendDecoder->ValidateDisownedOrFree();
+  Thread->OpDispatcher->ValidateDisownedOrFree();
 
   return (uintptr_t)CodePtr;
 }

@@ -72,6 +72,10 @@ public:
     PoolObject.DelayedDisownBuffer();
   }
 
+  void ValidateDisownedOrFree() const {
+    PoolObject.ValidateDisownedOrFree();
+  }
+
   void ResetExecutableRangeCache() {
     ExecutableRangeBase = ExecutableRangeEnd = 0;
   }

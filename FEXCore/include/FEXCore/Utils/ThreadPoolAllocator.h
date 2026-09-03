@@ -162,6 +162,9 @@ public:
   std::optional<ContainerType::iterator> TryToReownBuffer(const ContainerType::iterator& Buffer, size_t Size, BufferOwnedFlag* CurrentClientFlag) {
     ClientFlags Expected = ClientFlags::FLAG_DISOWNED;
     if (!CurrentClientFlag->compare_exchange_strong(Expected, ClientFlags::FLAG_OWNED)) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+      LOGMAN_THROW_A_FMT(Expected != IntrusivePooledAllocator::ClientFlags::FLAG_OWNED, "Tried to reown buffer but it was already owned!");
+#endif
       return std::nullopt;
     }
 
@@ -538,6 +541,20 @@ public:
 
   Type ReownOrClaimBuffer(std::optional<size_t> NewSize = std::nullopt) {
     return ReownOrClaimBufferWithSize(NewSize).Ptr;
+  }
+
+  /**
+   * @brief Assertion feature to check if current buffer is in a disowned or free state.
+   *
+   * Useful to validate that buffers are disowned at the correct places in code.
+   */
+  void ValidateDisownedOrFree() const {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    auto OwnedState = ClientOwnedFlag.load();
+    LOGMAN_THROW_A_FMT(
+      OwnedState == IntrusivePooledAllocator::ClientFlags::FLAG_DISOWNED || OwnedState == IntrusivePooledAllocator::ClientFlags::FLAG_FREE,
+      "ThreadPoolAllocator should have been disowned!");
+#endif
   }
 
   /**
