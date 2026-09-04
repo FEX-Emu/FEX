@@ -34,7 +34,10 @@ void OpDispatchBuilder::MOVVectorAlignedOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
-  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+  const bool DestIsMMX =
+    Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_MM_0 && Op->Dest.Data.GPR.GPR <= FEXCore::X86State::REG_MM_7;
+
+  if (!DestIsMMX && Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
     // Nop
     return;
   }
