@@ -1041,15 +1041,13 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         const auto* Op = IROp->C<IROp_StoreStackToStack>();
         auto Offset = Op->StackLocation;
 
-        if (Offset != 0) {
-          auto Value = MigrateToSlowPath_IfInvalid();
+        auto Value = MigrateToSlowPath_IfInvalid();
 
-          // Need to store st0 to stack location - basically a copy.
-          if (SlowPath) {
-            StoreStackValueAtOffset_Slow(LoadStackValueAtOffset_Slow(), Offset);
-          } else {
-            StackData.setTop(*Value, Offset);
-          }
+        // Need to store st0 to stack location - basically a copy.
+        if (SlowPath) {
+          StoreStackValueAtOffset_Slow(LoadStackValueAtOffset_Slow(), Offset);
+        } else {
+          StackData.setTop(*Value, Offset);
         }
         break;
       }
