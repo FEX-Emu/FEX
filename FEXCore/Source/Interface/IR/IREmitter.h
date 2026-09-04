@@ -36,6 +36,10 @@ public:
     DualListData.DelayedDisownBuffer();
   }
 
+  void ValidateDisownedOrFree() const {
+    DualListData.ValidateDisownedOrFree();
+  }
+
   IRListView ViewIR() {
     return IRListView(&DualListData);
   }

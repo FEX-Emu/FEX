@@ -129,6 +129,10 @@ public:
     PoolObject.DelayedDisownBuffer();
   }
 
+  void ValidateDisownedOrFree() const {
+    PoolObject.ValidateDisownedOrFree();
+  }
+
 private:
   Utils::PoolBufferWithTimedRetirement<uintptr_t, 5000, 500> PoolObject;
 };
