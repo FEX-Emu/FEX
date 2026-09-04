@@ -10,7 +10,7 @@
       "AFP",
       "RPRES"
     ],
-    "BinaryCacheVersion": 14
+    "BinaryCacheVersion": 15
   },
   "Comment": [
     "These 3DNow! instructions are optimal assuming that FEX doesn't SRA MMX registers",
@@ -288,9 +288,16 @@
       ]
     },
     "pfrcpit1 mm0, mm0": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x0f 0x0f 0xa6",
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1051]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
+      ]
     },
     "pfrsqit1 mm0, mm1": {
       "ExpectedInstructionCount": 6,
@@ -305,9 +312,16 @@
       ]
     },
     "pfrsqit1 mm0, mm0": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x0f 0x0f 0xa7",
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1051]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
+      ]
     },
     "pfsubr mm0, mm1": {
       "ExpectedInstructionCount": 8,
@@ -364,9 +378,16 @@
       ]
     },
     "pfrcpit2 mm0, mm0": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x0f 0x0f 0xb6",
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1051]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1202]",
+        "ldr d2, [x28, #1056]",
+        "str d2, [x28, #1056]",
+        "strh w20, [x28, #1064]"
+      ]
     },
     "db 0x0f, 0x0f, 0xc1, 0xb7": {
       "ExpectedInstructionCount": 11,
