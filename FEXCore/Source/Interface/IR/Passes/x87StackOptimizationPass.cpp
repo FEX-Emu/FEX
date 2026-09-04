@@ -1074,8 +1074,8 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           // Slow path: do actual memory operations
           Ref ValueTop = LoadStackValue();
           Ref ValueOffset = LoadStackValue(Offset);
-          StoreStackValue(ValueOffset);
-          StoreStackValue(ValueTop, Offset);
+          StoreStackValue(ValueOffset, 0, true);
+          StoreStackValue(ValueTop, Offset, true);
         } else {
           // Fast path: swap complete StackMemberInfo preserving Source metadata
           StackData.setTop(StackMemberOffset, 0);
