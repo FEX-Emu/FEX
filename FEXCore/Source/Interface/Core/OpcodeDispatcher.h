@@ -360,6 +360,7 @@ public:
   void MOVGPRNTOp(OpcodeArgs);
   void MOVVectorAlignedOp(OpcodeArgs);
   void MOVVectorUnalignedOp(OpcodeArgs);
+  void MOVVectorUnalignedNoNopOp(OpcodeArgs);
   void MOVVectorNTOp(OpcodeArgs, bool IsAVX);
   void ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
   void LSLOp(OpcodeArgs);
