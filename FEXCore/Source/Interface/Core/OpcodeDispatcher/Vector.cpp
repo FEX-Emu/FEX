@@ -34,13 +34,16 @@ void OpDispatchBuilder::MOVVectorAlignedOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
-  const bool DestIsMMX =
-    Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_MM_0 && Op->Dest.Data.GPR.GPR <= FEXCore::X86State::REG_MM_7;
-
-  if (!DestIsMMX && Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
+  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
     // Nop
     return;
   }
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
+  StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src);
+}
+
+void OpDispatchBuilder::MOVVectorUnalignedNoNopOp(OpcodeArgs) {
+  // Moves to same register might have secondary-effects and can't convert to a nop.
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Src);
 }
