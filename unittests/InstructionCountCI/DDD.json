@@ -10,7 +10,7 @@
       "AFP",
       "RPRES"
     ],
-    "BinaryCacheVersion": 11
+    "BinaryCacheVersion": 12
   },
   "Comment": [
     "These 3DNow! instructions are optimal assuming that FEX doesn't SRA MMX registers",

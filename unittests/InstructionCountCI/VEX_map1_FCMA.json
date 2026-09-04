@@ -8,7 +8,7 @@
       "FCMA"
     ],
     "DisabledHostFeatures": [],
-    "BinaryCacheVersion": 11
+    "BinaryCacheVersion": 12
   },
   "Instructions": {
     "vaddsubpd xmm0, xmm1, xmm2": {

@@ -10,7 +10,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 11
+    "BinaryCacheVersion": 12
   },
   "Instructions": {
     "lock add byte [rax], cl": {

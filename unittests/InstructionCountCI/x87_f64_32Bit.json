@@ -15,7 +15,7 @@
       "SVE256",
       "CSSC"
     ],
-    "BinaryCacheVersion": 11
+    "BinaryCacheVersion": 12
   },
   "Instructions": {
     "fstp dword [ebx*4+0x204a20]": {
