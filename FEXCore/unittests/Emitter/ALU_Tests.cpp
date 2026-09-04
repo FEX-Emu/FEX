@@ -1318,11 +1318,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - extended register") {
   TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_32, 3), "cmn w28, w27, lsl #3");
   TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_32, 4), "cmn w28, w27, lsl #4");
 
-  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 0), "cmn w28, x27");
-  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 1), "cmn w28, x27, lsl #1");
-  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 2), "cmn w28, x27, lsl #2");
-  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 3), "cmn w28, x27, lsl #3");
-  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 4), "cmn w28, x27, lsl #4");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 0), "cmn w28, x27, uxtx");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 1), "cmn w28, x27, uxtx #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 2), "cmn w28, x27, uxtx #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 3), "cmn w28, x27, uxtx #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 4), "cmn w28, x27, uxtx #4");
 
   TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 0), "cmn w28, w27, sxtb");
   TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 1), "cmn w28, w27, sxtb #1");
@@ -1360,13 +1360,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - extended register") {
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 3), "cmn x28, w27, uxth #3");
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 4), "cmn x28, w27, uxth #4");
 
-  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 0), "cmn x28, w27, uxtw");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 0), "cmn x28, w27");
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 1), "cmn x28, w27, uxtw #1");
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 2), "cmn x28, w27, uxtw #2");
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 3), "cmn x28, w27, uxtw #3");
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 4), "cmn x28, w27, uxtw #4");
 
-  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 0), "cmn x28, x27");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 0), "cmn x28, x27, lsl");
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 1), "cmn x28, x27, lsl #1");
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 2), "cmn x28, x27, lsl #2");
   TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 3), "cmn x28, x27, lsl #3");
@@ -1606,11 +1606,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - extended register") {
   TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_32, 3), "cmp w29, w28, lsl #3");
   TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_32, 4), "cmp w29, w28, lsl #4");
 
-  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 0), "cmp w29, x28");
-  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 1), "cmp w29, x28, lsl #1");
-  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 2), "cmp w29, x28, lsl #2");
-  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 3), "cmp w29, x28, lsl #3");
-  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 4), "cmp w29, x28, lsl #4");
+  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 0), "cmp w29, x28, uxtx");
+  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 1), "cmp w29, x28, uxtx #1");
+  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 2), "cmp w29, x28, uxtx #2");
+  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 3), "cmp w29, x28, uxtx #3");
+  TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 4), "cmp w29, x28, uxtx #4");
 
   TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::SXTB, 0), "cmp w29, w28, sxtb");
   TEST_SINGLE(cmp(Size::i32Bit, Reg::r29, Reg::r28, ExtendedType::SXTB, 1), "cmp w29, w28, sxtb #1");
@@ -1648,13 +1648,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - extended register") {
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::UXTH, 3), "cmp x29, w28, uxth #3");
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::UXTH, 4), "cmp x29, w28, uxth #4");
 
-  TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::UXTW, 0), "cmp x29, w28, uxtw");
+  TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::UXTW, 0), "cmp x29, w28");
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::UXTW, 1), "cmp x29, w28, uxtw #1");
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::UXTW, 2), "cmp x29, w28, uxtw #2");
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::UXTW, 3), "cmp x29, w28, uxtw #3");
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::UXTW, 4), "cmp x29, w28, uxtw #4");
 
-  TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 0), "cmp x29, x28");
+  TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 0), "cmp x29, x28, lsl");
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 1), "cmp x29, x28, lsl #1");
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 2), "cmp x29, x28, lsl #2");
   TEST_SINGLE(cmp(Size::i64Bit, Reg::r29, Reg::r28, ExtendedType::LSL_64, 3), "cmp x29, x28, lsl #3");
