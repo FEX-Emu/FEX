@@ -270,6 +270,9 @@ public:
   void fcvtxnt(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEFloatConvertOdd(0b00, 0b10, pg, zn, zd);
   }
+  void bfcvtnt(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatConvertOdd(0b10, 0b10, pg, zn, zd);
+  }
   ///< Size is destination size
   void fcvtnt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
@@ -291,8 +294,6 @@ public:
 
     SVEFloatConvertOdd(ConvertedSrcSize, ConvertedDestSize, pg, zn, zd);
   }
-
-  // XXX: BFCVTNT
 
   // SVE2 floating-point pairwise operations
   void faddp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
@@ -2312,15 +2313,15 @@ public:
 
   // SVE floating-point convert precision
   void fcvt(SubRegSize to, SubRegSize from, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(to != from, "to and from sizes cannot be the same.");
+    LOGMAN_THROW_A_FMT(to != SubRegSize::i8Bit && from != SubRegSize::i8Bit, "Can't use 8-bit element size");
     SVEFPConvertPrecision(to, from, zd, pg, zn);
   }
   void fcvtx(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    uint32_t Instr = 0b0110'0101'0000'1010'1010'0000'0000'0000;
-    Instr |= pg.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
+    SVEFPConvertPrecision(SubRegSize::i32Bit, SubRegSize::i8Bit, zd, pg, zn);
+  }
+  void bfcvt(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFPConvertPrecision(SubRegSize::i32Bit, SubRegSize::i32Bit, zd, pg, zn);
   }
 
   // SVE floating-point unary operations
@@ -3847,14 +3848,19 @@ private:
 
   void SVEFPConvertPrecision(SubRegSize to, SubRegSize from, ZRegister zd, PRegister pg, ZRegister zn) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(to != from, "to and from sizes cannot be the same.");
-    LOGMAN_THROW_A_FMT(to != SubRegSize::i8Bit && to != SubRegSize::i128Bit && from != SubRegSize::i8Bit && from != SubRegSize::i128Bit,
-                       "Can't use 8-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(to != SubRegSize::i128Bit && from != SubRegSize::i128Bit, "Can't use 128-bit element size");
 
     // Encodings for the to and from sizes can get a little funky
     // depending on what is being converted to/from.
     const uint32_t op = [&] {
       switch (from) {
+      case SubRegSize::i8Bit: {
+        switch (to) {
+        case SubRegSize::i32Bit: return 0x00020000U;
+        default: return UINT32_MAX;
+        }
+      }
+
       case SubRegSize::i16Bit: {
         switch (to) {
         case SubRegSize::i32Bit: return 0x00810000U;
@@ -3866,6 +3872,7 @@ private:
       case SubRegSize::i32Bit: {
         switch (to) {
         case SubRegSize::i16Bit: return 0x00800000U;
+        case SubRegSize::i32Bit: return 0x00820000U;
         case SubRegSize::i64Bit: return 0x00C30000U;
         default: return UINT32_MAX;
         }
