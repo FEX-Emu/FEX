@@ -139,9 +139,7 @@ void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
 
 void OpDispatchBuilder::FSTToStack(OpcodeArgs) {
   const uint8_t Offset = Op->OP & 7;
-  if (Offset != 0) {
-    _StoreStackToStack(Offset);
-  }
+  _StoreStackToStack(Offset);
 
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
