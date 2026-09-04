@@ -101,8 +101,6 @@ namespace DiskCache {
     std::span<const uint64_t> GuestPages;
     std::span<uint64_t> EntryPointRIPs;
     std::span<const uint32_t> EntryPointHostOffsets;
-    std::span<const BlobSmallRelocation> SmallRelocs;
-    std::span<const BlobThunkRelocation> ThunkRelocs;
 
     // the spans above point to memory owned by the Blob vec, so it's important this can't be copied
     CodeHitData() = default;
@@ -171,6 +169,8 @@ namespace DiskCache {
 
     std::optional<CodeHitData> Lookup(Core::InternalThreadState* Thread, std::optional<ExecutableFileSectionInfo> Region, uint64_t GuestRIP,
                                       std::optional<uint64_t>& GuestCodeKey);
+    void Validate(uint64_t GuestCodeKey, const CodeHitData& Hit, const CPU::CPUBackend::CompiledCode& CompiledCode,
+                  std::optional<ExecutableFileSectionInfo> Region);
     bool Store(Core::InternalThreadState* Thread, std::optional<ExecutableFileSectionInfo> Region, uint64_t GuestRIP, uint64_t GuestCodeKey,
                std::span<const uint8_t> GuestCode, const CPU::CPUBackend::CompiledCode& CompiledCode,
                std::span<const FEXCore::CPU::Relocation> Relocations, const Frontend::Decoder::DecodedBlockInformation* DecodedBlockInfo);
@@ -180,6 +180,9 @@ namespace DiskCache {
     }
     bool IsReadingDiskCache() const {
       return !ROCacheDBs.empty() || RWCacheDB != nullptr;
+    }
+    bool IsValidating() const {
+      return Validation;
     }
 
   private:
@@ -199,6 +202,7 @@ namespace DiskCache {
     fextl::unique_ptr<WorkQueueThread> Writer;
 
     FEX_CONFIG_OPT(EnableDiskCache, DISKCACHE);
+    FEX_CONFIG_OPT(Validation, DISKCACHEVALIDATION);
     FEX_CONFIG_OPT(MapDiskCacheFiles, DISKCACHEFILEMAPPING);
     FEX_CONFIG_OPT(RelocationFilter, DISKCACHERELOCATIONFILTER);
     FEX_CONFIG_OPT(AnonCaching, DISKCACHEANONCACHING);
