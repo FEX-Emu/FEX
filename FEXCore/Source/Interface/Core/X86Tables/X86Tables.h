@@ -171,7 +171,7 @@ struct DecodedOperand {
   }
 
   uint64_t Literal() const {
-    LOGMAN_THROW_A_FMT(IsLiteral(), "Precondition: must be a literal");
+    LOGMAN_THROW_A_FMT(IsLiteral() || IsLiteralPatchable(), "Precondition: must be a literal");
     return Data.Literal.Value;
   }
 
