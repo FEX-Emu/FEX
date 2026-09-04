@@ -13,7 +13,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 11
+    "BinaryCacheVersion": 12
   },
   "Instructions": {
     "fadd dword [rax]": {
@@ -2322,11 +2322,12 @@
       ]
     },
     "fdecstp": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xd9 11b 0xf6 /6"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2334,11 +2335,12 @@
       ]
     },
     "fincstp": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xd9 11b 0xf7 /6"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8185,11 +8187,12 @@
       ]
     },
     "ffreep st0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xdf 11b 0xc0 /0"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8197,11 +8200,12 @@
       ]
     },
     "ffreep st1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xdf 11b 0xc1 /0"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8209,11 +8213,12 @@
       ]
     },
     "ffreep st2": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xdf 11b 0xc2 /0"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8221,11 +8226,12 @@
       ]
     },
     "ffreep st3": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xdf 11b 0xc3 /0"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8233,11 +8239,12 @@
       ]
     },
     "ffreep st4": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xdf 11b 0xc4 /0"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8245,11 +8252,12 @@
       ]
     },
     "ffreep st5": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xdf 11b 0xc5 /0"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8257,11 +8265,12 @@
       ]
     },
     "ffreep st6": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xdf 11b 0xc6 /0"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8269,11 +8278,12 @@
       ]
     },
     "ffreep st7": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xdf 11b 0xc7 /0"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1049]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",

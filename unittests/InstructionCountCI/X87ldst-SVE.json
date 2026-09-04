@@ -11,7 +11,7 @@
       "FLAGM2",
       "RPRES"
     ],
-    "BinaryCacheVersion": 11
+    "BinaryCacheVersion": 12
   },
   "Instructions": {
     "fstp tword [rax]": {
