@@ -1034,22 +1034,15 @@ void BTCpuNotifyUnmapViewOfSection(void* Address, BOOL After, ULONG Status) {
 }
 
 void BTCpuNotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {
-  auto& InLockedRWXRead = GetFrontendThreadData(GetTLS().ThreadState())->InLockedRWXRead;
-  if (!After) {
-    ThreadCreationMutex.lock();
-    CTX->GetCodeInvalidationMutex().lock();
-    if (InvalidationTracker->BeginUntrackedWriteLocked(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size))) {
-      InLockedRWXRead = true;
-    } else {
-      CTX->GetCodeInvalidationMutex().unlock();
-      ThreadCreationMutex.unlock();
-    }
-  } else {
-    if (InLockedRWXRead) {
-      InLockedRWXRead = false;
-      CTX->GetCodeInvalidationMutex().unlock();
-      ThreadCreationMutex.unlock();
-    }
+  auto* ThreadState = GetTLS().ThreadState();
+  if (!InvalidationTracker || !ThreadState) {
+    return;
+  }
+
+  // See arm64ec `BTCpu64NotifyReadFile` for why this like this.
+  if (After && Status == STATUS_SUCCESS) {
+    std::scoped_lock Lock(ThreadCreationMutex);
+    InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
   }
 }
 
