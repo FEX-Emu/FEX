@@ -114,9 +114,8 @@ bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
 }
 
 uint8_t Decoder::ReadByte() {
-  LOGMAN_THROW_A_FMT(InstructionSize < MAX_INST_SIZE, "Max instruction size exceeded!");
   std::optional<uint8_t> Byte = PeekByte(0);
-  if (!Byte) {
+  if (!Byte || InstructionSize == MAX_INST_SIZE) {
     HitNonExecutableRange = true;
     // Pretend we read 0, the main decode loop will see HitNonExecutableRange and rollback the instruction.
     return 0;
