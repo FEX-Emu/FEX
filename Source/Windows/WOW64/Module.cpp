@@ -943,22 +943,16 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
 
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
   BOOL FirstChance = TRUE;
-  *Exception = FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax, WowContext.Ecx, FirstChance);
-  if (Exception->ExceptionCode == EXCEPTION_SINGLE_STEP) {
+  EXCEPTION_RECORD GuestException =
+    FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax, WowContext.Ecx, FirstChance);
+  if (GuestException.ExceptionCode == EXCEPTION_SINGLE_STEP) {
     WowContext.EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   }
   // wow64.dll will handle adjusting PC in the dispatched context after a breakpoint
 
   BTCpuSetContext(GetCurrentThread(), GetCurrentProcess(), nullptr, &WowContext);
   Context::UnlockJITContext(TLS);
-
-  if (!FirstChance) {
-    NtRaiseException(Exception, TLS.EntryContext(), FirstChance);
-  }
-
-  // Replace the host context with one captured before JIT entry so host code can unwind
-  memcpy(Context, TLS.EntryContext(), sizeof(*Context));
-
+  NtRaiseException(&GuestException, TLS.EntryContext(), FirstChance);
   return false;
 }
 
