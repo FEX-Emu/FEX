@@ -11,7 +11,7 @@
 namespace FEX::Windows {
 template<typename TReg>
 static inline EXCEPTION_RECORD HandleGuestException(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& Fault,
-                                                    const EXCEPTION_RECORD& Src, TReg& Rip, TReg Rax, TReg Cx) {
+                                                    const EXCEPTION_RECORD& Src, TReg& Rip, TReg Rax, TReg Cx, BOOL& FirstChance) {
   EXCEPTION_RECORD Dst = Src;
   Dst.ExceptionAddress = reinterpret_cast<void*>(Rip);
 
@@ -51,9 +51,11 @@ static inline EXCEPTION_RECORD HandleGuestException(FEXCore::Core::CpuStateFrame
           return Dst;
         case 0x29:
           Dst.ExceptionCode = STATUS_STACK_BUFFER_OVERRUN;
+          Dst.ExceptionFlags = EXCEPTION_NONCONTINUABLE;
           Dst.ExceptionAddress = reinterpret_cast<void*>(Rip);
           Dst.NumberParameters = 1;
           Dst.ExceptionInformation[0] = Cx;
+          FirstChance = FALSE;
           return Dst;
         case 0x2c: Dst.ExceptionCode = STATUS_ASSERTION_FAILURE; return Dst;
         case 0x2d:

@@ -87,10 +87,12 @@ void* WineSyscallDispatcher;
 uint64_t WineNtContinueSyscallId;
 uint64_t WineNtAllocateVirtualMemorySyscallId;
 uint64_t WineNtProtectVirtualMemorySyscallId;
+uint64_t WineNtRaiseExceptionSyscallId;
 
 NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
 NTSTATUS NtAllocateVirtualMemoryNative(HANDLE, PVOID*, ULONG_PTR, SIZE_T*, ULONG, ULONG);
 NTSTATUS NtProtectVirtualMemoryNative(HANDLE, PVOID*, SIZE_T*, ULONG, ULONG*);
+NTSTATUS NtRaiseExceptionNative(EXCEPTION_RECORD*, ARM64_NT_CONTEXT*, BOOL);
 static fextl::string AppConfigName {};
 
 [[noreturn]]
@@ -260,6 +262,8 @@ void ParseWineSyscallNumbers(HMODULE NtDll) {
       WineNtAllocateVirtualMemorySyscallId = CurSyscallId;
     } else if (strcmp(it->Name, "NtProtectVirtualMemory") == 0) {
       WineNtProtectVirtualMemorySyscallId = CurSyscallId;
+    } else if (strcmp(it->Name, "NtRaiseException") == 0) {
+      WineNtRaiseExceptionSyscallId = CurSyscallId;
     }
   }
 }
@@ -500,7 +504,8 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
-  Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8, Args->Context.X0);
+  BOOL FirstChance = TRUE;
+  Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8, Args->Context.X0, FirstChance);
   if (Args->Rec.ExceptionCode == EXCEPTION_SINGLE_STEP) {
     Args->Context.Cpsr &= ~(1 << 21); // PSTATE.SS
   } else if (Args->Rec.ExceptionCode == EXCEPTION_BREAKPOINT) {
@@ -508,6 +513,9 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
     Args->Context.Pc -= 1;
   }
 
+  if (!FirstChance) {
+    NtRaiseExceptionNative(&Args->Rec, &Args->Context, FirstChance);
+  }
   Context.Sp = reinterpret_cast<uint64_t>(Args);
   Context.Pc = KiUserExceptionDispatcher;
 }

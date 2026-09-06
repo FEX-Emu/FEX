@@ -942,7 +942,8 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   LogMan::Msg::DFmt("pc: {:X} eip: {:X}", Context->Pc, WowContext.Eip);
 
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
-  *Exception = FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax, WowContext.Ecx);
+  BOOL FirstChance = TRUE;
+  *Exception = FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax, WowContext.Ecx, FirstChance);
   if (Exception->ExceptionCode == EXCEPTION_SINGLE_STEP) {
     WowContext.EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   }
@@ -950,6 +951,10 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
 
   BTCpuSetContext(GetCurrentThread(), GetCurrentProcess(), nullptr, &WowContext);
   Context::UnlockJITContext(TLS);
+
+  if (!FirstChance) {
+    NtRaiseException(Exception, TLS.EntryContext(), FirstChance);
+  }
 
   // Replace the host context with one captured before JIT entry so host code can unwind
   memcpy(Context, TLS.EntryContext(), sizeof(*Context));
