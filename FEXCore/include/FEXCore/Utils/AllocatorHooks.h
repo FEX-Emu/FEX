@@ -166,6 +166,8 @@ FEX_DEFAULT_VISIBILITY extern void InitializeThread();
 
 #ifndef _WIN32
 void SetupAllocatorHooks(void* (*)(void* addr, size_t length, int prot, int flags, int fd, off_t offset), int (*)(void* addr, size_t length));
+#else
+void SetupAllocatorHooks(void (*)(const char* name, const void* address, size_t size));
 #endif
 
 struct FEXAllocOperators {

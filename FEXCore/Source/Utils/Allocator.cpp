@@ -317,6 +317,7 @@ VirtualTHPPtr VirtualTHPControl {VirtualTHPNOP};
 void SetupHooks(size_t PageSize, HookPtrs Ptrs) {
   VirtualName = Ptrs.VirtualName;
   VirtualTHPControl = Ptrs.VirtualTHPControl;
+  SetupAllocatorHooks(VirtualName);
 }
 
 #endif
