@@ -249,6 +249,9 @@ public:
   }
 
   void MarkMonoBackpatcherBlock(uint64_t BlockEntry) override;
+  std::atomic<uint64_t>& GetMonoBackPatcherBlock() {
+    return MonoBackpatcherBlock;
+  }
 
   // Manual debugging tooling which is useful for developers.
   struct TrackingEmpty {

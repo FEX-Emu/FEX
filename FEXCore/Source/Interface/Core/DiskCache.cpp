@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstring>
 #include <charconv>
+#include <atomic>
 
 namespace FEXCore {
 
@@ -279,7 +280,8 @@ namespace DiskCache {
     {
       std::lock_guard Guard(IndexMutex);
       if (Index.contains(Hash)) {
-        // shouldn't really happen.. assert or something?
+        // LogMan::Msg::IFmt("duplicate store {}", Hash);
+        //  shouldn't really happen.. assert or something?
         return true;
       }
     }
@@ -439,11 +441,25 @@ namespace DiskCache {
     }
   }
 
-  uint64_t DiskCache::MakeBlobKey(const uint64_t CodeKey) {
-    struct {
+  uint64_t DiskCache::MakeBlobKey(Core::InternalThreadState* Thread, const uint64_t CodeKey, bool Writable, bool MonoBackpatcher) {
+    struct __attribute__((packed)) {
       uint64_t CodeKey;
       XXH128_hash_t BucketHash;
-    } BlobKeyBytes = {CodeKey, BucketHash};
+      uint8_t Flags;
+    } BlobKeyBytes = {CodeKey, BucketHash, 0};
+
+    if (Writable) {
+      BlobKeyBytes.Flags |= 1 << 0;
+    }
+    if (CTX->AreMonoHacksActive()) {
+      BlobKeyBytes.Flags |= 1 << 1;
+    }
+    if (Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC]) {
+      BlobKeyBytes.Flags |= 1 << 2;
+    }
+    if (MonoBackpatcher) {
+      BlobKeyBytes.Flags |= 1 << 3;
+    }
 
     return XXH3_64bits(&BlobKeyBytes, sizeof(BlobKeyBytes));
   }
@@ -454,7 +470,11 @@ namespace DiskCache {
       return std::nullopt;
     }
     if (Region && Region->FileStartVA) {
-      GuestCodeKey = GuestRIP - Region->FileStartVA;
+      struct __attribute__((packed)) {
+        uint64_t GuestOffset;
+        uint64_t FileId;
+      } FileBackedKey = {GuestRIP - Region->FileStartVA, Region->FileInfo.FileId};
+      GuestCodeKey = XXH3_64bits(&FileBackedKey, sizeof(FileBackedKey));
     } else {
       if (!AnonCaching) {
         return std::nullopt;
@@ -476,7 +496,9 @@ namespace DiskCache {
       // LogMan::Msg::IFmt("anon lookup! length {:d} {}", GuestCodeKey, TotalSize);
     }
 
-    uint64_t Hash = MakeBlobKey(*GuestCodeKey);
+    auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, GuestRIP);
+    uint64_t Hash =
+      MakeBlobKey(Thread, *GuestCodeKey, RangeInfo.Writable, GuestRIP == CTX->GetMonoBackPatcherBlock().load(std::memory_order_relaxed));
 
     IndexEntry Entry;
     {
@@ -492,7 +514,6 @@ namespace DiskCache {
     // found a key hash match, could still be a miss, check guest hash
 
     // do we have enough room in our live code to even hash GuestSize worth?
-    auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, GuestRIP);
     if (RangeInfo.Size == 0 || RangeInfo.Base > GuestRIP) {
       return std::nullopt;
     }
@@ -767,7 +788,9 @@ namespace DiskCache {
     Blob.resize(TotalSize);
     uint8_t* BlobData = Blob.data();
 
-    uint64_t BlobKey = MakeBlobKey(GuestCodeKey);
+    auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, GuestRIP);
+    uint64_t BlobKey =
+      MakeBlobKey(Thread, GuestCodeKey, RangeInfo.Writable, GuestRIP == CTX->GetMonoBackPatcherBlock().load(std::memory_order_relaxed));
     MesaFOZ::foz_payload_key Key = {};
     fextl::string BlobName = fextl::fmt::format("{:016x}", BlobKey);
     memcpy(Key.bytes, BlobName.data(), BlobName.size());
