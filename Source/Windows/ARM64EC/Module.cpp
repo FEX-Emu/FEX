@@ -87,10 +87,12 @@ void* WineSyscallDispatcher;
 uint64_t WineNtContinueSyscallId;
 uint64_t WineNtAllocateVirtualMemorySyscallId;
 uint64_t WineNtProtectVirtualMemorySyscallId;
+uint64_t WineNtRaiseExceptionSyscallId;
 
 NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
 NTSTATUS NtAllocateVirtualMemoryNative(HANDLE, PVOID*, ULONG_PTR, SIZE_T*, ULONG, ULONG);
 NTSTATUS NtProtectVirtualMemoryNative(HANDLE, PVOID*, SIZE_T*, ULONG, ULONG*);
+NTSTATUS NtRaiseExceptionNative(EXCEPTION_RECORD*, ARM64_NT_CONTEXT*, BOOL);
 static fextl::string AppConfigName {};
 
 [[noreturn]]
@@ -260,6 +262,8 @@ void ParseWineSyscallNumbers(HMODULE NtDll) {
       WineNtAllocateVirtualMemorySyscallId = CurSyscallId;
     } else if (strcmp(it->Name, "NtProtectVirtualMemory") == 0) {
       WineNtProtectVirtualMemorySyscallId = CurSyscallId;
+    } else if (strcmp(it->Name, "NtRaiseException") == 0) {
+      WineNtRaiseExceptionSyscallId = CurSyscallId;
     }
   }
 }
@@ -480,18 +484,15 @@ static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThrea
 }
 
 static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& Context) {
-  const auto& Config = SignalDelegator->GetConfig();
   auto* Thread = GetCPUArea().ThreadState();
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
-  uint64_t GuestSp = Context.X[Config.SRAGPRMapping[static_cast<size_t>(FEXCore::X86State::REG_RSP)]];
-  auto* Args = reinterpret_cast<KiUserExceptionDispatcherStackLayout*>(FEXCore::AlignDown(GuestSp, 64)) - 1;
 
   LogMan::Msg::DFmt("Reconstructing context");
   if (!IsDispatcherAddress(Context.Pc)) {
     ReconstructThreadState(Thread, Context);
   }
-  Args->Context = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
-  LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, Args->Context.Pc);
+  ARM64_NT_CONTEXT GuestContext = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
+  LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, GuestContext.Pc);
 
   // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
   // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
@@ -500,16 +501,16 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
-  Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8, Args->Context.X0);
-  if (Args->Rec.ExceptionCode == EXCEPTION_SINGLE_STEP) {
-    Args->Context.Cpsr &= ~(1 << 21); // PSTATE.SS
-  } else if (Args->Rec.ExceptionCode == EXCEPTION_BREAKPOINT) {
+  BOOL FirstChance = TRUE;
+  EXCEPTION_RECORD GuestRec = FEX::Windows::HandleGuestException(Fault, Rec, GuestContext.Pc, GuestContext.X8, GuestContext.X0, FirstChance);
+  if (GuestRec.ExceptionCode == EXCEPTION_SINGLE_STEP) {
+    GuestContext.Cpsr &= ~(1 << 21); // PSTATE.SS
+  } else if (GuestRec.ExceptionCode == EXCEPTION_BREAKPOINT) {
     // INT3 will set RIP to the instruction following it, undo this (any edge cases with multibyte instructions that trigger breakpoints are bugs present in Windows also)
-    Args->Context.Pc -= 1;
+    GuestContext.Pc -= 1;
   }
 
-  Context.Sp = reinterpret_cast<uint64_t>(Args);
-  Context.Pc = KiUserExceptionDispatcher;
+  NtRaiseExceptionNative(&GuestRec, &GuestContext, FirstChance);
 }
 
 class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {

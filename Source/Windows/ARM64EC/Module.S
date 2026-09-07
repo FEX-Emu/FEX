@@ -121,6 +121,7 @@ ExitFunctionSuspendPoint:
   // Allows for continuing from a full native context, as the NTDLL NtContinue export takes in an x64 context with EC and
   // the conversion to that loses the ARM64EC ABI-disallowed registers that FEX uses.
 DIRECT_SYSCALL_WRAPPER("#NtContinueNative", WineNtContinueSyscallId, 0x43)
+DIRECT_SYSCALL_WRAPPER("#NtRaiseExceptionNative", WineNtRaiseExceptionSyscallId, 0x174)
 
   // Both of these are wrapped as FEX needs them to setup its call checker at startup time and their NTDLL thunks could
   // already be patched by then (and because the call checker isn't installed, their patched x86 versions would be invoked

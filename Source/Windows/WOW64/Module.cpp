@@ -489,8 +489,7 @@ public:
     // Stash the the context pointer on the stack, as Simulate can be called from this syscall handler which would overwrite it
     CONTEXT* EntryContext = TLS.EntryContext();
     // Call the syscall handler with unwind information pointing to Simulate as its caller
-    uint64_t Ret =
-      SEHFrameTrampoline1Args(reinterpret_cast<void*>(Frame), reinterpret_cast<void*>(&HandleSyscallImpl), EntryContext->Sp, EntryContext->Pc);
+    SEHFrameTrampoline1Args(reinterpret_cast<void*>(Frame), reinterpret_cast<void*>(&HandleSyscallImpl), EntryContext->Sp, EntryContext->Pc);
     TLS.EntryContext() = EntryContext;
   }
 
@@ -943,18 +942,17 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   LogMan::Msg::DFmt("pc: {:X} eip: {:X}", Context->Pc, WowContext.Eip);
 
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
-  *Exception = FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax, WowContext.Ecx);
-  if (Exception->ExceptionCode == EXCEPTION_SINGLE_STEP) {
+  BOOL FirstChance = TRUE;
+  EXCEPTION_RECORD GuestException =
+    FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax, WowContext.Ecx, FirstChance);
+  if (GuestException.ExceptionCode == EXCEPTION_SINGLE_STEP) {
     WowContext.EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   }
   // wow64.dll will handle adjusting PC in the dispatched context after a breakpoint
 
   BTCpuSetContext(GetCurrentThread(), GetCurrentProcess(), nullptr, &WowContext);
   Context::UnlockJITContext(TLS);
-
-  // Replace the host context with one captured before JIT entry so host code can unwind
-  memcpy(Context, TLS.EntryContext(), sizeof(*Context));
-
+  NtRaiseException(&GuestException, TLS.EntryContext(), FirstChance);
   return false;
 }
 
