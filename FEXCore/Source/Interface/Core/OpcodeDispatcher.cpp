@@ -4357,6 +4357,9 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
     A.NonTSO |= IsNonTSOReg(AccessType, Operand.Data.SIB.Base) || IsNonTSOReg(AccessType, Operand.Data.SIB.Index);
   } else if (Operand.IsLiteralRelocation()) {
     A.Base = _EntrypointOffset(GPRSize, Operand.Data.LiteralRelocation.EntrypointOffset);
+  } else if (Operand.IsLiteralPatchable()) {
+    A.Base = _PatchableGuestData(OpSize::i64Bit, Operand.Data.LiteralPatchable.Value, Op->PC + Operand.Data.LiteralPatchable.FieldOffset,
+                                 static_cast<uint64_t>(Operand.Data.LiteralPatchable.Width));
   } else {
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }

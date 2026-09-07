@@ -8,7 +8,7 @@
       "SVE128",
       "SVE256"
     ],
-    "BinaryCacheVersion": 16
+    "BinaryCacheVersion": 17
   },
   "Instructions": {
     "cvtpi2ps xmm0, [rax]": {

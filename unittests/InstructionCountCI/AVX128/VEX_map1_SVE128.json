@@ -10,7 +10,7 @@
       "FLAGM2",
       "SVE256"
     ],
-    "BinaryCacheVersion": 16
+    "BinaryCacheVersion": 17
   },
   "Instructions": {
     "vmovntps [rax], xmm0": {

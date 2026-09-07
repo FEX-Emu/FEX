@@ -102,6 +102,18 @@ void Arm64JITCore::InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constan
   Relocations.emplace_back(MoveABI);
 }
 
+void Arm64JITCore::InsertGuestPatchableDataMove(ARMEmitter::Register Reg, uint64_t Value, uint64_t SiteAddress, uint8_t ValueSize) {
+  Relocation MoveABI = Relocation::Default();
+  MoveABI.GuestPatchableData.Header = {.Offset = GetCursorOffset(), .Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE};
+  MoveABI.GuestPatchableData.RegisterIndex = Reg.Idx();
+  MoveABI.GuestPatchableData.ValueSize = ValueSize;
+  MoveABI.GuestPatchableData.SiteAddress = SiteAddress;
+
+  // this might get patched on disk cache load
+  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Value, FEXCore::CPU::Arm64Emitter::PadType::DOPAD);
+  Relocations.emplace_back(MoveABI);
+}
+
 fextl::vector<FEXCore::CPU::Relocation> Arm64JITCore::TakeRelocations(uint64_t GuestBaseAddress) {
   // Rebase relocations to library base address
   for (auto& Relocation : Relocations) {
