@@ -544,6 +544,27 @@ static inline void ApplyPatchableDataRelocation(uint64_t SiteAddress, uint8_t Va
   Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Value, CPU::Arm64Emitter::PadType::DOPAD);
 }
 
+static inline int64_t ReadLiveGuestDisplacement(uint64_t SiteAddress, uint8_t ValueSize) {
+  uint64_t Raw = 0;
+  memcpy(&Raw, reinterpret_cast<const void*>(SiteAddress), ValueSize);
+  // manual sign-extension from guest live bytes
+  // 1/2 sizes not permitted in DetectDataMasks currently
+  if (ValueSize == 4) {
+    return (int32_t)Raw;
+  } else {
+    return (int64_t)Raw;
+  }
+}
+
+static inline void ApplyPatchableRIPLiteralRelocation(uint64_t SiteAddress, uint8_t ValueSize, CPU::Arm64Emitter& Emitter) {
+  Emitter.dc64(SiteAddress + ValueSize + ReadLiveGuestDisplacement(SiteAddress, ValueSize));
+}
+
+static inline void ApplyPatchableRIPMoveRelocation(uint64_t SiteAddress, uint8_t ValueSize, uint8_t RegisterIndex, CPU::Arm64Emitter& Emitter) {
+  const uint64_t Target = SiteAddress + ValueSize + ReadLiveGuestDisplacement(SiteAddress, ValueSize);
+  Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Target, CPU::Arm64Emitter::PadType::DOPAD);
+}
+
 bool CodeCache::ApplyPackedCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
                                            std::span<const DiskCache::BlobSmallRelocation> SmallRelocs,
                                            std::span<const DiskCache::BlobThunkRelocation> ThunkRelocs) {
@@ -567,6 +588,15 @@ bool CodeCache::ApplyPackedCodeRelocations(uint64_t GuestEntry, std::span<std::b
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE: {
       ApplyPatchableDataRelocation(GuestEntry + Reloc.PatchableData.SiteOffset, Reloc.PatchableData.ValueSize,
                                    Reloc.PatchableData.RegisterIndex, Emitter);
+      break;
+    }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_LITERAL: {
+      ApplyPatchableRIPLiteralRelocation(GuestEntry + Reloc.PatchableData.SiteOffset, Reloc.PatchableData.ValueSize, Emitter);
+      break;
+    }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_MOVE: {
+      ApplyPatchableRIPMoveRelocation(GuestEntry + Reloc.PatchableData.SiteOffset, Reloc.PatchableData.ValueSize,
+                                      Reloc.PatchableData.RegisterIndex, Emitter);
       break;
     }
     default: ERROR_AND_DIE_FMT("Unknown packed relocation type {}", ToUnderlying((CPU::RelocationTypes)Reloc.Type));

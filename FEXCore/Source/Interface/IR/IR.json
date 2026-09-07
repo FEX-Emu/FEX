@@ -312,8 +312,8 @@
         "HasSideEffects": true,
         "RAOverride": "2"
       },
-      "ExitFunction OpSize:#Size, GPR:$NewRIP, BranchHint:$Hint, GPR:$CallReturnAddress, SSA:$CallReturnBlock": {
-        "Desc": ["Exits the current JIT function with a target RIP"
+      "ExitFunction OpSize:#Size, GPR:$NewRIP, BranchHint:$Hint, GPR:$CallReturnAddress, SSA:$CallReturnBlock, i64:$PatchSiteAddress{0}, i64:$PatchSiteSize{0}": {
+        "Desc": ["Exits the current JIT function with a target RIP - optionally patchable from guest bytes for caching"
                 ],
         "Inline": ["Any"],
         "HasSideEffects": true,

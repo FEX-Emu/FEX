@@ -105,6 +105,8 @@ private:
     uint64_t CallerAddress;
     uint64_t GuestRIP;
     ARMEmitter::ForwardLabel Label;
+    uint64_t PatchSiteAddress = 0;
+    uint8_t PatchSiteSize = 0;
   };
   fextl::vector<PendingJumpThunk> PendingJumpThunks;
 
@@ -345,8 +347,8 @@ private:
     uint32_t End;
   };
 
-  void EmitLinkedBranch(uint64_t GuestRIP, bool Call) {
-    PendingJumpThunks.push_back({GetCursorAddress<uint64_t>(), GuestRIP, {}});
+  void EmitLinkedBranch(uint64_t GuestRIP, bool Call, uint64_t PatchSiteAddress = 0, uint8_t PatchSiteSize = 0) {
+    PendingJumpThunks.push_back({GetCursorAddress<uint64_t>(), GuestRIP, {}, PatchSiteAddress, PatchSiteSize});
     auto& Thunk = PendingJumpThunks.back();
     BindOrRestart(&Thunk.Label);
     if (Call) {
@@ -563,6 +565,7 @@ private:
   void InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constant);
 
   void InsertGuestPatchableDataMove(ARMEmitter::Register Reg, uint64_t Value, uint64_t SiteAddress, uint8_t ValueSize);
+  void InsertGuestPatchableRIPMove(ARMEmitter::Register Reg, uint64_t Value, uint64_t SiteAddress, uint8_t ValueSize);
 
   /**
    * @brief Inserts a named symbol as a literal in memory
@@ -582,6 +585,11 @@ private:
    * @param Constant - The guest RIP that will be relocated
    */
   NamedSymbolLiteralPair InsertGuestRIPLiteral(uint64_t GuestRIP);
+
+  /**
+   * @brief Like InsertGuestRIPLiteral, but with patch information to recompute value from live guest bytes at cache load time
+   */
+  NamedSymbolLiteralPair InsertGuestPatchableRIPLiteral(uint64_t GuestRIP, uint64_t SiteAddress, uint8_t ValueSize);
 
   /**
    * @brief Place the named symbol literal relocation in memory

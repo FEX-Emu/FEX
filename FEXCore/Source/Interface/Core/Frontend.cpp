@@ -1401,6 +1401,7 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
   }
 
   FEXCore::X86Tables::DecodedOperand* LiteralToPatch = nullptr;
+  DataMaskType Type;
 
   // mov reg,imm
   if (DecodeInst->OP >= 0xB8 && DecodeInst->OP <= 0xBF) {
@@ -1416,16 +1417,47 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
     // if (LiteralToPatch && Value < 0x1000000ULL) {
     //   LiteralToPatch = nullptr;
     // }
+    Type = DataMaskType::MOV;
+  }
+
+  // jmp/call branches that use a literal rip-relative offset
+  // some of those may be inlined by multiblock and will be cleaned up at decode end
+  if (DecodeInst->TableInfo->Flags & X86Tables::InstFlags::FLAGS_SETS_RIP && DecodeInst->Src[0].IsLiteral()) {
+    LiteralToPatch = &DecodeInst->Src[0];
+    Type = DataMaskType::BRANCH;
   }
 
   // todo add a bunch more
 
   if (LiteralToPatch) {
-    Block.DataMasks.push_back({OpAddress + LastFieldReadOffset, LastFieldReadSize});
+    Block.DataMasks.push_back({OpAddress + LastFieldReadOffset, Type, LastFieldReadSize});
 
     LiteralToPatch->Type = X86Tables::DecodedOperand::OpType::LiteralPatchable;
     LiteralToPatch->Data.LiteralPatchable.FieldOffset = LastFieldReadOffset;
     LiteralToPatch->Data.LiteralPatchable.Width = LastFieldReadSize;
+  }
+}
+
+void Decoder::PruneInlinedBranchDataMasks() {
+  for (auto& Block : BlockInfo.Blocks) {
+    if (!Block.DataMasks.size()) {
+      continue;
+    }
+    const auto& LastInst = Block.DecodedInstructions[Block.NumInstructions - 1];
+    const auto& LastMask = Block.DataMasks.back();
+
+    if (LastMask.Type != DataMaskType::BRANCH) {
+      continue;
+    }
+
+    const uint64_t NextInst = LastInst.PC + LastInst.InstSize;
+    if (LastMask.FieldAddress < LastInst.PC || LastMask.FieldAddress + LastMask.ValueSize > NextInst) {
+      continue;
+    }
+
+    if (std::ranges::binary_search(BlockInfo.Blocks, NextInst + LastInst.Src[0].Data.LiteralPatchable.Value, std::less {}, &DecodedBlocks::Entry)) {
+      Block.DataMasks.pop_back();
+    }
   }
 }
 
@@ -1639,6 +1671,11 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
 
   for (auto& Block : BlockInfo.Blocks) {
     Block.IsEntryPoint = BlockInfo.EntryPoints.contains(Block.Entry);
+  }
+
+  // now that multiblock has settled down, remove any branch masks we put down that didn't end the block
+  if (WantsDataMasks) {
+    PruneInlinedBranchDataMasks();
   }
 }
 

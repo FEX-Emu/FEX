@@ -885,7 +885,10 @@ namespace DiskCache {
         SmallRelocs[SmallIdx++] = SmallReloc;
         break;
       }
-      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE: {
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE:
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_MOVE:
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_LITERAL: {
+        // same data for all, relative vs. not and register vs. literal will depend on type on apply
         BlobSmallRelocation SmallReloc = {};
         SmallReloc.Offset = Reloc.Header.Offset;
         SmallReloc.Type = uint8_t(Reloc.Header.Type);

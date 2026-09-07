@@ -29,6 +29,14 @@ enum class RelocationTypes : uint32_t {
   // The frontend flagged those regions as patchable by the disk cache
   // Aligned to struct RelocGuestPatchableData
   RELOC_GUEST_PATCHABLE_DATA_MOVE,
+
+  // Same as GuestRipLiteral but patchable
+  // Aligned to struct RelocGuestPatchableData
+  RELOC_GUEST_PATCHABLE_RIP_LITERAL,
+
+  // Like PATCHABLE_RIP_LITERAL but puts it in a register
+  // Aligned to struct RelocGuestPatchableData
+  RELOC_GUEST_PATCHABLE_RIP_MOVE,
 };
 
 struct FEX_PACKED RelocationHeader final {

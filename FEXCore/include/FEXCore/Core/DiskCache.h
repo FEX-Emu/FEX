@@ -221,7 +221,7 @@ namespace DiskCache {
 
   // TODO: This header is in global installed header path, but uses internal headers.
   // Migrate this once that is fixed.
-  static constexpr uint16_t FormatVersion = 17;
+  static constexpr uint16_t FormatVersion = 18;
   FEX_DEFAULT_VISIBILITY uint16_t GetFormatVersion();
 
 } // namespace DiskCache

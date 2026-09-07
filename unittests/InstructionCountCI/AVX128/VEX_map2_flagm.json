@@ -11,7 +11,7 @@
       "SVE256",
       "SVEBITPERM"
     ],
-    "BinaryCacheVersion": 17
+    "BinaryCacheVersion": 18
   },
   "Instructions": {
     "vtestps xmm0, xmm1": {

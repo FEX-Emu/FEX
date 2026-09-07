@@ -8,7 +8,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 17
+    "BinaryCacheVersion": 18
   },
   "Instructions": {
     "psrlw xmm0, xmm1": {
