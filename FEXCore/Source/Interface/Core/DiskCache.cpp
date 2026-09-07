@@ -470,7 +470,11 @@ namespace DiskCache {
       return std::nullopt;
     }
     if (Region && Region->FileStartVA) {
-      GuestCodeKey = GuestRIP - Region->FileStartVA;
+      struct __attribute__((packed)) {
+        uint64_t GuestOffset;
+        uint64_t FileId;
+      } FileBackedKey = {GuestRIP - Region->FileStartVA, Region->FileInfo.FileId};
+      GuestCodeKey = XXH3_64bits(&FileBackedKey, sizeof(FileBackedKey));
     } else {
       if (!AnonCaching) {
         return std::nullopt;
