@@ -165,7 +165,7 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   // ENTRY_D5
   {
     {"AAD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 1, { .OpDispatch = &IR::OpDispatchBuilder::AADOp } },
-    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"REX2", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_D6
   {
