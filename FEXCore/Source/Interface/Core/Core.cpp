@@ -358,11 +358,6 @@ bool ContextImpl::InitCore() {
   // Set up the SignalDelegator config since core is initialized.
   SignalDelegation->SetConfig(Dispatcher->MakeSignalDelegatorConfig());
 
-#if defined(_WIN32) && !defined(ARCHITECTURE_arm64ec)
-  // WOW64 always needs the interrupt fault check to be enabled.
-  Config.NeedsPendingInterruptFaultCheck = true;
-#endif
-
   if (Config.GdbServer) {
     // If gdbserver is enabled then this needs to be enabled.
     Config.NeedsPendingInterruptFaultCheck = true;

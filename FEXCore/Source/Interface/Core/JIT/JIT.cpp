@@ -766,7 +766,7 @@ void Arm64JITCore::EmitTFCheck() {
 void Arm64JITCore::EmitSuspendInterruptCheck() {
   if (CTX->Config.NeedsPendingInterruptFaultCheck) {
     // Trigger a fault if there are any pending interrupts
-    // Used only for suspend on WIN32 at the moment
+    // Used only for gdbserver at the moment
     constexpr size_t InterruptPageOffset =
       offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState);
     if constexpr (InterruptPageOffset <= 32760) {
@@ -778,7 +778,7 @@ void Arm64JITCore::EmitSuspendInterruptCheck() {
     }
   }
 
-#ifdef ARCHITECTURE_arm64ec
+#ifdef _WIN32
   static constexpr uint16_t SuspendMagic {0xCAFE};
 
   ldr(TMP2.W(), STATE_PTR(CpuStateFrame, SuspendDoorbell));

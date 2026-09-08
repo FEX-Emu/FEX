@@ -427,7 +427,7 @@ struct CpuStateFrame {
 
   InternalThreadState* Thread;
 
-#ifdef ARCHITECTURE_arm64ec
+#ifdef _WIN32
   // Set by the kernel on ARM64EC whenever the JIT should cooperatively suspend running guest code.
   uint32_t SuspendDoorbell {};
 #endif
