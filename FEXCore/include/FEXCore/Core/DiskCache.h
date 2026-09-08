@@ -12,6 +12,7 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_set.h>
 #include <FEXCore/fextl/robin_map.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 #include <stdint.h>
 #include <mutex>
@@ -55,10 +56,10 @@ namespace DiskCache {
     fextl::vector<uint32_t> GuestExtents;
   };
 
-  struct __attribute__((packed)) IndexExtraBlobHeader {
-    XXH128_hash_t GuestHash;
-    uint32_t GuestSize;
-    uint32_t GuestExtentsCount;
+  struct IndexCacheHead {
+    struct IndexEntry MainEntry;
+    uint64_t MainEntryFootprint;
+    fextl::unique_ptr<fextl::multimap<uint64_t, IndexEntry>> MoreEntries; // sorted by guest footprint
   };
 
   struct __attribute__((packed)) BlobFixedHeader {
@@ -115,7 +116,7 @@ namespace DiskCache {
     CodeHitData& operator=(const CodeHitData&) = delete;
   };
 
-  using Index = fextl::robin_map<uint64_t, IndexEntry>;
+  using Index = fextl::robin_map<uint64_t, IndexCacheHead>;
 
   class FOZFile {
   public:
@@ -153,13 +154,14 @@ namespace DiskCache {
     bool Open(const fextl::string& CacheDBName, bool ReadOnly);
     void PopulateIndex(Index& CacheIndex, bool& FoundMetadata);
     bool ReadCacheBlob(uint64_t Offset, std::span<uint8_t> OutBlob);
-    bool StoreCacheBlob(const MesaFOZ::foz_payload_key& Key, std::span<const uint8_t> Blob, Index& CacheIndex, std::mutex& IndexMutex,
-                        std::span<const uint8_t> IndexBlob);
+    bool StoreCacheBlob(const MesaFOZ::foz_payload_key& UniqueKey, uint64_t LookupKey, std::span<const uint8_t> Blob, Index& CacheIndex,
+                        std::mutex& IndexMutex, std::span<const uint8_t> IndexBlob);
 
   private:
     // stores run on the Writer, so returning quick isn't as important
     static constexpr uint32_t STORE_LOCK_TIMEOUT_MS = 1000;
     static constexpr uint64_t BIG_MAPPING_SIZE = 1ULL << 33;
+    static constexpr uint32_t LOOKUP_KEY_MAX_BUCKET_DEPTH = 20;
 
     FOZFile CacheFOZ;
     uint8_t* CacheFileMapping = nullptr;
@@ -192,7 +194,7 @@ namespace DiskCache {
 
   private:
     bool OpenCacheDB(const fextl::string& CacheDBName, bool ReadOnly);
-    uint64_t MakeBlobKey(Core::InternalThreadState* Thread, const uint64_t ModuleOffset, bool Writable, bool MonoBackpatcher);
+    uint64_t MakeLookupKey(Core::InternalThreadState* Thread, const uint64_t ModuleOffset, bool Writable, bool MonoBackpatcher);
 
     bool ReadingDiskCache {};
     bool WritingDiskCache {};
@@ -221,7 +223,7 @@ namespace DiskCache {
 
   // TODO: This header is in global installed header path, but uses internal headers.
   // Migrate this once that is fixed.
-  static constexpr uint16_t FormatVersion = 18;
+  static constexpr uint16_t FormatVersion = 19;
   FEX_DEFAULT_VISIBILITY uint16_t GetFormatVersion();
 
 } // namespace DiskCache
