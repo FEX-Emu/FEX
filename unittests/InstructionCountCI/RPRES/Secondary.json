@@ -9,7 +9,7 @@
       "SVE128",
       "SVE256"
     ],
-    "BinaryCacheVersion": 18
+    "BinaryCacheVersion": 19
   },
   "Instructions": {
     "rsqrtps xmm0, xmm1": {
