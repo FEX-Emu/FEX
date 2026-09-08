@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#include <FEXCore/Utils/PrctlUtils.h>
+
 #ifdef ENABLE_FEX_ALLOCATOR
 #include <rpmalloc/rpmalloc.h>
 #ifndef _WIN32
@@ -20,16 +22,32 @@
 namespace FEXCore::Allocator {
 using mmap_hook_type = void* (*)(void* addr, size_t length, int prot, int flags, int fd, off_t offset);
 using munmap_hook_type = int (*)(void* addr, size_t length);
+using vma_name_hook_type = void (*)(const char* name, const void* address, size_t size);
 
 #ifdef ENABLE_FEX_ALLOCATOR
 typedef void* (*rp_mmap_hook_type)(size_t size, size_t alignment, size_t* offset, size_t* mapped_size);
 typedef void (*rp_munmap_hook_type)(void* address, size_t offset, size_t mapped_size);
+typedef void (*vma_name_hook_type)(const char* name, const void* address, size_t size);
 extern "C" rp_mmap_hook_type rp_mmap_hook;
 extern "C" rp_munmap_hook_type rp_munmap_hook;
+extern "C" vma_name_hook_type rp_name_hook;
 
 #ifndef _WIN32
 mmap_hook_type fex_mmap_hook = ::mmap;
 munmap_hook_type fex_munmap_hook = ::munmap;
+
+static inline void LocalVirtualName(const char* Name, const void* Ptr, size_t Size) {
+#ifndef _WIN32
+  static bool Supports {true};
+  if (Supports) {
+    auto Result = prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Ptr, Size, Name);
+    if (Result == -1) {
+      // Disable any additional attempts.
+      Supports = false;
+    }
+  }
+#endif
+}
 #endif
 
 // Assume a 64KB page size until told otherwise.
@@ -172,6 +190,11 @@ void InitializeAllocator(size_t PageSize) {
   rpmalloc_initialize_config(&global_interface, &global_config);
   rp_mmap_hook = FEX_rp_mmap;
   rp_munmap_hook = FEX_rp_memory_unmap;
+  rp_name_hook = LocalVirtualName;
+}
+#else
+void SetupAllocatorHooks(vma_name_hook_type NameHook) {
+  rp_name_hook = NameHook;
 }
 #endif
 
