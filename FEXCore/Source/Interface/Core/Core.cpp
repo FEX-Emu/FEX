@@ -773,7 +773,6 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 #endif
 
     Thread->OpDispatcher->Finalize();
-
   }
 
   Thread->FrontendDecoder->DelayedDisownBuffer();
