@@ -73,6 +73,8 @@ struct fex_gen_type<VkAccelerationStructureGeometryDataKHR> : fexgen::assume_com
 template<>
 struct fex_gen_type<VkDescriptorDataEXT> : fexgen::assume_compatible_data_layout {};
 template<>
+struct fex_gen_type<VkResourceDescriptorDataEXT> : fexgen::assume_compatible_data_layout {};
+template<>
 struct fex_gen_type<VkDeviceOrHostAddressKHR> : fexgen::assume_compatible_data_layout {};
 template<>
 struct fex_gen_type<VkDeviceOrHostAddressConstKHR> : fexgen::assume_compatible_data_layout {};
@@ -120,6 +122,8 @@ struct fex_gen_config<&VkAccelerationStructureBuildSizesInfoKHR::pNext> : fexgen
 template<>
 struct fex_gen_config<&VkAccelerationStructureCaptureDescriptorDataInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkAccelerationStructureCreateInfo2KHR::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkAccelerationStructureCreateInfoKHR::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkAccelerationStructureCreateInfoNV::pNext> : fexgen::custom_repack {};
@@ -132,6 +136,8 @@ struct fex_gen_config<&VkAccelerationStructureDeviceAddressInfoKHR::pNext> : fex
 // template<>
 // struct fex_gen_config<&VkAccelerationStructureGeometryKHR::pNext> : fexgen::custom_repack {};
 // template<>
+// struct fex_gen_config<&VkAccelerationStructureGeometryMicromapDataKHR::pNext> : fexgen::custom_repack {};
+// template<>
 // struct fex_gen_config<&VkAccelerationStructureGeometryMotionTrianglesDataNV::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkAccelerationStructureGeometryTrianglesDataKHR::pNext> : fexgen::custom_repack {};
@@ -143,6 +149,8 @@ template<>
 struct fex_gen_config<&VkAccelerationStructureMotionInfoNV::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkAccelerationStructureTrianglesOpacityMicromapEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkAccelerationStructureTrianglesOpacityMicromapKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkAccelerationStructureVersionInfoKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -184,6 +192,8 @@ struct fex_gen_config<&VkBindDescriptorBufferEmbeddedSamplersInfoEXT::pNext> : f
 template<>
 struct fex_gen_config<&VkBindDescriptorSetsInfo::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkBindHeapInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkBindImageMemoryDeviceGroupInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkBindImageMemoryInfo::pNext> : fexgen::custom_repack {};
@@ -192,11 +202,17 @@ struct fex_gen_config<&VkBindImageMemorySwapchainInfoKHR::pNext> : fexgen::custo
 template<>
 struct fex_gen_config<&VkBindImagePlaneMemoryInfo::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkBindIndexBuffer3InfoKHR::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkBindMemoryStatus::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkBindSparseInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkBindTensorMemoryInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkBindTransformFeedbackBuffer2InfoEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkBindVertexBuffer3InfoKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkBindVideoSessionMemoryInfoKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -209,6 +225,8 @@ template<>
 struct fex_gen_config<&VkBufferCopy2::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkBufferCreateInfo::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkBufferDeviceAddressAlignmentAllocateInfoVALVE::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkBufferDeviceAddressCreateInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
@@ -251,6 +269,8 @@ template<>
 struct fex_gen_config<&VkCommandBufferBeginInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkCommandBufferInheritanceConditionalRenderingInfoEXT::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkCommandBufferInheritanceDescriptorHeapInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkCommandBufferInheritanceInfo::pNext> : fexgen::custom_repack {};
 template<>
@@ -270,11 +290,15 @@ struct fex_gen_config<&VkComputePipelineCreateInfo::pNext> : fexgen::custom_repa
 template<>
 struct fex_gen_config<&VkComputePipelineIndirectBufferInfoNV::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkConditionalRenderingBeginInfo2EXT::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkConditionalRenderingBeginInfoEXT::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkConvertCooperativeVectorMatrixInfoNV::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkCooperativeMatrixFlexibleDimensionsPropertiesNV::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkCooperativeMatrixProperties2EXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkCooperativeMatrixPropertiesKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -293,6 +317,10 @@ template<>
 struct fex_gen_config<&VkCopyCommandTransformInfoQCOM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkCopyDescriptorSet::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkCopyDeviceMemoryImageInfoKHR::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkCopyDeviceMemoryInfoKHR::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkCopyImageInfo2::pNext> : fexgen::custom_repack {};
 // template<>
@@ -330,6 +358,10 @@ struct fex_gen_config<&VkCuModuleTexturingModeCreateInfoNVX::pNext> : fexgen::cu
 template<>
 struct fex_gen_config<&VkCustomResolveCreateInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkDataGraphOpticalFlowImageFormatInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDataGraphOpticalFlowImageFormatPropertiesARM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkDataGraphPipelineBuiltinModelCreateInfoQCOM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDataGraphPipelineCompilerControlCreateInfoARM::pNext> : fexgen::custom_repack {};
@@ -345,10 +377,18 @@ template<>
 struct fex_gen_config<&VkDataGraphPipelineIdentifierCreateInfoARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDataGraphPipelineInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDataGraphPipelineNeuralStatisticsCreateInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDataGraphPipelineOpticalFlowCreateInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDataGraphPipelineOpticalFlowDispatchInfoARM::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkDataGraphPipelinePropertyQueryResultARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDataGraphPipelineResourceInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDataGraphPipelineResourceInfoImageLayoutARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDataGraphPipelineSessionBindPointRequirementARM::pNext> : fexgen::custom_repack {};
 template<>
@@ -357,8 +397,14 @@ template<>
 struct fex_gen_config<&VkDataGraphPipelineSessionCreateInfoARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDataGraphPipelineSessionMemoryRequirementsInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDataGraphPipelineSessionNeuralStatisticsCreateInfoARM::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkDataGraphPipelineShaderModuleCreateInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDataGraphPipelineSingleNodeConnectionARM::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkDataGraphPipelineSingleNodeCreateInfoARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDataGraphProcessingEngineCreateInfoARM::pNext> : fexgen::custom_repack {};
 template<>
@@ -409,6 +455,8 @@ template<>
 struct fex_gen_config<&VkDescriptorPoolInlineUniformBlockCreateInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDescriptorSetAllocateInfo::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkDescriptorSetAndBindingMappingEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDescriptorSetBindingReferenceVALVE::pNext> : fexgen::custom_repack {};
 template<>
@@ -440,7 +488,13 @@ struct fex_gen_config<&VkDeviceEventInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDeviceFaultCountsEXT::pNext> : fexgen::custom_repack {};
 // template<>
+// struct fex_gen_config<&VkDeviceFaultDebugInfoKHR::pNext> : fexgen::custom_repack {};
+// template<>
 // struct fex_gen_config<&VkDeviceFaultInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDeviceFaultInfoKHR::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkDeviceFaultShaderAbortMessageInfoKHR::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkDeviceGroupBindSparseInfo::pNext> : fexgen::custom_repack {};
 template<>
@@ -459,6 +513,10 @@ template<>
 struct fex_gen_config<&VkDeviceGroupSwapchainCreateInfoKHR::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkDeviceImageMemoryRequirements::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDeviceMemoryCopyKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDeviceMemoryImageCopyKHR::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkDeviceImageSubresourceInfoKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -485,6 +543,10 @@ struct fex_gen_config<&VkDeviceQueueShaderCoreControlCreateInfoARM::pNext> : fex
 // struct fex_gen_config<&VkDirectDriverLoadingInfoLUNARG::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkDirectDriverLoadingListLUNARG::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDispatchIndirect2InfoKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDispatchParametersARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDispatchTileInfoQCOM::pNext> : fexgen::custom_repack {};
 template<>
@@ -513,6 +575,10 @@ template<>
 struct fex_gen_config<&VkDisplaySurfaceCreateInfoKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDisplaySurfaceStereoCreateInfoNV::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDrawIndirect2InfoKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDrawIndirectCount2InfoKHR::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkDrmFormatModifierPropertiesList2EXT::pNext> : fexgen::custom_repack {};
 // template<>
@@ -563,6 +629,8 @@ template<>
 struct fex_gen_config<&VkFormatProperties2::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkFormatProperties3::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkFormatProperties4KHR::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkFragmentShadingRateAttachmentInfoKHR::pNext> : fexgen::custom_repack {};
 // template<>
@@ -598,6 +666,14 @@ struct fex_gen_config<&VkGeometryTrianglesNV::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkGetLatencyMarkerInfoNV::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkGpaDeviceClockModeInfoAMD::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGpaDeviceGetClockInfoAMD::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGpaSampleBeginInfoAMD::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGpaSessionCreateInfoAMD::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkGraphicsPipelineLibraryCreateInfoEXT::pNext> : fexgen::custom_repack {};
@@ -626,7 +702,11 @@ struct fex_gen_config<&VkImageCompressionPropertiesEXT::pNext> : fexgen::custom_
 template<>
 struct fex_gen_config<&VkImageCopy2::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkImageCreateFlags2CreateInfoKHR::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkImageCreateInfo::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkImageDescriptorInfoEXT::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkImageDrmFormatModifierExplicitCreateInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
@@ -650,13 +730,19 @@ struct fex_gen_config<&VkImageResolve2::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkImageSparseMemoryRequirementsInfo2::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkImageStencilUsage2CreateInfoKHR::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkImageStencilUsageCreateInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkImageSubresource2::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkImageSwapchainCreateInfoKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkImageTilingControlCreateInfoEXT::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkImageToMemoryCopy::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkImageUsageFlags2CreateInfoKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkImageViewAddressPropertiesNVX::pNext> : fexgen::custom_repack {};
 template<>
@@ -674,6 +760,8 @@ struct fex_gen_config<&VkImageViewSampleWeightCreateInfoQCOM::pNext> : fexgen::c
 template<>
 struct fex_gen_config<&VkImageViewSlicedCreateInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkImageViewUsage2CreateInfoKHR::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkImageViewUsageCreateInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkImportFenceFdInfoKHR::pNext> : fexgen::custom_repack {};
@@ -687,6 +775,8 @@ struct fex_gen_config<&VkImportSemaphoreFdInfoKHR::pNext> : fexgen::custom_repac
 // struct fex_gen_config<&VkIndirectCommandsLayoutCreateInfoEXT::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkIndirectCommandsLayoutCreateInfoNV::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkIndirectCommandsLayoutPushDataTokenNV::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkIndirectCommandsLayoutTokenEXT::pNext> : fexgen::custom_repack {};
 template<>
@@ -746,9 +836,15 @@ struct fex_gen_config<&VkMemoryMapInfo::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkMemoryMapPlacedInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkMemoryMarkerInfoAMD::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkMemoryOpaqueCaptureAddressAllocateInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkMemoryPriorityAllocateInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkMemoryRangeBarrierKHR::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkMemoryRangeBarriersInfoKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkMemoryRequirements2::pNext> : fexgen::custom_repack {};
 template<>
@@ -776,6 +872,8 @@ struct fex_gen_config<&VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM::pNe
 // template<>
 // struct fex_gen_config<&VkMutableDescriptorTypeCreateInfoEXT::pNext> : fexgen::custom_repack {};
 // template<>
+// struct fex_gen_config<&VkOpaqueCaptureDataCreateInfoEXT::pNext> : fexgen::custom_repack {};
+// template<>
 // struct fex_gen_config<&VkOpaqueCaptureDescriptorDataCreateInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkOpticalFlowExecuteInfoNV::pNext> : fexgen::custom_repack {};
@@ -799,6 +897,8 @@ template<>
 struct fex_gen_config<&VkPastPresentationTimingInfoEXT::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkPastPresentationTimingPropertiesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPerfHintInfoQCOM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPerformanceConfigurationAcquireInfoINTEL::pNext> : fexgen::custom_repack {};
 template<>
@@ -850,6 +950,10 @@ struct fex_gen_config<&VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT::pNex
 template<>
 struct fex_gen_config<&VkPhysicalDeviceBorderColorSwizzleFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceBufferDeviceAddressAllocationAlignmentFeaturesVALVE::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceBufferDeviceAddressAllocationAlignmentPropertiesVALVE::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceBufferDeviceAddressFeatures::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceBufferDeviceAddressFeaturesEXT::pNext> : fexgen::custom_repack {};
@@ -884,9 +988,17 @@ struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrix2FeaturesNV::pNext> : fe
 template<>
 struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrix2PropertiesNV::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrixConversionFeaturesQCOM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrixDecodeVectorFeaturesNV::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrixFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrixFeaturesNV::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrixInfo2EXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceCooperativeMatrixPropertiesKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -920,6 +1032,10 @@ struct fex_gen_config<&VkPhysicalDeviceDataGraphFeaturesARM::pNext> : fexgen::cu
 template<>
 struct fex_gen_config<&VkPhysicalDeviceDataGraphModelFeaturesQCOM::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceDataGraphNeuralAcceleratorStatisticsFeaturesARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceDataGraphOpticalFlowFeaturesARM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceDepthBiasControlFeaturesEXT::pNext> : fexgen::custom_repack {};
@@ -944,6 +1060,12 @@ struct fex_gen_config<&VkPhysicalDeviceDescriptorBufferTensorFeaturesARM::pNext>
 template<>
 struct fex_gen_config<&VkPhysicalDeviceDescriptorBufferTensorPropertiesARM::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceDescriptorHeapFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceDescriptorHeapPropertiesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceDescriptorHeapTensorPropertiesARM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceDescriptorIndexingFeatures::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceDescriptorIndexingProperties::pNext> : fexgen::custom_repack {};
@@ -951,6 +1073,8 @@ template<>
 struct fex_gen_config<&VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
@@ -978,6 +1102,8 @@ struct fex_gen_config<&VkPhysicalDeviceDynamicRenderingLocalReadFeatures::pNext>
 template<>
 struct fex_gen_config<&VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceElapsedTimerQueryFeaturesQCOM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceExclusiveScissorFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceExtendedDynamicState2FeaturesEXT::pNext> : fexgen::custom_repack {};
@@ -987,6 +1113,8 @@ template<>
 struct fex_gen_config<&VkPhysicalDeviceExtendedDynamicState3PropertiesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceExtendedDynamicStateFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceExtendedFlagsFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
@@ -1009,6 +1137,10 @@ struct fex_gen_config<&VkPhysicalDeviceExternalSemaphoreInfo::pNext> : fexgen::c
 // struct fex_gen_config<&VkPhysicalDeviceExternalTensorInfoARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceFaultFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceFaultFeaturesKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceFaultPropertiesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceFeatures2::pNext> : fexgen::custom_repack {};
 template<>
@@ -1052,6 +1184,12 @@ struct fex_gen_config<&VkPhysicalDeviceFrameBoundaryFeaturesEXT::pNext> : fexgen
 template<>
 struct fex_gen_config<&VkPhysicalDeviceGlobalPriorityQueryFeatures::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceGpaFeaturesAMD::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceGpaProperties2AMD::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceGpaPropertiesAMD::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT::pNext> : fexgen::custom_repack {};
@@ -1088,6 +1226,8 @@ struct fex_gen_config<&VkPhysicalDeviceImageProcessing2FeaturesQCOM::pNext> : fe
 template<>
 struct fex_gen_config<&VkPhysicalDeviceImageProcessing2PropertiesQCOM::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceImageProcessing3FeaturesQCOM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceImageProcessingFeaturesQCOM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceImageProcessingPropertiesQCOM::pNext> : fexgen::custom_repack {};
@@ -1095,6 +1235,8 @@ template<>
 struct fex_gen_config<&VkPhysicalDeviceImageRobustnessFeatures::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceImageTilingControlFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceImageViewImageFormatInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
@@ -1107,6 +1249,8 @@ template<>
 struct fex_gen_config<&VkPhysicalDeviceInlineUniformBlockFeatures::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceInlineUniformBlockProperties::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceInvocationMaskFeaturesHUAWEI::pNext> : fexgen::custom_repack {};
 template<>
@@ -1133,6 +1277,8 @@ template<>
 struct fex_gen_config<&VkPhysicalDeviceMaintenance10FeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceMaintenance10PropertiesKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceMaintenance11FeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceMaintenance3Properties::pNext> : fexgen::custom_repack {};
 template<>
@@ -1186,6 +1332,8 @@ struct fex_gen_config<&VkPhysicalDeviceMultiDrawPropertiesEXT::pNext> : fexgen::
 template<>
 struct fex_gen_config<&VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceMultiviewFeatures::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX::pNext> : fexgen::custom_repack {};
@@ -1206,7 +1354,11 @@ struct fex_gen_config<&VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT::pNext> : f
 template<>
 struct fex_gen_config<&VkPhysicalDeviceOpacityMicromapFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceOpacityMicromapFeaturesKHR::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceOpacityMicromapPropertiesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceOpacityMicromapPropertiesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceOpticalFlowFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
@@ -1240,7 +1392,7 @@ struct fex_gen_config<&VkPhysicalDevicePipelineCreationCacheControlFeatures::pNe
 template<>
 struct fex_gen_config<&VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
-struct fex_gen_config<&VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT::pNext> : fexgen::custom_repack {};
+struct fex_gen_config<&VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDevicePipelineOpacityMicromapFeaturesARM::pNext> : fexgen::custom_repack {};
 template<>
@@ -1270,9 +1422,13 @@ struct fex_gen_config<&VkPhysicalDevicePresentWait2FeaturesKHR::pNext> : fexgen:
 template<>
 struct fex_gen_config<&VkPhysicalDevicePresentWaitFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDevicePrivateDataBaseHandleFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDevicePrivateDataFeatures::pNext> : fexgen::custom_repack {};
 template<>
@@ -1286,9 +1442,17 @@ struct fex_gen_config<&VkPhysicalDeviceProvokingVertexFeaturesEXT::pNext> : fexg
 template<>
 struct fex_gen_config<&VkPhysicalDeviceProvokingVertexPropertiesEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDevicePushConstantBankFeaturesNV::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDevicePushConstantBankPropertiesNV::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDevicePushDescriptorProperties::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceQueueFamilyDataGraphProcessingEngineInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceQueuePerfHintFeaturesQCOM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceQueuePerfHintPropertiesQCOM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
@@ -1342,6 +1506,8 @@ struct fex_gen_config<&VkPhysicalDeviceSamplerYcbcrConversionFeatures::pNext> : 
 template<>
 struct fex_gen_config<&VkPhysicalDeviceScalarBlockLayoutFeatures::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceSchedulingControlsDispatchParametersPropertiesARM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceSchedulingControlsFeaturesARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceSchedulingControlsPropertiesARM::pNext> : fexgen::custom_repack {};
@@ -1349,6 +1515,10 @@ template<>
 struct fex_gen_config<&VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShader64BitIndexingFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderAbortFeaturesKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderAbortPropertiesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
@@ -1361,6 +1531,8 @@ template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderBfloat16FeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderClockFeaturesKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderConstantDataFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM::pNext> : fexgen::custom_repack {};
 template<>
@@ -1392,6 +1564,10 @@ struct fex_gen_config<&VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT::pNext>
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderImageFootprintFeaturesNV::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderInstrumentationFeaturesARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderInstrumentationPropertiesARM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderIntegerDotProductFeatures::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderIntegerDotProductProperties::pNext> : fexgen::custom_repack {};
@@ -1404,13 +1580,21 @@ struct fex_gen_config<&VkPhysicalDeviceShaderLongVectorPropertiesEXT::pNext> : f
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderMixedFloatDotProductFeaturesVALVE::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderMultipleWaitQueuesFeaturesQCOM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderMultipleWaitQueuesPropertiesQCOM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderObjectFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderObjectPropertiesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderQuadControlFeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -1422,7 +1606,13 @@ struct fex_gen_config<&VkPhysicalDeviceShaderSMBuiltinsFeaturesNV::pNext> : fexg
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderSMBuiltinsPropertiesNV::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderSplitBarrierFeaturesEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderSplitBarrierPropertiesEXT::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceShaderSubgroupRotateFeatures::pNext> : fexgen::custom_repack {};
 template<>
@@ -1474,6 +1664,8 @@ struct fex_gen_config<&VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT::pNex
 template<>
 struct fex_gen_config<&VkPhysicalDeviceTextureCompressionASTCHDRFeatures::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkPhysicalDeviceThrottleHintFeaturesSEC::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkPhysicalDeviceTileMemoryHeapFeaturesQCOM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceTileMemoryHeapPropertiesQCOM::pNext> : fexgen::custom_repack {};
@@ -1513,6 +1705,8 @@ template<>
 struct fex_gen_config<&VkPhysicalDeviceVideoDecodeVP9FeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceVideoEncodeAV1FeaturesKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR::pNext> : fexgen::custom_repack {};
 // template<>
@@ -1697,8 +1891,12 @@ template<>
 struct fex_gen_config<&VkPrivateDataSlotCreateInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkProtectedSubmitInfo::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkPushConstantBankInfoNV::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkPushConstantsInfo::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkPushDataInfoEXT::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkPushDescriptorSetInfo::pNext> : fexgen::custom_repack {};
 // template<>
@@ -1714,15 +1912,23 @@ struct fex_gen_config<&VkQueryPoolPerformanceQueryCreateInfoINTEL::pNext> : fexg
 template<>
 struct fex_gen_config<&VkQueryPoolVideoEncodeFeedbackCreateInfoKHR::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkQueryPoolVideoEncodePerPartitionFeedbackCreateInfoKHR::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkQueueFamilyCheckpointProperties2NV::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkQueueFamilyCheckpointPropertiesNV::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkQueueFamilyDataGraphOpticalFlowPropertiesARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkQueueFamilyDataGraphProcessingEnginePropertiesARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkQueueFamilyDataGraphPropertiesARM::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkQueueFamilyDataGraphTOSAPropertiesARM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkQueueFamilyGlobalPriorityProperties::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkQueueFamilyOwnershipTransferPropertiesKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -1805,6 +2011,8 @@ struct fex_gen_config<&VkRenderPassTransformBeginInfoQCOM::pNext> : fexgen::cust
 // struct fex_gen_config<&VkResolveImageInfo2::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkResolveImageModeInfoKHR::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkResourceDescriptorInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkSampleLocationsInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
@@ -1819,6 +2027,8 @@ template<>
 struct fex_gen_config<&VkSamplerCubicWeightsCreateInfoQCOM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkSamplerCustomBorderColorCreateInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkSamplerCustomBorderColorIndexCreateInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkSamplerReductionModeCreateInfo::pNext> : fexgen::custom_repack {};
 template<>
@@ -1849,12 +2059,20 @@ template<>
 struct fex_gen_config<&VkSetPresentConfigNV::pNext> : fexgen::custom_repack {};
 // template<>
 // struct fex_gen_config<&VkShaderCreateInfoEXT::pNext> : fexgen::custom_repack {};
+// template<>
+// struct fex_gen_config<&VkShaderDescriptorSetAndBindingMappingInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkShaderInstrumentationCreateInfoARM::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkShaderInstrumentationMetricDescriptionARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkShaderModuleCreateInfo::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkShaderModuleIdentifierEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkShaderModuleValidationCacheCreateInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkSharedPresentSurfaceCapabilities2KHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkSharedPresentSurfaceCapabilitiesKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -1884,6 +2102,8 @@ struct fex_gen_config<&VkSubresourceHostMemcpySize::pNext> : fexgen::custom_repa
 template<>
 struct fex_gen_config<&VkSubresourceLayout2::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkSubsampledImageFormatPropertiesEXT::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkSurfaceCapabilities2EXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkSurfaceCapabilities2KHR::pNext> : fexgen::custom_repack {};
@@ -1912,6 +2132,8 @@ struct fex_gen_config<&VkSwapchainCreateInfoKHR::pNext> : fexgen::custom_repack 
 template<>
 struct fex_gen_config<&VkSwapchainDisplayNativeHdrCreateInfoAMD::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkSwapchainFlagsSurfaceCapabilitiesEXT::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkSwapchainLatencyCreateInfoNV::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkSwapchainPresentBarrierCreateInfoNV::pNext> : fexgen::custom_repack {};
@@ -1938,17 +2160,25 @@ struct fex_gen_config<&VkTensorCaptureDescriptorDataInfoARM::pNext> : fexgen::cu
 // template<>
 // struct fex_gen_config<&VkTensorDescriptionARM::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkTensorExplicitTilingFormatPropertiesARM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkTensorFormatPropertiesARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkTensorMemoryBarrierARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkTensorMemoryRequirementsInfoARM::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkTensorRollingBackingCreateInfoARM::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkTensorViewCaptureDescriptorDataInfoARM::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkTensorViewCreateInfoARM::pNext> : fexgen::custom_repack {};
 template<>
+struct fex_gen_config<&VkTexelBufferDescriptorInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
 struct fex_gen_config<&VkTextureLODGatherFormatPropertiesAMD::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkThrottleHintSubmitInfoSEC::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkTileMemoryBindInfoQCOM::pNext> : fexgen::custom_repack {};
 template<>
@@ -2051,6 +2281,8 @@ struct fex_gen_config<&VkVideoEncodeAV1SessionCreateInfoKHR::pNext> : fexgen::cu
 // struct fex_gen_config<&VkVideoEncodeAV1SessionParametersCreateInfoKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkVideoEncodeCapabilitiesKHR::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkVideoEncodeFeedback2CapabilitiesKHR::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkVideoEncodeH264CapabilitiesKHR::pNext> : fexgen::custom_repack {};
 template<>
@@ -3174,6 +3406,50 @@ struct fex_gen_config<vkCmdWriteTimestamp2KHR> {};
 template<>
 struct fex_gen_config<vkQueueSubmit2KHR> {};
 template<>
+struct fex_gen_config<vkCmdBindIndexBuffer3KHR> {};
+template<>
+struct fex_gen_config<vkCmdBindVertexBuffers3KHR> {};
+template<>
+struct fex_gen_config<vkCmdDrawIndirect2KHR> {};
+template<>
+struct fex_gen_config<vkCmdDrawIndexedIndirect2KHR> {};
+template<>
+struct fex_gen_config<vkCmdDispatchIndirect2KHR> {};
+template<>
+struct fex_gen_config<vkCmdCopyMemoryKHR> {};
+template<>
+struct fex_gen_config<vkCmdCopyMemoryToImageKHR> {};
+template<>
+struct fex_gen_config<vkCmdCopyImageToMemoryKHR> {};
+template<>
+struct fex_gen_config<vkCmdUpdateMemoryKHR> {};
+template<>
+struct fex_gen_config<vkCmdFillMemoryKHR> {};
+template<>
+struct fex_gen_config<vkCmdCopyQueryPoolResultsToMemoryKHR> {};
+template<>
+struct fex_gen_config<vkCmdDrawIndirectCount2KHR> {};
+template<>
+struct fex_gen_config<vkCmdDrawIndexedIndirectCount2KHR> {};
+template<>
+struct fex_gen_config<vkCmdBeginConditionalRendering2EXT> {};
+template<>
+struct fex_gen_config<vkCmdBindTransformFeedbackBuffers2EXT> {};
+template<>
+struct fex_gen_config<vkCmdBeginTransformFeedback2EXT> {};
+template<>
+struct fex_gen_config<vkCmdEndTransformFeedback2EXT> {};
+template<>
+struct fex_gen_config<vkCmdDrawIndirectByteCount2EXT> {};
+template<>
+struct fex_gen_config<vkCmdDrawMeshTasksIndirect2EXT> {};
+template<>
+struct fex_gen_config<vkCmdDrawMeshTasksIndirectCount2EXT> {};
+template<>
+struct fex_gen_config<vkCmdWriteMarkerToMemoryAMD> {};
+template<>
+struct fex_gen_config<vkCreateAccelerationStructure2KHR> {};
+template<>
 struct fex_gen_config<vkCmdCopyBuffer2KHR> {};
 template<>
 struct fex_gen_config<vkCmdCopyImage2KHR> {};
@@ -3242,6 +3518,10 @@ struct fex_gen_config<vkCmdCopyMemoryIndirectKHR> {};
 template<>
 struct fex_gen_config<vkCmdCopyMemoryToImageIndirectKHR> {};
 template<>
+struct fex_gen_config<vkGetDeviceFaultReportsKHR> {};
+template<>
+struct fex_gen_config<vkGetDeviceFaultDebugInfoKHR> {};
+template<>
 struct fex_gen_config<vkCmdEndRendering2KHR> {};
 #endif
 template<>
@@ -3291,6 +3571,8 @@ template<>
 struct fex_gen_config<vkGetImageViewHandle64NVX> {};
 template<>
 struct fex_gen_config<vkGetImageViewAddressNVX> {};
+template<>
+struct fex_gen_config<vkGetDeviceCombinedImageSamplerIndexNVX> {};
 template<>
 struct fex_gen_config<vkCmdDrawIndirectCountAMD> {};
 template<>
@@ -3357,6 +3639,50 @@ struct fex_gen_config<vkDestroyDebugUtilsMessengerEXT> {};
 #ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkSubmitDebugUtilsMessageEXT> {};
+template<>
+struct fex_gen_config<vkCreateGpaSessionAMD> {};
+template<>
+struct fex_gen_config<vkDestroyGpaSessionAMD> {};
+template<>
+struct fex_gen_config<vkSetGpaDeviceClockModeAMD> {};
+template<>
+struct fex_gen_config<vkGetGpaDeviceClockInfoAMD> {};
+template<>
+struct fex_gen_config<vkCmdBeginGpaSessionAMD> {};
+template<>
+struct fex_gen_config<vkCmdEndGpaSessionAMD> {};
+template<>
+struct fex_gen_config<vkCmdBeginGpaSampleAMD> {};
+template<>
+struct fex_gen_config<vkCmdEndGpaSampleAMD> {};
+template<>
+struct fex_gen_config<vkGetGpaSessionStatusAMD> {};
+template<>
+struct fex_gen_config<vkGetGpaSessionResultsAMD> {};
+template<>
+struct fex_gen_config<vkResetGpaSessionAMD> {};
+template<>
+struct fex_gen_config<vkCmdCopyGpaSessionResultsAMD> {};
+template<>
+struct fex_gen_config<vkWriteSamplerDescriptorsEXT> {};
+template<>
+struct fex_gen_config<vkWriteResourceDescriptorsEXT> {};
+template<>
+struct fex_gen_config<vkCmdBindSamplerHeapEXT> {};
+template<>
+struct fex_gen_config<vkCmdBindResourceHeapEXT> {};
+template<>
+struct fex_gen_config<vkCmdPushDataEXT> {};
+template<>
+struct fex_gen_config<vkGetImageOpaqueCaptureDataEXT> {};
+template<>
+struct fex_gen_config<vkGetPhysicalDeviceDescriptorSizeEXT> {};
+template<>
+struct fex_gen_config<vkRegisterCustomBorderColorEXT> {};
+template<>
+struct fex_gen_config<vkUnregisterCustomBorderColorEXT> {};
+template<>
+struct fex_gen_config<vkGetTensorOpaqueCaptureDataARM> {};
 template<>
 struct fex_gen_config<vkCmdSetSampleLocationsEXT> {};
 template<>
@@ -3554,11 +3880,27 @@ struct fex_gen_config<vkSetPrivateDataEXT> {};
 template<>
 struct fex_gen_config<vkGetPrivateDataEXT> {};
 template<>
+struct fex_gen_config<vkQueueSetPerfHintQCOM> {};
+template<>
 struct fex_gen_config<vkCmdDispatchTileQCOM> {};
 template<>
 struct fex_gen_config<vkCmdBeginPerTileExecutionQCOM> {};
 template<>
 struct fex_gen_config<vkCmdEndPerTileExecutionQCOM> {};
+template<>
+struct fex_gen_config<vkSetLatencySleepModeLegacyNV> {};
+template<>
+struct fex_gen_config<vkLatencySleepLegacyNV> {};
+template<>
+struct fex_gen_config<vkSetLatencyMarkerLegacyNV> {};
+template<>
+struct fex_gen_config<vkGetLatencyTimingsLegacyNV> {};
+template<>
+struct fex_gen_config<vkQueueNotifyOutOfBandLegacyNV> {};
+template<>
+struct fex_gen_config<vkGetSleepStatusLegacyNV> {};
+template<>
+struct fex_gen_config<vkShutdownLatencyDeviceLegacyNV> {};
 #endif
 template<>
 struct fex_gen_config<vkGetDescriptorSetLayoutSizeEXT> {};
@@ -3669,6 +4011,8 @@ template<>
 struct fex_gen_config<vkCmdDrawClusterIndirectHUAWEI> {};
 template<>
 struct fex_gen_config<vkSetDeviceMemoryPriorityEXT> {};
+template<>
+struct fex_gen_config<vkCmdSetDispatchParametersARM> {};
 template<>
 struct fex_gen_config<vkGetDescriptorSetLayoutHostMappingInfoVALVE> {};
 template<>
@@ -3847,6 +4191,8 @@ template<>
 struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM> {};
 template<>
 struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM> {};
+template<>
+struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM> {};
 #endif
 template<>
 struct fex_gen_config<vkCmdSetAttachmentFeedbackLoopEnableEXT> {};
@@ -3898,11 +4244,31 @@ struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsProp
 template<>
 struct fex_gen_config<vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM> {};
 template<>
+struct fex_gen_config<vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM> {};
+template<>
+struct fex_gen_config<vkCreateShaderInstrumentationARM> {};
+template<>
+struct fex_gen_config<vkDestroyShaderInstrumentationARM> {};
+template<>
+struct fex_gen_config<vkCmdBeginShaderInstrumentationARM> {};
+template<>
+struct fex_gen_config<vkCmdEndShaderInstrumentationARM> {};
+template<>
+struct fex_gen_config<vkGetShaderInstrumentationValuesARM> {};
+template<>
+struct fex_gen_config<vkClearShaderInstrumentationMetricsARM> {};
+template<>
 struct fex_gen_config<vkCmdEndRendering2EXT> {};
 template<>
 struct fex_gen_config<vkCmdBeginCustomResolveEXT> {};
 template<>
+struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyDataGraphOpticalFlowImageFormatsARM> {};
+template<>
 struct fex_gen_config<vkCmdSetComputeOccupancyPriorityNV> {};
+template<>
+struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixProperties2EXT> {};
+template<>
+struct fex_gen_config<vkCmdSetPrimitiveRestartIndexEXT> {};
 template<>
 struct fex_gen_config<vkCreateAccelerationStructureKHR> {};
 template<>
