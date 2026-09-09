@@ -18,7 +18,7 @@ public:
     virtual void Run() = 0;
   };
 
-  WorkQueueThread(FEXCore::Threads::Flags Flags = {});
+  WorkQueueThread(FEXCore::Threads::Flags Flags = {}, const char* ThreadName = nullptr);
   ~WorkQueueThread();
 
   void QueueWork(fextl::unique_ptr<WorkItem> Work);

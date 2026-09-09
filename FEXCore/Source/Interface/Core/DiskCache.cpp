@@ -459,7 +459,7 @@ namespace DiskCache {
 
     if (IsWritingDiskCache()) {
       FEXCore::Threads::Flags WriterThreadFlags = {.LowPriority = true, .Internal = true};
-      Writer = fextl::make_unique<WorkQueueThread>(WriterThreadFlags);
+      Writer = fextl::make_unique<WorkQueueThread>(WriterThreadFlags, "FEX:DiskCache");
     }
   }
 

@@ -13,7 +13,7 @@ struct Flags {
 using ThreadFunc = void* (*)(void* user_ptr);
 
 class Thread;
-using CreateThreadFunc = fextl::unique_ptr<Thread> (*)(ThreadFunc Func, void* Arg, Flags Flags);
+using CreateThreadFunc = fextl::unique_ptr<Thread> (*)(ThreadFunc Func, void* Arg, Flags Flags, const char* ThreadName);
 using CleanupAfterForkFunc = void (*)();
 
 struct Pointers {
@@ -34,7 +34,7 @@ public:
    * @name Calls provided API functions
    * @{ */
 
-  static fextl::unique_ptr<Thread> Create(ThreadFunc Func, void* Arg, Flags Flags = {});
+  static fextl::unique_ptr<Thread> Create(ThreadFunc Func, void* Arg, Flags Flags = {}, const char* ThreadName = nullptr);
 
   static void CleanupAfterFork();
 

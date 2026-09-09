@@ -197,7 +197,7 @@ namespace PThreads {
 
   class PThread final : public FEXCore::Threads::Thread {
   public:
-    PThread(StackTracker* STracker, FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags)
+    PThread(StackTracker* STracker, FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags, const char* ThreadName)
       : STracker {STracker}
       , UserFunc {Func}
       , UserArg {Arg}
@@ -226,6 +226,9 @@ namespace PThreads {
         HLE::ThreadManager::SetSignalMask(OldMask);
       }
       pthread_attr_destroy(&Attr);
+      if (ThreadName) {
+        pthread_setname_np(Thread, ThreadName);
+      }
     }
 
     bool joinable() override {
@@ -375,8 +378,8 @@ namespace PThreads {
   static StackTracker* STracker {};
 
   static fextl::unique_ptr<FEXCore::Threads::Thread>
-  CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags) {
-    return fextl::make_unique<PThread>(STracker, Func, Arg, Flags);
+  CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags, const char* ThreadName) {
+    return fextl::make_unique<PThread>(STracker, Func, Arg, Flags, ThreadName);
   }
 
   static void CleanupAfterFork_PThread() {
