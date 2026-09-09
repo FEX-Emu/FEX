@@ -7,7 +7,8 @@
 #include <unistd.h>
 
 namespace FEXCore::Threads {
-static fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_Default(ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags) {
+static fextl::unique_ptr<FEXCore::Threads::Thread>
+CreateThread_Default(ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags, const char* ThreadName) {
   ERROR_AND_DIE_FMT("Frontend didn't setup thread creation!");
 }
 
@@ -20,8 +21,9 @@ static FEXCore::Threads::Pointers Ptrs = {
   .CleanupAfterFork = CleanupAfterFork_Default,
 };
 
-fextl::unique_ptr<FEXCore::Threads::Thread> FEXCore::Threads::Thread::Create(ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags) {
-  return Ptrs.CreateThread(Func, Arg, Flags);
+fextl::unique_ptr<FEXCore::Threads::Thread>
+FEXCore::Threads::Thread::Create(ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags, const char* ThreadName) {
+  return Ptrs.CreateThread(Func, Arg, Flags, ThreadName);
 }
 
 void FEXCore::Threads::Thread::CleanupAfterFork() {

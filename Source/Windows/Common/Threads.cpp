@@ -13,7 +13,7 @@ namespace FEX::Windows {
 namespace WinThreadImpl {
   class Thread final : public FEXCore::Threads::Thread {
   public:
-    Thread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags)
+    Thread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags, const char* ThreadName)
       : UserFunc {Func}
       , UserArg {Arg}
       , Flags {Flags} {
@@ -27,6 +27,17 @@ namespace WinThreadImpl {
       if (Status < 0) {
         LogMan::Msg::EFmt("NtCreateThreadEx failed: 0x{:x}", static_cast<uint32_t>(Status));
         Handle = nullptr;
+      }
+
+      if (ThreadName) {
+        UNICODE_STRING ThreadNameW;
+        if (RtlCreateUnicodeStringFromAsciiz(&ThreadNameW, ThreadName)) {
+          THREAD_NAME_INFORMATION info {
+            .ThreadName = ThreadNameW,
+          };
+          NtSetInformationThread(Handle, static_cast<THREADINFOCLASS>(38) /* ThreadNameInformation */, &info, sizeof(info));
+          RtlFreeUnicodeString(&ThreadNameW);
+        }
       }
     }
 
@@ -90,8 +101,9 @@ namespace WinThreadImpl {
     void* ReturnValue {};
   };
 
-  fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags) {
-    return fextl::make_unique<Thread>(Func, Arg, Flags);
+  fextl::unique_ptr<FEXCore::Threads::Thread>
+  CreateThread(FEXCore::Threads::ThreadFunc Func, void* Arg, FEXCore::Threads::Flags Flags, const char* ThreadName) {
+    return fextl::make_unique<Thread>(Func, Arg, Flags, ThreadName);
   }
 
   void CleanupAfterFork() {}
