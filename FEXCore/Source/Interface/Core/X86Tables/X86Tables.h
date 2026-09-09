@@ -185,10 +185,14 @@ struct DecodedOperand {
     struct {
       int64_t Displacement;
       uint8_t GPR;
+      bool PatchableDisp;
+      uint8_t DispOffset;
     } GPRIndirect; // Shared with GPRIndirectRelocation
 
     struct {
       int64_t Value;
+      bool PatchableDisp;
+      uint8_t DispOffset;
     } RIPLiteral; // Shared with RIPLiteralRelocation
 
     struct LiteralType {
@@ -211,7 +215,9 @@ struct DecodedOperand {
       uint8_t Scale;
       uint8_t Index; // ~0 invalid
       uint8_t Base;  // ~0 invalid
-    } SIB;           // Shared with SIBRelocation
+      bool PatchableDisp;
+      uint8_t DispOffset;
+    } SIB; // Shared with SIBRelocation
   };
 
   TypeUnion Data;

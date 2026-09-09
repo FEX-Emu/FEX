@@ -538,13 +538,7 @@ ApplyRIPMoveRelocation(ContextImpl& CTX, uint64_t GuestRIP, uint8_t RegisterInde
   Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Pointer, CPU::Arm64Emitter::PadType::DOPAD);
 }
 
-static inline void ApplyPatchableDataRelocation(uint64_t SiteAddress, uint8_t ValueSize, uint8_t RegisterIndex, CPU::Arm64Emitter& Emitter) {
-  uint64_t Value = 0;
-  memcpy(&Value, reinterpret_cast<const void*>(SiteAddress), ValueSize);
-  Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Value, CPU::Arm64Emitter::PadType::DOPAD);
-}
-
-static inline int64_t ReadLiveGuestDisplacement(uint64_t SiteAddress, uint8_t ValueSize) {
+static inline int64_t ReadLiveGuestData(uint64_t SiteAddress, uint8_t ValueSize) {
   uint64_t Raw = 0;
   memcpy(&Raw, reinterpret_cast<const void*>(SiteAddress), ValueSize);
   // manual sign-extension from guest live bytes
@@ -556,12 +550,18 @@ static inline int64_t ReadLiveGuestDisplacement(uint64_t SiteAddress, uint8_t Va
   }
 }
 
+static inline void ApplyPatchableDataRelocation(uint64_t SiteAddress, uint8_t ValueSize, uint8_t RegisterIndex, CPU::Arm64Emitter& Emitter) {
+  Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), ReadLiveGuestData(SiteAddress, ValueSize),
+                       CPU::Arm64Emitter::PadType::DOPAD);
+}
+
+
 static inline void ApplyPatchableRIPLiteralRelocation(uint64_t SiteAddress, uint8_t ValueSize, CPU::Arm64Emitter& Emitter) {
-  Emitter.dc64(SiteAddress + ValueSize + ReadLiveGuestDisplacement(SiteAddress, ValueSize));
+  Emitter.dc64(SiteAddress + ValueSize + ReadLiveGuestData(SiteAddress, ValueSize));
 }
 
 static inline void ApplyPatchableRIPMoveRelocation(uint64_t SiteAddress, uint8_t ValueSize, uint8_t RegisterIndex, CPU::Arm64Emitter& Emitter) {
-  const uint64_t Target = SiteAddress + ValueSize + ReadLiveGuestDisplacement(SiteAddress, ValueSize);
+  const uint64_t Target = SiteAddress + ValueSize + ReadLiveGuestData(SiteAddress, ValueSize);
   Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Target, CPU::Arm64Emitter::PadType::DOPAD);
 }
 

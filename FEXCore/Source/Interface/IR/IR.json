@@ -960,6 +960,13 @@
         "DestSize": "Size"
       },
 
+      "GPR = PatchableGuestRIP OpSize:#Size, i64:$Value, i64:$SiteAddress, i64:$SiteSize": {
+        "Desc": ["Loads GuestRIP-relative Value in a patchable way",
+                 "On disk cache load the value is patched from live guest PC and live displacement at SiteAddress"
+                ],
+        "DestSize": "Size"
+      },
+
       "GPR = Constant i64:$Constant, ConstPad:$Pad{IR::ConstPad::NoPad}, i32:$MaxBytes{0}": {
         "Desc": ["Generates a 64bit constant inside of a GPR",
                  "Unsupported to create a constant in FPR"

@@ -8,6 +8,7 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Frontend.h"
+#include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/Core/LookupCache.h"
 
@@ -216,6 +217,7 @@ void Decoder::DecodeModRM_16(X86Tables::DecodedOperand* Operand, X86Tables::ModR
   Operand->Type = DecodedOperand::OpType::SIB;
   Operand->Data.SIB.Scale = 1;
   Operand->Data.SIB.Offset = Literal;
+  Operand->Data.SIB.PatchableDisp = false;
 
   // Only called when ModRM.mod != 0b11
   struct Encodings {
@@ -291,6 +293,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
     // SIB
     Operand->Type = DecodedOperand::OpType::SIB;
     Operand->Data.SIB.Scale = 1 << SIB.scale;
+    Operand->Data.SIB.PatchableDisp = false;
 
     // The invalid encoding types are described at Table 1-12. "promoted nsigned is always non-zero"
     {
@@ -329,6 +332,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
       auto [Literal, IsRelocation] = ReadData(4);
       Operand->Type = IsRelocation ? DecodedOperand::OpType::RIPRelativeRelocation : DecodedOperand::OpType::RIPRelative;
       Operand->Data.RIPLiteral.Value = Literal;
+      Operand->Data.RIPLiteral.PatchableDisp = false;
     } else {
       // Register-direct addressing
       Operand->Type = DecodedOperand::OpType::GPRDirect;
@@ -344,6 +348,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
     Operand->Type = IsRelocation ? DecodedOperand::OpType::GPRIndirectRelocation : DecodedOperand::OpType::GPRIndirect;
     Operand->Data.GPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
     Operand->Data.GPRIndirect.Displacement = Literal;
+    Operand->Data.GPRIndirect.PatchableDisp = false;
   }
 }
 
@@ -1401,7 +1406,7 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
   }
 
   FEXCore::X86Tables::DecodedOperand* LiteralToPatch = nullptr;
-  DataMaskType Type;
+  DataMaskType Type = DataMaskType::NONE;
 
   // mov reg,imm
   if (DecodeInst->OP >= 0xB8 && DecodeInst->OP <= 0xBF) {
@@ -1417,9 +1422,63 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
     // if (LiteralToPatch && Value < 0x1000000ULL) {
     //   LiteralToPatch = nullptr;
     // }
-    Type = DataMaskType::MOV;
+    if (LiteralToPatch) {
+      Type = DataMaskType::MOV;
+    }
   }
 
+  // anything that has a patchable disp32
+  bool TryDisp = DecodeInst->Flags & X86Tables::DecodeFlags::FLAG_DECODED_MODRM;
+  if (TryDisp) {
+    FEXCore::X86Tables::ModRMDecoded ModRM;
+    ModRM.Hex = DecodeInst->ModRM;
+    {
+      // todo we could handle both imm + disp with more load tracking
+      bool FoundLiteral = false;
+      FEXCore::X86Tables::DecodedOperand* OpToPatch = nullptr;
+      for (auto& Src : DecodeInst->Src) {
+        if (Src.IsLiteral()) {
+          FoundLiteral = true;
+          break;
+        }
+        if (Src.IsRIPRelative() || Src.IsGPRIndirect() || Src.IsSIB()) {
+          OpToPatch = &Src;
+        }
+      }
+      if (DecodeInst->Dest.IsLiteral()) {
+        FoundLiteral = true;
+      }
+      if (DecodeInst->Dest.IsRIPRelative() || DecodeInst->Dest.IsGPRIndirect() || DecodeInst->Dest.IsSIB()) {
+        OpToPatch = &DecodeInst->Dest;
+      }
+      if (!FoundLiteral && OpToPatch) {
+        if (DecodeInst->TableInfo->OpcodeDispatcher.OpDispatch == &IR::OpDispatchBuilder::NOPOp) {
+          // if it's a nop disp, only mask data out, no other action required
+          Type = DataMaskType::NOP;
+        } else if (OpToPatch->IsRIPRelative()) {
+          Type = DataMaskType::DISP;
+          OpToPatch->Data.RIPLiteral.PatchableDisp = true;
+          OpToPatch->Data.RIPLiteral.DispOffset = LastFieldReadOffset;
+        } else if (OpToPatch->IsGPRIndirect()) {
+          // filter out disp8
+          if (!(ModRM.mod == 1)) {
+            Type = DataMaskType::DISP;
+            OpToPatch->Data.GPRIndirect.PatchableDisp = true;
+            OpToPatch->Data.GPRIndirect.DispOffset = LastFieldReadOffset;
+          }
+        } else if (OpToPatch->IsSIB()) {
+          FEXCore::X86Tables::SIBDecoded SIB;
+          SIB.Hex = DecodeInst->SIB;
+          // two disp32 cases here
+          if (ModRM.mod == 0b10 || (ModRM.mod == 0 && SIB.base == 0b101)) {
+            Type = DataMaskType::DISP;
+            OpToPatch->Data.SIB.PatchableDisp = true;
+            OpToPatch->Data.SIB.DispOffset = LastFieldReadOffset;
+          }
+        }
+      }
+    }
+  }
   // jmp/call branches that use a literal rip-relative offset
   // some of those may be inlined by multiblock and will be cleaned up at decode end
   if (DecodeInst->TableInfo->Flags & X86Tables::InstFlags::FLAGS_SETS_RIP && DecodeInst->Src[0].IsLiteral()) {
@@ -1429,12 +1488,14 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
 
   // todo add a bunch more
 
-  if (LiteralToPatch) {
+  if (Type != DataMaskType::NONE) {
     Block.DataMasks.push_back({OpAddress + LastFieldReadOffset, Type, LastFieldReadSize});
 
-    LiteralToPatch->Type = X86Tables::DecodedOperand::OpType::LiteralPatchable;
-    LiteralToPatch->Data.LiteralPatchable.FieldOffset = LastFieldReadOffset;
-    LiteralToPatch->Data.LiteralPatchable.Width = LastFieldReadSize;
+    if (LiteralToPatch) {
+      LiteralToPatch->Type = X86Tables::DecodedOperand::OpType::LiteralPatchable;
+      LiteralToPatch->Data.LiteralPatchable.FieldOffset = LastFieldReadOffset;
+      LiteralToPatch->Data.LiteralPatchable.Width = LastFieldReadSize;
+    }
   }
 }
 
