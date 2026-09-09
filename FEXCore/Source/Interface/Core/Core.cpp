@@ -774,8 +774,9 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
     Thread->OpDispatcher->Finalize();
 
-    Thread->FrontendDecoder->DelayedDisownBuffer();
   }
+
+  Thread->FrontendDecoder->DelayedDisownBuffer();
 
   IR::IREmitter* IREmitter = Thread->OpDispatcher.get();
 

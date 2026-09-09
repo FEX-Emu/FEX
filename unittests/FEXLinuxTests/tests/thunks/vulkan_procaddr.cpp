@@ -51,7 +51,7 @@ TEST_CASE("Vulkan ProcAddr self-lookups") {
   auto self = (PFN_vkGetDeviceProcAddr)gdpa(device, "vkGetDeviceProcAddr");
   REQUIRE(self != nullptr);
   CHECK(self(device, "vkDestroyDevice") != nullptr);
-  
+
   // XeSS doesn't seem to rely on this function, but let's make sure it works correctly anyways.
   CHECK(gdpa(device, "vkGetInstanceProcAddr") == nullptr);
 
