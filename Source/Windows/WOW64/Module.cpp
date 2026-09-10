@@ -63,18 +63,6 @@ $end_info$
 #include <wine/debug.h>
 #include <wine/unixlib.h>
 
-namespace ControlBits {
-// When this is unset, a thread can be safely interrupted and have its context recovered
-// IMPORTANT: This can only safely be written by the owning thread
-static constexpr uint32_t IN_JIT {1U << 0};
-
-// JIT entry polls this bit until it is unset, at which point CONTROL_IN_JIT will be set
-static constexpr uint32_t PAUSED {1U << 1};
-
-// When this is set, the CPU context stored in the CPU area has not yet been flushed to the FEX TLS
-static constexpr uint32_t WOW_CPU_AREA_DIRTY {1U << 2};
-}; // namespace ControlBits
-
 struct TLS {
   enum class Slot : size_t {
     ENTRY_CONTEXT = WOW64_TLS_MAX_NUMBER - 1,
@@ -116,8 +104,28 @@ struct TLS {
   }
 };
 
+CHPE_V2_CPU_AREA_INFO*& GetCpuArea() {
+  return ((__TEB*)NtCurrentTeb())->ChpeV2CpuAreaInfo;
+}
+
+WOW64_CONTEXT* GetWow64Context() {
+  WOW64_CONTEXT* WowContext;
+  RtlWow64GetCurrentCpuArea(nullptr, reinterpret_cast<void**>(&WowContext), nullptr);
+  return WowContext;
+}
+
 struct FrontendThreadData {
   bool InLockedRWXRead {};
+  CHPE_V2_CPU_AREA_INFO CpuArea {};
+
+  FrontendThreadData(FEXCore::Core::InternalThreadState* Thread) {
+    CpuArea.SuspendDoorbell = reinterpret_cast<ULONG*>(&Thread->CurrentFrame->SuspendDoorbell);
+    GetCpuArea() = &CpuArea;
+  }
+
+  ~FrontendThreadData() {
+    GetCpuArea() = nullptr;
+  }
 };
 
 class WowSyscallHandler;
@@ -192,8 +200,9 @@ void HandleImageUnmap(uint64_t Address, uint64_t Size) {
 } // namespace
 
 namespace Context {
-void LoadStateFromWowContext(FEXCore::Core::InternalThreadState* Thread, uint64_t WowTEB, WOW64_CONTEXT* Context) {
+void LoadStateFromWowContext(FEXCore::Core::InternalThreadState* Thread) {
   auto& State = Thread->CurrentFrame->State;
+  WOW64_CONTEXT* Context = GetWow64Context();
 
   // General register state
 
@@ -218,6 +227,7 @@ void LoadStateFromWowContext(FEXCore::Core::InternalThreadState* Thread, uint64_
 
   // The TEB is the only populated GDT entry by default
   auto GDT = State.GetSegmentFromIndex(State, (Context->SegFs & 0xffff));
+  uint64_t WowTEB = GetWowTEB(NtCurrentTeb());
   State.SetGDTBase(GDT, WowTEB);
   State.SetGDTLimit(GDT, 0xF'FFFFU);
   State.fs_cached = WowTEB;
@@ -242,7 +252,8 @@ void LoadStateFromWowContext(FEXCore::Core::InternalThreadState* Thread, uint64_
   State.AbridgedFTW = XSave->TagWord;
 }
 
-void StoreWowContextFromState(FEXCore::Core::InternalThreadState* Thread, WOW64_CONTEXT* Context) {
+void StoreWowContextFromState(WOW64_CONTEXT* Context) {
+  auto Thread = GetTLS().ThreadState();
   auto& State = Thread->CurrentFrame->State;
 
   // General register state
@@ -289,21 +300,13 @@ void StoreWowContextFromState(FEXCore::Core::InternalThreadState* Thread, WOW64_
   Context->FloatSave.Cr0NpxState = XSave->StatusWord | 0xffff0000;
 }
 
-NTSTATUS FlushThreadStateContext(HANDLE Thread) {
-  const auto [Err, TLS] = GetThreadTLS(Thread);
-  if (Err) {
-    return Err;
-  }
-
-  WOW64_CONTEXT TmpWowContext {.ContextFlags = WOW64_CONTEXT_FULL | WOW64_CONTEXT_EXTENDED_REGISTERS};
-
-  Context::StoreWowContextFromState(TLS.ThreadState(), &TmpWowContext);
-  return RtlWow64SetThreadContext(Thread, &TmpWowContext);
+void FlushThreadStateContext() {
+  StoreWowContextFromState(GetWow64Context());
 }
 
-void ReconstructThreadState(TLS TLS, CONTEXT* Context) {
+void ReconstructThreadState(CONTEXT* Context) {
   const auto& Config = SignalDelegator->GetConfig();
-  auto* Thread = TLS.ThreadState();
+  auto* Thread = GetTLS().ThreadState();
   auto& State = Thread->CurrentFrame->State;
 
   State.rip = CTX->RestoreRIPFromHostPC(Thread, Context->Pc);
@@ -323,27 +326,24 @@ void ReconstructThreadState(TLS TLS, CONTEXT* Context) {
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 }
 
-WOW64_CONTEXT ReconstructWowContext(TLS TLS, CONTEXT* Context) {
+WOW64_CONTEXT* ReconstructWowContext(CONTEXT* Context) {
   if (!IsDispatcherAddress(Context->Pc)) {
-    ReconstructThreadState(TLS, Context);
+    ReconstructThreadState(Context);
   }
 
-  WOW64_CONTEXT WowContext {
-    .ContextFlags = WOW64_CONTEXT_ALL,
-  };
-
-  auto* XSave = reinterpret_cast<XSAVE_FORMAT*>(WowContext.ExtendedRegisters);
+  WOW64_CONTEXT* WowContext = GetWow64Context();
+  auto* XSave = reinterpret_cast<XSAVE_FORMAT*>(WowContext->ExtendedRegisters);
   XSave->ControlWord = 0x27f;
   XSave->MxCsr = 0x1f80;
 
-  Context::StoreWowContextFromState(TLS.ThreadState(), &WowContext);
+  StoreWowContextFromState(WowContext);
   return WowContext;
 }
 
 static std::optional<FEX::Windows::TSOHandlerConfig> HandlerConfig;
 
-bool HandleUnalignedAccess(TLS TLS, CONTEXT* Context) {
-  auto Thread = TLS.ThreadState();
+bool HandleUnalignedAccess(CONTEXT* Context) {
+  auto Thread = GetTLS().ThreadState();
   if (!Thread->CTX->IsAddressInCodeBuffer(Thread, Context->Pc)) {
     return false;
   }
@@ -354,60 +354,36 @@ bool HandleUnalignedAccess(TLS TLS, CONTEXT* Context) {
   return Result.has_value();
 }
 
-void LockJITContext(TLS TLS) {
-  uint32_t Expected = TLS.ControlWord().load(), New;
+void LockJITContext() {
+  GetCpuArea()->InSimulation = -1;
+  LoadStateFromWowContext(GetTLS().ThreadState());
+}
 
-  // Spin until PAUSED is unset, setting IN_JIT when that occurs
-  do {
-    Expected = Expected & ~ControlBits::PAUSED;
-    New = (Expected | ControlBits::IN_JIT) & ~ControlBits::WOW_CPU_AREA_DIRTY;
-  } while (!TLS.ControlWord().compare_exchange_weak(Expected, New, std::memory_order::relaxed));
-  std::atomic_signal_fence(std::memory_order::seq_cst);
-
-  // If the CPU area is dirty, flush it to the JIT context before reentry
-  if (Expected & ControlBits::WOW_CPU_AREA_DIRTY) {
-    WOW64_CONTEXT* WowContext;
-    RtlWow64GetCurrentCpuArea(nullptr, reinterpret_cast<void**>(&WowContext), nullptr);
-    Context::LoadStateFromWowContext(TLS.ThreadState(), GetWowTEB(NtCurrentTeb()), WowContext);
+void UnlockJITContext() {
+  CHPE_V2_CPU_AREA_INFO* CpuArea = GetCpuArea();
+  CpuArea->InSimulation = 0;
+  if (*CpuArea->SuspendDoorbell) {
+    CONTEXT ResumeContext;
+    RtlCaptureContext(&ResumeContext);
+    if (*CpuArea->SuspendDoorbell) {
+      NtContinue(&ResumeContext, FALSE);
+    }
   }
 }
 
-void UnlockJITContext(TLS TLS) {
-  std::atomic_signal_fence(std::memory_order::seq_cst);
-  TLS.ControlWord().fetch_and(~ControlBits::IN_JIT, std::memory_order::relaxed);
-}
-
-class ScopedJITContextLock {
-private:
-  TLS TLSData;
-
-public:
-  ScopedJITContextLock(TLS TLSData)
-    : TLSData {TLSData} {
-    LockJITContext(TLSData);
-  }
-
-  ~ScopedJITContextLock() {
-    UnlockJITContext(TLSData);
-  }
-};
-
-bool HandleSuspendInterrupt(TLS TLS, CONTEXT* Context, uint64_t FaultAddress) {
-  if (FaultAddress != reinterpret_cast<uint64_t>(&TLS.ThreadState()->InterruptFaultPage)) {
+bool HandleSuspendInterrupt(CONTEXT* Context) {
+  static constexpr uint32_t SuspendTrapMagic {0xD4395FC0}; // brk #0xCAFE
+  if (*reinterpret_cast<uint32_t*>(Context->Pc) != SuspendTrapMagic) {
     return false;
   }
 
-  void* TmpAddress = reinterpret_cast<void*>(FaultAddress);
-  SIZE_T TmpSize = FEXCore::Utils::FEX_PAGE_SIZE;
-  ULONG TmpProt;
-  NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_READWRITE, &TmpProt);
-
   // Since interrupts only happen at the start of blocks, the reconstructed state should be entirely accurate
-  ReconstructThreadState(TLS, Context);
+  ReconstructThreadState(Context);
+  FlushThreadStateContext();
 
   // Yield to the suspender
-  UnlockJITContext(TLS);
-  LockJITContext(TLS);
+  UnlockJITContext();
+  LockJITContext();
 
   // Adjust context to return to the dispatcher, reloading SRA from thread state
   const auto& Config = SignalDelegator->GetConfig();
@@ -464,10 +440,10 @@ public:
       Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP + sizeof(StackLayout);
       Frame->State.rip = ReturnRIP;
 
-      const auto TLS = GetTLS();
-      Context::UnlockJITContext(TLS);
+      Context::FlushThreadStateContext();
+      Context::UnlockJITContext();
       ReturnRAX = static_cast<uint64_t>(WineUnixCall(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
-      Context::LockJITContext(TLS);
+      Context::LockJITContext();
       Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
     } else if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall) {
       const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
@@ -475,11 +451,11 @@ public:
       Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP;
       Frame->State.rip = ReturnRIP;
 
-      const auto TLS = GetTLS();
-      Context::UnlockJITContext(TLS);
+      Context::FlushThreadStateContext();
+      Context::UnlockJITContext();
       Wow64ProcessPendingCrossProcessItems();
       ReturnRAX = static_cast<uint64_t>(Wow64SystemServiceEx(static_cast<UINT>(EntryRAX), reinterpret_cast<UINT*>(ReturnRSP + 4)));
-      Context::LockJITContext(TLS);
+      Context::LockJITContext();
       Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
     }
   }
@@ -633,9 +609,8 @@ void BTCpuThreadInit() {
 
   const auto TLS = GetTLS();
   TLS.ThreadState() = Thread;
-  TLS.ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
 
-  Thread->FrontendPtr = new FrontendThreadData();
+  Thread->FrontendPtr = new FrontendThreadData(Thread);
 
   auto ThreadTID = GetCurrentThreadId();
   Threads.emplace(ThreadTID, Thread);
@@ -704,60 +679,11 @@ void* __wine_get_unix_opcode() {
 }
 
 NTSTATUS BTCpuGetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CONTEXT* Context) {
-  if (!FEX::Windows::ValidateHandleAccess(Thread, THREAD_GET_CONTEXT)) {
-    return STATUS_ACCESS_DENIED;
-  }
-
-  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT);
-  auto [Err, TLS] = GetThreadTLS(*ThreadDup);
-  if (Err) {
-    return Err;
-  }
-
-  Context::ScopedJITContextLock Lk {TLS};
-  if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
-    return Err;
-  }
-
-  return RtlWow64GetThreadContext(*ThreadDup, Context);
+  return RtlWow64GetThreadContext(Thread, Context);
 }
 
 NTSTATUS BTCpuSetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CONTEXT* Context) {
-  if (!FEX::Windows::ValidateHandleAccess(Thread, THREAD_SET_CONTEXT)) {
-    return STATUS_ACCESS_DENIED;
-  }
-
-  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT);
-  auto [Err, TLS] = GetThreadTLS(*ThreadDup);
-  if (Err) {
-    return Err;
-  }
-
-  // Back-up the input context incase we've been passed the CPU area (the flush below would wipe it out otherwise)
-  WOW64_CONTEXT TmpContext = *Context;
-
-  Context::ScopedJITContextLock Lk {TLS};
-  if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
-    return Err;
-  }
-
-  // Merge the input context into the CPU area then pass the full context into the JIT
-  if (Err = RtlWow64SetThreadContext(*ThreadDup, &TmpContext); Err) {
-    return Err;
-  }
-
-  TmpContext.ContextFlags = WOW64_CONTEXT_FULL | WOW64_CONTEXT_EXTENDED_REGISTERS;
-
-  if (Err = RtlWow64GetThreadContext(*ThreadDup, &TmpContext); Err) {
-    return Err;
-  }
-
-  if (Thread == GetCurrentThread() && TLS.CachedCallRetSp()) {
-    TLS.ThreadState()->CurrentFrame->State.callret_sp = TLS.CachedCallRetSp();
-  }
-
-  Context::LoadStateFromWowContext(TLS.ThreadState(), GetWowTEB(TLS.TEB), &TmpContext);
-  return STATUS_SUCCESS;
+  return RtlWow64SetThreadContext(Thread, Context);
 }
 
 // .seh_pushframe doesn't restore the frame pointer, so if when unwinding from RtlCaptureContext an operation is used
@@ -785,102 +711,20 @@ extern "C" void BTCpuSimulateImpl(CONTEXT* entry_context) {
   TLS.EntryContext() = entry_context;
   TLS.CachedCallRetSp() = TLS.ThreadState()->CurrentFrame->State.callret_sp;
 
-  Context::ScopedJITContextLock Lk {TLS};
+  Context::LockJITContext();
   CTX->ExecuteThread(TLS.ThreadState());
+  Context::UnlockJITContext();
 }
 
 NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
-  if (!FEX::Windows::ValidateHandleAccess(Thread, THREAD_SUSPEND_RESUME)) {
-    return STATUS_ACCESS_DENIED;
-  }
-
-  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT);
-  THREAD_BASIC_INFORMATION Info;
-  if (NTSTATUS Err = NtQueryInformationThread(*ThreadDup, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
-    return Err;
-  }
-
-  const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
-  if (ThreadTID == GetCurrentThreadId()) {
-    LogMan::Msg::DFmt("Suspending self");
-    // Mark the CPU area as dirty, to force the JIT context to be restored from it on entry as it may be changed using
-    // SetThreadContext (which doesn't use the BTCpu API)
-    if (!(GetTLS().ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed) & ControlBits::WOW_CPU_AREA_DIRTY)) {
-      if (NTSTATUS Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
-        return Err;
-      }
-    }
-
-    return NtSuspendThread(*ThreadDup, Count);
-  }
-
-  LogMan::Msg::DFmt("Suspending thread: {:X}", ThreadTID);
-
-  auto [Err, TLS] = GetThreadTLS(*ThreadDup);
-  if (Err) {
-    return Err;
-  }
-
-  std::scoped_lock Lock(ThreadCreationMutex);
-
-  // If the thread hasn't yet been initialized, suspend it without special handling as it wont yet have entered the JIT
-  if (!Threads.contains(ThreadTID)) {
-    LogMan::Msg::DFmt("Thread suspended: {:X}", ThreadTID);
-    return NtSuspendThread(*ThreadDup, Count);
-  }
-
-  // If CONTROL_IN_JIT is unset at this point, then it can never be set (and thus the JIT cannot be reentered) as
-  // CONTROL_PAUSED has been set, as such, while this may redundantly request interrupts in rare cases it will never
-  // miss them
-  if (TLS.ControlWord().fetch_or(ControlBits::PAUSED, std::memory_order::relaxed) & ControlBits::IN_JIT) {
-    LogMan::Msg::DFmt("Thread {:X} is in JIT, polling for interrupt", ThreadTID);
-
-    ULONG TmpProt;
-    void* TmpAddress = &TLS.ThreadState()->InterruptFaultPage;
-    SIZE_T TmpSize = FEXCore::Utils::FEX_PAGE_SIZE;
-    NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_READONLY, &TmpProt);
-  }
-
-  // Spin until the JIT is interrupted
-  FEXCore::Utils::SpinWaitLock::WaitBitMaskPred(TLS.ControlWordAddress(), ControlBits::IN_JIT, 0U, std::equal_to<>());
-
-  // The JIT has now been interrupted and the context stored in the thread's CPU area is up-to-date
-  if (Err = NtSuspendThread(*ThreadDup, Count); Err) {
-    TLS.ControlWord().fetch_and(~ControlBits::PAUSED, std::memory_order::relaxed);
-    return Err;
-  }
-
-  CONTEXT TmpContext {
-    .ContextFlags = CONTEXT_INTEGER,
-  };
-
-  // NtSuspendThread may return before the thread is actually suspended, so a sync operation like NtGetContextThread
-  // needs to be called to ensure it is before we unset CONTROL_PAUSED
-  std::ignore = NtGetContextThread(*ThreadDup, &TmpContext);
-
-  // Mark the CPU area as dirty, to force the JIT context to be restored from it on entry as it may be changed using
-  // SetThreadContext (which doesn't use the BTCpu API)
-  if (!(TLS.ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed) & ControlBits::WOW_CPU_AREA_DIRTY)) {
-    if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
-      return Err;
-    }
-  }
-
-  LogMan::Msg::DFmt("Thread suspended: {:X}", ThreadTID);
-
-  // Now the thread is suspended on the host, unset CONTROL_PAUSED so that NtResumeThread will
-  // continue execution in the JIT
-  TLS.ControlWord().fetch_and(~ControlBits::PAUSED, std::memory_order::relaxed);
-
-  return Err;
+  return NtSuspendThread(Thread, Count);
 }
 
 // Returns true if exception dispatch should be halted and the execution context restored to Ptrs->Context
 bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   auto* Context = Ptrs->ContextRecord;
   auto* Exception = Ptrs->ExceptionRecord;
-  auto TLS = GetTLS();
-  auto Thread = TLS.ThreadState();
+  auto Thread = GetTLS().ThreadState();
   FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedSignalTime);
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
@@ -891,11 +735,6 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
     }
 
     if (OvercommitTracker && OvercommitTracker->HandleAccessViolation(FaultAddress)) {
-      return true;
-    }
-
-    if (Context::HandleSuspendInterrupt(TLS, Context, FaultAddress)) {
-      LogMan::Msg::DFmt("Resumed from suspend");
       return true;
     }
 
@@ -910,7 +749,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
       if (InvalidationTracker->HandleRWXAccessViolation(Thread, Context->Pc, FaultAddress)) {
         if (CTX->IsAddressInCodeBuffer(Thread, Context->Pc) && !CTX->IsCurrentBlockSingleInst(Thread) &&
             CTX->IsAddressInCurrentBlock(Thread, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE)) {
-          Context::ReconstructThreadState(TLS, Context);
+          Context::ReconstructThreadState(Context);
           LogMan::Msg::DFmt("Handled inline self-modifying code: pc: {:X} rip: {:X} fault: {:X}", Context->Pc,
                             Thread->CurrentFrame->State.rip, FaultAddress);
 
@@ -930,29 +769,33 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
     return false;
   }
 
+  if (Exception->ExceptionCode == EXCEPTION_ILLEGAL_INSTRUCTION && Context::HandleSuspendInterrupt(Context)) {
+    LogMan::Msg::DFmt("Resumed from suspend");
+    return true;
+  }
+
   FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSIGBUSCount, 1);
-  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(TLS, Context)) {
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
     LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
     return true;
   }
 
   LogMan::Msg::DFmt("Reconstructing context");
 
-  WOW64_CONTEXT WowContext = Context::ReconstructWowContext(TLS, Context);
-  LogMan::Msg::DFmt("pc: {:X} eip: {:X}", Context->Pc, WowContext.Eip);
+  WOW64_CONTEXT* WowContext = Context::ReconstructWowContext(Context);
+  LogMan::Msg::DFmt("pc: {:X} eip: {:X} code: {:X}", Context->Pc, WowContext->Eip, Exception->ExceptionCode);
 
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
   BOOL FirstChance = TRUE;
   EXCEPTION_RECORD GuestException =
-    FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax, WowContext.Ecx, FirstChance);
+    FEX::Windows::HandleGuestException(Fault, *Exception, WowContext->Eip, WowContext->Eax, WowContext->Ecx, FirstChance);
   if (GuestException.ExceptionCode == EXCEPTION_SINGLE_STEP) {
-    WowContext.EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
+    WowContext->EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   }
   // wow64.dll will handle adjusting PC in the dispatched context after a breakpoint
 
-  BTCpuSetContext(GetCurrentThread(), GetCurrentProcess(), nullptr, &WowContext);
-  Context::UnlockJITContext(TLS);
-  NtRaiseException(&GuestException, TLS.EntryContext(), FirstChance);
+  Context::UnlockJITContext();
+  NtRaiseException(&GuestException, GetTLS().EntryContext(), FirstChance);
   return false;
 }
 
