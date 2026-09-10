@@ -825,6 +825,11 @@ namespace DiskCache {
         if (Target >= Region->BeginVA && Target < Region->EndVA) {
           continue;
         }
+        // let it through if it's inside the same ELF image? (like bss)
+        if (Region->FileInfo.MappedSize && Target >= Region->FileStartVA && Target < Region->FileStartVA + Region->FileInfo.MappedSize) {
+          continue;
+        }
+
         auto TargetSection = CTX->SyscallHandler->LookupExecutableFileSection(Thread, Target);
         if (!TargetSection || TargetSection->FileInfo.FileId != Region->FileInfo.FileId) {
           // we don't know where it's pointing, so we don't know how to encode the offset, so we can't cache atm
