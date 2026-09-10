@@ -38,7 +38,7 @@ function(AddTests Tests BinDirectory Bitness)
     set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${Bitness}")
     set(TEST_CASE "${TEST_NAME}.${Bitness}")
 
-    if(TEST_NAME STREQUAL "thunk_testlib")
+    if(TEST_NAME STREQUAL "thunk_testlib" OR TEST_NAME STREQUAL "vulkan_procaddr")
       # Test thunking only if thunks are enabled and supported
       if(NOT BUILD_THUNKS OR ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
         continue()
@@ -63,7 +63,12 @@ function(AddTests Tests BinDirectory Bitness)
       set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/FEXLinuxTestsThunks.json")
     endif()
 
-    if (ARCHITECTURE_x86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib")
+    if(TEST_NAME STREQUAL "vulkan_procaddr")
+      set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT
+        "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/VulkanThunks.json;FEX_THUNKHOSTLIBS=${HOSTLIBS_DATA_DIRECTORY}/HostThunks;FEX_THUNKGUESTLIBS=${CMAKE_INSTALL_PREFIX}/share/fex-emu/GuestThunks")
+    endif()
+
+    if (ARCHITECTURE_x86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib" AND NOT TEST_NAME STREQUAL "vulkan_procaddr")
       # Add host test case
       add_test(NAME "${TEST_CASE}.host.flt"
         COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"

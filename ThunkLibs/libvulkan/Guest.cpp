@@ -64,6 +64,10 @@ static PFN_vkVoidFunction MakeGuestCallable(const char* origin, PFN_vkVoidFuncti
 }
 
 PFN_vkVoidFunction vkGetDeviceProcAddr(VkDevice a_0, const char* a_1) {
+  // The spec requires a self-lookup to succeed, which XeSS relies on.
+  if (a_1 == std::string_view {"vkGetDeviceProcAddr"}) {
+    return (PFN_vkVoidFunction)vkGetDeviceProcAddr;
+  }
   auto Ret = fexfn_pack_vkGetDeviceProcAddr(a_0, a_1);
   if (!Ret) {
     return nullptr;
@@ -74,6 +78,8 @@ PFN_vkVoidFunction vkGetDeviceProcAddr(VkDevice a_0, const char* a_1) {
 PFN_vkVoidFunction vkGetInstanceProcAddr(VkInstance a_0, const char* a_1) {
   if (a_1 == std::string_view {"vkGetDeviceProcAddr"}) {
     return (PFN_vkVoidFunction)vkGetDeviceProcAddr;
+  } else if (a_1 == std::string_view {"vkGetInstanceProcAddr"}) {
+    return (PFN_vkVoidFunction)vkGetInstanceProcAddr;
   } else {
     auto Ret = fexfn_pack_vkGetInstanceProcAddr(a_0, a_1);
     if (!Ret) {
