@@ -362,7 +362,7 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0xCA, 1, X86InstInfo{"RETF",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                              2}},
     {0xCB, 1, X86InstInfo{"RETF",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                              0}},
     {0xCC, 1, X86InstInfo{"INT3",   TYPE_INST, FLAGS_BLOCK_END,                                                                                      0}},
-    {0xCD, 1, X86InstInfo{"INT",    TYPE_INST, DEFAULT_SYSCALL_FLAGS,                                                                  1}},
+    {0xCD, 1, X86InstInfo{"INT",    TYPE_INST, FLAGS_NO_OVERLAY | FLAGS_BLOCK_END,                                                                  1}},
     {0xCE, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_CE] }}},
     {0xCF, 1, X86InstInfo{"IRET",   TYPE_INST, FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                                                    0}},
 
