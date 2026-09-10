@@ -5013,6 +5013,11 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RDPIDOp(OpcodeArgs) {
+  if (CTX->HostFeatures.HostType != FEXCore::HostFeatures::HostTypeEnum::Linux && !CTX->HostFeatures.SupportsCPUIndexInTPIDRRO) {
+    // RDTSCP is unsupported on Win32 platforms if TPIDRRO isn't supported.
+    UnimplementedOp(Op);
+    return;
+  }
   StoreResultGPR(Op, _ProcessorID());
 }
 

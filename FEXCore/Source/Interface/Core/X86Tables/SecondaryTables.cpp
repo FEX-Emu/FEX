@@ -26,8 +26,8 @@ enum Secondary_LUT {
 
 constexpr std::array<X86InstInfo[2], ENTRY_MAX> Secondary_ArchSelect_LUT = {{
   {
-    {"SYSCALL", TYPE_INST, DEFAULT_SYSCALL_FLAGS, 0, { .OpDispatch = &IR::OpDispatchBuilder::NOPOp } },
-    {"SYSCALL", TYPE_INST, DEFAULT_SYSCALL_FLAGS, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::SyscallOp, true> } },
+    {"SYSCALL", TYPE_INST, FLAGS_NO_OVERLAY | FLAGS_BLOCK_END, 0, { .OpDispatch = &IR::OpDispatchBuilder::NOPOp } },
+    {"SYSCALL", TYPE_INST, FLAGS_NO_OVERLAY | FLAGS_BLOCK_END, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::SyscallOp, true> } },
   },
   {
     {"PUSH FS", TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX> } },
