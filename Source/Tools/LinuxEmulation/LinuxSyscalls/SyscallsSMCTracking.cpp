@@ -636,6 +636,22 @@ SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t a
             }
           }
 
+          uint64_t MinAddress = 0;
+          uint64_t MaxAddress = 0;
+          for (auto& ProgramHeader : Resource->ProgramHeaders) {
+            if (ProgramHeader.p_type == PT_LOAD) {
+              if (!MinAddress && !MaxAddress) {
+                MinAddress = ProgramHeader.p_vaddr;
+                MaxAddress = ProgramHeader.p_vaddr + ProgramHeader.p_memsz;
+              }
+              MinAddress = std::min(MinAddress, ProgramHeader.p_vaddr);
+              MaxAddress = std::max(MaxAddress, ProgramHeader.p_vaddr + ProgramHeader.p_memsz);
+            }
+          }
+          if (MaxAddress > MinAddress) {
+            Resource->MappedFile->MappedSize = MaxAddress - MinAddress;
+          }
+
           LOGMAN_THROW_A_FMT(Resource->ProgramHeaders.empty() || offset == 0, "Expected file offset 0 for the first mapping of an ELF "
                                                                               "file");
         }
