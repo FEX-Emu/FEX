@@ -10,7 +10,7 @@
       "FCMA",
       "AFP"
     ],
-    "BinaryCacheVersion": 20
+    "BinaryCacheVersion": 21
   },
   "Instructions": {
     "movsd xmm0, xmm1": {
