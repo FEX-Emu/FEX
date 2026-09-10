@@ -887,6 +887,10 @@ void SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) {
   } else {
     HandleSyscallImpl<false>(Frame, JITPC);
   }
+
+  // Skip past the `syscall` or `int 0x80` instruction. Both of which are 2-bytes.
+  auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+  Thread->Thread->CurrentFrame->State.rip += 2;
 }
 
 #ifdef DEBUG_STRACE
