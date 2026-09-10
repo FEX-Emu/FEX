@@ -10,7 +10,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 19
+    "BinaryCacheVersion": 20
   },
   "Instructions": {
     "Multiple fld/fst": {
