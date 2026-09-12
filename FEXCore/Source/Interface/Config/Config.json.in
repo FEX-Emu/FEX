@@ -91,7 +91,11 @@
           "ENABLESSE4A": "enablesse4a",
           "DISABLESSE4A": "disablesse4a",
           "ENABLEMOPS": "enablemops",
-          "DISABLEMOPS": "disablemops"
+          "DISABLEMOPS": "disablemops",
+          "ENABLEI8MM": "enablei8mm",
+          "DISABLEI8MM": "disablei8mm",
+          "ENABLEDOTPROD": "enabledotprod",
+          "DISABLEDOTPROD": "disabledotprod"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -116,7 +120,9 @@
           "\t{enable,disable}wfxt: Will force enable or disable wfxt even if the host doesn't support it",
           "\t{enable,disable}3dnow: Will force enable or disable 3DNow! even if the host doesn't support it",
           "\t{enable,disable}sse4a: Will force enable or disable SSE4a even if the host doesn't support it",
-          "\t{enable,disable}mops: Will force enable or disable FEAT_MOPS even if the host doesn't support it"
+          "\t{enable,disable}mops: Will force enable or disable FEAT_MOPS even if the host doesn't support it",
+          "\t{enable,disable}i8mm: Will force enable or disable i8mm even if the host doesn't support it",
+          "\t{enable,disable}dotprod: Will force enable or disable dotprod even if the host doesn't support it"
         ]
       },
       "SmallTSCScale": {

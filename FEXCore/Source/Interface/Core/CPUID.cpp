@@ -648,6 +648,12 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_06h(uint32_t Leaf) const {
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res {};
+
+  // AVX-VNNI is only advertised when the CPU supports I8MM or Dot Product.
+  // Without these features the implementation is so slow that it is likely
+  // to harm performance.
+  const uint32_t SupportsAVXVNNI = SupportsAVX() && (CTX->HostFeatures.SupportsI8MM || CTX->HostFeatures.SupportsDotProd);
+
   if (Leaf == 0) {
 #ifndef _WIN32
     constexpr uint32_t SUPPORTS_RDPID = 1;
@@ -665,7 +671,9 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
     const uint32_t SupportsWFXT = CTX->HostFeatures.SupportsWFXT;
 
     // Number of subfunctions
-    Res.eax = 0x0;
+    // TODO: For now, subfunction 1 only exposes AVX-VNNI so we make it conditional
+    // on AVX-VNNI support. We should revisit this if/when we add more to this leaf.
+    Res.eax = SupportsAVXVNNI;
     Res.ebx = (1 << 0) |                               // FS/GS support
               (0 << 1) |                               // TSC adjust MSR
               (0 << 2) |                               // SGX
@@ -765,38 +773,38 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 30) |                  // Arch capabilities - MSR module specific
               (0 << 31);                   // SSBD - Speculative Store Bypass Disable
   } else if (Leaf == 1) {
-    Res.eax = (0U << 0) |  // SHA512
-              (0U << 1) |  // SM3
-              (0U << 2) |  // SM4
-              (0U << 3) |  // RAO_INT
-              (0U << 4) |  // AVX_VNNI
-              (0U << 5) |  // AVX512_BF16
-              (0U << 6) |  // LASS (Linear Address Space Separation)
-              (0U << 7) |  // CMPCCXADD
-              (0U << 8) |  // ARCH_PERFMON_EXT
-              (0U << 9) |  // Reserved
-              (0U << 10) | // FAST_REP_MOVSB
-              (0U << 11) | // FAST_REP_STOSB
-              (0U << 12) | // FAST_REP_CMPSB_SCASB
-              (0U << 13) | // Reserved
-              (0U << 14) | // Reserved
-              (0U << 15) | // Reserved
-              (0U << 16) | // Reserved
-              (0U << 17) | // FRED (Flexible Return and Event Delivery)
-              (0U << 18) | // LKGS (Load into Kernel GS Base)
-              (0U << 19) | // WRMSRNS
-              (0U << 20) | // NMI_SRC
-              (0U << 21) | // AMX_FP16
-              (0U << 22) | // HRESET
-              (0U << 23) | // AVX_IFMA
-              (0U << 24) | // Reserved
-              (0U << 25) | // Reserved
-              (0U << 26) | // LAM (Linear Address Masking)
-              (0U << 27) | // MSRLIST
-              (0U << 28) | // Reserved
-              (0U << 29) | // Reserved
-              (0U << 30) | // INVD_DISABLE_POST_BIOS_DONE
-              (0U << 31);  // MOVRS
+    Res.eax = (0U << 0) |              // SHA512
+              (0U << 1) |              // SM3
+              (0U << 2) |              // SM4
+              (0U << 3) |              // RAO_INT
+              (SupportsAVXVNNI << 4) | // AVX_VNNI
+              (0U << 5) |              // AVX512_BF16
+              (0U << 6) |              // LASS (Linear Address Space Separation)
+              (0U << 7) |              // CMPCCXADD
+              (0U << 8) |              // ARCH_PERFMON_EXT
+              (0U << 9) |              // Reserved
+              (0U << 10) |             // FAST_REP_MOVSB
+              (0U << 11) |             // FAST_REP_STOSB
+              (0U << 12) |             // FAST_REP_CMPSB_SCASB
+              (0U << 13) |             // Reserved
+              (0U << 14) |             // Reserved
+              (0U << 15) |             // Reserved
+              (0U << 16) |             // Reserved
+              (0U << 17) |             // FRED (Flexible Return and Event Delivery)
+              (0U << 18) |             // LKGS (Load into Kernel GS Base)
+              (0U << 19) |             // WRMSRNS
+              (0U << 20) |             // NMI_SRC
+              (0U << 21) |             // AMX_FP16
+              (0U << 22) |             // HRESET
+              (0U << 23) |             // AVX_IFMA
+              (0U << 24) |             // Reserved
+              (0U << 25) |             // Reserved
+              (0U << 26) |             // LAM (Linear Address Masking)
+              (0U << 27) |             // MSRLIST
+              (0U << 28) |             // Reserved
+              (0U << 29) |             // Reserved
+              (0U << 30) |             // INVD_DISABLE_POST_BIOS_DONE
+              (0U << 31);              // MOVRS
 
     // Bits 4-31 currently reserved.
     Res.ebx = (0U << 0) | // PPIN

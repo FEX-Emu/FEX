@@ -7,9 +7,11 @@
       "FLAGM",
       "FLAGM2",
       "SVE128",
-      "SVE256"
+      "SVE256",
+      "I8MM",
+      "DOTPROD"
     ],
-    "BinaryCacheVersion": 20
+    "BinaryCacheVersion": 21
   },
   "Instructions": {
     "vpshufb xmm0, xmm1, xmm2": {
@@ -2072,6 +2074,231 @@
         "cmhi v1.2d, v3.2d, v0.2d",
         "bif v0.16b, v3.16b, v1.16b",
         "ushl v2.2d, v2.2d, v0.2d",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "vpdpbusd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 12,
+      "Comment": [
+        "Map 2 0b01 0x50 128-bit",
+        "vpdpbusd xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x50, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "uzp1 v2.8h, v17.8h, v18.8h",
+        "uxtl v3.8h, v2.8b",
+        "sxtl2 v2.8h, v2.16b",
+        "mul v2.8h, v3.8h, v2.8h",
+        "uzp2 v3.8h, v17.8h, v18.8h",
+        "uxtl v4.8h, v3.8b",
+        "sxtl2 v3.8h, v3.16b",
+        "mul v3.8h, v4.8h, v3.8h",
+        "saddlp v2.4s, v2.8h",
+        "sadalp v2.4s, v3.8h",
+        "add v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpbusd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 26,
+      "Comment": [
+        "Map 2 0b01 0x50 256-bit",
+        "vpdpbusd ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x50, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "uzp1 v5.8h, v17.8h, v18.8h",
+        "uxtl v6.8h, v5.8b",
+        "sxtl2 v5.8h, v5.16b",
+        "mul v5.8h, v6.8h, v5.8h",
+        "uzp2 v6.8h, v17.8h, v18.8h",
+        "uxtl v7.8h, v6.8b",
+        "sxtl2 v6.8h, v6.16b",
+        "mul v6.8h, v7.8h, v6.8h",
+        "saddlp v5.4s, v5.8h",
+        "sadalp v5.4s, v6.8h",
+        "add v16.4s, v16.4s, v5.4s",
+        "uzp1 v5.8h, v3.8h, v4.8h",
+        "uxtl v6.8h, v5.8b",
+        "sxtl2 v5.8h, v5.16b",
+        "mul v5.8h, v6.8h, v5.8h",
+        "uzp2 v3.8h, v3.8h, v4.8h",
+        "uxtl v4.8h, v3.8b",
+        "sxtl2 v3.8h, v3.16b",
+        "mul v3.8h, v4.8h, v3.8h",
+        "saddlp v4.4s, v5.8h",
+        "sadalp v4.4s, v3.8h",
+        "add v2.4s, v2.4s, v4.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "vpdpbusds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 12,
+      "Comment": [
+        "Map 2 0b01 0x51 128-bit",
+        "vpdpbusds xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x51, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "uzp1 v2.8h, v17.8h, v18.8h",
+        "uxtl v3.8h, v2.8b",
+        "sxtl2 v2.8h, v2.16b",
+        "mul v2.8h, v3.8h, v2.8h",
+        "uzp2 v3.8h, v17.8h, v18.8h",
+        "uxtl v4.8h, v3.8b",
+        "sxtl2 v3.8h, v3.16b",
+        "mul v3.8h, v4.8h, v3.8h",
+        "saddlp v2.4s, v2.8h",
+        "sadalp v2.4s, v3.8h",
+        "sqadd v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpbusds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 26,
+      "Comment": [
+        "Map 2 0b01 0x51 256-bit",
+        "vpdpbusds ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x51, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "uzp1 v5.8h, v17.8h, v18.8h",
+        "uxtl v6.8h, v5.8b",
+        "sxtl2 v5.8h, v5.16b",
+        "mul v5.8h, v6.8h, v5.8h",
+        "uzp2 v6.8h, v17.8h, v18.8h",
+        "uxtl v7.8h, v6.8b",
+        "sxtl2 v6.8h, v6.16b",
+        "mul v6.8h, v7.8h, v6.8h",
+        "saddlp v5.4s, v5.8h",
+        "sadalp v5.4s, v6.8h",
+        "sqadd v16.4s, v16.4s, v5.4s",
+        "uzp1 v5.8h, v3.8h, v4.8h",
+        "uxtl v6.8h, v5.8b",
+        "sxtl2 v5.8h, v5.16b",
+        "mul v5.8h, v6.8h, v5.8h",
+        "uzp2 v3.8h, v3.8h, v4.8h",
+        "uxtl v4.8h, v3.8b",
+        "sxtl2 v3.8h, v3.16b",
+        "mul v3.8h, v4.8h, v3.8h",
+        "saddlp v4.4s, v5.8h",
+        "sadalp v4.4s, v3.8h",
+        "sqadd v2.4s, v2.4s, v4.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "vpdpwssd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 2 0b01 0x52 128-bit",
+        "vpdpwssd xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x52, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "smull v2.4s, v17.4h, v18.4h",
+        "smull2 v3.4s, v17.8h, v18.8h",
+        "addp v2.4s, v2.4s, v3.4s",
+        "add v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpwssd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 12,
+      "Comment": [
+        "Map 2 0b01 0x52 256-bit",
+        "vpdpwssd ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x52, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "smull v5.4s, v17.4h, v18.4h",
+        "smull2 v6.4s, v17.8h, v18.8h",
+        "addp v5.4s, v5.4s, v6.4s",
+        "add v16.4s, v16.4s, v5.4s",
+        "smull v5.4s, v3.4h, v4.4h",
+        "smull2 v3.4s, v3.8h, v4.8h",
+        "addp v3.4s, v5.4s, v3.4s",
+        "add v2.4s, v2.4s, v3.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "vpdpwssds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0x53 128-bit",
+        "vpdpwssds xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x53, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "smull v2.4s, v17.4h, v18.4h",
+        "smull2 v3.4s, v17.8h, v18.8h",
+        "addp v2.4s, v2.4s, v3.4s",
+        "neg v2.4s, v2.4s",
+        "sqsub v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpwssds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 14,
+      "Comment": [
+        "Map 2 0b01 0x53 256-bit",
+        "vpdpwssds ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x53, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "smull v5.4s, v17.4h, v18.4h",
+        "smull2 v6.4s, v17.8h, v18.8h",
+        "addp v5.4s, v5.4s, v6.4s",
+        "neg v5.4s, v5.4s",
+        "sqsub v16.4s, v16.4s, v5.4s",
+        "smull v5.4s, v3.4h, v4.4h",
+        "smull2 v3.4s, v3.8h, v4.8h",
+        "addp v3.4s, v5.4s, v3.4s",
+        "neg v3.4s, v3.4s",
+        "sqsub v2.4s, v2.4s, v3.4s",
         "str q2, [x28, #192]"
       ]
     },

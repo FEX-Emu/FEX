@@ -12,7 +12,7 @@
       "RPRES",
       "AFP"
     ],
-    "BinaryCacheVersion": 20
+    "BinaryCacheVersion": 21
   },
   "Instructions": {
     "vucomiss xmm0, xmm1": {
@@ -95,8 +95,8 @@
         "msr nzcv, x0",
         "and z2.d, z3.d, z2.d",
         "addp z2.b, p7/m, z2.b, z2.b",
-        "uzp1 z2.b, z2.b, z2.b",
         "uzp2 z1.b, z2.b, z2.b",
+        "uzp1 z2.b, z2.b, z2.b",
         "splice z2.d, p6, z2.d, z1.d",
         "addp v2.16b, v2.16b, v2.16b",
         "addp v2.8b, v2.8b, v2.8b",
