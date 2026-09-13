@@ -404,7 +404,9 @@ public:
   void SETccOp(OpcodeArgs);
   void CQOOp(OpcodeArgs);
   void CDQOp(OpcodeArgs);
+  std::optional<Ref> XCHGOpImpl(OpcodeArgs, Ref Src);
   void XCHGOp(OpcodeArgs);
+  void XCHGRAXOp(OpcodeArgs);
   void SAHFOp(OpcodeArgs);
   void LAHFOp(OpcodeArgs);
   void MOVSegOp(OpcodeArgs, bool ToSeg);
@@ -426,11 +428,11 @@ public:
   void RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit);
   void RCROp1Bit(OpcodeArgs);
   void RCROp8x1Bit(OpcodeArgs);
-  void RCROp(OpcodeArgs);
-  void RCRSmallerOp(OpcodeArgs);
+  void RCROp(OpcodeArgs, bool SrcRCX);
+  void RCRSmallerOp(OpcodeArgs, bool SrcRCX);
   void RCLOp1Bit(OpcodeArgs);
-  void RCLOp(OpcodeArgs);
-  void RCLSmallerOp(OpcodeArgs);
+  void RCLOp(OpcodeArgs, bool SrcRCX);
+  void RCLSmallerOp(OpcodeArgs, bool SrcRCX);
 
   void BTOp(OpcodeArgs, uint32_t SrcIndex, enum BTAction Action);
 

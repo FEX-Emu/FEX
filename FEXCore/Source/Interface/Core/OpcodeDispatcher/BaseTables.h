@@ -37,7 +37,7 @@ constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   {0x8D, 1, &OpDispatchBuilder::LEAOp},
   {0x8E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVSegOp, true>},
   {0x8F, 1, &OpDispatchBuilder::POPOp},
-  {0x90, 8, &OpDispatchBuilder::XCHGOp},
+  {0x90, 8, &OpDispatchBuilder::XCHGRAXOp},
 
   {0x98, 1, &OpDispatchBuilder::CDQOp},
   {0x99, 1, &OpDispatchBuilder::CQOOp},

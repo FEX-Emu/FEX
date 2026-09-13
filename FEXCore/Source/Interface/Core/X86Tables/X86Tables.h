@@ -349,10 +349,9 @@ namespace InstFlags {
   constexpr InstFlagType FLAGS_X87_FLAGS = (1ULL << 10);
 
   // Non-XMM subflags
+  // TODO: Remove SF_DST_RAX and just encode usage in OpcodeDispatcher.
   constexpr InstFlagType FLAGS_SF_DST_RAX = (1ULL << 11);
-  constexpr InstFlagType FLAGS_SF_DST_RDX = (1ULL << 12);
-  constexpr InstFlagType FLAGS_SF_SRC_RAX = (1ULL << 13);
-  constexpr InstFlagType FLAGS_SF_SRC_RCX = (1ULL << 14);
+  // subflag bits [14:12] unused
   constexpr InstFlagType FLAGS_SF_REX_IN_BYTE = (1ULL << 15);
 
   // XMM subflags

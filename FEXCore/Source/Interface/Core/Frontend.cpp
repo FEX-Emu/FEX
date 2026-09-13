@@ -496,13 +496,11 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
 
   auto* CurrentDest = &DecodeInst->Dest;
 
-  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ||
-      HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RDX)) {
+  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX)) {
     // Some instructions hardcode their destination as RAX
     CurrentDest->Type = DecodedOperand::OpType::GPR;
     CurrentDest->Data.GPR.HighBits = false;
-    CurrentDest->Data.GPR.GPR =
-      HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ? FEXCore::X86State::REG_RAX : FEXCore::X86State::REG_RDX;
+    CurrentDest->Data.GPR.GPR = FEXCore::X86State::REG_RAX;
     CurrentDest = &DecodeInst->Src[0];
   } else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_REX_IN_BYTE)) {
     LOGMAN_THROW_A_FMT(!HasMODRM, "This instruction shouldn't have ModRM!");
@@ -618,18 +616,6 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
     DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
     DecodeInst->Src[CurrentSrc].Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMSrc);
-    ++CurrentSrc;
-  }
-
-  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RAX)) {
-    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
-    DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
-    DecodeInst->Src[CurrentSrc].Data.GPR.GPR = FEXCore::X86State::REG_RAX;
-    ++CurrentSrc;
-  } else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RCX)) {
-    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
-    DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
-    DecodeInst->Src[CurrentSrc].Data.GPR.GPR = FEXCore::X86State::REG_RCX;
     ++CurrentSrc;
   }
 

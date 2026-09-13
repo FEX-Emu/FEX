@@ -773,11 +773,11 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
     OpSize = OpSize::i32Bit;
   }
 
-  uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Literal();
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Literal();
 
-  Ref CondReg = LoadSourceGPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref CondReg = LoadGPRRegister(X86State::REG_RCX, SrcSize);
   CondReg = Sub(OpSize, CondReg, 1);
-  StoreResultGPR(Op, Op->Src[0], CondReg);
+  StoreGPRRegister(X86State::REG_RCX, CondReg, SrcSize);
 
   // If LOOPE then jumps to target if RCX != 0 && ZF == 1
   // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
@@ -806,7 +806,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       StartNewBlock();
 
       // Store the new RIP
-      ExitRelocatedPC(Op, Op->Src[1].Literal());
+      ExitRelocatedPC(Op, Op->Src[0].Literal());
     }
 
     // Failure to take branch
@@ -1080,17 +1080,51 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
-  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto Size = OpSizeFromSrc(Op);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
   Ref Upper = _Sbfe(std::max(OpSize::i32Bit, Size), 1, GetSrcBitSize(Op) - 1, Src);
 
-  StoreResultGPR(Op, Upper);
+  if (Size == OpSize::i32Bit) {
+    StoreGPRRegister(X86State::REG_RDX, Upper, OpSize::i64Bit);
+  } else {
+    StoreGPRRegister(X86State::REG_RDX, Upper, OpSizeFromDst(Op));
+  }
+}
+
+std::optional<Ref> OpDispatchBuilder::XCHGOpImpl(OpcodeArgs, Ref Src) {
+  if (DestIsMem(Op)) {
+    HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
+
+    Ref Dest = MakeSegmentAddress(Op, Op->Dest);
+    if (IsMonoBackpatcherBlock) {
+      _MonoBackpatcherWrite(OpSizeFromSrc(Op), Src, Dest);
+    } else {
+      return _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
+    }
+    return std::nullopt;
+  } else {
+    // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
+    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+
+    // Swap the contents
+    // Order matters here since we don't want to swap context contents for one that effects the other
+    StoreResultGPR(Op, Op->Dest, Src);
+    return Dest;
+  }
 }
 
 void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
+  // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
+  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Res = XCHGOpImpl(Op, Src);
+  if (Res) {
+    StoreResultGPR(Op, Op->Src[0], *Res);
+  }
+}
+
+void OpDispatchBuilder::XCHGRAXOp(OpcodeArgs) {
   // Load both the source and the destination
-  if (Op->OP == 0x90 && Op->Src[0].IsGPR() && Op->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_RAX && Op->Dest.IsGPR() &&
-      Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
+  if (Op->OP == 0x90 && Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
     // This is one heck of a sucky special case
     // If we are the 0x90 XCHG opcode (Meaning source is GPR RAX)
     // and destination register is ALSO RAX
@@ -1118,25 +1152,10 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   }
 
   // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
-  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  if (DestIsMem(Op)) {
-    HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
-
-    Ref Dest = MakeSegmentAddress(Op, Op->Dest);
-    if (IsMonoBackpatcherBlock) {
-      _MonoBackpatcherWrite(OpSizeFromSrc(Op), Src, Dest);
-    } else {
-      auto Result = _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
-      StoreResultGPR(Op, Op->Src[0], Result);
-    }
-  } else {
-    // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
-    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-    // Swap the contents
-    // Order matters here since we don't want to swap context contents for one that effects the other
-    StoreResultGPR(Op, Op->Dest, Src);
-    StoreResultGPR(Op, Op->Src[0], Dest);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX, OpSize::iInvalid, 0, true);
+  auto Res = XCHGOpImpl(Op, Src);
+  if (Res) {
+    StoreGPRRegister(X86State::REG_RAX, *Res, OpSizeFromDst(Op));
   }
 }
 
@@ -1147,7 +1166,11 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
 
   Src = _Sbfe(DstSize <= OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, IR::OpSizeAsBits(SrcSize), 0, Src);
 
-  StoreResultGPR_WithOpSize(Op, Op->Dest, Src, DstSize);
+  if (DstSize == OpSize::i32Bit) {
+    StoreGPRRegister(X86State::REG_RAX, Src, OpSize::i64Bit);
+  } else {
+    StoreGPRRegister(X86State::REG_RAX, Src, DstSize);
+  }
 }
 
 void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
@@ -1316,29 +1339,27 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
   case 0xA0:
   case 0xA1: {
     // Source is memory(literal)
-    // Dest is GPR
+    // Dest is RAX
     auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
-    StoreResultGPR(Op, Op->Dest, Src);
+    StoreGPRRegister(X86State::REG_RAX, Src);
     break;
   }
   case 0xA2:
   case 0xA3: {
-    // Source is GPR
+    // Source is RAX
     // Dest is memory(literal)
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src = LoadGPRRegister(X86State::REG_RAX, OpSize::iInvalid, 0, true);
 
     // This one is a bit special since the destination is a literal
-    // So the destination gets stored in Src[1]
-    StoreResultGPR(Op, Op->Src[1], Src);
+    // So the destination gets stored in Src[0]
+    StoreResultGPR(Op, Op->Src[0], Src);
     break;
   }
   }
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
-  const auto GPRSize = GetGPROpSize();
-
-  Ref Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], GPRSize, Op->Flags);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX);
   Ref Leaf = LoadGPRRegister(X86State::REG_RCX);
 
   Ref RAX = _AllocateGPR(false);
@@ -1380,7 +1401,7 @@ void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-  auto Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
   Ref Result = _Lshl(Size == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
@@ -1402,7 +1423,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= OpSize::i32Bit});
-  auto Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
   auto ALUOp = _Lshr(std::max(OpSize::i32Bit, Size), Dest, Src);
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
@@ -1431,7 +1452,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
   // Allow garbage on the shift, we're masking it anyway.
-  Ref Shift = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  Ref Shift = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op.
   if (Size == 64) {
@@ -1502,7 +1523,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
-  Ref Shift = LoadGPRRegister(X86State::REG_RCX);
+  Ref Shift = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
   const auto Size = GetDstBitSize(Op);
 
@@ -1580,7 +1601,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
     CalculateDeferredFlags();
     StoreResultGPR(Op, Result);
   } else {
-    auto Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
     Ref Result = _Ashr(OpSize, Dest, Src);
 
     HandleShift(Op, Result, Dest, ShiftType::ASR, Src);
@@ -1604,7 +1625,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
     UnmaskedConst = GetConstantShift(Op, Is1Bit);
     UnmaskedSrc = ARef(UnmaskedConst);
   } else {
-    UnmaskedSrc = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    UnmaskedSrc = ARef(LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true));
   }
   auto Src = UnmaskedSrc.And(Mask);
 
@@ -1994,11 +2015,11 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_XorShift(OpSize::i32Bit, Res, Res, ShiftType::LSR, 1), SizeBit - 2, true);
 }
 
-void OpDispatchBuilder::RCROp(OpcodeArgs) {
+void OpDispatchBuilder::RCROp(OpcodeArgs, bool SrcRCX) {
   const auto Size = GetSrcBitSize(Op);
 
   if (Size == 8 || Size == 16) {
-    RCRSmallerOp(Op);
+    RCRSmallerOp(Op, SrcRCX);
     return;
   }
 
@@ -2008,7 +2029,13 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   CalculateDeferredFlags();
   const auto OpSize = OpSizeFromSrc(Op);
 
-  Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src {};
+  if (SrcRCX) {
+    Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
+  } else {
+    Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  }
+
   uint64_t Const;
   if (IsValueConstant(WrapNode(Src), &Const)) {
     Const &= Mask;
@@ -2048,9 +2075,15 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   Ref SrcMasked = _And(OpSize, Src, _InlineConstant(Mask));
   Calculate_ShiftVariable(
     Op, SrcMasked,
-    [this, Op, Size, OpSize]() {
+    [this, Op, Size, OpSize, SrcRCX]() {
       // Rematerialize loads to avoid crossblock liveness
-      Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      Ref Src {};
+      if (SrcRCX) {
+        Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
+      } else {
+        Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      }
+
       Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
       // Res = Src >> Shift
@@ -2086,20 +2119,28 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     OpSizeFromSrc(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
 
-void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
+void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs, bool SrcRCX) {
   CalculateDeferredFlags();
 
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+  auto GetShiftSource = [this, Op, SrcRCX]() {
+    if (SrcRCX) {
+      return ARef(LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true));
+    } else {
+      return ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    }
+  };
+
+  auto Src = GetShiftSource();
   Src = Src.And(0x1F);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src.Ref(), [this, GetShiftSource, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
-    auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    auto Src = GetShiftSource();
     Src = Src.And(0x1F);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
@@ -2210,11 +2251,11 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   StoreResultGPR(Op, Res);
 }
 
-void OpDispatchBuilder::RCLOp(OpcodeArgs) {
+void OpDispatchBuilder::RCLOp(OpcodeArgs, bool SrcRCX) {
   const auto Size = GetSrcBitSize(Op);
 
   if (Size == 8 || Size == 16) {
-    RCLSmallerOp(Op);
+    RCLSmallerOp(Op, SrcRCX);
     return;
   }
 
@@ -2223,7 +2264,13 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src {};
+  if (SrcRCX) {
+    Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
+  } else {
+    Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  }
+
   const auto OpSize = OpSizeFromSrc(Op);
 
   uint64_t Const;
@@ -2264,9 +2311,14 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   Ref SrcMasked = _And(OpSize, Src, _InlineConstant(Mask));
   Calculate_ShiftVariable(
     Op, SrcMasked,
-    [this, Op, Size, OpSize]() {
+    [this, Op, Size, OpSize, SrcRCX]() {
       // Rematerialized to avoid crossblock liveness
-      Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      Ref Src {};
+      if (SrcRCX) {
+        Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
+      } else {
+        Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      }
 
       // Res = Src << Shift
       Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -2301,20 +2353,29 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     OpSizeFromSrc(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
 
-void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
+void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs, bool SrcRCX) {
   CalculateDeferredFlags();
 
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  auto GetShiftSource = [this, Op, SrcRCX]() {
+    if (SrcRCX) {
+      return ARef(LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true));
+    } else {
+      return ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    }
+  };
+
+  auto Src = GetShiftSource();
   Src = Src.And(0x1F);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src.Ref(), [this, GetShiftSource, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
-    auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    auto Src = GetShiftSource();
     Src = Src.And(0x1F);
     Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
@@ -3173,7 +3234,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
   if (!Repeat) {
     // Src is used only for a store of the same size so allow garbage
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src = LoadGPRRegister(X86State::REG_RAX, OpSize::iInvalid, 0, true);
 
     // Only ES prefix
     Ref Dest = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -3192,7 +3253,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     // FEX doesn't support partial faulting REP instructions.
     // Converting this to a `MemSet` IR op optimizes this quite significantly in our codegen.
     // If FEX is to gain support for faulting REP instructions, then this implementation needs to change significantly.
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
+    Ref Src = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op));
     Ref Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
@@ -3523,7 +3584,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
     Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-    auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::iInvalid, 0, true);
     auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
 
     CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
@@ -3566,7 +3627,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
         Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-        auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+        Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::iInvalid, 0, true);
         auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
 
         CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
@@ -4977,7 +5038,7 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref DestMem = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.LoadData = false});
+  Ref DestMem = LoadGPRRegister(X86State::REG_RAX);
   _CacheLineZero(DestMem);
 }
 
