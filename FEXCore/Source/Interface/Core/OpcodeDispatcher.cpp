@@ -3171,7 +3171,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
   if (!Repeat) {
     // Src is used only for a store of the same size so allow garbage
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
 
     // Only ES prefix
     Ref Dest = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -3190,7 +3190,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     // FEX doesn't support partial faulting REP instructions.
     // Converting this to a `MemSet` IR op optimizes this quite significantly in our codegen.
     // If FEX is to gain support for faulting REP instructions, then this implementation needs to change significantly.
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
+    Ref Src = LoadGPRRegister(X86State::REG_RAX, Size);
     Ref Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
