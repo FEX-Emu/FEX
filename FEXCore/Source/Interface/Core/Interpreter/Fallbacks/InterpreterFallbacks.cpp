@@ -100,6 +100,7 @@ void InterpreterOps::FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint
                                   reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64SCALE>::handle)};
 
   // SSE4.2 string instructions
+  // NOTE: Currently unused. See VectorFallbacks.h.
   Info[Core::OPINDEX_VPCMPESTRX] = {ABIHandlers[FABI_I32_I64_I64_V128_V128_I16],
                                     reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_VPCMPESTRX>::handle)};
   Info[Core::OPINDEX_VPCMPISTRX] = {ABIHandlers[FABI_I32_V128_V128_I16],

@@ -1,10 +1,10 @@
 %ifdef CONFIG
 {
   "RegData": {
-      "XMM0": ["0x00060F000F000D01", "0x0000001010070007"],
-      "XMM1": ["0x3111313131311111", "0x0000001818313131"],
-      "XMM2": ["0x005A0041007A0061", "0x55AACCBBFF220000"],
-      "XMM3": ["0x0065002000270000", "0x00210065004F0065"]
+      "XMM0": ["0x00060F000F000D01", "0x0001011010070007"],
+      "XMM1": ["0x3111313131311111", "0x0019191818313131"],
+      "XMM2": ["0x000000000010FFE0", "0x0000000000000000"],
+      "XMM3": ["0x7FFFFFF000050030", "0x00000010FFE08000"]
   },
   "HostFeatures": ["SSE4.2"]
 }
@@ -115,6 +115,19 @@ CompareAndStore 11, 0b01000110
 ; Range signed byte check (lsb)
 CompareAndStore 12, 0b01000110
 
+; --- Signed tests (range is empty when read as unsigned) ---
+movaps xmm2, [rel .data_signed]
+movaps xmm3, [rel .data_signed + 32]
+
+; Range signed byte check (lsb, positive polarity)
+CompareAndStore 13, 0b00000110
+
+movaps xmm2, [rel .data16_signed]
+movaps xmm3, [rel .data16_signed + 32]
+
+; Range signed word check (lsb, positive polarity)
+CompareAndStore 14, 0b00000111
+
 ; Load all our stored indices and flags for result comparing
 movaps xmm0, [rel .indices]
 movaps xmm1, [rel .flags]
@@ -154,6 +167,28 @@ dq 0x0065002000270000 ; "\0' e"
 dq 0x00210065004F0065 ; "eOen!"
 dq 0x8888888888888888
 dq 0x9999999999999999
+
+.data_signed:
+dq 0x00000000000010E0 ; Range [-32, 16] as signed bytes, [224, 16] as unsigned
+dq 0x0000000000000000
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xEEEEEEEEEEEEEEEE
+
+dq 0x1110E0907FF00530 ; 48, 5, -16, 127, -112, -32, 16, 17
+dq 0x000000000000FFDF ; -33, -1, then null
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xEEEEEEEEEEEEEEEE
+
+.data16_signed:
+dq 0x000000000010FFE0 ; Range [-32, 16] as signed words, [65504, 16] as unsigned
+dq 0x0000000000000000
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xEEEEEEEEEEEEEEEE
+
+dq 0x7FFFFFF000050030 ; 48, 5, -16, 32767
+dq 0x00000010FFE08000 ; -32768, -32, 16, then null
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xEEEEEEEEEEEEEEEE
 
 .indices:
 dq 0x0000000000000000

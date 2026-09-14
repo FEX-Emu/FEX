@@ -2518,6 +2518,14 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
+      "FPR = VUCMPGT OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Vector compare unsigned greater than",
+                 "Each element is compared, if the result is true then the resulting element is ~0, else zero"
+                ],
+
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize"
+      },
       "FPR = VFCMPEQ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
@@ -2585,7 +2593,8 @@
       },
 
       "GPR = VPCMPESTRX FPR:$LHS, FPR:$RHS, GPR:$RAX, GPR:$RDX, u16:$Control": {
-        "Desc": ["Performs intermediate behavior analogous to the x86 PCMPESTRI/PCMPESTRM instruction",
+        "Desc": ["NOTE: Currently unused. The OpcodeDispatcher implements the SSE4.2 string instructions inline.",
+                 "Performs intermediate behavior analogous to the x86 PCMPESTRI/PCMPESTRM instruction",
                  "This will return the intermediate result of a PCMPESTR-type operation, but NOT the final",
                  "result. This must be derived from the intermediate result",
 
@@ -2597,7 +2606,8 @@
         "JITDispatch": false
       },
       "GPR = VPCMPISTRX FPR:$LHS, FPR:$RHS, u8:$Control": {
-        "Desc": ["Performs intermediate behavior analogous to the x86 PCMPISTRI/PCMPISTRM instruction",
+        "Desc": ["NOTE: Currently unused. The OpcodeDispatcher implements the SSE4.2 string instructions inline.",
+                 "Performs intermediate behavior analogous to the x86 PCMPISTRI/PCMPISTRM instruction",
                  "This will return the intermediate result of a PCMPISTR-type operation, but NOT the final",
                  "result. This must be derived from the intermediate result",
 

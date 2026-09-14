@@ -13,29 +13,33 @@
 
 namespace FEXCore::CPU {
 
+// PCMPXSTRX control byte fields
+enum class AggregationOp {
+  EqualAny = 0b00,
+  Ranges = 0b01,
+  EqualEach = 0b10,
+  EqualOrdered = 0b11,
+};
+
+enum class SourceData {
+  U8,
+  U16,
+  S8,
+  S16,
+};
+
+enum class Polarity {
+  Positive,
+  Negative,
+  PositiveMasked,
+  NegativeMasked,
+};
+
+// NB: The fallback handlers for the *PMCP*STR* instructions
+// are no longer used since we now emit inline ASM for them.
+// We preserve this as a reference implementation.
 template<>
 struct OpHandlers<IR::OP_VPCMPESTRX> {
-  enum class AggregationOp {
-    EqualAny = 0b00,
-    Ranges = 0b01,
-    EqualEach = 0b10,
-    EqualOrdered = 0b11,
-  };
-
-  enum class SourceData {
-    U8,
-    U16,
-    S8,
-    S16,
-  };
-
-  enum class Polarity {
-    Positive,
-    Negative,
-    PositiveMasked,
-    NegativeMasked,
-  };
-
   FEXCORE_PRESERVE_ALL_ATTR static uint32_t handle(uint64_t RAX, uint64_t RDX, VectorRegType lhs_v, VectorRegType rhs_v, uint16_t control) {
     __uint128_t lhs;
     memcpy(&lhs, &lhs_v, sizeof(lhs));
