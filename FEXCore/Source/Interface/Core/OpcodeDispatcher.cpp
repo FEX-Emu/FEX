@@ -3521,7 +3521,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
     Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-    auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    auto Src1 = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
     auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
 
     CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
@@ -3564,7 +3564,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
         Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-        auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+        auto Src1 = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
         auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
 
         CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
