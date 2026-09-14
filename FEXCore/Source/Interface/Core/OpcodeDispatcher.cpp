@@ -1445,7 +1445,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
   // Allow garbage on the shift, we're masking it anyway.
-  Ref Shift = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  Ref Shift = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op.
   if (Size == 64) {
@@ -1516,7 +1516,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
-  Ref Shift = LoadGPRRegister(X86State::REG_RCX);
+  Ref Shift = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
   const auto Size = GetDstBitSize(Op);
 
