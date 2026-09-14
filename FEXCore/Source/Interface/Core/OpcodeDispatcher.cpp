@@ -1318,18 +1318,18 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
     // Source is memory(literal)
     // Dest is GPR
     auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
-    StoreResultGPR(Op, Op->Dest, Src);
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Src, OpSizeFromDst(Op));
     break;
   }
   case 0xA2:
   case 0xA3: {
     // Source is GPR
     // Dest is memory(literal)
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src = LoadGPRRegister(X86State::REG_RAX);
 
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
-    StoreResultGPR(Op, Op->Src[1], Src);
+    StoreResultGPR(Op, Op->Src[0], Src);
     break;
   }
   }

@@ -144,13 +144,13 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   },
   // ENTRY_A2
   {
-    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
-    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MEM_OFFSET, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MEM_OFFSET, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
   },
   // ENTRY_A3
   {
-    {"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET | FLAGS_LITERAL_PATCHABLE, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
-    {"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET | FLAGS_LITERAL_PATCHABLE, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, FLAGS_MEM_OFFSET | FLAGS_LITERAL_PATCHABLE, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, FLAGS_MEM_OFFSET | FLAGS_LITERAL_PATCHABLE, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
   },
   // ENTRY_CE
   {
