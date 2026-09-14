@@ -501,8 +501,7 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
 
   auto* CurrentDest = &DecodeInst->Dest;
 
-  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ||
-      HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RDX)) {
+  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX)) {
     // Some instructions hardcode their destination as RAX
     CurrentDest->Type = DecodedOperand::OpType::GPR;
     CurrentDest->Data.GPR.HighBits = false;
