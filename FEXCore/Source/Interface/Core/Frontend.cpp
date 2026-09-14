@@ -1408,18 +1408,21 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
   FEXCore::X86Tables::DecodedOperand* LiteralToPatch = nullptr;
   DataMaskType Type = DataMaskType::NONE;
 
-  // mov reg,imm
-  if (DecodeInst->OP >= 0xB8 && DecodeInst->OP <= 0xBF) {
+  // imm32 or imm64 at the end type instructions
+  if (DecodeInst->TableInfo->Flags & X86Tables::InstFlags::FLAGS_LITERAL_PATCHABLE) {
     for (auto& Src : DecodeInst->Src) {
       if (Src.IsLiteral()) {
         LiteralToPatch = &Src;
         break;
       }
     }
+    if (DecodeInst->Dest.IsLiteral()) {
+      LiteralToPatch = &DecodeInst->Dest;
+    }
 
-    // we could filter to certain high values that are more likely to be pointers/etc?
-    // const uint64_t Value = Lit->Data.Literal.Value;
-    // if (LiteralToPatch && Value < 0x1000000ULL) {
+    // heuristic: if it's a small value, assume it's more likely to be part of the code around it
+    // todo so far i'm not seeing much difference trying this, but worth another look
+    // if (LiteralToPatch && (LiteralToPatch->Data.Literal.Value < 0x1000000ULL || LiteralToPatch->Data.Literal.Value > 0x7FFFFFFFFFFFULL)) {
     //   LiteralToPatch = nullptr;
     // }
     if (LiteralToPatch) {

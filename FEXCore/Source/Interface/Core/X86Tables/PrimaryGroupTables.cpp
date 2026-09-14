@@ -75,14 +75,14 @@ constexpr std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps
     {OPD(TYPE_GROUP_1, OpToIndex(0x80), 6), 1, X86InstInfo{"XOR",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SUPPORTS_LOCK,                                      1}},
     {OPD(TYPE_GROUP_1, OpToIndex(0x80), 7), 1, X86InstInfo{"CMP",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SUPPORTS_LOCK,                                      1}},
 
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 0), 1, X86InstInfo{"ADD",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                          4}},
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 1), 1, X86InstInfo{"OR",   TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                          4}},
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 2), 1, X86InstInfo{"ADC",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                          4}},
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 3), 1, X86InstInfo{"SBB",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                          4}},
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 4), 1, X86InstInfo{"AND",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                          4}},
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 5), 1, X86InstInfo{"SUB",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                          4}},
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 6), 1, X86InstInfo{"XOR",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                          4}},
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 7), 1, X86InstInfo{"CMP",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                          4}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 0), 1, X86InstInfo{"ADD",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK | FLAGS_LITERAL_PATCHABLE,                          4}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 1), 1, X86InstInfo{"OR",   TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK | FLAGS_LITERAL_PATCHABLE,                          4}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 2), 1, X86InstInfo{"ADC",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK | FLAGS_LITERAL_PATCHABLE,                          4}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 3), 1, X86InstInfo{"SBB",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK | FLAGS_LITERAL_PATCHABLE,                          4}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 4), 1, X86InstInfo{"AND",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK | FLAGS_LITERAL_PATCHABLE,                          4}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 5), 1, X86InstInfo{"SUB",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK | FLAGS_LITERAL_PATCHABLE,                          4}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 6), 1, X86InstInfo{"XOR",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK | FLAGS_LITERAL_PATCHABLE,                          4}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 7), 1, X86InstInfo{"CMP",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK | FLAGS_LITERAL_PATCHABLE,                          4}},
 
     // Duplicates the 0x80 opcode group
     {OPD(TYPE_GROUP_1, OpToIndex(0x82), 0), 1, X86InstInfo{"",  TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = PrimaryGroup_ArchSelect_LUT[ENTRY_1_82_0] }}},
@@ -168,7 +168,7 @@ constexpr std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps
     {OPD(TYPE_GROUP_3, OpToIndex(0xF6), 6), 1, X86InstInfo{"DIV",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                      0}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF6), 7), 1, X86InstInfo{"IDIV", TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                      0}},
 
-    {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 0), 1, X86InstInfo{"TEST", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2,                          4}},
+    {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 0), 1, X86InstInfo{"TEST", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE,                          4}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 1), 1, X86InstInfo{"TEST", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2,                          4}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 2), 1, X86InstInfo{"NOT",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SUPPORTS_LOCK,                                                      0}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 3), 1, X86InstInfo{"NEG",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SUPPORTS_LOCK,                                                      0}},
@@ -196,7 +196,7 @@ constexpr std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps
     {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 0), 1, X86InstInfo{"MOV",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST  | FLAGS_SRC_SEXT,                   1}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 1), 5, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 7), 1, X86InstInfo{"XABORT", TYPE_INST, FLAGS_MODRM,                                                       1}},
-    {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, X86InstInfo{"MOV",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,                                   4}},
+    {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, X86InstInfo{"MOV",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE,                                   4}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 1), 5, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 7), 1, X86InstInfo{"XBEGIN", TYPE_INST, FLAGS_MODRM | FLAGS_SRC_SEXT | FLAGS_SETS_RIP | FLAGS_DISPLACE_SIZE_DIV_2,                                                       4}},
   };
