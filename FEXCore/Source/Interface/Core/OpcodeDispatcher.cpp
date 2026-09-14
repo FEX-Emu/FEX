@@ -298,7 +298,8 @@ void OpDispatchBuilder::SALCOp(OpcodeArgs) {
 
   auto Result = NZCVSelect(OpSize::i32Bit, CondClass::UGE /* CF = 1 */, _InlineConstant(0xffffffff), _InlineConstant(0));
 
-  StoreResultGPR(Op, Result);
+  // This inserts in to the low 8-bits.
+  StoreGPRRegister(X86State::REG_RAX, Result, OpSizeFromDst(Op));
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {

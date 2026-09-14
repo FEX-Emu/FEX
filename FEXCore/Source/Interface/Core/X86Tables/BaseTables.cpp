@@ -169,7 +169,7 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   },
   // ENTRY_D6
   {
-    {"SALC",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::SALCOp } },
+    {"SALC",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT), 0, { .OpDispatch = &IR::OpDispatchBuilder::SALCOp } },
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_EA
