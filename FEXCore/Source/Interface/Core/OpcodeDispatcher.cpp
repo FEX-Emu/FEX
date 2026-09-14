@@ -4993,8 +4993,7 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref DestMem = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.LoadData = false});
-  _CacheLineZero(DestMem);
+  _CacheLineZero(LoadGPRRegister(X86State::REG_RAX));
 }
 
 void OpDispatchBuilder::Prefetch(OpcodeArgs, bool ForStore, bool Stream, uint8_t Level) {
