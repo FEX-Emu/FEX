@@ -1510,6 +1510,20 @@ private:
   void StoreGPRRegister(uint32_t GPR, const Ref Src, IR::OpSize Size = OpSize::iInvalid, uint8_t Offset = 0);
   void StoreXMMRegister(uint32_t XMM, const Ref Src);
 
+  // Matches semantics around GPR storing that matches `StoreResult_WithOpSize` behaviour.
+  void StoreGPRResultWithZExtSemantics(uint32_t GPR, Ref Src, IR::OpSize OpSize) {
+    const auto GPRSize = GetGPROpSize();
+
+    if (GPRSize == OpSize::i64Bit && OpSize == OpSize::i32Bit) {
+      // If the Source IR op is 64 bits, we need to zext the upper bits
+      // For all other sizes, the upper bits are guaranteed to already be zero
+      Src = GetOpSize(Src) == OpSize::i64Bit ? ARef(Src).Bfe(0, 32).Ref() : Src;
+      StoreGPRRegister(X86State::REG_RDX, Src, GPRSize);
+    } else {
+      StoreGPRRegister(X86State::REG_RDX, Src, std::min(GPRSize, OpSize));
+    }
+  }
+
   Ref _GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset, bool Inline) {
     const auto GPRSize = GetGPROpSize();
     const auto Offs = Op->PC + Op->InstSize + Offset - Entry;

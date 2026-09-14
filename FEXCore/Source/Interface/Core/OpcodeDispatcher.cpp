@@ -1083,8 +1083,7 @@ void OpDispatchBuilder::CQOOp(OpcodeArgs) {
   Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto Size = OpSizeFromSrc(Op);
   Ref Upper = _Sbfe(std::max(OpSize::i32Bit, Size), 1, GetSrcBitSize(Op) - 1, Src);
-
-  StoreResultGPR(Op, Upper);
+  StoreGPRResultWithZExtSemantics(X86State::REG_RDX, Upper, OpSizeFromDst(Op));
 }
 
 void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
