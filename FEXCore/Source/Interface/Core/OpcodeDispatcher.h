@@ -1518,9 +1518,9 @@ private:
       // If the Source IR op is 64 bits, we need to zext the upper bits
       // For all other sizes, the upper bits are guaranteed to already be zero
       Src = GetOpSize(Src) == OpSize::i64Bit ? ARef(Src).Bfe(0, 32).Ref() : Src;
-      StoreGPRRegister(X86State::REG_RDX, Src, GPRSize);
+      StoreGPRRegister(GPR, Src, GPRSize);
     } else {
-      StoreGPRRegister(X86State::REG_RDX, Src, std::min(GPRSize, OpSize));
+      StoreGPRRegister(GPR, Src, std::min(GPRSize, OpSize));
     }
   }
 
