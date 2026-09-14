@@ -1335,9 +1335,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
-  const auto GPRSize = GetGPROpSize();
-
-  Ref Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], GPRSize, Op->Flags);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX);
   Ref Leaf = LoadGPRRegister(X86State::REG_RCX);
 
   Ref RAX = _AllocateGPR(false);

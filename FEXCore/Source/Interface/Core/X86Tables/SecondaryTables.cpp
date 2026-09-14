@@ -204,7 +204,7 @@ constexpr std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps = []() co
 
     {0xA0, 1, X86InstInfo{"",        TYPE_ARCH_DISPATCHER, FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .Indirect = Secondary_ArchSelect_LUT[ENTRY_A0] }}},
     {0xA1, 1, X86InstInfo{"",        TYPE_ARCH_DISPATCHER, FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY, 0, { .Indirect = Secondary_ArchSelect_LUT[ENTRY_A1] }}},
-    {0xA2, 1, X86InstInfo{"CPUID",   TYPE_INST,     FLAGS_SF_SRC_RAX | FLAGS_NO_OVERLAY,                                              0}},
+    {0xA2, 1, X86InstInfo{"CPUID",   TYPE_INST,     FLAGS_NO_OVERLAY,                                              0}},
     {0xA3, 1, X86InstInfo{"BT",      TYPE_INST,     FLAGS_DEBUG_MEM_ACCESS | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY | FLAGS_SUPPORTS_LOCK, 0}},
     {0xA4, 1, X86InstInfo{"SHLD",    TYPE_INST,     FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                                              1}},
     {0xA5, 1, X86InstInfo{"SHLD",    TYPE_INST,     FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_SRC_RCX | FLAGS_NO_OVERLAY,                           0}},
