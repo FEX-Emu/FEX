@@ -879,7 +879,9 @@ namespace DiskCache {
         }
         CurStartExtent = Mask.FieldAddress + Mask.ValueSize;
 
-        DataMaskAddresses.insert(Mask.FieldAddress);
+        if (Mask.Type != Frontend::Decoder::DataMaskType::NOP) {
+          DataMaskAddresses.insert(Mask.FieldAddress);
+        }
       }
       LastBlock = &SubBlock;
     }

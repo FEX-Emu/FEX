@@ -185,10 +185,14 @@ struct DecodedOperand {
     struct {
       int64_t Displacement;
       uint8_t GPR;
+      bool PatchableDisp;
+      uint8_t DispOffset;
     } GPRIndirect; // Shared with GPRIndirectRelocation
 
     struct {
       int64_t Value;
+      bool PatchableDisp;
+      uint8_t DispOffset;
     } RIPLiteral; // Shared with RIPLiteralRelocation
 
     struct LiteralType {
@@ -211,7 +215,9 @@ struct DecodedOperand {
       uint8_t Scale;
       uint8_t Index; // ~0 invalid
       uint8_t Base;  // ~0 invalid
-    } SIB;           // Shared with SIBRelocation
+      bool PatchableDisp;
+      uint8_t DispOffset;
+    } SIB; // Shared with SIBRelocation
   };
 
   TypeUnion Data;
@@ -403,7 +409,8 @@ namespace InstFlags {
 
   constexpr InstFlagType FLAGS_CALL = (1ULL << 30);
   constexpr InstFlagType FLAGS_SUPPORTS_LOCK = (1ULL << 31);
-  // Flags [57..32]: Undefined
+  constexpr InstFlagType FLAGS_LITERAL_PATCHABLE = (1ULL << 32);
+  // Flags [57..33]: Undefined
   // Flags [60..58]: Dst size
   constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
   // Flags [63..61]: Src size

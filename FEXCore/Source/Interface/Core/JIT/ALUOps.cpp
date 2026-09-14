@@ -69,6 +69,11 @@ DEF_OP(PatchableGuestData) {
   InsertGuestPatchableDataMove(GetReg(Node), Op->Value, Op->SiteAddress, (uint8_t)Op->SiteSize);
 }
 
+DEF_OP(PatchableGuestRIP) {
+  auto Op = IROp->C<IR::IROp_PatchableGuestRIP>();
+  InsertGuestPatchableRIPMove(GetReg(Node), Op->Value, Op->SiteAddress, (uint8_t)Op->SiteSize);
+}
+
 DEF_OP(InlineConstant) {
   // nop
 }

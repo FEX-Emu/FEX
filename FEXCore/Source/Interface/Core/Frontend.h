@@ -32,7 +32,7 @@ public:
     UNIMPLEMENTED_INST,
   };
 
-  enum class DataMaskType : uint8_t { MOV, BRANCH };
+  enum class DataMaskType : uint8_t { NONE, MOV, BRANCH, DISP, NOP };
 
   struct DataMask final {
     uint64_t FieldAddress;
