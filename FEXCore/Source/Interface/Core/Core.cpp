@@ -523,6 +523,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
   bool HasCustomIR {};
 
+  bool WantsDiskCachePatching = DiskCache.IsReadingDiskCache() || DiskCache.IsWritingDiskCache();
+
   if (HasCustomIRHandlers.load(std::memory_order_relaxed)) {
     std::shared_lock lk(CustomIRMutex);
     auto Handler = CustomIRHandlers.find(GuestRIP);
@@ -656,8 +658,11 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
             return 0;
 #endif
           };
-          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(
-            Thread->OpDispatcher->Constant(crc32(ExistingCodePtr, DecodedInfo->InstSize)), InstAddressReg, DecodedInfo->InstSize);
+          auto Value = crc32(ExistingCodePtr, DecodedInfo->InstSize);
+          auto CRC = WantsDiskCachePatching ?
+                       Thread->OpDispatcher->_PatchableGuestCRC(IR::OpSize::i64Bit, Value, (int64_t)ExistingCodePtr, DecodedInfo->InstSize) :
+                       Thread->OpDispatcher->Constant(Value);
+          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(CRC, InstAddressReg, DecodedInfo->InstSize);
 
           auto InvalidateCodeCond = Thread->OpDispatcher->CondJump(CodeChanged);
 

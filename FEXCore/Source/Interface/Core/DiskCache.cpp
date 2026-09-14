@@ -986,7 +986,8 @@ namespace DiskCache {
       }
       case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE:
       case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_MOVE:
-      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_LITERAL: {
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_LITERAL:
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_CRC_MOVE: {
         // same data for all, relative vs. not and register vs. literal will depend on type on apply
         BlobSmallRelocation SmallReloc = {};
         SmallReloc.Offset = Reloc.Header.Offset;

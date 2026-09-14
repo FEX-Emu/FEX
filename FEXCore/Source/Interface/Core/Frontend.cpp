@@ -1522,10 +1522,6 @@ void Decoder::PruneInlinedBranchDataMasks() {
 void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
   // counter-intuitively, the masks are also needed for lookup on anon prefix decodes, not just stores
   bool WantsDataMasks = CTX->DiskCache.IsReadingDiskCache() || CTX->DiskCache.IsWritingDiskCache();
-  // remove this if we ever fixup ValidateCode crc constant after relocations
-  if (CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
-    WantsDataMasks = false;
-  }
 
   while (!FinalInstruction && (Paused || !BlocksToDecode.empty())) {
     bool Pausing = false;
@@ -1679,9 +1675,6 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
           // NOTE: This will invalidate BlockIt, this is fine as we immediately break from the loop and EraseBlock cannot be true
           if (CTX->AreMonoHacksActive() && IsBranchMonoTailcall(BlockIt->NumInstructions)) {
             BlockIt->ForceFullSMCDetection = true;
-            // todo abandon patching this for now, as the crc will fail and it will lock up redoing it over and over
-            // we should fix the crc at relocation if this is important
-            BlockIt->DataMasks.clear();
           }
           BranchTargetInMultiblockRange();
         }
