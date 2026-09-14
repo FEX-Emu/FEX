@@ -1394,7 +1394,7 @@ void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-  auto Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
   Ref Result = _Lshl(Size == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
@@ -1416,7 +1416,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= OpSize::i32Bit});
-  auto Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+  auto Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
   auto ALUOp = _Lshr(std::max(OpSize::i32Bit, Size), Dest, Src);
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
@@ -1594,7 +1594,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
     CalculateDeferredFlags();
     StoreResultGPR(Op, Result);
   } else {
-    auto Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    auto Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
     Ref Result = _Ashr(OpSize, Dest, Src);
 
     HandleShift(Op, Result, Dest, ShiftType::ASR, Src);
@@ -1618,7 +1618,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
     UnmaskedConst = GetConstantShift(Op, Is1Bit);
     UnmaskedSrc = ARef(UnmaskedConst);
   } else {
-    UnmaskedSrc = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    UnmaskedSrc = ARef(LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true));
   }
   auto Src = UnmaskedSrc.And(Mask);
 
@@ -2008,11 +2008,11 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(_XorShift(OpSize::i32Bit, Res, Res, ShiftType::LSR, 1), SizeBit - 2, true);
 }
 
-void OpDispatchBuilder::RCROp(OpcodeArgs) {
+void OpDispatchBuilder::RCROp(OpcodeArgs, bool UseRCX) {
   const auto Size = GetSrcBitSize(Op);
 
   if (Size == 8 || Size == 16) {
-    RCRSmallerOp(Op);
+    RCRSmallerOp(Op, UseRCX);
     return;
   }
 
@@ -2022,49 +2022,54 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   CalculateDeferredFlags();
   const auto OpSize = OpSizeFromSrc(Op);
 
-  Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  uint64_t Const;
-  if (IsValueConstant(WrapNode(Src), &Const)) {
-    Const &= Mask;
-    if (!Const) {
-      ZeroShiftResult(Op);
+  if (!UseRCX) {
+    Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    uint64_t Const;
+    if (IsValueConstant(WrapNode(Src), &Const)) {
+      Const &= Mask;
+      if (!Const) {
+        ZeroShiftResult(Op);
+        return;
+      }
+
+      Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+
+      // Res = Src >> Shift
+      Ref Res = _Lshr(OpSize, Dest, Src);
+      auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
+      // Constant folded version of the above, with fused shifts.
+      if (Const > 1) {
+        Res = _Orlshl(OpSize, Res, Dest, Size + 1 - Const);
+      }
+
+      // Our new CF will be bit (Shift - 1) of the source.
+      SetCFDirect(Dest, Const - 1, true);
+
+      // Since shift != 0 we can inject the CF
+      Res = _Orlshl(OpSize, Res, CF, Size - Const);
+
+      // OF is the top two MSBs XOR'd together
+      // Only when Shift == 1, it is undefined otherwise
+      if (Const == 1) {
+        auto Xor = _XorShift(OpSize, Res, Res, ShiftType::LSR, 1);
+        SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Xor, Size - 2, true);
+      }
+
+      StoreResultGPR(Op, Res);
       return;
     }
-
-    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-    // Res = Src >> Shift
-    Ref Res = _Lshr(OpSize, Dest, Src);
-    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-
-    // Constant folded version of the above, with fused shifts.
-    if (Const > 1) {
-      Res = _Orlshl(OpSize, Res, Dest, Size + 1 - Const);
-    }
-
-    // Our new CF will be bit (Shift - 1) of the source.
-    SetCFDirect(Dest, Const - 1, true);
-
-    // Since shift != 0 we can inject the CF
-    Res = _Orlshl(OpSize, Res, CF, Size - Const);
-
-    // OF is the top two MSBs XOR'd together
-    // Only when Shift == 1, it is undefined otherwise
-    if (Const == 1) {
-      auto Xor = _XorShift(OpSize, Res, Res, ShiftType::LSR, 1);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Xor, Size - 2, true);
-    }
-
-    StoreResultGPR(Op, Res);
-    return;
   }
 
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  auto Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
   Ref SrcMasked = _And(OpSize, Src, _InlineConstant(Mask));
+
   Calculate_ShiftVariable(
     Op, SrcMasked,
     [this, Op, Size, OpSize]() {
       // Rematerialize loads to avoid crossblock liveness
-      Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      auto Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
       Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
       // Res = Src >> Shift
@@ -2100,21 +2105,29 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     OpSizeFromSrc(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
 
-void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
+void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs, bool UseRCX) {
   CalculateDeferredFlags();
 
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
-  Src = Src.And(0x1F);
+  auto GetShift = [this, Op, UseRCX]() {
+    if (UseRCX) {
+      auto Src = ARef(LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true));
+      return Src.And(0x1F);
+    } else {
+      auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+      return Src.And(0x1F);
+    }
+  };
+
+  auto Src = GetShift();
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size, GetShift]() {
     // Rematerialized to avoid crossblock liveness
-    auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
-    Src = Src.And(0x1F);
+    auto Src = GetShift();
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -2224,11 +2237,11 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   StoreResultGPR(Op, Res);
 }
 
-void OpDispatchBuilder::RCLOp(OpcodeArgs) {
+void OpDispatchBuilder::RCLOp(OpcodeArgs, bool UseRCX) {
   const auto Size = GetSrcBitSize(Op);
 
   if (Size == 8 || Size == 16) {
-    RCLSmallerOp(Op);
+    RCLSmallerOp(Op, UseRCX);
     return;
   }
 
@@ -2237,50 +2250,55 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   const auto OpSize = OpSizeFromSrc(Op);
 
-  uint64_t Const;
-  if (IsValueConstant(WrapNode(Src), &Const)) {
-    Const &= Mask;
-    if (!Const) {
-      ZeroShiftResult(Op);
+  if (!UseRCX) {
+    Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    uint64_t Const;
+    if (IsValueConstant(WrapNode(Src), &Const)) {
+      Const &= Mask;
+      if (!Const) {
+        ZeroShiftResult(Op);
+        return;
+      }
+
+      // Res = Src << Shift
+      Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+      Ref Res = _Lshl(OpSize, Dest, Src);
+      auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+
+      // Res |= (Src << (Size - Shift + 1));
+      if (Const > 1) {
+        Res = _Orlshr(OpSize, Res, Dest, Size + 1 - Const);
+      }
+
+      // Our new CF will be bit (Shift - 1) of the source
+      SetCFDirect(Dest, Size - Const, true);
+
+      // Since Shift != 0 we can inject the CF
+      Res = _Orlshl(OpSize, Res, CF, Const - 1);
+
+      // OF is the top two MSBs XOR'd together
+      // Only when Shift == 1, it is undefined otherwise
+      if (Const == 1) {
+        auto NewOF = _Xor(OpSize, Res, Dest);
+        SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 1, true);
+      }
+
+      StoreResultGPR(Op, Res);
       return;
     }
-
-    // Res = Src << Shift
-    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-    Ref Res = _Lshl(OpSize, Dest, Src);
-    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-
-    // Res |= (Src << (Size - Shift + 1));
-    if (Const > 1) {
-      Res = _Orlshr(OpSize, Res, Dest, Size + 1 - Const);
-    }
-
-    // Our new CF will be bit (Shift - 1) of the source
-    SetCFDirect(Dest, Size - Const, true);
-
-    // Since Shift != 0 we can inject the CF
-    Res = _Orlshl(OpSize, Res, CF, Const - 1);
-
-    // OF is the top two MSBs XOR'd together
-    // Only when Shift == 1, it is undefined otherwise
-    if (Const == 1) {
-      auto NewOF = _Xor(OpSize, Res, Dest);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 1, true);
-    }
-
-    StoreResultGPR(Op, Res);
-    return;
   }
 
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  auto Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
   Ref SrcMasked = _And(OpSize, Src, _InlineConstant(Mask));
+
   Calculate_ShiftVariable(
     Op, SrcMasked,
     [this, Op, Size, OpSize]() {
       // Rematerialized to avoid crossblock liveness
-      Ref Src = LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      auto Src = LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true);
 
       // Res = Src << Shift
       Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -2315,21 +2333,29 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     OpSizeFromSrc(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
 
-void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
+void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs, bool UseRCX) {
   CalculateDeferredFlags();
 
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
-  Src = Src.And(0x1F);
+  auto GetShift = [this, Op, UseRCX]() {
+    if (UseRCX) {
+      auto Src = ARef(LoadGPRRegister(X86State::REG_RCX, OpSize::iInvalid, 0, true));
+      return Src.And(0x1F);
+    } else {
+      auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+      return Src.And(0x1F);
+    }
+  };
+
+  auto Src = GetShift();
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size, GetShift]() {
     // Rematerialized to avoid crossblock liveness
-    auto Src = ARef(LoadSourceGPR(Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
-    Src = Src.And(0x1F);
+    auto Src = GetShift();
     Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
