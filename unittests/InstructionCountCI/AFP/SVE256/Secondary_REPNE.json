@@ -7,7 +7,7 @@
       "AFP"
     ],
     "DisabledHostFeatures": [],
-    "BinaryCacheVersion": 21
+    "BinaryCacheVersion": 22
   },
   "Instructions": {
     "cvtsi2sd xmm0, eax": {
