@@ -371,9 +371,9 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0xD6, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_D6] }}},
     {0xD7, 1, X86InstInfo{"XLAT",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                                                           0}},
 
-    {0xE0, 1, X86InstInfo{"LOOPNE", TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_SF_SRC_RCX,                             1}},
-    {0xE1, 1, X86InstInfo{"LOOPE",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_SF_SRC_RCX,                             1}},
-    {0xE2, 1, X86InstInfo{"LOOP",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_SF_SRC_RCX,                             1}},
+    {0xE0, 1, X86InstInfo{"LOOPNE", TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT,                             1}},
+    {0xE1, 1, X86InstInfo{"LOOPE",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT,                             1}},
+    {0xE2, 1, X86InstInfo{"LOOP",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT,                             1}},
     {0xE3, 1, X86InstInfo{"JrCXZ",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT ,                             1}},
 
     // Should just throw GP
