@@ -1087,10 +1087,40 @@ void OpDispatchBuilder::CQOOp(OpcodeArgs) {
   StoreGPRResultWithZExtSemantics(X86State::REG_RDX, Upper, Size);
 }
 
+std::optional<Ref> OpDispatchBuilder::XCHGOpImpl(OpcodeArgs, Ref Src) {
+  if (DestIsMem(Op)) {
+    HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
+
+    Ref Dest = MakeSegmentAddress(Op, Op->Dest);
+    if (IsMonoBackpatcherBlock) {
+      _MonoBackpatcherWrite(OpSizeFromSrc(Op), Src, Dest);
+    } else {
+      return _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
+    }
+    return std::nullopt;
+  } else {
+    // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
+    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+
+    // Swap the contents
+    // Order matters here since we don't want to swap context contents for one that effects the other
+    StoreResultGPR(Op, Op->Dest, Src);
+    return Dest;
+  }
+}
+
 void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
+  // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
+  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Res = XCHGOpImpl(Op, Src);
+  if (Res) {
+    StoreResultGPR(Op, Op->Src[0], *Res);
+  }
+}
+
+void OpDispatchBuilder::XCHGRAXOp(OpcodeArgs) {
   // Load both the source and the destination
-  if (Op->OP == 0x90 && Op->Src[0].IsGPR() && Op->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_RAX && Op->Dest.IsGPR() &&
-      Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
+  if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
     // This is one heck of a sucky special case
     // If we are the 0x90 XCHG opcode (Meaning source is GPR RAX)
     // and destination register is ALSO RAX
@@ -1118,25 +1148,10 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   }
 
   // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
-  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  if (DestIsMem(Op)) {
-    HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
-
-    Ref Dest = MakeSegmentAddress(Op, Op->Dest);
-    if (IsMonoBackpatcherBlock) {
-      _MonoBackpatcherWrite(OpSizeFromSrc(Op), Src, Dest);
-    } else {
-      auto Result = _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
-      StoreResultGPR(Op, Op->Src[0], Result);
-    }
-  } else {
-    // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
-    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-    // Swap the contents
-    // Order matters here since we don't want to swap context contents for one that effects the other
-    StoreResultGPR(Op, Op->Dest, Src);
-    StoreResultGPR(Op, Op->Src[0], Dest);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX, OpSize::iInvalid, 0, true);
+  auto Res = XCHGOpImpl(Op, Src);
+  if (Res) {
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, *Res, OpSizeFromDst(Op));
   }
 }
 
