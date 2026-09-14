@@ -1081,10 +1081,10 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
-  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto Size = OpSizeFromSrc(Op);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
   Ref Upper = _Sbfe(std::max(OpSize::i32Bit, Size), 1, GetSrcBitSize(Op) - 1, Src);
-  StoreGPRResultWithZExtSemantics(X86State::REG_RDX, Upper, OpSizeFromDst(Op));
+  StoreGPRResultWithZExtSemantics(X86State::REG_RDX, Upper, Size);
 }
 
 void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
@@ -1147,7 +1147,8 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
 
   Src = _Sbfe(DstSize <= OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, IR::OpSizeAsBits(SrcSize), 0, Src);
 
-  StoreResultGPR_WithOpSize(Op, Op->Dest, Src, DstSize);
+  // This inserts in to the low 16-bits.
+  StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Src, DstSize);
 }
 
 void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
