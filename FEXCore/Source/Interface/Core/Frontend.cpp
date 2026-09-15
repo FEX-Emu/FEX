@@ -501,14 +501,7 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
 
   auto* CurrentDest = &DecodeInst->Dest;
 
-  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX)) {
-    // Some instructions hardcode their destination as RAX
-    CurrentDest->Type = DecodedOperand::OpType::GPR;
-    CurrentDest->Data.GPR.HighBits = false;
-    CurrentDest->Data.GPR.GPR =
-      HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ? FEXCore::X86State::REG_RAX : FEXCore::X86State::REG_RDX;
-    CurrentDest = &DecodeInst->Src[0];
-  } else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_REX_IN_BYTE)) {
+  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_REX_IN_BYTE)) {
     LOGMAN_THROW_A_FMT(!HasMODRM, "This instruction shouldn't have ModRM!");
 
     // If the REX is in the byte that means the lower nibble of the OP contains the destination GPR
