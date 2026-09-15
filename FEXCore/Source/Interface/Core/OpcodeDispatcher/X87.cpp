@@ -768,10 +768,14 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
 // Store Status Word
 // There's no load Status Word instruction but you can load it through frstor
 // or fldenv.
-void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
+void OpDispatchBuilder::X87FNSTSW(OpcodeArgs, bool DestRAX) {
   Ref TopValue = _SyncStackToSlow();
   Ref StatusWord = ReconstructFSW_Helper(TopValue);
-  StoreResultGPR(Op, StatusWord);
+  if (DestRAX) {
+    StoreGPRRegister(X86State::REG_RAX, StatusWord, OpSize::i16Bit);
+  } else {
+    StoreResultGPR(Op, StatusWord);
+  }
 }
 
 void OpDispatchBuilder::FNCLEX(OpcodeArgs) {

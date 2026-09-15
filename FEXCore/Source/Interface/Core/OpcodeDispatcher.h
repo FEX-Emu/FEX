@@ -745,7 +745,7 @@ public:
   void X87FLDCW(OpcodeArgs);
   void X87FNSAVE(OpcodeArgs);
   void X87FNSTENV(OpcodeArgs);
-  void X87FNSTSW(OpcodeArgs);
+  void X87FNSTSW(OpcodeArgs, bool DestRAX);
   void X87FRSTOR(OpcodeArgs);
   void X87FSTCW(OpcodeArgs);
   void X87FXAM(OpcodeArgs);

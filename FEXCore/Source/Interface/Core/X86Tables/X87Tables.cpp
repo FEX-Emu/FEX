@@ -216,7 +216,7 @@ constexpr std::array<DispatchTableEntry, 140> X87F64OpTable = {{
   // 5 = Invalid
   {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVE},
 
-  {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
+  {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87FNSTSW, false>},
 
   {OPD(0xDD, 0xC0), 8, &OpDispatchBuilder::X87FFREE},
   {OPD(0xDD, 0xC8), 8, &OpDispatchBuilder::FXCH},
@@ -284,7 +284,7 @@ constexpr std::array<DispatchTableEntry, 140> X87F64OpTable = {{
   {OPD(0xDF, 0xD0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>},
   {OPD(0xDF, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>},
 
-  {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::X87FNSTSW},
+  {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87FNSTSW, true>},
   {OPD(0xDF, 0xE8), 8,
    &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
   {OPD(0xDF, 0xF0), 8,
@@ -483,7 +483,7 @@ constexpr std::array<DispatchTableEntry, 140> X87F80OpTable = {{
   // 5 = Invalid
   {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVE},
 
-  {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
+  {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87FNSTSW, false>},
 
   {OPD(0xDD, 0xC0), 8, &OpDispatchBuilder::X87FFREE},
   {OPD(0xDD, 0xC8), 8, &OpDispatchBuilder::FXCH},
@@ -545,7 +545,7 @@ constexpr std::array<DispatchTableEntry, 140> X87F80OpTable = {{
   {OPD(0xDF, 0xD0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>},
   {OPD(0xDF, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>},
 
-  {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::X87FNSTSW},
+  {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87FNSTSW, true>},
   {OPD(0xDF, 0xE8), 8,
    &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
   {OPD(0xDF, 0xF0), 8,
@@ -794,7 +794,7 @@ auto GenerateX87TableLambda = [](const auto DispatchTable) consteval {
       //  / 3
       {OPD(0xDF, 0xD8), 8, X86InstInfo{"FSTP",    TYPE_X87, FLAGS_SF_MOD_DST | FLAGS_POP, 0}},
       //  / 4
-      {OPD(0xDF, 0xE0), 1, X86InstInfo{"FNSTSW",  TYPE_INST, GenFlagsSameSize(SIZE_16BIT) | FLAGS_SF_DST_RAX, 0}},
+      {OPD(0xDF, 0xE0), 1, X86InstInfo{"FNSTSW",  TYPE_INST, GenFlagsSameSize(SIZE_16BIT), 0}},
       {OPD(0xDF, 0xE1), 7, X86InstInfo{"",        TYPE_INVALID, FLAGS_NONE, 0}},
       //  / 5
       {OPD(0xDF, 0xE8), 8, X86InstInfo{"FUCOMIP", TYPE_INST,    FLAGS_POP, 0}},
