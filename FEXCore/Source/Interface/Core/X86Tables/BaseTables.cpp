@@ -83,22 +83,22 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   },
   // ENTRY_27
   {
-    {"DAA",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::DAAOp } },
+    {"DAA",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT), 0, { .OpDispatch = &IR::OpDispatchBuilder::DAAOp } },
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_2F
   {
-    {"DAS",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::DASOp } },
+    {"DAS",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT), 0, { .OpDispatch = &IR::OpDispatchBuilder::DASOp } },
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_37
   {
-    {"AAA",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT) | FLAGS_SF_DST_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::AAAOp } },
+    {"AAA",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT), 0, { .OpDispatch = &IR::OpDispatchBuilder::AAAOp } },
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_3F
   {
-    {"AAS",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT) | FLAGS_SF_DST_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::AASOp } },
+    {"AAS",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT), 0, { .OpDispatch = &IR::OpDispatchBuilder::AASOp } },
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_40
@@ -159,12 +159,12 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   },
   // ENTRY_D4
   {
-    {"AAM",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 1, { .OpDispatch = &IR::OpDispatchBuilder::AAMOp } },
+    {"AAM",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT), 1, { .OpDispatch = &IR::OpDispatchBuilder::AAMOp } },
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_D5
   {
-    {"AAD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 1, { .OpDispatch = &IR::OpDispatchBuilder::AADOp } },
+    {"AAD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT), 1, { .OpDispatch = &IR::OpDispatchBuilder::AADOp } },
     {"REX2", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_D6
