@@ -1415,11 +1415,11 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
     }
 
     // heuristic: if it's a small value, assume it's more likely to be part of the code around it
-    // todo so far i'm not seeing much difference trying this, but worth another look
-    // if (LiteralToPatch && (LiteralToPatch->Data.Literal.Value < 0x1000000ULL || LiteralToPatch->Data.Literal.Value > 0x7FFFFFFFFFFFULL)) {
-    //   LiteralToPatch = nullptr;
-    // }
-    if (LiteralToPatch) {
+    bool IsMOV = (DecodeInst->OPRaw >= 0xB8 && DecodeInst->OPRaw <= 0xBF) || DecodeInst->OPRaw == 0xC7;
+    if (LiteralToPatch && IsMOV && LiteralToPatch->Literal() < 0x10000ULL) {
+      LiteralToPatch = nullptr;
+    }
+    if (LiteralToPatch && LiteralToPatch->Literal() != 0) {
       Type = DataMaskType::MOV;
     }
   }
@@ -1478,7 +1478,7 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
   }
   // jmp/call branches that use a literal rip-relative offset
   // some of those may be inlined by multiblock and will be cleaned up at decode end
-  if (DecodeInst->TableInfo->Flags & X86Tables::InstFlags::FLAGS_SETS_RIP && DecodeInst->Src[0].IsLiteral()) {
+  if (DecodeInst->TableInfo->Flags & X86Tables::InstFlags::FLAGS_SETS_RIP && DecodeInst->Src[0].IsLiteral() && DecodeInst->Src[0].Literal() != 0) {
     LiteralToPatch = &DecodeInst->Src[0];
     Type = DataMaskType::BRANCH;
   }
