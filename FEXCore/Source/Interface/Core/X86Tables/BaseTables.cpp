@@ -222,8 +222,8 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x11, 1, X86InstInfo{"ADC",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SUPPORTS_LOCK,                                       0}},
     {0x12, 1, X86InstInfo{"ADC",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM,                                                   0}},
     {0x13, 1, X86InstInfo{"ADC",    TYPE_INST, FLAGS_MODRM,                                                                   0}},
-    {0x14, 1, X86InstInfo{"ADC",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  ,                              1}},
-    {0x15, 1, X86InstInfo{"ADC",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE, 4}},
+    {0x14, 1, X86InstInfo{"ADC",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT),                              1}},
+    {0x15, 1, X86InstInfo{"ADC",    TYPE_INST, FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE, 4}},
     {0x16, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_16] }}},
     {0x17, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_17] }}},
 

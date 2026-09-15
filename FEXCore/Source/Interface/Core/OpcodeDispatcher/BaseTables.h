@@ -11,7 +11,8 @@ constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   {0x08, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, 0, false>},
   {0x0c, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, 0, true>},
 
-  {0x10, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ADCOp, 0>},
+  {0x10, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ADCOp, 0, false>},
+  {0x14, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ADCOp, 0, true>},
 
   {0x18, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SBBOp, 0>},
 

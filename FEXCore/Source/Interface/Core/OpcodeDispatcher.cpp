@@ -230,7 +230,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   ALUOp(Op, IROp, AtomicIROp, 1, false);
 }
 
-void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
+void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -245,6 +245,8 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
 
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
     Before = _AtomicFetchAdd(Size, ALUOp, DestMem);
+  } else if (DestRAX) {
+    Before = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op), 0, true);
   } else {
     Before = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
@@ -261,7 +263,9 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
     Result = CalculateFlags_ADC(Size, Before, Src);
   }
 
-  if (!DestIsLockedMem(Op)) {
+  if (DestRAX) {
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Result, OpSizeFromDst(Op));
+  } else if (!DestIsLockedMem(Op)) {
     StoreResultGPR(Op, Result);
   }
 }
