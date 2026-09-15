@@ -625,12 +625,7 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
     ++CurrentSrc;
   }
 
-  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RAX)) {
-    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
-    DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
-    DecodeInst->Src[CurrentSrc].Data.GPR.GPR = FEXCore::X86State::REG_RAX;
-    ++CurrentSrc;
-  } else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RCX)) {
+  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RCX)) {
     DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
     DecodeInst->Src[CurrentSrc].Data.GPR.GPR = FEXCore::X86State::REG_RCX;

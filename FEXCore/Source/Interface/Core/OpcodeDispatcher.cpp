@@ -298,7 +298,8 @@ void OpDispatchBuilder::SALCOp(OpcodeArgs) {
 
   auto Result = NZCVSelect(OpSize::i32Bit, CondClass::UGE /* CF = 1 */, _InlineConstant(0xffffffff), _InlineConstant(0));
 
-  StoreResultGPR(Op, Result);
+  // This inserts in to the low 8-bits.
+  StoreGPRRegister(X86State::REG_RAX, Result, OpSizeFromDst(Op));
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
@@ -1080,16 +1081,46 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
-  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto Size = OpSizeFromSrc(Op);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
   Ref Upper = _Sbfe(std::max(OpSize::i32Bit, Size), 1, GetSrcBitSize(Op) - 1, Src);
-  StoreGPRResultWithZExtSemantics(X86State::REG_RDX, Upper, OpSizeFromDst(Op));
+  StoreGPRResultWithZExtSemantics(X86State::REG_RDX, Upper, Size);
+}
+
+std::optional<Ref> OpDispatchBuilder::XCHGOpImpl(OpcodeArgs, Ref Src) {
+  if (DestIsMem(Op)) {
+    HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
+
+    Ref Dest = MakeSegmentAddress(Op, Op->Dest);
+    if (IsMonoBackpatcherBlock) {
+      _MonoBackpatcherWrite(OpSizeFromSrc(Op), Src, Dest);
+    } else {
+      return _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
+    }
+    return std::nullopt;
+  } else {
+    // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
+    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+
+    // Swap the contents
+    // Order matters here since we don't want to swap context contents for one that effects the other
+    StoreResultGPR(Op, Op->Dest, Src);
+    return Dest;
+  }
 }
 
 void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
+  // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
+  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Res = XCHGOpImpl(Op, Src);
+  if (Res) {
+    StoreResultGPR(Op, Op->Src[0], *Res);
+  }
+}
+
+void OpDispatchBuilder::XCHGRAXOp(OpcodeArgs) {
   // Load both the source and the destination
-  if (Op->OP == 0x90 && Op->Src[0].IsGPR() && Op->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_RAX && Op->Dest.IsGPR() &&
-      Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
+  if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
     // This is one heck of a sucky special case
     // If we are the 0x90 XCHG opcode (Meaning source is GPR RAX)
     // and destination register is ALSO RAX
@@ -1117,25 +1148,10 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   }
 
   // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
-  Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  if (DestIsMem(Op)) {
-    HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
-
-    Ref Dest = MakeSegmentAddress(Op, Op->Dest);
-    if (IsMonoBackpatcherBlock) {
-      _MonoBackpatcherWrite(OpSizeFromSrc(Op), Src, Dest);
-    } else {
-      auto Result = _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
-      StoreResultGPR(Op, Op->Src[0], Result);
-    }
-  } else {
-    // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
-    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-    // Swap the contents
-    // Order matters here since we don't want to swap context contents for one that effects the other
-    StoreResultGPR(Op, Op->Dest, Src);
-    StoreResultGPR(Op, Op->Src[0], Dest);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX, OpSize::iInvalid, 0, true);
+  auto Res = XCHGOpImpl(Op, Src);
+  if (Res) {
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, *Res, OpSizeFromDst(Op));
   }
 }
 
@@ -1146,7 +1162,8 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
 
   Src = _Sbfe(DstSize <= OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, IR::OpSizeAsBits(SrcSize), 0, Src);
 
-  StoreResultGPR_WithOpSize(Op, Op->Dest, Src, DstSize);
+  // This inserts in to the low 16-bits.
+  StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Src, DstSize);
 }
 
 void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
@@ -1317,27 +1334,25 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
     // Source is memory(literal)
     // Dest is GPR
     auto Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
-    StoreResultGPR(Op, Op->Dest, Src);
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Src, OpSizeFromDst(Op));
     break;
   }
   case 0xA2:
   case 0xA3: {
     // Source is GPR
     // Dest is memory(literal)
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src = LoadGPRRegister(X86State::REG_RAX);
 
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
-    StoreResultGPR(Op, Op->Src[1], Src);
+    StoreResultGPR(Op, Op->Src[0], Src);
     break;
   }
   }
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
-  const auto GPRSize = GetGPROpSize();
-
-  Ref Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], GPRSize, Op->Flags);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX);
   Ref Leaf = LoadGPRRegister(X86State::REG_RCX);
 
   Ref RAX = _AllocateGPR(false);
@@ -3172,7 +3187,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
   if (!Repeat) {
     // Src is used only for a store of the same size so allow garbage
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
 
     // Only ES prefix
     Ref Dest = MakeSegmentAddress(X86State::REG_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -3191,7 +3206,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     // FEX doesn't support partial faulting REP instructions.
     // Converting this to a `MemSet` IR op optimizes this quite significantly in our codegen.
     // If FEX is to gain support for faulting REP instructions, then this implementation needs to change significantly.
-    Ref Src = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
+    Ref Src = LoadGPRRegister(X86State::REG_RAX, Size);
     Ref Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
@@ -3522,7 +3537,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
     Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-    auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    auto Src1 = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
     auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
 
     CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
@@ -3565,7 +3580,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         Ref Src_RDI = LoadGPRRegister(X86State::REG_RDI, AddrSize);
         Ref Dest_RDI = AppendSegmentOffset(Src_RDI, 0, X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-        auto Src1 = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+        auto Src1 = LoadGPRRegister(X86State::REG_RAX, Size, 0, true);
         auto Src2 = _LoadMemGPRAutoTSO(Size, Dest_RDI, Size);
 
         CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
@@ -4995,8 +5010,7 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref DestMem = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.LoadData = false});
-  _CacheLineZero(DestMem);
+  _CacheLineZero(LoadGPRRegister(X86State::REG_RAX));
 }
 
 void OpDispatchBuilder::Prefetch(OpcodeArgs, bool ForStore, bool Stream, uint8_t Level) {

@@ -144,13 +144,13 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   },
   // ENTRY_A2
   {
-    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
-    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MEM_OFFSET, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MEM_OFFSET, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
   },
   // ENTRY_A3
   {
-    {"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET | FLAGS_LITERAL_PATCHABLE, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
-    {"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET | FLAGS_LITERAL_PATCHABLE, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, FLAGS_MEM_OFFSET | FLAGS_LITERAL_PATCHABLE, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, FLAGS_MEM_OFFSET | FLAGS_LITERAL_PATCHABLE, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
   },
   // ENTRY_CE
   {
@@ -169,7 +169,7 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
   },
   // ENTRY_D6
   {
-    {"SALC",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::SALCOp } },
+    {"SALC",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT), 0, { .OpDispatch = &IR::OpDispatchBuilder::SALCOp } },
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   // ENTRY_EA
@@ -321,9 +321,9 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x8D, 1, X86InstInfo{"LEA",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY, 0}},
     {0x8E, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_16BIT) | FLAGS_MODRM,                      0}},
     {0x8F, 1, X86InstInfo{"POP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_ZERO_REG | FLAGS_DEBUG_MEM_ACCESS, 0}},
-    {0x90, 8, X86InstInfo{"XCHG",   TYPE_INST, FLAGS_SF_REX_IN_BYTE | FLAGS_SF_SRC_RAX, 0}},
-    {0x98, 1, X86InstInfo{"CDQE",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX,     0}},
-    {0x99, 1, X86InstInfo{"CQO",    TYPE_INST, FLAGS_SF_SRC_RAX,     0}},
+    {0x90, 8, X86InstInfo{"XCHG",   TYPE_INST, FLAGS_SF_REX_IN_BYTE, 0}},
+    {0x98, 1, X86InstInfo{"CDQE",   TYPE_INST, FLAGS_NONE,     0}},
+    {0x99, 1, X86InstInfo{"CQO",    TYPE_INST, FLAGS_NONE,     0}},
 
     // These three are all X87 instructions
     {0x9B, 1, X86InstInfo{"FWAIT",  TYPE_INST, FLAGS_NONE,                              0}},
@@ -345,12 +345,12 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
 
     {0xA8, 1, X86InstInfo{"TEST",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX ,                                             1}},
     {0xA9, 1, X86InstInfo{"TEST",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE,                4}},
-    {0xAA, 1, X86InstInfo{"STOS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_SF_SRC_RAX,                   0}},
-    {0xAB, 1, X86InstInfo{"STOS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_SF_SRC_RAX,                                   0}},
+    {0xAA, 1, X86InstInfo{"STOS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS,                   0}},
+    {0xAB, 1, X86InstInfo{"STOS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                   0}},
     {0xAC, 1, X86InstInfo{"LODS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_DEBUG_MEM_ACCESS,                                                      0}},
     {0xAD, 1, X86InstInfo{"LODS",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_DEBUG_MEM_ACCESS,                                                      0}},
-    {0xAE, 1, X86InstInfo{"SCAS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_SF_SRC_RAX,                                   0}},
-    {0xAF, 1, X86InstInfo{"SCAS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_SF_SRC_RAX,                                   0}},
+    {0xAE, 1, X86InstInfo{"SCAS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS,                                   0}},
+    {0xAF, 1, X86InstInfo{"SCAS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                   0}},
 
     {0xB0, 8, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_REX_IN_BYTE ,                                         1}},
     {0xB8, 8, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_REX_IN_BYTE | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_DISPLACE_SIZE_MUL_2 | FLAGS_LITERAL_PATCHABLE, 4}},
