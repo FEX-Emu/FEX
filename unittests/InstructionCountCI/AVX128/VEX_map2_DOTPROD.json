@@ -12,7 +12,7 @@
       "SVE256",
       "I8MM"
     ],
-    "BinaryCacheVersion": 22
+    "BinaryCacheVersion": 23
   },
   "Instructions": {
     "vpdpbusd xmm0, xmm1, xmm2": {

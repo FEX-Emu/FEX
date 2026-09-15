@@ -848,63 +848,6 @@ namespace DiskCache {
       }
     }
 
-    fextl::set<uint64_t> DataMaskAddresses;
-
-    fextl::vector<uint32_t> ExactGuestCodeExtents;
-    uint64_t CurStartExtent = 0, CurEndExtent = 0;
-    const Frontend::Decoder::DecodedBlocks* LastBlock = nullptr;
-    for (auto& SubBlock : DecodedBlockInfo->Blocks) {
-      if (SubBlock.BlockStatus != Frontend::Decoder::DecodedBlockStatus::SUCCESS) {
-        return false;
-      }
-      if (!CurStartExtent) {
-        CurStartExtent = SubBlock.Entry;
-        CurEndExtent = SubBlock.Entry + SubBlock.Size;
-      } else {
-        LOGMAN_THROW_A_FMT(SubBlock.Entry >= CurEndExtent, "DecodedBlocks not sorted or overlapping?");
-        if (SubBlock.Entry == CurEndExtent) {
-          CurEndExtent = SubBlock.Entry + SubBlock.Size;
-        } else {
-          ExactGuestCodeExtents.push_back(CurStartExtent - GuestRIP);
-          ExactGuestCodeExtents.push_back(CurEndExtent - CurStartExtent);
-          CurStartExtent = SubBlock.Entry;
-          CurEndExtent = SubBlock.Entry + SubBlock.Size;
-        }
-      }
-      // split extents according to data masks as well
-      for (auto& Mask : SubBlock.DataMasks) {
-        if (Mask.FieldAddress > CurStartExtent) {
-          ExactGuestCodeExtents.push_back(CurStartExtent - GuestRIP);
-          ExactGuestCodeExtents.push_back(Mask.FieldAddress - CurStartExtent);
-        }
-        CurStartExtent = Mask.FieldAddress + Mask.ValueSize;
-
-        if (Mask.Type != Frontend::Decoder::DataMaskType::NOP) {
-          DataMaskAddresses.insert(Mask.FieldAddress);
-        }
-      }
-      LastBlock = &SubBlock;
-    }
-    if (LastBlock && (CurStartExtent != GuestRIP || CurEndExtent != GuestRIP + GuestCode.size())) {
-      ExactGuestCodeExtents.push_back(CurStartExtent - GuestRIP);
-      ExactGuestCodeExtents.push_back(CurEndExtent - CurStartExtent);
-    }
-
-    if (ExactGuestCodeExtents.size() == 0) {
-      ExactGuestCodeExtents.reserve(2);
-      ExactGuestCodeExtents.push_back(0);
-      ExactGuestCodeExtents.push_back(GuestCode.size());
-    }
-
-    uint64_t GuestFootprint = XXH3_64bits(ExactGuestCodeExtents.data(), ExactGuestCodeExtents.size() * sizeof(uint32_t));
-
-    // if (ExactGuestCodeExtents.size()) {
-    //   LogMan::Msg::IFmt("store! length {:d}", GuestCode.size());
-    //   for(uint32_t i = 0; i < ExactGuestCodeExtents.size(); i+=2 ) {
-    //     LogMan::Msg::IFmt("extent {} {}", ExactGuestCodeExtents[i], ExactGuestCodeExtents[i]+ExactGuestCodeExtents[i+1]);
-    //   }
-    // }
-
     const uint32_t EntryPointCount = (uint32_t)CompiledCode.EntryPoints.size();
 
     const size_t HeaderOffset = 0;
@@ -929,15 +872,6 @@ namespace DiskCache {
       .ThunkRelocCount = ThunkRelocCount,
     };
 
-    {
-      XXH3_state_t HashState;
-      XXH3_128bits_reset(&HashState);
-      for (uint32_t i = 0; i < ExactGuestCodeExtents.size(); i += 2) {
-        XXH3_128bits_update(&HashState, GuestCode.data() + ExactGuestCodeExtents[i], ExactGuestCodeExtents[i + 1]);
-      }
-      Header.GuestHash = XXH3_128bits_digest(&HashState);
-    }
-    memcpy(BlobData + HeaderOffset, &Header, sizeof(Header));
     memcpy(BlobData + HostCodeOffset, CompiledCode.BlockBegin, CompiledCode.Size);
 
     // pack and relocate entrypoints
@@ -949,6 +883,8 @@ namespace DiskCache {
       EntryHostOffsets[EntryIdx] = uint32_t(HostAddr - CompiledCode.BlockBegin);
       EntryIdx++;
     }
+
+    fextl::set<uint64_t> DataMasksConsumed;
 
     // pack relocations
     auto* SmallRelocs = reinterpret_cast<BlobSmallRelocation*>(BlobData + SmallRelocsOffset);
@@ -986,7 +922,8 @@ namespace DiskCache {
       }
       case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_DATA_MOVE:
       case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_MOVE:
-      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_LITERAL: {
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_LITERAL:
+      case CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_CRC_MOVE: {
         // same data for all, relative vs. not and register vs. literal will depend on type on apply
         BlobSmallRelocation SmallReloc = {};
         SmallReloc.Offset = Reloc.Header.Offset;
@@ -996,12 +933,8 @@ namespace DiskCache {
         SmallReloc.PatchableData.SiteOffset = uint32_t(Reloc.GuestPatchableData.SiteAddress - GuestRIP);
         SmallRelocs[SmallIdx++] = SmallReloc;
 
-        // mark the corresponding data mask consumed - we might not find one if they got removed due to the smc workaround
-        // the hash will just fail on lookup later
-        auto It = DataMaskAddresses.find(Reloc.GuestPatchableData.SiteAddress);
-        if (It != DataMaskAddresses.end()) {
-          DataMaskAddresses.erase(It);
-        }
+        // mark the corresponding data mask consumed
+        DataMasksConsumed.insert(Reloc.GuestPatchableData.SiteAddress);
 
         break;
       }
@@ -1016,11 +949,67 @@ namespace DiskCache {
       }
     }
 
-    if (!DataMaskAddresses.empty()) {
-      LogMan::Msg::IFmt("DiskCache: DataMask unaccounted for! {:x}", GuestCodeKey);
-      // this would mean we omitted contents in the hash that we're not going to patch, which would be loading corrupt code
-      return false;
+    fextl::vector<uint32_t> ExactGuestCodeExtents;
+    uint64_t CurStartExtent = 0, CurEndExtent = 0;
+    const Frontend::Decoder::DecodedBlocks* LastBlock = nullptr;
+    for (auto& SubBlock : DecodedBlockInfo->Blocks) {
+      if (SubBlock.BlockStatus != Frontend::Decoder::DecodedBlockStatus::SUCCESS) {
+        return false;
+      }
+      if (!CurStartExtent) {
+        CurStartExtent = SubBlock.Entry;
+        CurEndExtent = SubBlock.Entry + SubBlock.Size;
+      } else {
+        LOGMAN_THROW_A_FMT(SubBlock.Entry >= CurEndExtent, "DecodedBlocks not sorted or overlapping?");
+        if (SubBlock.Entry == CurEndExtent) {
+          CurEndExtent = SubBlock.Entry + SubBlock.Size;
+        } else {
+          ExactGuestCodeExtents.push_back(CurStartExtent - GuestRIP);
+          ExactGuestCodeExtents.push_back(CurEndExtent - CurStartExtent);
+          CurStartExtent = SubBlock.Entry;
+          CurEndExtent = SubBlock.Entry + SubBlock.Size;
+        }
+      }
+      // split extents according to data masks as well
+      for (auto& Mask : SubBlock.DataMasks) {
+        if (Mask.Type == Frontend::Decoder::DataMaskType::NOP || DataMasksConsumed.find(Mask.FieldAddress) != DataMasksConsumed.end()) {
+          if (Mask.FieldAddress > CurStartExtent) {
+            ExactGuestCodeExtents.push_back(CurStartExtent - GuestRIP);
+            ExactGuestCodeExtents.push_back(Mask.FieldAddress - CurStartExtent);
+          }
+          CurStartExtent = Mask.FieldAddress + Mask.ValueSize;
+        }
+      }
+      LastBlock = &SubBlock;
     }
+    if (LastBlock && (CurStartExtent != GuestRIP || CurEndExtent != GuestRIP + GuestCode.size())) {
+      ExactGuestCodeExtents.push_back(CurStartExtent - GuestRIP);
+      ExactGuestCodeExtents.push_back(CurEndExtent - CurStartExtent);
+    }
+
+    if (ExactGuestCodeExtents.size() == 0) {
+      ExactGuestCodeExtents.reserve(2);
+      ExactGuestCodeExtents.push_back(0);
+      ExactGuestCodeExtents.push_back(GuestCode.size());
+    }
+
+    uint64_t GuestFootprint = XXH3_64bits(ExactGuestCodeExtents.data(), ExactGuestCodeExtents.size() * sizeof(uint32_t));
+
+    // if (ExactGuestCodeExtents.size()) {
+    //   LogMan::Msg::IFmt("store! length {:d}", GuestCode.size());
+    //   for(uint32_t i = 0; i < ExactGuestCodeExtents.size(); i+=2 ) {
+    //     LogMan::Msg::IFmt("extent {} {}", ExactGuestCodeExtents[i], ExactGuestCodeExtents[i]+ExactGuestCodeExtents[i+1]);
+    //   }
+    // }
+    {
+      XXH3_state_t HashState;
+      XXH3_128bits_reset(&HashState);
+      for (uint32_t i = 0; i < ExactGuestCodeExtents.size(); i += 2) {
+        XXH3_128bits_update(&HashState, GuestCode.data() + ExactGuestCodeExtents[i], ExactGuestCodeExtents[i + 1]);
+      }
+      Header.GuestHash = XXH3_128bits_digest(&HashState);
+    }
+    memcpy(BlobData + HeaderOffset, &Header, sizeof(Header));
 
     memcpy(BlobData + GuestCodeOffset, GuestCode.data(), GuestCode.size());
 

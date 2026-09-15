@@ -84,7 +84,8 @@ DEF_OP(ExitFunction) {
       str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
       if (Op->PatchSiteAddress) {
-        InsertGuestPatchableRIPMove(EC_CALL_CHECKER_PC_REG, NewRIP, Op->PatchSiteAddress, Op->PatchSiteSize);
+        InsertGuestPatchableMove(RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_MOVE, EC_CALL_CHECKER_PC_REG, NewRIP, Op->PatchSiteAddress,
+                                 Op->PatchSiteSize);
       } else {
         InsertGuestRIPMove(EC_CALL_CHECKER_PC_REG, NewRIP);
       }

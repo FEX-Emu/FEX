@@ -1395,11 +1395,33 @@ bool Decoder::CheckIfCacheable(FEXCore::Core::InternalThreadState& Thread, const
 }
 
 void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
+  FEXCore::X86Tables::DecodedOperand* LiteralToPatch = nullptr;
+
+  // cmp *, imm8 - seen varying in mono jitted code
+  {
+    FEXCore::X86Tables::ModRMDecoded ModRM;
+    ModRM.Hex = DecodeInst->ModRM;
+    if ((DecodeInst->OPRaw == 0x80 || DecodeInst->OPRaw == 0x83) && ModRM.reg == 7 && LastFieldReadSize == 1) {
+      for (auto& Src : DecodeInst->Src) {
+        if (Src.IsLiteral()) {
+          LiteralToPatch = &Src;
+          break;
+        }
+      }
+      if (LiteralToPatch && LiteralToPatch->Literal() != 0) {
+        Block.DataMasks.push_back({OpAddress + LastFieldReadOffset, DataMaskType::MOV, LastFieldReadSize});
+
+        LiteralToPatch->Type = X86Tables::DecodedOperand::OpType::LiteralPatchable;
+        LiteralToPatch->Data.LiteralPatchable.FieldOffset = LastFieldReadOffset;
+        LiteralToPatch->Data.LiteralPatchable.Width = LastFieldReadSize;
+      }
+    }
+  }
+
   if (LastFieldReadSize < 4) {
     return;
   }
 
-  FEXCore::X86Tables::DecodedOperand* LiteralToPatch = nullptr;
   DataMaskType Type = DataMaskType::NONE;
 
   // imm32 or imm64 at the end type instructions
@@ -1415,11 +1437,11 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
     }
 
     // heuristic: if it's a small value, assume it's more likely to be part of the code around it
-    // todo so far i'm not seeing much difference trying this, but worth another look
-    // if (LiteralToPatch && (LiteralToPatch->Data.Literal.Value < 0x1000000ULL || LiteralToPatch->Data.Literal.Value > 0x7FFFFFFFFFFFULL)) {
-    //   LiteralToPatch = nullptr;
-    // }
-    if (LiteralToPatch) {
+    bool IsMOV = (DecodeInst->OPRaw >= 0xB8 && DecodeInst->OPRaw <= 0xBF) || DecodeInst->OPRaw == 0xC7;
+    if (LiteralToPatch && IsMOV && LiteralToPatch->Literal() < 0x10000ULL) {
+      LiteralToPatch = nullptr;
+    }
+    if (LiteralToPatch && LiteralToPatch->Literal() != 0) {
       Type = DataMaskType::MOV;
     }
   }
@@ -1478,7 +1500,7 @@ void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
   }
   // jmp/call branches that use a literal rip-relative offset
   // some of those may be inlined by multiblock and will be cleaned up at decode end
-  if (DecodeInst->TableInfo->Flags & X86Tables::InstFlags::FLAGS_SETS_RIP && DecodeInst->Src[0].IsLiteral()) {
+  if (DecodeInst->TableInfo->Flags & X86Tables::InstFlags::FLAGS_SETS_RIP && DecodeInst->Src[0].IsLiteral() && DecodeInst->Src[0].Literal() != 0) {
     LiteralToPatch = &DecodeInst->Src[0];
     Type = DataMaskType::BRANCH;
   }
@@ -1522,10 +1544,6 @@ void Decoder::PruneInlinedBranchDataMasks() {
 void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
   // counter-intuitively, the masks are also needed for lookup on anon prefix decodes, not just stores
   bool WantsDataMasks = CTX->DiskCache.IsReadingDiskCache() || CTX->DiskCache.IsWritingDiskCache();
-  // remove this if we ever fixup ValidateCode crc constant after relocations
-  if (CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
-    WantsDataMasks = false;
-  }
 
   while (!FinalInstruction && (Paused || !BlocksToDecode.empty())) {
     bool Pausing = false;
@@ -1679,9 +1697,6 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
           // NOTE: This will invalidate BlockIt, this is fine as we immediately break from the loop and EraseBlock cannot be true
           if (CTX->AreMonoHacksActive() && IsBranchMonoTailcall(BlockIt->NumInstructions)) {
             BlockIt->ForceFullSMCDetection = true;
-            // todo abandon patching this for now, as the crc will fail and it will lock up redoing it over and over
-            // we should fix the crc at relocation if this is important
-            BlockIt->DataMasks.clear();
           }
           BranchTargetInMultiblockRange();
         }

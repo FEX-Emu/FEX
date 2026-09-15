@@ -37,6 +37,10 @@ enum class RelocationTypes : uint32_t {
   // Like PATCHABLE_RIP_LITERAL but puts it in a register
   // Aligned to struct RelocGuestPatchableData
   RELOC_GUEST_PATCHABLE_RIP_MOVE,
+
+  // Patchable guest CRC
+  // Aligned to struct RelocGuestPatchableData
+  RELOC_GUEST_PATCHABLE_CRC_MOVE,
 };
 
 struct FEX_PACKED RelocationHeader final {

@@ -30,6 +30,9 @@
 #include <FEXCore/Utils/AllocatorHooks.h>
 
 #include <fstream>
+#if defined(ARCHITECTURE_arm64)
+#include <arm_acle.h>
+#endif
 
 namespace FEXCore {
 
@@ -542,8 +545,11 @@ static inline int64_t ReadLiveGuestData(uint64_t SiteAddress, uint8_t ValueSize)
   uint64_t Raw = 0;
   memcpy(&Raw, reinterpret_cast<const void*>(SiteAddress), ValueSize);
   // manual sign-extension from guest live bytes
-  // 1/2 sizes not permitted in DetectDataMasks currently
-  if (ValueSize == 4) {
+  if (ValueSize == 1) {
+    return (int8_t)Raw;
+  } else if (ValueSize == 2) {
+    return (int16_t)Raw;
+  } else if (ValueSize == 4) {
     return (int32_t)Raw;
   } else {
     return (int64_t)Raw;
@@ -555,6 +561,25 @@ static inline void ApplyPatchableDataRelocation(uint64_t SiteAddress, uint8_t Va
                        CPU::Arm64Emitter::PadType::DOPAD);
 }
 
+static inline uint32_t crc32(const uint8_t* Ptr, size_t Size) {
+#if defined(ARCHITECTURE_arm64)
+  uint32_t Result {};
+#define do_crc(type, suffix)                                               \
+  while (Size >= sizeof(type)) {                                           \
+    Result = __crc32##suffix(Result, *reinterpret_cast<const type*>(Ptr)); \
+    Ptr += sizeof(type);                                                   \
+    Size -= sizeof(type);                                                  \
+  }
+  do_crc(uint64_t, d);
+  do_crc(uint32_t, w);
+  do_crc(uint16_t, h);
+  do_crc(uint8_t, b);
+  return Result;
+#else
+  // Unsupported on non-arm.
+  return 0;
+#endif
+};
 
 static inline void ApplyPatchableRIPLiteralRelocation(uint64_t SiteAddress, uint8_t ValueSize, CPU::Arm64Emitter& Emitter) {
   Emitter.dc64(SiteAddress + ValueSize + ReadLiveGuestData(SiteAddress, ValueSize));
@@ -562,6 +587,11 @@ static inline void ApplyPatchableRIPLiteralRelocation(uint64_t SiteAddress, uint
 
 static inline void ApplyPatchableRIPMoveRelocation(uint64_t SiteAddress, uint8_t ValueSize, uint8_t RegisterIndex, CPU::Arm64Emitter& Emitter) {
   const uint64_t Target = SiteAddress + ValueSize + ReadLiveGuestData(SiteAddress, ValueSize);
+  Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Target, CPU::Arm64Emitter::PadType::DOPAD);
+}
+
+static inline void ApplyPatchableCRCMoveRelocation(uint64_t SiteAddress, uint8_t ValueSize, uint8_t RegisterIndex, CPU::Arm64Emitter& Emitter) {
+  const uint64_t Target = crc32(reinterpret_cast<const uint8_t*>(SiteAddress), ValueSize);
   Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Target, CPU::Arm64Emitter::PadType::DOPAD);
 }
 
@@ -596,6 +626,11 @@ bool CodeCache::ApplyPackedCodeRelocations(uint64_t GuestEntry, std::span<std::b
     }
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_RIP_MOVE: {
       ApplyPatchableRIPMoveRelocation(GuestEntry + Reloc.PatchableData.SiteOffset, Reloc.PatchableData.ValueSize,
+                                      Reloc.PatchableData.RegisterIndex, Emitter);
+      break;
+    }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_PATCHABLE_CRC_MOVE: {
+      ApplyPatchableCRCMoveRelocation(GuestEntry + Reloc.PatchableData.SiteOffset, Reloc.PatchableData.ValueSize,
                                       Reloc.PatchableData.RegisterIndex, Emitter);
       break;
     }
