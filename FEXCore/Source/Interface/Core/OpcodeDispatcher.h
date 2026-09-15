@@ -396,12 +396,12 @@ public:
   void JUMPFARIndirectOp(OpcodeArgs);
   void CALLFARIndirectOp(OpcodeArgs);
   void RETFARIndirectOp(OpcodeArgs);
-  void TESTOp(OpcodeArgs, uint32_t SrcIndex);
+  void TESTOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX);
   void ARPLOp(OpcodeArgs);
   void MOVSXDOp(OpcodeArgs);
   void MOVSXOp(OpcodeArgs);
   void MOVZXOp(OpcodeArgs);
-  void CMPOp(OpcodeArgs, uint32_t SrcIndex);
+  void CMPOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX);
   void SETccOp(OpcodeArgs);
   void CQOOp(OpcodeArgs);
   void CDQOp(OpcodeArgs);

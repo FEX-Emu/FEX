@@ -56,7 +56,7 @@ constexpr std::array<X86InstInfo[2], ENTRY_MAX> PrimaryGroup_ArchSelect_LUT = {{
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
   {
-    {"CMP",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST, 1, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::CMPOp, 1> }},
+    {"CMP",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST, 1, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::CMPOp, 1, false> }},
     {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
   },
 }};

@@ -264,8 +264,8 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x39, 1, X86InstInfo{"CMP",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                   0}},
     {0x3A, 1, X86InstInfo{"CMP",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM,                                                   0}},
     {0x3B, 1, X86InstInfo{"CMP",    TYPE_INST, FLAGS_MODRM,                                                                   0}},
-    {0x3C, 1, X86InstInfo{"CMP",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  ,                              1}},
-    {0x3D, 1, X86InstInfo{"CMP",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE, 4}},
+    {0x3C, 1, X86InstInfo{"CMP",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT),                              1}},
+    {0x3D, 1, X86InstInfo{"CMP",    TYPE_INST, FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE, 4}},
     {0x3F, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_3F] }}},
 
     {0x40, 8, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_40] }}},
@@ -343,8 +343,8 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0xA6, 1, X86InstInfo{"CMPSB",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS,                                            0}},
     {0xA7, 1, X86InstInfo{"CMPS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                                            0}},
 
-    {0xA8, 1, X86InstInfo{"TEST",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX ,                                             1}},
-    {0xA9, 1, X86InstInfo{"TEST",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE,                4}},
+    {0xA8, 1, X86InstInfo{"TEST",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT),                                             1}},
+    {0xA9, 1, X86InstInfo{"TEST",   TYPE_INST, FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_LITERAL_PATCHABLE,                4}},
     {0xAA, 1, X86InstInfo{"STOS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS,                   0}},
     {0xAB, 1, X86InstInfo{"STOS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                   0}},
     {0xAC, 1, X86InstInfo{"LODS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS,                                                      0}},

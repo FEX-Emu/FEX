@@ -970,11 +970,16 @@ void OpDispatchBuilder::RETFARIndirectOp(OpcodeArgs) {
   BlockSetRIP = true;
 }
 
-void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
+void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSourceGPR(Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
-  Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Dest {};
+  if (DestRAX) {
+    Dest = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op), 0, true);
+  } else {
+    Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  }
 
   const auto Size = OpSizeFromDst(Op);
   LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i64Bit, "Invalid size");
@@ -1080,11 +1085,16 @@ void OpDispatchBuilder::MOVZXOp(OpcodeArgs) {
   StoreResultGPR(Op, Src);
 }
 
-void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
+void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSourceGPR(Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
-  Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Dest {};
+  if (DestRAX) {
+    Dest = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op), 0, true);
+  } else {
+    Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  }
   CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, Src);
 }
 

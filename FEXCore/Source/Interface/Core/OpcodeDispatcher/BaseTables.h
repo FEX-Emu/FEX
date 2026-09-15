@@ -26,7 +26,9 @@ constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   {0x30, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, 0, false>},
   {0x34, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, 0, true>},
 
-  {0x38, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::CMPOp, 0>},
+  {0x38, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::CMPOp, 0, false>},
+  {0x3c, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::CMPOp, 0, true>},
+
   {0x50, 8, &OpDispatchBuilder::PUSHREGOp},
   {0x58, 8, &OpDispatchBuilder::POPOp},
   {0x68, 1, &OpDispatchBuilder::PUSHOp},
@@ -36,7 +38,7 @@ constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   {0x6C, 4, &OpDispatchBuilder::PermissionRestrictedOp},
 
   {0x70, 16, &OpDispatchBuilder::CondJUMPOp},
-  {0x84, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::TESTOp, 0>},
+  {0x84, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::TESTOp, 0, false>},
   {0x86, 2, &OpDispatchBuilder::XCHGOp},
   {0x88, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVGPROp, 0>},
 
@@ -56,7 +58,7 @@ constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   {0xA4, 2, &OpDispatchBuilder::MOVSOp},
 
   {0xA6, 2, &OpDispatchBuilder::CMPSOp},
-  {0xA8, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::TESTOp, 0>},
+  {0xA8, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::TESTOp, 0, true>},
   {0xAA, 2, &OpDispatchBuilder::STOSOp},
   {0xAC, 2, &OpDispatchBuilder::LODSOp},
   {0xAE, 2, &OpDispatchBuilder::SCASOp},
