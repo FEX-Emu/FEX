@@ -1395,11 +1395,33 @@ bool Decoder::CheckIfCacheable(FEXCore::Core::InternalThreadState& Thread, const
 }
 
 void Decoder::DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block) {
+  FEXCore::X86Tables::DecodedOperand* LiteralToPatch = nullptr;
+
+  // cmp *, imm8 - seen varying in mono jitted code
+  {
+    FEXCore::X86Tables::ModRMDecoded ModRM;
+    ModRM.Hex = DecodeInst->ModRM;
+    if ((DecodeInst->OPRaw == 0x80 || DecodeInst->OPRaw == 0x83) && ModRM.reg == 7 && LastFieldReadSize == 1) {
+      for (auto& Src : DecodeInst->Src) {
+        if (Src.IsLiteral()) {
+          LiteralToPatch = &Src;
+          break;
+        }
+      }
+      if (LiteralToPatch && LiteralToPatch->Literal() != 0) {
+        Block.DataMasks.push_back({OpAddress + LastFieldReadOffset, DataMaskType::MOV, LastFieldReadSize});
+
+        LiteralToPatch->Type = X86Tables::DecodedOperand::OpType::LiteralPatchable;
+        LiteralToPatch->Data.LiteralPatchable.FieldOffset = LastFieldReadOffset;
+        LiteralToPatch->Data.LiteralPatchable.Width = LastFieldReadSize;
+      }
+    }
+  }
+
   if (LastFieldReadSize < 4) {
     return;
   }
 
-  FEXCore::X86Tables::DecodedOperand* LiteralToPatch = nullptr;
   DataMaskType Type = DataMaskType::NONE;
 
   // imm32 or imm64 at the end type instructions

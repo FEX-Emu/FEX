@@ -545,8 +545,11 @@ static inline int64_t ReadLiveGuestData(uint64_t SiteAddress, uint8_t ValueSize)
   uint64_t Raw = 0;
   memcpy(&Raw, reinterpret_cast<const void*>(SiteAddress), ValueSize);
   // manual sign-extension from guest live bytes
-  // 1/2 sizes not permitted in DetectDataMasks currently
-  if (ValueSize == 4) {
+  if (ValueSize == 1) {
+    return (int8_t)Raw;
+  } else if (ValueSize == 2) {
+    return (int16_t)Raw;
+  } else if (ValueSize == 4) {
     return (int32_t)Raw;
   } else {
     return (int64_t)Raw;
