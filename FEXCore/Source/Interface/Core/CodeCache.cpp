@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#include "Utils/crc32.h"
 #include "FEXCore/Utils/LogManager.h"
 #include "FEXCore/Utils/MathUtils.h"
 #include "FEXCore/Utils/TypeDefines.h"
@@ -30,9 +31,6 @@
 #include <FEXCore/Utils/AllocatorHooks.h>
 
 #include <fstream>
-#if defined(ARCHITECTURE_arm64)
-#include <arm_acle.h>
-#endif
 
 namespace FEXCore {
 
@@ -561,26 +559,6 @@ static inline void ApplyPatchableDataRelocation(uint64_t SiteAddress, uint8_t Va
                        CPU::Arm64Emitter::PadType::DOPAD);
 }
 
-static inline uint32_t crc32(const uint8_t* Ptr, size_t Size) {
-#if defined(ARCHITECTURE_arm64)
-  uint32_t Result {};
-#define do_crc(type, suffix)                                               \
-  while (Size >= sizeof(type)) {                                           \
-    Result = __crc32##suffix(Result, *reinterpret_cast<const type*>(Ptr)); \
-    Ptr += sizeof(type);                                                   \
-    Size -= sizeof(type);                                                  \
-  }
-  do_crc(uint64_t, d);
-  do_crc(uint32_t, w);
-  do_crc(uint16_t, h);
-  do_crc(uint8_t, b);
-  return Result;
-#else
-  // Unsupported on non-arm.
-  return 0;
-#endif
-};
-
 static inline void ApplyPatchableRIPLiteralRelocation(uint64_t SiteAddress, uint8_t ValueSize, CPU::Arm64Emitter& Emitter) {
   Emitter.dc64(SiteAddress + ValueSize + ReadLiveGuestData(SiteAddress, ValueSize));
 }
@@ -591,7 +569,7 @@ static inline void ApplyPatchableRIPMoveRelocation(uint64_t SiteAddress, uint8_t
 }
 
 static inline void ApplyPatchableCRCMoveRelocation(uint64_t SiteAddress, uint8_t ValueSize, uint8_t RegisterIndex, CPU::Arm64Emitter& Emitter) {
-  const uint64_t Target = crc32(reinterpret_cast<const uint8_t*>(SiteAddress), ValueSize);
+  const uint64_t Target = FEXCore::Utils::crc32(reinterpret_cast<const uint8_t*>(SiteAddress), ValueSize);
   Emitter.LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(RegisterIndex), Target, CPU::Arm64Emitter::PadType::DOPAD);
 }
 

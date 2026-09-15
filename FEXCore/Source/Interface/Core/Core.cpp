@@ -30,6 +30,7 @@ $end_info$
 #include "Interface/IR/RegisterAllocationData.h"
 #include "Utils/Allocator.h"
 #include "Utils/Allocator/HostAllocator.h"
+#include "Utils/crc32.h"
 #include <FEXCore/Utils/SpinWaitLock.h>
 #include "Utils/variable_length_integer.h"
 
@@ -76,9 +77,6 @@ $end_info$
 #include <unordered_map>
 #include <utility>
 #include <xxhash.h>
-#if defined(ARCHITECTURE_arm64)
-#include <arm_acle.h>
-#endif
 
 namespace FEXCore::Context {
 ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
@@ -639,26 +637,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           auto ExistingCodePtr = reinterpret_cast<uint8_t*>(Block.Entry + BlockInstructionsLength);
           auto InstAddressReg = Thread->OpDispatcher->_EntrypointOffset(GPRSize, InstAddress - GuestRIP);
 
-          auto crc32 = [](const uint8_t* Ptr, size_t Size) -> uint32_t {
-#if defined(ARCHITECTURE_arm64)
-            uint32_t Result {};
-#define do_crc(type, suffix)                                               \
-  while (Size >= sizeof(type)) {                                           \
-    Result = __crc32##suffix(Result, *reinterpret_cast<const type*>(Ptr)); \
-    Ptr += sizeof(type);                                                   \
-    Size -= sizeof(type);                                                  \
-  }
-            do_crc(uint64_t, d);
-            do_crc(uint32_t, w);
-            do_crc(uint16_t, h);
-            do_crc(uint8_t, b);
-            return Result;
-#else
-            // Unsupported on non-arm.
-            return 0;
-#endif
-          };
-          auto Value = crc32(ExistingCodePtr, DecodedInfo->InstSize);
+          auto Value = FEXCore::Utils::crc32(ExistingCodePtr, DecodedInfo->InstSize);
           auto CRC = WantsDiskCachePatching ?
                        Thread->OpDispatcher->_PatchableGuestCRC(IR::OpSize::i64Bit, Value, (int64_t)ExistingCodePtr, DecodedInfo->InstSize) :
                        Thread->OpDispatcher->Constant(Value);
