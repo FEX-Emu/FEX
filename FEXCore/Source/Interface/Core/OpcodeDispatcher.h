@@ -376,7 +376,7 @@ public:
   void CallbackReturnOp(OpcodeArgs);
   void SecondaryALUOp(OpcodeArgs);
   void ADCOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX);
-  void SBBOp(OpcodeArgs, uint32_t SrcIndex);
+  void SBBOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX);
   void SALCOp(OpcodeArgs);
   void PUSHOp(OpcodeArgs);
   void PUSHREGOp(OpcodeArgs);
