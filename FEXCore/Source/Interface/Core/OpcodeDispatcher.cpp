@@ -227,10 +227,10 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   };
 #undef OPD
 
-  ALUOp(Op, IROp, AtomicIROp, 1);
+  ALUOp(Op, IROp, AtomicIROp, 1, false);
 }
 
-void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
+void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -245,6 +245,8 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
 
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
     Before = _AtomicFetchAdd(Size, ALUOp, DestMem);
+  } else if (DestRAX) {
+    Before = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op), 0, true);
   } else {
     Before = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
@@ -261,12 +263,14 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
     Result = CalculateFlags_ADC(Size, Before, Src);
   }
 
-  if (!DestIsLockedMem(Op)) {
+  if (DestRAX) {
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Result, OpSizeFromDst(Op));
+  } else if (!DestIsLockedMem(Op)) {
     StoreResultGPR(Op, Result);
   }
 }
 
-void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex) {
+void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -282,13 +286,17 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex) {
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
     auto SrcPlusCF = IncrementByCarry(OpSize, Src);
     Before = _AtomicFetchSub(Size, SrcPlusCF, DestMem);
+  } else if (DestRAX) {
+    Before = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op), 0, true);
   } else {
     Before = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
 
   Result = CalculateFlags_SBB(Size, Before, Src);
 
-  if (!DestIsLockedMem(Op)) {
+  if (DestRAX) {
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Result, OpSizeFromDst(Op));
+  } else if (!DestIsLockedMem(Op)) {
     StoreResultGPR(Op, Result);
   }
 }
@@ -962,11 +970,16 @@ void OpDispatchBuilder::RETFARIndirectOp(OpcodeArgs) {
   BlockSetRIP = true;
 }
 
-void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
+void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSourceGPR(Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
-  Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Dest {};
+  if (DestRAX) {
+    Dest = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op), 0, true);
+  } else {
+    Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  }
 
   const auto Size = OpSizeFromDst(Op);
   LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i64Bit, "Invalid size");
@@ -1072,11 +1085,16 @@ void OpDispatchBuilder::MOVZXOp(OpcodeArgs) {
   StoreResultGPR(Op, Src);
 }
 
-void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
+void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSourceGPR(Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
-  Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Dest {};
+  if (DestRAX) {
+    Dest = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op), 0, true);
+  } else {
+    Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  }
   CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, Src);
 }
 
@@ -3469,7 +3487,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
     auto Src = _LoadMemGPRAutoTSO(Size, Dest_RSI, Size);
 
-    StoreResultGPR(Op, Src);
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Src, Size);
 
     // Offset the pointer
     Ref TailDest_RSI = OffsetByDir(Src_RSI, IR::OpSizeToSize(Size));
@@ -3483,7 +3501,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     // Calculate flags early. because end of block
     CalculateDeferredFlags();
 
-    ForeachDirection([this, Op, Size, AddrSize](int32_t PtrDir) {
+    ForeachDirection([this, Size, AddrSize](int32_t PtrDir) {
       // XXX: Theoretically LODS could be optimized to
       // RSI += {-}(RCX * Size)
       // RAX = [RSI - Size]
@@ -3516,7 +3534,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
         auto Src = _LoadMemGPRAutoTSO(Size, Dest_RSI, Size);
 
-        StoreResultGPR(Op, Src);
+        StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Src, Size);
 
         Ref TailCounter = LoadGPRRegister(X86State::REG_RCX);
         Ref TailDest_RSI = LoadGPRRegister(X86State::REG_RSI);
@@ -4680,7 +4698,7 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   StoreResultGPR(Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
 }
 
-void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx) {
+void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx, bool DestRAX) {
   // On x86, the canonical way to zero a register is XOR with itself. Detect and
   // emit optimal arm64 assembly.
   if (!DestIsLockedMem(Op) && ALUIROp == FEXCore::IR::IROps::OP_XOR && Op->Dest.IsGPR() && Op->Src[SrcIdx].IsGPR() &&
@@ -4716,7 +4734,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   // promoting to a full size operation that preserves the upper bits.
   uint64_t Const;
   bool IsConst = IsValueConstant(WrapNode(Src), &Const);
-  if (Size < OpSize::i32Bit && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsConst &&
+  if (Size < OpSize::i32Bit && !DestIsLockedMem(Op) && ((Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits) || DestRAX) && IsConst &&
       (ALUIROp == IR::IROps::OP_XOR || ALUIROp == IR::IROps::OP_OR || ALUIROp == IR::IROps::OP_ANDWITHFLAGS)) {
 
     RoundedSize = ResultSize = GetGPROpSize();
@@ -4745,6 +4763,8 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
     DeriveOp(FetchOp, AtomicFetchOp, _AtomicFetchAdd(Size, Src, DestMem));
     Dest = FetchOp;
+  } else if (DestRAX) {
+    Dest = LoadGPRRegister(X86State::REG_RAX, OpSizeFromSrc(Op), 0, true);
   } else {
     Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
@@ -4779,7 +4799,9 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   default: break;
   }
 
-  if (!DestIsLockedMem(Op)) {
+  if (DestRAX) {
+    StoreGPRResultWithZExtSemantics(X86State::REG_RAX, Result, ResultSize);
+  } else if (!DestIsLockedMem(Op)) {
     StoreResultGPR_WithOpSize(Op, Op->Dest, Result, ResultSize, OpSize::iInvalid, MemoryAccessType::DEFAULT);
   }
 }

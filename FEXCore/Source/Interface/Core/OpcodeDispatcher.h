@@ -363,7 +363,8 @@ public:
   void MOVVectorUnalignedOp(OpcodeArgs);
   void MOVVectorUnalignedNoNopOp(OpcodeArgs);
   void MOVVectorNTOp(OpcodeArgs, bool IsAVX);
-  void ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
+  void ALURAXOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp);
+  void ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx, bool DestRAX);
   void LSLOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs, bool IsSyscallInst);
@@ -374,8 +375,8 @@ public:
   void IRETOp(OpcodeArgs);
   void CallbackReturnOp(OpcodeArgs);
   void SecondaryALUOp(OpcodeArgs);
-  void ADCOp(OpcodeArgs, uint32_t SrcIndex);
-  void SBBOp(OpcodeArgs, uint32_t SrcIndex);
+  void ADCOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX);
+  void SBBOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX);
   void SALCOp(OpcodeArgs);
   void PUSHOp(OpcodeArgs);
   void PUSHREGOp(OpcodeArgs);
@@ -395,12 +396,12 @@ public:
   void JUMPFARIndirectOp(OpcodeArgs);
   void CALLFARIndirectOp(OpcodeArgs);
   void RETFARIndirectOp(OpcodeArgs);
-  void TESTOp(OpcodeArgs, uint32_t SrcIndex);
+  void TESTOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX);
   void ARPLOp(OpcodeArgs);
   void MOVSXDOp(OpcodeArgs);
   void MOVSXOp(OpcodeArgs);
   void MOVZXOp(OpcodeArgs);
-  void CMPOp(OpcodeArgs, uint32_t SrcIndex);
+  void CMPOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX);
   void SETccOp(OpcodeArgs);
   void CQOOp(OpcodeArgs);
   void CDQOp(OpcodeArgs);
@@ -745,7 +746,7 @@ public:
   void X87FLDCW(OpcodeArgs);
   void X87FNSAVE(OpcodeArgs);
   void X87FNSTENV(OpcodeArgs);
-  void X87FNSTSW(OpcodeArgs);
+  void X87FNSTSW(OpcodeArgs, bool DestRAX);
   void X87FRSTOR(OpcodeArgs);
   void X87FSTCW(OpcodeArgs);
   void X87FXAM(OpcodeArgs);
