@@ -5,19 +5,24 @@
 namespace FEXCore::IR {
 constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   // Instructions
-  {0x00, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD, 0>},
+  {0x00, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD, 0, false>},
+  {0x04, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD, 0, true>},
 
-  {0x08, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, 0>},
+  {0x08, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, 0, false>},
+  {0x0c, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, 0, true>},
 
   {0x10, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ADCOp, 0>},
 
   {0x18, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SBBOp, 0>},
 
-  {0x20, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ANDWITHFLAGS, FEXCore::IR::IROps::OP_ATOMICFETCHAND, 0>},
+  {0x20, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ANDWITHFLAGS, FEXCore::IR::IROps::OP_ATOMICFETCHAND, 0, false>},
+  {0x24, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ANDWITHFLAGS, FEXCore::IR::IROps::OP_ATOMICFETCHAND, 0, true>},
 
-  {0x28, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB, 0>},
+  {0x28, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB, 0, false>},
+  {0x2c, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB, 0, true>},
 
-  {0x30, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, 0>},
+  {0x30, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, 0, false>},
+  {0x34, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, 0, true>},
 
   {0x38, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::CMPOp, 0>},
   {0x50, 8, &OpDispatchBuilder::PUSHREGOp},

@@ -363,7 +363,8 @@ public:
   void MOVVectorUnalignedOp(OpcodeArgs);
   void MOVVectorUnalignedNoNopOp(OpcodeArgs);
   void MOVVectorNTOp(OpcodeArgs, bool IsAVX);
-  void ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
+  void ALURAXOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp);
+  void ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx, bool DestRAX);
   void LSLOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs, bool IsSyscallInst);
