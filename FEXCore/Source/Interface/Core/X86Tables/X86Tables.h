@@ -356,8 +356,7 @@ namespace InstFlags {
 
   // Non-XMM subflags
   constexpr InstFlagType FLAGS_SF_DST_RAX = (1ULL << 11);
-  // subflag [13:12] unused
-  constexpr InstFlagType FLAGS_SF_SRC_RCX = (1ULL << 14);
+  // subflag [14:12] unused
   constexpr InstFlagType FLAGS_SF_REX_IN_BYTE = (1ULL << 15);
 
   // XMM subflags

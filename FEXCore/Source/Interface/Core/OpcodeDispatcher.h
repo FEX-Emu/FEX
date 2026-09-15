@@ -428,11 +428,11 @@ public:
   void RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit);
   void RCROp1Bit(OpcodeArgs);
   void RCROp8x1Bit(OpcodeArgs);
-  void RCROp(OpcodeArgs);
-  void RCRSmallerOp(OpcodeArgs);
+  void RCROp(OpcodeArgs, bool UseRCX);
+  void RCRSmallerOp(OpcodeArgs, bool UseRCX);
   void RCLOp1Bit(OpcodeArgs);
-  void RCLOp(OpcodeArgs);
-  void RCLSmallerOp(OpcodeArgs);
+  void RCLOp(OpcodeArgs, bool UseRCX);
+  void RCLSmallerOp(OpcodeArgs, bool UseRCX);
 
   void BTOp(OpcodeArgs, uint32_t SrcIndex, enum BTAction Action);
 
