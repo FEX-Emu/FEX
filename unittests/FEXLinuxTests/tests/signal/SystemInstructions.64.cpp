@@ -92,6 +92,7 @@ TEST(24, "sysexit", "sysexit", X86_TRAPNO_UD, 0, 2, SIGILL);
 TEST(24, "sysexit", "sysexitd", X86_TRAPNO_UD, 0, 2, SIGILL);
 #endif
 
+TEST(25, "in eax, dx", "in eax, dx", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
 // Differs between dr8 and dr0-7 variants.
 // dr0-7: SIGSEGV
 // dr8-15: SIGILL
