@@ -3,6 +3,7 @@
 #include "Common/HostFeatures.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/DiskCache.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/Utils/Allocator.h>
@@ -12,10 +13,6 @@
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
 #include <sys/stat.h>
-
-namespace FEXCore::DiskCache {
-uint16_t GetFormatVersion();
-}
 
 namespace CodeSize {
 class CodeSizeValidation final {

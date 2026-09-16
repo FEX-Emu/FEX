@@ -4,13 +4,13 @@
 #include "Common/JitSymbols.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/CPUID.h"
+#include "Interface/Core/DiskCache.h"
 #include "Interface/Core/SharedCodeBufferManager.h"
 #include <Interface/IR/IntrusiveIRList.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/HostFeatures.h>
-#include <FEXCore/Core/DiskCache.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
