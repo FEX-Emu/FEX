@@ -105,6 +105,14 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
   // Track atomic TSO emulation configuration.
   UpdateAtomicTSOEmulationConfig();
 
+#ifndef _WIN32
+  // Check if the kernel supports getrandom().
+  uint64_t Probe {};
+  HostRNGAvailable = FHU::Syscalls::getrandom(&Probe, sizeof(Probe), 0) == sizeof(Probe);
+#else
+  HostRNGAvailable = true;
+#endif
+
   DiskCache.Init(this);
 }
 

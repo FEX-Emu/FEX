@@ -5125,7 +5125,7 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RDRANDOp(OpcodeArgs, bool Reseed) {
-  if (!CTX->HostFeatures.SupportsRAND) {
+  if (!CTX->HostFeatures.SupportsRAND && !CTX->SoftwareRNGEnabled()) {
     UnimplementedOp(Op);
     return;
   }

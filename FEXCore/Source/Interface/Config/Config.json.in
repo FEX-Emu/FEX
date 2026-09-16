@@ -141,6 +141,14 @@
           "Hides hybrid CPU core arrangement."
         ]
       },
+      "SoftwareRNG": {
+        "Type": "bool",
+        "Default": "true",
+        "AffectsCodeGen": "true",
+        "Desc": [
+          "Emulates RDRAND and RDSEED in software when the host does not implement FEAT_RNG."
+        ]
+      },
       "CPUFeatureRegisters": {
         "Type": "str",
         "Default": "",

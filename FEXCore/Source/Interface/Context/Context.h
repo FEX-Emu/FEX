@@ -369,9 +369,15 @@ public:
     FEX_CONFIG_OPT(DisableTelemetry, DISABLETELEMETRY);
     FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
     FEX_CONFIG_OPT(SmallTSCScale, SMALLTSCSCALE);
+    FEX_CONFIG_OPT(SoftwareRNG, SOFTWARERNG);
     FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
     FEX_CONFIG_OPT(MonoHacks, MONOHACKS);
   } Config;
+
+  bool SoftwareRNGEnabled() const {
+    return Config.SoftwareRNG() && HostRNGAvailable;
+  }
+  bool HostRNGAvailable {};
 
   FEXCore::Utils::WritePriorityMutex::Mutex CodeInvalidationMutex {};
 

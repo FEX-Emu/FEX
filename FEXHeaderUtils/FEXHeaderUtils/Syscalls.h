@@ -96,6 +96,10 @@ inline int32_t renameat2(int olddirfd, const char* oldpath, int newdirfd, const 
 inline int32_t pidfd_open(pid_t pid, unsigned int flags) {
   return ::syscall(SYS_pidfd_open, pid, flags);
 }
+
+inline ssize_t getrandom(void* buf, size_t buflen, unsigned int flags) {
+  return ::syscall(SYS_getrandom, buf, buflen, flags);
+}
 #else
 
 inline int32_t getcpu(uint32_t* cpu, uint32_t* node) {

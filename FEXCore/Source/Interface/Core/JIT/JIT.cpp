@@ -36,7 +36,14 @@ $end_info$
 
 #include <cstdio>
 #include <cstring>
+#include <optional>
+#include <type_traits>
 #include <unistd.h>
+#ifdef _WIN32
+#include <atomic>
+#else
+#include <FEXHeaderUtils/Syscalls.h>
+#endif
 
 namespace {
 struct DivRem {
@@ -62,6 +69,34 @@ LDIV(uint64_t SrcHigh, uint64_t SrcLow, int64_t Divisor) {
     .Remainder = (uint64_t)(Source % Divisor),
   };
 }
+
+#ifndef _WIN32
+
+static std::optional<uint64_t> RDRANDFallback(uint64_t Reseed) {
+  uint64_t Value {};
+  FHU::Syscalls::getrandom(&Value, sizeof(Value), 0);
+  return Value;
+}
+
+#else
+
+// Windows does not have an equivalent to getrandom() without dynamically linking
+// bcrypt et al. Since this fallback is just for compat it does not need to be
+// cryptographic, so instead we vendor SplitMix64 as a naive fallback.
+
+// Reference implementation by Sebastiano Vigna, public domain (CC0)
+// https://prng.di.unimi.it/splitmix64.c
+static std::atomic<uint64_t>
+  RNGState {static_cast<uint64_t>(__builtin_readcyclecounter())};
+
+static std::optional<uint64_t> RDRANDFallback(uint64_t Reseed) {
+  const uint64_t State = RNGState.load(std::memory_order_relaxed) + 0x9E3779B97F4A7C15ULL;
+  RNGState.store(State, std::memory_order_relaxed);
+  uint64_t Value = (State ^ (State >> 30)) * 0xBF58476D1CE4E5B9ULL;
+  Value = (Value ^ (Value >> 27)) * 0x94D049BB133111EBULL;
+  return Value ^ (Value >> 31);
+}
+#endif
 
 static void
 PrintValue(uint64_t Value) {
@@ -664,6 +699,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     Ptrs.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Arm64JITCore::ExitFunctionLink);
     Ptrs.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
     Ptrs.LDIV = reinterpret_cast<uint64_t>(LDIV);
+    Ptrs.RDRANDFallback = reinterpret_cast<uint64_t>(RDRANDFallback);
   }
 
   CurrentCodeBuffer = SharedCodeBuffers.GetLatest();

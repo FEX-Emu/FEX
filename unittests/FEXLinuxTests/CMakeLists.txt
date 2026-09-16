@@ -63,6 +63,11 @@ function(AddTests Tests BinDirectory Bitness)
       set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/FEXLinuxTestsThunks.json")
     endif()
 
+    if(TEST_NAME STREQUAL "rdrand")
+    # Force use of the software falllback to excercise that path
+    set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_HOSTFEATURES=disablerng")
+    endif()
+
     if(TEST_NAME STREQUAL "vulkan_procaddr")
       set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT
         "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/VulkanThunks.json;FEX_THUNKHOSTLIBS=${HOSTLIBS_DATA_DIRECTORY}/HostThunks;FEX_THUNKGUESTLIBS=${CMAKE_INSTALL_PREFIX}/share/fex-emu/GuestThunks")
