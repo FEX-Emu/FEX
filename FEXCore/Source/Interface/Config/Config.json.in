@@ -143,7 +143,7 @@
       },
       "SoftwareRNG": {
         "Type": "bool",
-        "Default": "true",
+        "Default": "false",
         "AffectsCodeGen": "true",
         "Desc": [
           "Emulates RDRAND and RDSEED in software when the host does not implement FEAT_RNG."
