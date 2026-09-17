@@ -9,7 +9,7 @@
     "DisabledHostFeatures": [
       "AFP"
     ],
-    "BinaryCacheVersion": 24
+    "BinaryCacheVersion": 25
   },
   "Instructions": {
     "blsr eax, ebx": {

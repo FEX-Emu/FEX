@@ -33,7 +33,7 @@
       "      - 1b: ECX = MSB",
       "[7]   - Reserved"
     ],
-    "BinaryCacheVersion": 24
+    "BinaryCacheVersion": 25
   },
   "Instructions": {
     "pcmpestrm xmm0, xmm1, 0_0_00_00_00b": {
@@ -43,8 +43,8 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr x3, [x28, #2360]",
-        "ldr x0, [x28, #2368]",
+        "ldr x3, [x28, #2368]",
+        "ldr x0, [x28, #2376]",
         "stp x0, x30, [sp, #-16]!",
         "mov x0, x4",
         "mov x1, x5",
@@ -69,8 +69,8 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr x3, [x28, #2360]",
-        "ldr x0, [x28, #2368]",
+        "ldr x3, [x28, #2368]",
+        "ldr x0, [x28, #2376]",
         "stp x0, x30, [sp, #-16]!",
         "mov x0, x4",
         "mov x1, x5",
@@ -95,8 +95,8 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr x3, [x28, #2360]",
-        "ldr x0, [x28, #2368]",
+        "ldr x3, [x28, #2368]",
+        "ldr x0, [x28, #2376]",
         "stp x0, x30, [sp, #-16]!",
         "mov x0, x4",
         "mov x1, x5",
@@ -153,8 +153,8 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr x3, [x28, #2360]",
-        "ldr x0, [x28, #2368]",
+        "ldr x3, [x28, #2368]",
+        "ldr x0, [x28, #2376]",
         "stp x0, x30, [sp, #-16]!",
         "mov x0, x4",
         "mov x1, x5",
@@ -195,8 +195,8 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr x3, [x28, #2360]",
-        "ldr x0, [x28, #2368]",
+        "ldr x3, [x28, #2368]",
+        "ldr x0, [x28, #2376]",
         "stp x0, x30, [sp, #-16]!",
         "mov x0, x4",
         "mov x1, x5",
@@ -225,8 +225,8 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr x3, [x28, #2360]",
-        "ldr x0, [x28, #2368]",
+        "ldr x3, [x28, #2368]",
+        "ldr x0, [x28, #2376]",
         "stp x0, x30, [sp, #-16]!",
         "mov x0, x4",
         "mov x1, x5",
@@ -259,8 +259,8 @@
         "mov v0.16b, v16.16b",
         "mov v1.16b, v17.16b",
         "mov w0, #0x0",
-        "ldr x1, [x28, #2376]",
-        "ldr x3, [x28, #2384]",
+        "ldr x1, [x28, #2384]",
+        "ldr x3, [x28, #2392]",
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
@@ -283,8 +283,8 @@
         "mov v0.16b, v16.16b",
         "mov v1.16b, v17.16b",
         "mov w0, #0x1",
-        "ldr x1, [x28, #2376]",
-        "ldr x3, [x28, #2384]",
+        "ldr x1, [x28, #2384]",
+        "ldr x3, [x28, #2392]",
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
@@ -307,8 +307,8 @@
         "mov v0.16b, v16.16b",
         "mov v1.16b, v17.16b",
         "mov w0, #0x40",
-        "ldr x1, [x28, #2376]",
-        "ldr x3, [x28, #2384]",
+        "ldr x1, [x28, #2384]",
+        "ldr x3, [x28, #2392]",
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
@@ -363,8 +363,8 @@
         "mov v0.16b, v16.16b",
         "mov v1.16b, v17.16b",
         "mov w0, #0x41",
-        "ldr x1, [x28, #2376]",
-        "ldr x3, [x28, #2384]",
+        "ldr x1, [x28, #2384]",
+        "ldr x3, [x28, #2392]",
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
@@ -403,8 +403,8 @@
         "mov v0.16b, v16.16b",
         "mov v1.16b, v17.16b",
         "mov w0, #0x0",
-        "ldr x1, [x28, #2376]",
-        "ldr x3, [x28, #2384]",
+        "ldr x1, [x28, #2384]",
+        "ldr x3, [x28, #2392]",
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",
@@ -431,8 +431,8 @@
         "mov v0.16b, v16.16b",
         "mov v1.16b, v17.16b",
         "mov w0, #0x1",
-        "ldr x1, [x28, #2376]",
-        "ldr x3, [x28, #2384]",
+        "ldr x1, [x28, #2384]",
+        "ldr x3, [x28, #2392]",
         "blr x1",
         "ldr x30, [sp], #16",
         "mov w20, w0",

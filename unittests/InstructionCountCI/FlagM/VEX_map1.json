@@ -12,7 +12,7 @@
       "RPRES",
       "AFP"
     ],
-    "BinaryCacheVersion": 24
+    "BinaryCacheVersion": 25
   },
   "Instructions": {
     "vucomiss xmm0, xmm1": {
@@ -84,7 +84,7 @@
         "Map 1 0b01 0xd7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2536]",
+        "ldr x0, [x28, #2544]",
         "ld1b {z2.b}, p7/z, [x0]",
         "mrs x0, nzcv",
         "mov z0.d, #0",

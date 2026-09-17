@@ -8,7 +8,7 @@
       "SVE256",
       "SVE128"
     ],
-    "BinaryCacheVersion": 24
+    "BinaryCacheVersion": 25
   },
   "Instructions": {
     "vfmadd132ss xmm0, xmm1, xmm2": {

@@ -224,7 +224,7 @@ namespace DiskCache {
   // The current version of the diskcache.
   // This must be changed any time codegen changes occur!
   // Be aware of the impact of changing this frequently!
-  static constexpr uint16_t FormatVersion = 24;
+  static constexpr uint16_t FormatVersion = 25;
 
 } // namespace DiskCache
 
