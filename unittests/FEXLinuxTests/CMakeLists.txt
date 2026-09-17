@@ -64,8 +64,8 @@ function(AddTests Tests BinDirectory Bitness)
     endif()
 
     if(TEST_NAME STREQUAL "rdrand")
-    # Force use of the software falllback to excercise that path
-    set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_HOSTFEATURES=disablerng")
+      # Force use of the software fallback to exercise that path
+      set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_HOSTFEATURES=disablerng;FEX_SOFTWARERNG=1")
     endif()
 
     if(TEST_NAME STREQUAL "vulkan_procaddr")

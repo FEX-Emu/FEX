@@ -72,7 +72,8 @@ LDIV(uint64_t SrcHigh, uint64_t SrcLow, int64_t Divisor) {
 
 #ifndef _WIN32
 
-static std::optional<uint64_t> RDRANDFallback(uint64_t Reseed) {
+static std::optional<uint64_t>
+RDRANDFallback(uint64_t Reseed) {
   uint64_t Value {};
   FHU::Syscalls::getrandom(&Value, sizeof(Value), 0);
   return Value;
