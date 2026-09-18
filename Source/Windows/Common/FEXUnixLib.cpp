@@ -200,4 +200,14 @@ void* MapFile(HANDLE FileHandle, uint64_t MapSize) {
   return nullptr;
 }
 
+uint32_t GetPID() {
+  if (Available()) {
+    FEXUnixLib_GetPID Args {};
+    Call(FEXUnixLibFunctions::GetPID, &Args);
+    return Args.Result;
+  }
+
+  return GetCurrentProcessId();
+}
+
 } // namespace FEX::Windows::UnixLib

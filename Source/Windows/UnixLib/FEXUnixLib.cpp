@@ -176,6 +176,11 @@ static NTSTATUS FEXUnixLib_MapFileHandler(void* _Args) {
   return STATUS_SUCCESS;
 }
 
+static NTSTATUS FEXUnixLib_GetPIDHandler(void* _Args) {
+  auto Args = reinterpret_cast<FEXUnixLib_GetPID*>(_Args);
+  Args->Result = ::getpid();
+  return STATUS_SUCCESS;
+}
 extern "C" const unixlib_entry_t __wine_unix_call_funcs[] = {
   FEXUnixLib_SetHardwareTSOControlHandler,
   FEXUnixLib_SetKernelUnalignedAtomicControlHandler,
@@ -184,6 +189,7 @@ extern "C" const unixlib_entry_t __wine_unix_call_funcs[] = {
   FEXUnixLib_GetSHMStatsVMAHandler,
   FEXUnixLib_DeleteSHMStatsFileHandler,
   FEXUnixLib_MapFileHandler,
+  FEXUnixLib_GetPIDHandler,
 };
 
 static_assert(sizeof(__wine_unix_call_funcs) / sizeof(__wine_unix_call_funcs[0]) == ToUnderlying(FEXUnixLibFunctions::MAX));

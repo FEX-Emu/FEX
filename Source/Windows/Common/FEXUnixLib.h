@@ -48,4 +48,9 @@ SHMSlotResult AllocateSHMSlots(void* SHMBase, uint32_t MapSize, uint32_t MaxSize
 void DeleteSHMStatsFile();
 
 void* MapFile(HANDLE FileHandle, uint64_t MapSize);
+
+// Returns the process pid when unixlib is available.
+// Or returns the process ID otherwise.
+uint32_t GetPID();
+
 } // namespace FEX::Windows::UnixLib
