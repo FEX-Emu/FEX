@@ -44,9 +44,18 @@ namespace DiskCache {
       uint32_t uncompressed_size;
     };
 
+    struct mesa_index_db_file_entry;
+
   } // namespace MesaFOZ
 
   class IndexedDB;
+
+  struct MemoryLRUKey {
+    uint64_t LookupKey;
+    XXH128_hash_t GuestHash;
+    uint64_t GuestFootprint;
+    uint32_t Size;
+  };
 
   struct IndexEntry {
     IndexedDB* DB;
@@ -54,7 +63,9 @@ namespace DiskCache {
     uint32_t Size;
     uint32_t GuestSize;
     XXH128_hash_t GuestHash;
+    fextl::shared_ptr<fextl::vector<uint8_t>> MemoryBlob;
     fextl::vector<uint32_t> GuestExtents;
+    std::optional<fextl::list<MemoryLRUKey>::iterator> LRUEntry;
   };
 
   struct IndexCacheHead {
@@ -155,8 +166,8 @@ namespace DiskCache {
     bool Open(const fextl::string& CacheDBName, bool ReadOnly);
     void PopulateIndex(Index& CacheIndex, bool& FoundMetadata);
     bool ReadCacheBlob(uint64_t Offset, std::span<uint8_t> OutBlob);
-    bool StoreCacheBlob(const MesaFOZ::foz_payload_key& UniqueKey, uint64_t LookupKey, std::span<const uint8_t> Blob, Index& CacheIndex,
-                        std::mutex& IndexMutex, std::span<const uint8_t> IndexBlob);
+    bool StoreCacheBlob(const MesaFOZ::foz_payload_key& UniqueKey, uint64_t LookupKey, std::span<const uint8_t> Blob,
+                        MesaFOZ::mesa_index_db_file_entry& IndexEntry, std::span<const uint8_t> IndexBlob);
 
   private:
     // stores run on the Writer, so returning quick isn't as important
@@ -196,6 +207,7 @@ namespace DiskCache {
   private:
     bool OpenCacheDB(const fextl::string& CacheDBName, bool ReadOnly);
     uint64_t MakeLookupKey(Core::InternalThreadState* Thread, const uint64_t ModuleOffset, bool Writable, bool MonoBackpatcher);
+    IndexEntry* LookupLocked(const uint64_t LookupKey, const XXH128_hash_t& GuestHash, const uint64_t GuestFootprint);
 
     bool ReadingDiskCache {};
     bool WritingDiskCache {};
@@ -208,6 +220,11 @@ namespace DiskCache {
     bool FoundMetadata = false;
     struct CacheStoreWorkItem;
 
+    struct PruneMemoryLRUWorkItem;
+    std::atomic<uint64_t> MemoryLRUCurrentSize {};
+    std::mutex MemoryLRULock;
+    fextl::list<MemoryLRUKey> MemoryLRU;
+
     // the Writer holds references to all this stuff above and needs to be last
     fextl::unique_ptr<WorkQueueThread> Writer;
 
@@ -218,6 +235,9 @@ namespace DiskCache {
     FEX_CONFIG_OPT(AnonCaching, DISKCACHEANONCACHING);
     FEX_CONFIG_OPT(BasePathOverride, DISKCACHEPATH);
     FEX_CONFIG_OPT(RODBNames, DISKCACHERODBNAMES);
+    FEX_CONFIG_OPT(MemoryLRUMaxSize, DISKCACHEMEMORYSIZE);
+
+    uint64_t MemoryLRUEvictThreshold = MemoryLRUMaxSize / 25;
   };
 
   static constexpr uint16_t AnonPrefixGuestBytes = 64;
@@ -225,6 +245,8 @@ namespace DiskCache {
   // This must be changed any time codegen changes occur!
   // Be aware of the impact of changing this frequently!
   static constexpr uint16_t FormatVersion = 24;
+
+  static constexpr uint32_t LOOKUP_KEY_MAX_BUCKET_DEPTH = 20;
 
 } // namespace DiskCache
 

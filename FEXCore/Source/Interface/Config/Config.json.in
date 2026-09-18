@@ -190,6 +190,14 @@
           "Attempt to cache anonymous code"
         ]
       },
+      "DiskCacheMemorySize": {
+        "Type": "uint32",
+        "Default": "0",
+        "AffectsCodeGen": "false",
+        "Desc": [
+          "How much memory, if any, to use as a cache for the cache"
+        ]
+      },
       "DiskCachePath": {
         "Type": "str",
         "Default": "",
