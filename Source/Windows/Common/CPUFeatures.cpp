@@ -56,7 +56,7 @@ public:
   }
 };
 
-FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostFeatures::HostTypeEnum HostType) {
+FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostFeatures::HostTypeEnum HostType, uint32_t ProcessPID) {
   HKEY Key = OpenProcessorKey(0);
   if (!Key) {
     ERROR_AND_DIE_FMT("Couldn't detect CPU features");
@@ -84,6 +84,7 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
   HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine;
 
   HostFeatures.HostType = HostType;
+  HostFeatures.ProcessPID = ProcessPID;
 
   if (HostType == FEXCore::HostFeatures::HostTypeEnum::Wow64) {
     // AVX is unsupported for WOW64

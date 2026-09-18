@@ -16,7 +16,7 @@ class Context;
 namespace FEX::Windows {
 class CPUFeatures {
 public:
-  static FEXCore::HostFeatures FetchHostFeatures(bool IsWine, FEXCore::HostFeatures::HostTypeEnum HostType);
+  static FEXCore::HostFeatures FetchHostFeatures(bool IsWine, FEXCore::HostFeatures::HostTypeEnum HostType, uint32_t ProcessPID);
 
   CPUFeatures(FEXCore::Context::Context& CTX);
 

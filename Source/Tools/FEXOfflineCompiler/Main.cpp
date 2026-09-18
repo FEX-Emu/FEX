@@ -415,7 +415,7 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
   const auto NtDll = GetModuleHandleW(L"ntdll.dll");
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(
-    IsWine, Is64Bit ? FEXCore::HostFeatures::HostTypeEnum::Arm64ec : FEXCore::HostFeatures::HostTypeEnum::Wow64);
+    IsWine, Is64Bit ? FEXCore::HostFeatures::HostTypeEnum::Arm64ec : FEXCore::HostFeatures::HostTypeEnum::Wow64, 0);
 #endif
 
   auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);

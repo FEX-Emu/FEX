@@ -84,5 +84,9 @@ struct HostFeatures {
   // MIDR information
   // Also used for determining number of CPU cores for CPUID
   fextl::vector<uint32_t> CPUMIDRs;
+
+  // The Linux PID of this process. Useful for punching through perf-top information.
+  uint32_t ProcessPID {};
+  uint32_t pad2 {};
 };
 } // namespace FEXCore
