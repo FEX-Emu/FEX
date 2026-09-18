@@ -13,7 +13,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 24
+    "BinaryCacheVersion": 25
   },
   "Instructions": {
     "vcvttss2si eax, xmm0": {
@@ -113,9 +113,9 @@
       ],
       "ExpectedArm64ASM": [
         "frinti z2.s, p7/m, z17.s",
-        "ldr x0, [x28, #2664]",
+        "ldr x0, [x28, #2672]",
         "ld1b {z3.b}, p7/z, [x0]",
-        "ldr x0, [x28, #2616]",
+        "ldr x0, [x28, #2624]",
         "ld1b {z4.b}, p7/z, [x0]",
         "fcvtzs z5.s, p7/m, z2.s",
         "fcmgt p0.s, p7/z, z4.s, z2.s",
@@ -143,9 +143,9 @@
         "Map 1 0b10 0x5b 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2664]",
+        "ldr x0, [x28, #2672]",
         "ld1b {z2.b}, p7/z, [x0]",
-        "ldr x0, [x28, #2616]",
+        "ldr x0, [x28, #2624]",
         "ld1b {z3.b}, p7/z, [x0]",
         "fcvtzs z4.s, p7/m, z17.s",
         "fcmgt p0.s, p7/z, z3.s, z17.s",
@@ -175,7 +175,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #3664]",
-        "ldr x0, [x28, #2640]",
+        "ldr x0, [x28, #2648]",
         "ld1b {z3.b}, p7/z, [x0]",
         "fcvtzs z4.s, p7/m, z17.d",
         "uzp1 z4.s, z4.s, z4.s",
@@ -210,7 +210,7 @@
       "ExpectedArm64ASM": [
         "frinti z2.d, p7/m, z17.d",
         "ldr q3, [x28, #3664]",
-        "ldr x0, [x28, #2640]",
+        "ldr x0, [x28, #2648]",
         "ld1b {z4.b}, p7/z, [x0]",
         "fcvtzs z5.s, p7/m, z2.d",
         "uzp1 z5.s, z5.s, z5.s",

@@ -309,7 +309,39 @@ DEF_OP(ProcessorID) {
 DEF_OP(RDRAND) {
   auto Op = IROp->C<IR::IROp_RDRAND>();
 
-  mrs(GetReg(Node), Op->GetReseeded ? ARMEmitter::SystemRegister::RNDRRS : ARMEmitter::SystemRegister::RNDR);
+  if (CTX->HostFeatures.SupportsRAND) {
+    mrs(GetReg(Node), Op->GetReseeded ? ARMEmitter::SystemRegister::RNDRRS : ARMEmitter::SystemRegister::RNDR);
+    return;
+  }
+
+  // Software fallback, call the host RNG generator.
+  PushDynamicRegs(TMP4);
+  SpillStaticRegs(TMP4);
+
+  // x0 = Reseed
+  // x1 = Generator
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, Op->GetReseeded ? 1 : 0);
+  ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.RDRANDFallback));
+
+  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+    GenerateIndirectRuntimeCall<__uint128_t, uint64_t>(ARMEmitter::Reg::r1);
+  } else {
+    blr(ARMEmitter::Reg::r1);
+  }
+
+  if (!TMP_ABIARGS) {
+    mov(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::r0);
+    mov(ARMEmitter::Size::i64Bit, TMP2, ARMEmitter::Reg::r1);
+  }
+
+  FillStaticRegs();
+  PopDynamicRegs();
+
+  // Results are in x0, x1
+  // std::optional<uint64_t>: value in x0, engaged flag in the low byte of x1. Match the hardware behaviour of setting Z when
+  // no number was produced.
+  mov(ARMEmitter::Size::i64Bit, GetReg(Node), TMP1);
+  tst(ARMEmitter::Size::i64Bit, TMP2, 0xFF);
 }
 
 DEF_OP(Yield) {

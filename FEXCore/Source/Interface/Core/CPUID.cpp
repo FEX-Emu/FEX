@@ -458,6 +458,8 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
             (Cores << 16) |     // Number of addressable IDs for the logical cores in the physical CPU
             (GetCPUID() << 24); // Local APIC ID
 
+  const uint32_t SupportsRAND = CTX->HostFeatures.SupportsRAND || CTX->SoftwareRNGEnabled();
+
   Res.ecx = (1 << 0) |                                      // SSE3
             (CTX->HostFeatures.SupportsPMULL_128Bit << 1) | // PCLMULQDQ
             (1 << 2) |                                      // DS area supports 64bit layout
@@ -488,7 +490,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
             (SupportsAVX() << 27) |                         // OSXSAVE
             (SupportsAVX() << 28) |                         // AVX
             (SupportsAVX() << 29) |                         // F16C
-            (CTX->HostFeatures.SupportsRAND << 30) |        // RDRAND
+            (SupportsRAND << 30) |                          // RDRAND
             (Hypervisor << 31);
 
   Res.edx = (1 << 0) |  // FPU
@@ -670,42 +672,44 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
     const uint32_t SupportsVPCLMULQDQ = CTX->HostFeatures.SupportsPMULL_128Bit && SupportsAVX();
     const uint32_t SupportsWFXT = CTX->HostFeatures.SupportsWFXT;
 
+    const uint32_t SupportsRAND = CTX->HostFeatures.SupportsRAND || CTX->SoftwareRNGEnabled();
+
     // Number of subfunctions
     // TODO: For now, subfunction 1 only exposes AVX-VNNI so we make it conditional
     // on AVX-VNNI support. We should revisit this if/when we add more to this leaf.
     Res.eax = SupportsAVXVNNI;
-    Res.ebx = (1 << 0) |                               // FS/GS support
-              (0 << 1) |                               // TSC adjust MSR
-              (0 << 2) |                               // SGX
-              (SupportsAVX() << 3) |                   // BMI1
-              (0 << 4) |                               // Intel Hardware Lock Elison
-              (SupportsAVX() << 5) |                   // AVX2 support
-              (1 << 6) |                               // FPU data pointer updated only on exception
-              (1 << 7) |                               // SMEP support
-              (SupportsAVX() << 8) |                   // BMI2
-              (SupportsEnhancedREPMOVS << 9) |         // Enhanced REP MOVSB/STOSB
-              (1 << 10) |                              // INVPCID for system software control of process-context
-              (0 << 11) |                              // Restricted transactional memory
-              (0 << 12) |                              // Intel resource directory technology Monitoring
-              (1 << 13) |                              // Deprecates FPU CS and DS
-              (0 << 14) |                              // Intel MPX
-              (0 << 15) |                              // Intel Resource Directory Technology Allocation
-              (0 << 16) |                              // AVX512-F
-              (0 << 17) |                              // AVX512-DQ
-              (CTX->HostFeatures.SupportsRAND << 18) | // RDSEED
-              (1 << 19) |                              // ADCX and ADOX instructions
-              (0 << 20) |                              // SMAP Supervisor mode access prevention and CLAC/STAC instructions
-              (0 << 21) |                              // AVX512-IFMA
-              (0 << 22) |                              // PCOMMIT (deprecated?)
-              (1 << 23) |                              // CLFLUSHOPT instruction
-              (1 << 24) |                              // CLWB instruction
-              (0 << 25) |                              // Intel processor trace
-              (0 << 26) |                              // AVX512-PF
-              (0 << 27) |                              // AVX512-ER
-              (0 << 28) |                              // AVX512-CD
-              (Features.SHA << 29) |                   // SHA instructions
-              (0 << 30) |                              // AVX512-BW
-              (0 << 31);                               // AVX512-VL
+    Res.ebx = (1 << 0) |                       // FS/GS support
+              (0 << 1) |                       // TSC adjust MSR
+              (0 << 2) |                       // SGX
+              (SupportsAVX() << 3) |           // BMI1
+              (0 << 4) |                       // Intel Hardware Lock Elison
+              (SupportsAVX() << 5) |           // AVX2 support
+              (1 << 6) |                       // FPU data pointer updated only on exception
+              (1 << 7) |                       // SMEP support
+              (SupportsAVX() << 8) |           // BMI2
+              (SupportsEnhancedREPMOVS << 9) | // Enhanced REP MOVSB/STOSB
+              (1 << 10) |                      // INVPCID for system software control of process-context
+              (0 << 11) |                      // Restricted transactional memory
+              (0 << 12) |                      // Intel resource directory technology Monitoring
+              (1 << 13) |                      // Deprecates FPU CS and DS
+              (0 << 14) |                      // Intel MPX
+              (0 << 15) |                      // Intel Resource Directory Technology Allocation
+              (0 << 16) |                      // AVX512-F
+              (0 << 17) |                      // AVX512-DQ
+              (SupportsRAND << 18) |           // RDSEED
+              (1 << 19) |                      // ADCX and ADOX instructions
+              (0 << 20) |                      // SMAP Supervisor mode access prevention and CLAC/STAC instructions
+              (0 << 21) |                      // AVX512-IFMA
+              (0 << 22) |                      // PCOMMIT (deprecated?)
+              (1 << 23) |                      // CLFLUSHOPT instruction
+              (1 << 24) |                      // CLWB instruction
+              (0 << 25) |                      // Intel processor trace
+              (0 << 26) |                      // AVX512-PF
+              (0 << 27) |                      // AVX512-ER
+              (0 << 28) |                      // AVX512-CD
+              (Features.SHA << 29) |           // SHA instructions
+              (0 << 30) |                      // AVX512-BW
+              (0 << 31);                       // AVX512-VL
 
     Res.ecx = (1 << 0) |                                // PREFETCHWT1
               (0 << 1) |                                // AVX512VBMI

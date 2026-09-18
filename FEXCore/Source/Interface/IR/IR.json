@@ -275,7 +275,8 @@
                  "The boolean argument asks if we should be reading the reseeded number or not",
                  "Reseeded RNG calculation is more expensive and will be heavier to use",
                  "Returns the 64-bit number",
-                 "Sets the Z flag if the number is valid.",
+                 "Falls back to a host RNG call when the hardware doesn't support it",
+                 "Sets the Z flag if the number is invalid.",
                  "RNG hardware is allowed to fail early and return. Software must always check this"
                 ],
         "HasSideEffects": true,
