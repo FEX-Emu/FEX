@@ -35,7 +35,7 @@ public:
   JITSymbols();
   ~JITSymbols();
 
-  void InitFile();
+  void InitFile(uint32_t ProcessPID);
   void RegisterNamedRegion(const void* HostAddr, uint32_t CodeSize, std::string_view Name);
   void RegisterJITSpace(const void* HostAddr, uint32_t CodeSize);
 
