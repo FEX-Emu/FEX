@@ -359,7 +359,12 @@ static fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CP
     add_flag_if(res_d_1.eax & (1 << 3), "xsaves");
     add_flag_if(res_d_1.eax & (1 << 4), "xfd");
 
+    add_flag_if(res_7_1.eax & (1 << 4), "avx_vnni");
     add_flag_if(res_7_1.eax & (1 << 5), "avx512_bf16");
+    add_flag_if(res_7_1.eax & (1 << 23), "avx_ifma");
+    add_flag_if(res_7_1.edx & (1 << 4), "avx_vnni_int8");
+    add_flag_if(res_7_1.edx & (1 << 5), "avx_ne_convert");
+    add_flag_if(res_7_1.edx & (1 << 10), "avx_vnni_int16");
     add_flag_if(res_8000_0008.ebx & (1 << 0), "clzero");
     add_flag_if(res_8000_0008.ebx & (1 << 1), "irperf");
     add_flag_if(res_8000_0008.ebx & (1 << 2), "xsaveerptr");
