@@ -23,7 +23,7 @@ namespace FEXCore::CPU {
 struct CodeBuffer {
   fextl::unique_ptr<GuestToHostMap> LookupCache;
 
-  CodeBuffer(size_t Size);
+  CodeBuffer(size_t Size, bool ShouldBeNamed);
   CodeBuffer(const CodeBuffer&) = delete;
   CodeBuffer& operator=(const CodeBuffer&) = delete;
   CodeBuffer(CodeBuffer&& oth) = delete;
@@ -111,6 +111,7 @@ private:
  */
 class SharedCodeBufferManager {
 public:
+  SharedCodeBufferManager();
   virtual ~SharedCodeBufferManager() = default;
 
   // Get the CodeBuffer that was most recently allocated.
@@ -131,5 +132,7 @@ private:
   fextl::shared_ptr<CodeBuffer> Latest;
 
   fextl::shared_ptr<CodeBuffer> AllocateNew(size_t Size);
+
+  bool NameJITBuffers {true};
 };
 } // namespace FEXCore::CPU
