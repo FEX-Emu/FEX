@@ -90,7 +90,7 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
 
   if (Config.BlockJITNaming() || Config.GlobalJITNaming() || Config.LibraryJITNaming()) {
     // Only initialize symbols file if enabled. Ensures we don't pollute /tmp with empty files.
-    Symbols.InitFile();
+    Symbols.InitFile(Features.ProcessPID);
   }
 
   uint64_t FrequencyCounter = FEXCore::GetCycleCounterFrequency();

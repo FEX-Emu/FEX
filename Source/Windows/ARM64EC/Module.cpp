@@ -612,7 +612,8 @@ NTSTATUS ProcessInit() {
   }
 
   {
-    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine, FEXCore::HostFeatures::HostTypeEnum::Arm64ec);
+    auto HostFeatures =
+      FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine, FEXCore::HostFeatures::HostTypeEnum::Arm64ec, FEX::Windows::UnixLib::GetPID());
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 

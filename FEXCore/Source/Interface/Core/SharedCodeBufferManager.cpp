@@ -16,7 +16,7 @@ static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
 // We don't want to move above 128MB atm because that means we will have to encode longer jumps
 static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
 
-CodeBuffer::CodeBuffer(size_t Size)
+CodeBuffer::CodeBuffer(size_t Size, bool ShouldBeNamed)
   : AllocatedSize(Size) {
   Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Size, true));
   LOGMAN_THROW_A_FMT(!!Ptr, "Couldn't allocate code buffer");
@@ -28,7 +28,9 @@ CodeBuffer::CodeBuffer(size_t Size)
     LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
   }
 
-  FEXCore::Allocator::VirtualName("FEXMemJIT", Ptr, Size);
+  if (ShouldBeNamed) {
+    FEXCore::Allocator::VirtualName("FEXMemJIT", Ptr, Size);
+  }
 
   // Huge-pages reduce the amount of iTLB misses dramatically when it works.
   FEXCore::Allocator::VirtualTHPControl(Ptr, Size, FEXCore::Allocator::THPControl::Enable);
@@ -41,6 +43,17 @@ CodeBuffer::CodeBuffer(size_t Size)
 
 CodeBuffer::~CodeBuffer() {
   FEXCore::Allocator::VirtualFree(Ptr, AllocatedSize);
+}
+
+SharedCodeBufferManager::SharedCodeBufferManager() {
+  FEX_CONFIG_OPT(GlobalJITNaming, GLOBALJITNAMING);
+  FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
+  FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
+
+  // Only name the JIT buffers if perf JIT naming is disabled.
+  // `perf top` prefers VMA names over the JIT symbols file for some reason.
+  // Breaks memory tracking when naming is enabled, but it's a debug feature so it isn't expected to be enabled by default.
+  NameJITBuffers = !(GlobalJITNaming || LibraryJITNaming || BlockJITNaming);
 }
 
 fextl::shared_ptr<CodeBuffer> SharedCodeBufferManager::AllocateNew(size_t Size) {
@@ -66,7 +79,7 @@ fextl::shared_ptr<CodeBuffer> SharedCodeBufferManager::AllocateNew(size_t Size) 
   }
 #endif
 
-  auto Buffer = fextl::make_shared<CodeBuffer>(Size);
+  auto Buffer = fextl::make_shared<CodeBuffer>(Size, NameJITBuffers);
 
   Latest = Buffer;
 

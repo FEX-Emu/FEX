@@ -527,7 +527,8 @@ void BTCpuProcessInit() {
   }
 
   {
-    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine, FEXCore::HostFeatures::HostTypeEnum::Wow64);
+    auto HostFeatures =
+      FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine, FEXCore::HostFeatures::HostTypeEnum::Wow64, FEX::Windows::UnixLib::GetPID());
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
