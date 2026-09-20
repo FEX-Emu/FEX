@@ -99,8 +99,7 @@ static std::optional<uint64_t> RDRANDFallback(uint64_t Reseed) {
 }
 #endif
 
-static void
-PrintValue(uint64_t Value) {
+static void PrintValue(uint64_t Value) {
   LogMan::Msg::DFmt("Value: 0x{:x}", Value);
 }
 
