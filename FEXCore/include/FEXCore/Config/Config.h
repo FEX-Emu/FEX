@@ -297,6 +297,16 @@ struct FEX_DEFAULT_VISIBILITY Getter : public Value<typename detail::ConfigOptio
   using OptionInfo = detail::ConfigOptionInfo<Option>;
   Getter()
     : Value<typename OptionInfo::Type> {Option, OptionInfo::Default()} {}
+
+  // Check if the config option is actually the default.
+  bool IsDefault() const {
+    auto Value = FEXCore::Config::GetConv<typename detail::ConfigOptionInfo<Option>::Type>(Option);
+    if (!Value) {
+      return true;
+    }
+
+    return *Value == OptionInfo::Default();
+  }
 };
 
 /**
