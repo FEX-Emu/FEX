@@ -57,7 +57,7 @@ promote:
     - arm64
     - aarch64
   rules:
-    - if: '$PROMOTE_BRANCH' && $CI_COMMIT_BRANCH == 'main'
+    - if: $PROMOTE_BRANCH && $CI_COMMIT_BRANCH == 'main'
   before_script:
     - apt-get -y update
     - apt-get install -y tmux curl
