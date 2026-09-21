@@ -10,7 +10,7 @@
       "SVE128",
       "SVE256"
     ],
-    "BinaryCacheVersion": 25
+    "BinaryCacheVersion": 26
   },
   "Instructions": {
     "vucomiss xmm0, xmm1": {

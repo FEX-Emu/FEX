@@ -10,7 +10,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 25
+    "BinaryCacheVersion": 26
   },
   "Instructions": {
     "fadd dword [rax]": {
@@ -2553,7 +2553,7 @@
         "ldrb w20, [x28, #1051]",
         "add x20, x28, x20, lsl #4",
         "ldr q2, [x20, #1056]",
-        "ldr q3, [x28, #3696]",
+        "ldr q3, [x28, #3712]",
         "eor v2.16b, v2.16b, v3.16b",
         "str q2, [x20, #1056]"
       ]
@@ -2567,7 +2567,7 @@
         "ldrb w20, [x28, #1051]",
         "add x20, x28, x20, lsl #4",
         "ldr q2, [x20, #1056]",
-        "ldr q3, [x28, #3696]",
+        "ldr q3, [x28, #3712]",
         "bic v2.16b, v2.16b, v3.16b",
         "str q2, [x20, #1056]"
       ]
@@ -2635,7 +2635,7 @@
         "0xd9 11b 0xe8 /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3472]",
+        "ldr q2, [x28, #3488]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2655,7 +2655,7 @@
         "0xd9 11b 0xe9 /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3488]",
+        "ldr q2, [x28, #3504]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2675,7 +2675,7 @@
         "0xd9 11b 0xea /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3504]",
+        "ldr q2, [x28, #3520]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2695,7 +2695,7 @@
         "0xd9 11b 0xeb /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3520]",
+        "ldr q2, [x28, #3536]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2715,7 +2715,7 @@
         "0xd9 11b 0xec /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3536]",
+        "ldr q2, [x28, #3552]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2735,7 +2735,7 @@
         "0xd9 11b 0xed /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3552]",
+        "ldr q2, [x28, #3568]",
         "ldrb w20, [x28, #1051]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -2834,7 +2834,7 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "mov v2.16b, v0.16b",
-        "ldr q3, [x28, #3472]",
+        "ldr q3, [x28, #3488]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
         "strb wzr, [x28, #1050]",

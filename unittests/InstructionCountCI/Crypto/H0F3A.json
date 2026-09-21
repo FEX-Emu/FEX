@@ -9,7 +9,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 25
+    "BinaryCacheVersion": 26
   },
   "Instructions": {
     "pclmulqdq xmm0, xmm1, 00000b": {
@@ -56,7 +56,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3296]",
+        "ldr q2, [x28, #3312]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v3.16b",
@@ -69,7 +69,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3296]",
+        "ldr q2, [x28, #3312]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v3.16b",
@@ -85,7 +85,7 @@
         "0x66 0x0f 0x3a 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3712]",
+        "ldr q2, [x28, #3728]",
         "movi v3.2d, #0x0",
         "ldr x0, [x28, #2744]",
         "ldr q4, [x0, #432]",
@@ -102,7 +102,7 @@
         "0x66 0x0f 0x3a 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3728]",
+        "ldr q2, [x28, #3744]",
         "movi v3.2d, #0x0",
         "ldr x0, [x28, #2744]",
         "ldr q4, [x0, #432]",
@@ -119,7 +119,7 @@
         "0x66 0x0f 0x3a 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3744]",
+        "ldr q2, [x28, #3760]",
         "movi v3.2d, #0x0",
         "ldr x0, [x28, #2744]",
         "ldr q4, [x0, #432]",
@@ -136,7 +136,7 @@
         "0x66 0x0f 0x3a 0xcc"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3760]",
+        "ldr q2, [x28, #3776]",
         "movi v3.2d, #0x0",
         "ldr x0, [x28, #2744]",
         "ldr q4, [x0, #432]",
