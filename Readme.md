@@ -9,7 +9,9 @@ Furthermore, a per-app configuration system allows tweaking performance per game
 We also provide a user-friendly FEXConfig GUI to explore and change these settings.
 
 ## Prerequisites
-FEX requires ARMv8.0+ hardware. It has been tested with the following Linux distributions, though others are likely to work as well:
+FEX requires ARMv8.0-a or newer hardware, with minimum extensions FEAT_FP and FEAT_CRC32.
+
+It has been tested with the following Linux distributions, though others are likely to work as well:
 
 - Arch Linux
 - Fedora Linux
