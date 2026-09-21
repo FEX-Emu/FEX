@@ -371,6 +371,7 @@ struct JITPointers {
   uint64_t ExitFunctionLinker {};
   uint64_t ThreadStopHandlerSpillSRA {};
   uint64_t ThreadPauseHandlerSpillSRA {};
+  uint64_t ThreadDispatchSyscallHandler {};
   uint64_t GuestSignal_SIGILL {};
   uint64_t GuestSignal_SIGTRAP {};
   uint64_t GuestSignal_SIGSEGV {};

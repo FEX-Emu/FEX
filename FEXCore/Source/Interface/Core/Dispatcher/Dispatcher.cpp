@@ -514,6 +514,42 @@ void Dispatcher::EmitDispatcher() {
     (void)b(&LoopTop);
   }
 
+  {
+    // All dynamic and static registers are spilled coming in to this handler.
+    // It's also the end of block and RIP might have changed, so we jump directly to the top of the loop.
+    ThreadDispatchSyscallHandler = GetCursorAddress<uint64_t>();
+
+    // Store in the state that we are in a syscall
+    // 16bit LoadConstant to be a single instruction
+    // This gives the signal handler a value to check to see if we are in a syscall at all
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, 0xFFFF);
+    str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
+
+    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.SyscallHandlerObj));
+    ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.SyscallHandlerFunc));
+    mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, STATE.R());
+
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(ARMEmitter::Reg::r3);
+    } else {
+      blr(ARMEmitter::Reg::r3);
+    }
+
+    // Fix the stack and any values that were stepped on
+    // Syscall result is in any static register that the frontend desired.
+    FillStaticRegs({
+      .OptionalReg = ARMEmitter::Reg::r1,
+      .OptionalReg2 = ARMEmitter::Reg::r2,
+    });
+
+    // Now the registers we've spilled are back in their original host registers
+    // We can safely claim we are no longer in a syscall
+    str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
+
+    // Now go back to the regular dispatcher loop
+    (void)b(&LoopTop);
+  }
+
   auto EmitLongALUOpHandler = [&](auto R, auto Offset) {
     auto Address = GetCursorAddress<uint64_t>();
 
@@ -2627,6 +2663,7 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     Ptrs.ExitFunctionLinker = ExitFunctionLinkerAddress;
     Ptrs.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
     Ptrs.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
+    Ptrs.ThreadDispatchSyscallHandler = ThreadDispatchSyscallHandler;
     Ptrs.GuestSignal_SIGILL = GuestSignal_SIGILL;
     Ptrs.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
     Ptrs.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;

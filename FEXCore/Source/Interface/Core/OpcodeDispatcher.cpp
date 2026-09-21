@@ -59,12 +59,6 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
 
   FlushRegisterCache();
   _Syscall();
-
-  if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_BLOCK_END) {
-    // RIP could have been updated after coming back from the Syscall.
-    NewRIP = _LoadContextGPR(GPRSize, offsetof(FEXCore::Core::CPUState, rip));
-    ExitFunction(NewRIP);
-  }
 }
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {

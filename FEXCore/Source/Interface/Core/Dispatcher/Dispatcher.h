@@ -81,6 +81,7 @@ private:
   uint64_t AbsoluteLoopTopAddressEnterECFillSRA {};
   uint64_t ThreadPauseHandlerAddress {};
   uint64_t ThreadPauseHandlerAddressSpillSRA {};
+  uint64_t ThreadDispatchSyscallHandler {};
   uint64_t ExitFunctionLinkerAddress {};
   uint64_t SignalHandlerReturnAddress {};
   uint64_t SignalHandlerReturnAddressRT {};
