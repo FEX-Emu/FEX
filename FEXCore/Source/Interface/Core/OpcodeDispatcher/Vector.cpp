@@ -5492,7 +5492,7 @@ Ref OpDispatchBuilder::PCMPXSTRXEqualAny(OpSize ElementSize, Ref Src1, Ref Src2,
 
 
 // The ranges aggregation is a weird one. It checks if every character in Src2 is
-// within a character range (ie. a-z or A-Z) similar to regex. 
+// within a character range (ie. a-z or A-Z) similar to regex.
 // Ranges are passed in Src1 as pairs of characters in adjacent lanes.
 Ref OpDispatchBuilder::PCMPXSTRXRanges(OpSize ElementSize, Ref Src1, Ref Src2, Ref Src1ValidElements, Ref Src2ValidElements, bool IsSigned) {
   const uint32_t NumElements = IR::NumElements(OpSize::i128Bit, ElementSize);
@@ -5502,9 +5502,9 @@ Ref OpDispatchBuilder::PCMPXSTRXRanges(OpSize ElementSize, Ref Src1, Ref Src2, R
     return IsSigned ? _VCMPGT(OpSize::i128Bit, ElementSize, Lhs, Rhs) : _VUCMPGT(OpSize::i128Bit, ElementSize, Lhs, Rhs);
   };
 
-  // First we walk through the ranges from Src1, and construct 
+  // First we walk through the ranges from Src1, and construct
   // temporary vectors to represent the lower and upper bounds
-  // of the comparison. Then check if both comparisons are true, 
+  // of the comparison. Then check if both comparisons are true,
   // zero out invalid lanes, and OR the result into the final result vector.
   Ref Result {};
   for (uint32_t i = 0; i < NumElements; i += 2) {
@@ -5544,7 +5544,7 @@ Ref OpDispatchBuilder::PCMPXSTRXEqualOrdered(OpSize ElementSize, Ref Src1, Ref S
                                              Ref Indices) {
   const uint32_t NumElements = IR::NumElements(OpSize::i128Bit, ElementSize);
 
-  // Broadcast needle[i] into every lane of a temp vector, then compare it to 
+  // Broadcast needle[i] into every lane of a temp vector, then compare it to
   // the haystack vector. On succesive iterations, we shift the haystack over
   // by one element, and compare it against the next needle element.
   // AND together the results of all comparisons, and what is left should
@@ -5556,7 +5556,7 @@ Ref OpDispatchBuilder::PCMPXSTRXEqualOrdered(OpSize ElementSize, Ref Src1, Ref S
     Ref Haystack = i == 0 ? Src2 : _VExtr(OpSize::i128Bit, ElementSize, Needle, Src2, i);
     Ref ElementsEqual = _VCMPEQ(OpSize::i128Bit, ElementSize, Haystack, Needle);
 
-    // TODO: I think a more optimal version of this is possible, perhaps using 
+    // TODO: I think a more optimal version of this is possible, perhaps using
     // MATCH from SVE2?
     Ref ElementsValid = _VDupElement(OpSize::i128Bit, ElementSize, Src1ValidElements, i);
     Ref ElementsEqualValid = _VOrn(OpSize::i128Bit, ElementsEqual, ElementsValid);
