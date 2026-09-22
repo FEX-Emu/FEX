@@ -33,7 +33,7 @@
       "      - 1b: ECX = MSB",
       "[7]   - Reserved"
     ],
-    "BinaryCacheVersion": 27
+    "BinaryCacheVersion": 28
   },
   "Instructions": {
     "pcmpestrm xmm0, xmm1, 0_0_00_00_00b": {
@@ -43,7 +43,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -114,7 +114,7 @@
         "dup v3.16b, v3.b[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -139,7 +139,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -186,7 +186,7 @@
         "dup v3.8h, v3.h[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -212,7 +212,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -283,7 +283,7 @@
         "dup v3.16b, v3.b[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -308,7 +308,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -355,7 +355,7 @@
         "dup v3.8h, v3.h[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -381,7 +381,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -464,7 +464,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -489,7 +489,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -540,7 +540,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -566,7 +566,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -649,7 +649,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -674,7 +674,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -725,7 +725,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -751,7 +751,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -775,7 +775,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -800,7 +800,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -824,7 +824,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -850,7 +850,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -874,7 +874,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -899,7 +899,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -923,7 +923,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -949,7 +949,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1070,7 +1070,7 @@
         "dup v4.16b, w20",
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -1094,7 +1094,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1167,7 +1167,7 @@
         "dup v4.8h, w20",
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -1192,7 +1192,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1313,7 +1313,7 @@
         "dup v4.16b, w20",
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -1337,7 +1337,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1410,7 +1410,7 @@
         "dup v4.8h, w20",
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -1435,7 +1435,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1507,7 +1507,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -1532,7 +1532,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1580,7 +1580,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -1606,7 +1606,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1678,7 +1678,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -1703,7 +1703,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1751,7 +1751,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -1777,7 +1777,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1861,7 +1861,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -1886,7 +1886,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -1938,7 +1938,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -1964,7 +1964,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2048,7 +2048,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -2073,7 +2073,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2125,7 +2125,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -2151,7 +2151,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2176,7 +2176,7 @@
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -2201,7 +2201,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2226,7 +2226,7 @@
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -2252,7 +2252,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2277,7 +2277,7 @@
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -2302,7 +2302,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2327,7 +2327,7 @@
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -2353,7 +2353,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2475,7 +2475,7 @@
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -2499,7 +2499,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2573,7 +2573,7 @@
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -2598,7 +2598,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2720,7 +2720,7 @@
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -2744,7 +2744,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2818,7 +2818,7 @@
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -2843,7 +2843,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2914,7 +2914,7 @@
         "dup v3.16b, v3.b[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -2939,7 +2939,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -2986,7 +2986,7 @@
         "dup v3.8h, v3.h[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -3012,7 +3012,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3083,7 +3083,7 @@
         "dup v3.16b, v3.b[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -3108,7 +3108,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3155,7 +3155,7 @@
         "dup v3.8h, v3.h[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -3181,7 +3181,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3264,7 +3264,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -3289,7 +3289,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3340,7 +3340,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -3366,7 +3366,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3449,7 +3449,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -3474,7 +3474,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3525,7 +3525,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -3551,7 +3551,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3575,7 +3575,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -3600,7 +3600,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3624,7 +3624,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -3650,7 +3650,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3674,7 +3674,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -3699,7 +3699,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3723,7 +3723,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -3749,7 +3749,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3870,7 +3870,7 @@
         "dup v4.16b, w20",
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -3894,7 +3894,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -3967,7 +3967,7 @@
         "dup v4.8h, w20",
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -3992,7 +3992,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4113,7 +4113,7 @@
         "dup v4.16b, w20",
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -4137,7 +4137,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4210,7 +4210,7 @@
         "dup v4.8h, w20",
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -4235,7 +4235,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4307,7 +4307,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -4332,7 +4332,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4380,7 +4380,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -4406,7 +4406,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4478,7 +4478,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -4503,7 +4503,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4551,7 +4551,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -4577,7 +4577,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4661,7 +4661,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -4686,7 +4686,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4738,7 +4738,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -4764,7 +4764,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4848,7 +4848,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -4873,7 +4873,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4925,7 +4925,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -4951,7 +4951,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -4976,7 +4976,7 @@
         "and v4.16b, v4.16b, v5.16b",
         "orn v3.16b, v4.16b, v3.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -5001,7 +5001,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5026,7 +5026,7 @@
         "and v4.16b, v4.16b, v5.16b",
         "orn v3.16b, v4.16b, v3.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -5052,7 +5052,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5077,7 +5077,7 @@
         "and v4.16b, v4.16b, v5.16b",
         "orn v3.16b, v4.16b, v3.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -5102,7 +5102,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5127,7 +5127,7 @@
         "and v4.16b, v4.16b, v5.16b",
         "orn v3.16b, v4.16b, v3.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -5153,7 +5153,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5277,7 +5277,7 @@
         "cmgt v2.16b, v5.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
         "eor v2.16b, v2.16b, v4.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -5301,7 +5301,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5377,7 +5377,7 @@
         "cmgt v2.8h, v5.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
         "eor v2.16b, v2.16b, v4.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -5402,7 +5402,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5526,7 +5526,7 @@
         "cmgt v2.16b, v5.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
         "eor v2.16b, v2.16b, v4.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -5550,7 +5550,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5626,7 +5626,7 @@
         "cmgt v2.8h, v5.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
         "eor v2.16b, v2.16b, v4.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -5651,7 +5651,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5743,7 +5743,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5811,7 +5811,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5903,7 +5903,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -5971,7 +5971,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6075,7 +6075,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6147,7 +6147,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6251,7 +6251,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6323,7 +6323,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6368,7 +6368,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6413,7 +6413,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6458,7 +6458,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6503,7 +6503,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6644,7 +6644,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6737,7 +6737,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6878,7 +6878,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -6971,7 +6971,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7064,7 +7064,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7133,7 +7133,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7226,7 +7226,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7295,7 +7295,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7400,7 +7400,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7473,7 +7473,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7578,7 +7578,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7651,7 +7651,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7697,7 +7697,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7743,7 +7743,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7789,7 +7789,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7835,7 +7835,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -7977,7 +7977,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8071,7 +8071,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8213,7 +8213,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8307,7 +8307,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8399,7 +8399,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8467,7 +8467,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8559,7 +8559,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8627,7 +8627,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8731,7 +8731,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8803,7 +8803,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8907,7 +8907,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -8979,7 +8979,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9024,7 +9024,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9069,7 +9069,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9114,7 +9114,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9159,7 +9159,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9300,7 +9300,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9393,7 +9393,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9534,7 +9534,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9627,7 +9627,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9720,7 +9720,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9789,7 +9789,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9882,7 +9882,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -9951,7 +9951,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10056,7 +10056,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10129,7 +10129,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10234,7 +10234,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10307,7 +10307,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10353,7 +10353,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10399,7 +10399,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10445,7 +10445,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10491,7 +10491,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10635,7 +10635,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10731,7 +10731,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10875,7 +10875,7 @@
         "0x66 0x0f 0x3A 0x60"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -10971,7 +10971,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11065,7 +11065,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11135,7 +11135,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11229,7 +11229,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11299,7 +11299,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11405,7 +11405,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11479,7 +11479,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11585,7 +11585,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11659,7 +11659,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11706,7 +11706,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11753,7 +11753,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11800,7 +11800,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11847,7 +11847,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -11990,7 +11990,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12085,7 +12085,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12228,7 +12228,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12323,7 +12323,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12418,7 +12418,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12489,7 +12489,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12584,7 +12584,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12655,7 +12655,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12762,7 +12762,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12837,7 +12837,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -12944,7 +12944,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13019,7 +13019,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13067,7 +13067,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13115,7 +13115,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13163,7 +13163,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13211,7 +13211,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13355,7 +13355,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13451,7 +13451,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13595,7 +13595,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13691,7 +13691,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13785,7 +13785,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13855,7 +13855,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -13949,7 +13949,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14019,7 +14019,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14125,7 +14125,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14199,7 +14199,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14305,7 +14305,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14379,7 +14379,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14426,7 +14426,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14473,7 +14473,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14520,7 +14520,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14567,7 +14567,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14710,7 +14710,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14805,7 +14805,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -14948,7 +14948,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15043,7 +15043,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15138,7 +15138,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15209,7 +15209,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15304,7 +15304,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15375,7 +15375,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15482,7 +15482,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15557,7 +15557,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15664,7 +15664,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15739,7 +15739,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15787,7 +15787,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15835,7 +15835,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15883,7 +15883,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -15931,7 +15931,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16077,7 +16077,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16175,7 +16175,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16321,7 +16321,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16419,7 +16419,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16518,7 +16518,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16593,7 +16593,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16692,7 +16692,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16767,7 +16767,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16878,7 +16878,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -16957,7 +16957,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17068,7 +17068,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17147,7 +17147,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17199,7 +17199,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17251,7 +17251,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17303,7 +17303,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17355,7 +17355,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17503,7 +17503,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17603,7 +17603,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17751,7 +17751,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17851,7 +17851,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -17951,7 +17951,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18027,7 +18027,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18127,7 +18127,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18203,7 +18203,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18315,7 +18315,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18395,7 +18395,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18507,7 +18507,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18587,7 +18587,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18640,7 +18640,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18693,7 +18693,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18746,7 +18746,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18799,7 +18799,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -18948,7 +18948,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19049,7 +19049,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19198,7 +19198,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19299,7 +19299,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19398,7 +19398,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19473,7 +19473,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19572,7 +19572,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19647,7 +19647,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19758,7 +19758,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19837,7 +19837,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -19948,7 +19948,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20027,7 +20027,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20079,7 +20079,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20131,7 +20131,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20183,7 +20183,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20235,7 +20235,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20383,7 +20383,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20483,7 +20483,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20631,7 +20631,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20731,7 +20731,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20831,7 +20831,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -20907,7 +20907,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21007,7 +21007,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21083,7 +21083,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21195,7 +21195,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21275,7 +21275,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21387,7 +21387,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21467,7 +21467,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21520,7 +21520,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21573,7 +21573,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21626,7 +21626,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21679,7 +21679,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21830,7 +21830,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -21933,7 +21933,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -22084,7 +22084,7 @@
         "0x66 0x0f 0x3A 0x61"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "mov w27, #0x0",
         "cmp w4, #0x0 (0)",
         "cneg w20, w4, mi",
@@ -22187,7 +22187,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22257,7 +22257,7 @@
         "dup v3.16b, v3.b[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -22283,7 +22283,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22329,7 +22329,7 @@
         "dup v3.8h, v3.h[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -22356,7 +22356,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22426,7 +22426,7 @@
         "dup v3.16b, v3.b[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -22452,7 +22452,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22498,7 +22498,7 @@
         "dup v3.8h, v3.h[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -22525,7 +22525,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22607,7 +22607,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -22633,7 +22633,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22683,7 +22683,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -22710,7 +22710,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22792,7 +22792,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -22818,7 +22818,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22868,7 +22868,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -22895,7 +22895,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22918,7 +22918,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -22944,7 +22944,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -22967,7 +22967,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -22994,7 +22994,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23017,7 +23017,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -23043,7 +23043,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23066,7 +23066,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -23093,7 +23093,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23215,7 +23215,7 @@
         "dup v4.16b, w20",
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -23239,7 +23239,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23313,7 +23313,7 @@
         "dup v4.8h, w20",
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -23338,7 +23338,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23460,7 +23460,7 @@
         "dup v4.16b, w20",
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -23484,7 +23484,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23558,7 +23558,7 @@
         "dup v4.8h, w20",
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -23583,7 +23583,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23654,7 +23654,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -23680,7 +23680,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23727,7 +23727,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -23754,7 +23754,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23825,7 +23825,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -23851,7 +23851,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -23898,7 +23898,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -23925,7 +23925,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24008,7 +24008,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -24034,7 +24034,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24085,7 +24085,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -24112,7 +24112,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24195,7 +24195,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -24221,7 +24221,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24272,7 +24272,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -24299,7 +24299,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24323,7 +24323,7 @@
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -24349,7 +24349,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24373,7 +24373,7 @@
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -24400,7 +24400,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24424,7 +24424,7 @@
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -24450,7 +24450,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24474,7 +24474,7 @@
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -24501,7 +24501,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24624,7 +24624,7 @@
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -24648,7 +24648,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24723,7 +24723,7 @@
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -24748,7 +24748,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24871,7 +24871,7 @@
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -24895,7 +24895,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -24970,7 +24970,7 @@
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
         "mvn v2.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -24995,7 +24995,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25065,7 +25065,7 @@
         "dup v3.16b, v3.b[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -25091,7 +25091,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25137,7 +25137,7 @@
         "dup v3.8h, v3.h[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -25164,7 +25164,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25234,7 +25234,7 @@
         "dup v3.16b, v3.b[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -25260,7 +25260,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25306,7 +25306,7 @@
         "dup v3.8h, v3.h[0]",
         "and v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -25333,7 +25333,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25415,7 +25415,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -25441,7 +25441,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25491,7 +25491,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -25518,7 +25518,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25600,7 +25600,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -25626,7 +25626,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25676,7 +25676,7 @@
         "bic v3.16b, v3.16b, v6.16b",
         "orr v3.16b, v4.16b, v3.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -25703,7 +25703,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25726,7 +25726,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -25752,7 +25752,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25775,7 +25775,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -25802,7 +25802,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25825,7 +25825,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -25851,7 +25851,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -25874,7 +25874,7 @@
         "orr v2.16b, v3.16b, v2.16b",
         "and v3.16b, v4.16b, v5.16b",
         "orn v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -25901,7 +25901,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26023,7 +26023,7 @@
         "dup v4.16b, w20",
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -26047,7 +26047,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26121,7 +26121,7 @@
         "dup v4.8h, w20",
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -26146,7 +26146,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26268,7 +26268,7 @@
         "dup v4.16b, w20",
         "cmgt v2.16b, v4.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -26292,7 +26292,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26366,7 +26366,7 @@
         "dup v4.8h, w20",
         "cmgt v2.8h, v4.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -26391,7 +26391,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26462,7 +26462,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -26488,7 +26488,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26535,7 +26535,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -26562,7 +26562,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26633,7 +26633,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -26659,7 +26659,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26706,7 +26706,7 @@
         "and v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -26733,7 +26733,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26816,7 +26816,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -26842,7 +26842,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -26893,7 +26893,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -26920,7 +26920,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27003,7 +27003,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -27029,7 +27029,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27080,7 +27080,7 @@
         "orr v3.16b, v4.16b, v3.16b",
         "and v3.16b, v3.16b, v2.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -27107,7 +27107,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27131,7 +27131,7 @@
         "and v4.16b, v4.16b, v5.16b",
         "orn v3.16b, v4.16b, v3.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -27157,7 +27157,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27181,7 +27181,7 @@
         "and v4.16b, v4.16b, v5.16b",
         "orn v3.16b, v4.16b, v3.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -27208,7 +27208,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27232,7 +27232,7 @@
         "and v4.16b, v4.16b, v5.16b",
         "orn v3.16b, v4.16b, v3.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -27258,7 +27258,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27282,7 +27282,7 @@
         "and v4.16b, v4.16b, v5.16b",
         "orn v3.16b, v4.16b, v3.16b",
         "eor v2.16b, v3.16b, v2.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -27309,7 +27309,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27434,7 +27434,7 @@
         "cmgt v2.16b, v5.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
         "eor v2.16b, v2.16b, v4.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -27458,7 +27458,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27535,7 +27535,7 @@
         "cmgt v2.8h, v5.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
         "eor v2.16b, v2.16b, v4.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -27560,7 +27560,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27685,7 +27685,7 @@
         "cmgt v2.16b, v5.16b, v2.16b",
         "and v2.16b, v3.16b, v2.16b",
         "eor v2.16b, v2.16b, v4.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "and v2.16b, v2.16b, v3.16b",
         "addp v2.16b, v2.16b, v4.16b",
@@ -27709,7 +27709,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27786,7 +27786,7 @@
         "cmgt v2.8h, v5.8h, v2.8h",
         "and v2.16b, v3.16b, v2.16b",
         "eor v2.16b, v2.16b, v4.16b",
-        "ldr q3, [x28, #3440]",
+        "ldr q3, [x28, #3456]",
         "movi v4.2d, #0x0",
         "uzp1 v2.16b, v2.16b, v4.16b",
         "and v2.16b, v2.16b, v3.16b",
@@ -27811,7 +27811,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27903,7 +27903,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -27971,7 +27971,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28063,7 +28063,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28131,7 +28131,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28235,7 +28235,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28307,7 +28307,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28411,7 +28411,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28483,7 +28483,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28528,7 +28528,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28573,7 +28573,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28618,7 +28618,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28663,7 +28663,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28805,7 +28805,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -28899,7 +28899,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29041,7 +29041,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29135,7 +29135,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29228,7 +29228,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29297,7 +29297,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29390,7 +29390,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29459,7 +29459,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29564,7 +29564,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29637,7 +29637,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29742,7 +29742,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29815,7 +29815,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29861,7 +29861,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29907,7 +29907,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29953,7 +29953,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -29999,7 +29999,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30142,7 +30142,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30237,7 +30237,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30380,7 +30380,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30475,7 +30475,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30567,7 +30567,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30635,7 +30635,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30727,7 +30727,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30795,7 +30795,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30899,7 +30899,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -30971,7 +30971,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31075,7 +31075,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31147,7 +31147,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31192,7 +31192,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31237,7 +31237,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31282,7 +31282,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31327,7 +31327,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31469,7 +31469,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31563,7 +31563,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31705,7 +31705,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31799,7 +31799,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31892,7 +31892,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -31961,7 +31961,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32054,7 +32054,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32123,7 +32123,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32228,7 +32228,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32301,7 +32301,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32406,7 +32406,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32479,7 +32479,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32525,7 +32525,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32571,7 +32571,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32617,7 +32617,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32663,7 +32663,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32808,7 +32808,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -32905,7 +32905,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33050,7 +33050,7 @@
         "0x66 0x0f 0x3A 0x62"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33147,7 +33147,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33240,7 +33240,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33309,7 +33309,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33402,7 +33402,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33471,7 +33471,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33576,7 +33576,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33649,7 +33649,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33754,7 +33754,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33827,7 +33827,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33873,7 +33873,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33919,7 +33919,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -33965,7 +33965,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34011,7 +34011,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34154,7 +34154,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34249,7 +34249,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34392,7 +34392,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34487,7 +34487,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34581,7 +34581,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34651,7 +34651,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34745,7 +34745,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34815,7 +34815,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34921,7 +34921,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -34995,7 +34995,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35101,7 +35101,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35175,7 +35175,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35222,7 +35222,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35269,7 +35269,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35316,7 +35316,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35363,7 +35363,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35507,7 +35507,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35603,7 +35603,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35747,7 +35747,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35843,7 +35843,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -35936,7 +35936,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36005,7 +36005,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36098,7 +36098,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36167,7 +36167,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36272,7 +36272,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36345,7 +36345,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36450,7 +36450,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36523,7 +36523,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36569,7 +36569,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36615,7 +36615,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36661,7 +36661,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36707,7 +36707,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36850,7 +36850,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -36945,7 +36945,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37088,7 +37088,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37183,7 +37183,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37277,7 +37277,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37347,7 +37347,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37441,7 +37441,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37511,7 +37511,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37617,7 +37617,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37691,7 +37691,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37797,7 +37797,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37871,7 +37871,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37918,7 +37918,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -37965,7 +37965,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38012,7 +38012,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38059,7 +38059,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38205,7 +38205,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38303,7 +38303,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38449,7 +38449,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38547,7 +38547,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38646,7 +38646,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38721,7 +38721,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38820,7 +38820,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -38895,7 +38895,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39006,7 +39006,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39085,7 +39085,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39196,7 +39196,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39275,7 +39275,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39327,7 +39327,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39379,7 +39379,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39431,7 +39431,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39483,7 +39483,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39631,7 +39631,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39731,7 +39731,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39879,7 +39879,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -39979,7 +39979,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40079,7 +40079,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40155,7 +40155,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40255,7 +40255,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40331,7 +40331,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40443,7 +40443,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40523,7 +40523,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40635,7 +40635,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40715,7 +40715,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40768,7 +40768,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40821,7 +40821,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40874,7 +40874,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -40927,7 +40927,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41076,7 +41076,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41177,7 +41177,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41326,7 +41326,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41427,7 +41427,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41526,7 +41526,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41601,7 +41601,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41700,7 +41700,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41775,7 +41775,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41886,7 +41886,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -41965,7 +41965,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42076,7 +42076,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42155,7 +42155,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42207,7 +42207,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42259,7 +42259,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42311,7 +42311,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42363,7 +42363,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42511,7 +42511,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42611,7 +42611,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42759,7 +42759,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42859,7 +42859,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -42959,7 +42959,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43035,7 +43035,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43135,7 +43135,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43211,7 +43211,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43323,7 +43323,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43403,7 +43403,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43515,7 +43515,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43595,7 +43595,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43648,7 +43648,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43701,7 +43701,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43754,7 +43754,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43807,7 +43807,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -43958,7 +43958,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -44061,7 +44061,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3184]",
         "cmeq v3.16b, v16.16b, #0",
         "movi v4.16b, #0x10",
         "bsl v3.16b, v2.16b, v4.16b",
@@ -44212,7 +44212,7 @@
         "0x66 0x0f 0x3A 0x63"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3136]",
+        "ldr q2, [x28, #3152]",
         "cmeq v3.8h, v16.8h, #0",
         "movi v4.8h, #0x8",
         "bsl v3.16b, v2.16b, v4.16b",
