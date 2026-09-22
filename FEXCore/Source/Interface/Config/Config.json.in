@@ -221,6 +221,14 @@
         "Desc": [
           "Optional list of extra read-only disk cache DBs to consider"
         ]
+      },
+      "DiskCacheMaxFileSize": {
+        "Type": "uint64",
+        "Default": "1073741824",
+        "AffectsCodeGen": "false",
+        "Desc": [
+          "Size limit on the main cache file - index not included. Default 1G"
+        ]
       }
     },
     "Emulation": {
