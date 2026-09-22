@@ -168,18 +168,23 @@ namespace DiskCache {
     bool ReadCacheBlob(uint64_t Offset, std::span<uint8_t> OutBlob);
     bool StoreCacheBlob(const MesaFOZ::foz_payload_key& UniqueKey, uint64_t LookupKey, std::span<const uint8_t> Blob,
                         MesaFOZ::mesa_index_db_file_entry& IndexEntry, std::span<const uint8_t> IndexBlob);
+    bool Full() const {
+      return MaxSizeReached;
+    }
 
   private:
     // stores run on the Writer, so returning quick isn't as important
     static constexpr uint32_t STORE_LOCK_TIMEOUT_MS = 1000;
     static constexpr uint64_t BIG_MAPPING_SIZE = 1ULL << 33;
-    static constexpr uint32_t LOOKUP_KEY_MAX_BUCKET_DEPTH = 20;
 
     FOZFile CacheFOZ;
     uint8_t* CacheFileMapping = nullptr;
     std::atomic<uint64_t> CacheFileSize;
     FOZFile IndexFOZ;
     bool ReadOnly = false;
+    bool MaxSizeReached = false;
+
+    FEX_CONFIG_OPT(MaxFileSize, DISKCACHEMAXFILESIZE);
   };
 
   class DiskCache {
@@ -246,7 +251,7 @@ namespace DiskCache {
   // Be aware of the impact of changing this frequently!
   static constexpr uint16_t FormatVersion = 26;
 
-  static constexpr uint32_t LOOKUP_KEY_MAX_BUCKET_DEPTH = 20;
+  static constexpr uint32_t LOOKUP_KEY_MAX_BUCKET_DEPTH = 500;
 
 } // namespace DiskCache
 
