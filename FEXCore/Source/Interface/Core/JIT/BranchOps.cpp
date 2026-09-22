@@ -374,27 +374,22 @@ DEF_OP(ValidateCode) {
 DEF_OP(ThreadRemoveCodeEntry) {
   auto Op = IROp->C<IR::IROp_ThreadRemoveCodeEntry>();
 
-  // Move the entry to ABI before saving state.
-  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetReg(Op->Entry));
+  SpillStaticRegs(TMP1);
 
-  PushDynamicRegs(TMP4);
-  SpillStaticRegs(TMP4);
+  // Store the new RIP to go to.
+  str(GetReg(Op->NewRIP).X(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
+
+  // Move the entry to ABI before saving state.
+  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetReg(Op->EntryToInvalidate));
 
   // Arguments are passed as follows:
   // X0: Thread
-  // X1: RIP
+  // X1: RIPToInvalidate
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, STATE.R());
 
-  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.ThreadRemoveCodeEntryFromJIT));
-  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-    GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
-  } else {
-    blr(ARMEmitter::Reg::r2);
-  }
-  FillStaticRegs();
-
-  // Fix the stack and any values that were stepped on
-  PopDynamicRegs();
+  // Jump to the invalidate dispatch handler. We won't return after this.
+  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.ThreadDispatchRemoveCodeEntry));
+  br(ARMEmitter::XReg::x2);
 }
 
 DEF_OP(CPUID) {

@@ -550,6 +550,28 @@ void Dispatcher::EmitDispatcher() {
     (void)b(&LoopTop);
   }
 
+  {
+    // All dynamic and static registers are spilled coming in to this handler.
+    // It's also the end of block and RIP might have changed, so we jump directly to the top of the loop.
+    ThreadDispatchRemoveCodeEntry = GetCursorAddress<uint64_t>();
+
+    // Arguments are already in x0, x1. Just jump to the handler.
+    ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.ThreadRemoveCodeEntryFromJIT));
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
+    } else {
+      blr(ARMEmitter::Reg::r2);
+    }
+
+    FillStaticRegs({
+      .OptionalReg = ARMEmitter::Reg::r1,
+      .OptionalReg2 = ARMEmitter::Reg::r2,
+    });
+
+    // Now go back to the regular dispatcher loop
+    (void)b(&LoopTop);
+  }
+
   auto EmitLongALUOpHandler = [&](auto R, auto Offset) {
     auto Address = GetCursorAddress<uint64_t>();
 
@@ -2664,6 +2686,7 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     Ptrs.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
     Ptrs.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
     Ptrs.ThreadDispatchSyscallHandler = ThreadDispatchSyscallHandler;
+    Ptrs.ThreadDispatchRemoveCodeEntry = ThreadDispatchRemoveCodeEntry;
     Ptrs.GuestSignal_SIGILL = GuestSignal_SIGILL;
     Ptrs.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
     Ptrs.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;

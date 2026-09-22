@@ -7,7 +7,7 @@
       "SVE256",
       "SVE128"
     ],
-    "BinaryCacheVersion": 26
+    "BinaryCacheVersion": 27
   },
   "Instructions": {
     "vpermq ymm0, ymm1, 1": {

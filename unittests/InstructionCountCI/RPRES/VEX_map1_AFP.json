@@ -8,7 +8,7 @@
       "AFP"
     ],
     "DisabledHostFeatures": [],
-    "BinaryCacheVersion": 26
+    "BinaryCacheVersion": 27
   },
   "Instructions": {
     "vrsqrtps xmm0, xmm1": {
