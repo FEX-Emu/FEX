@@ -5462,14 +5462,20 @@ Ref OpDispatchBuilder::PCMPXSTRXSaturateExplicitLength(OpSize ElementSize, OpSiz
   return _Select(OpSize::i32Bit, LengthSize, CondClass::ULT, AbsLength, Constant(NumElements), AbsLength, Constant(NumElements));
 }
 
+// Equal Any is a "is character in set" operation.
+// The set of characters is passed in Src1, and we then check if every
+// character in Src2 is in that set.
 Ref OpDispatchBuilder::PCMPXSTRXEqualAny(OpSize ElementSize, Ref Src1, Ref Src2, Ref Src1ValidElements, Ref Src2ValidElements) {
   const uint32_t NumElements = IR::NumElements(OpSize::i128Bit, ElementSize);
 
-  // Replace the invalid Src1 elements with Src1[0] so they can't add matches of their own.
+  // First we sanitize Src1, and zero out elements after the end of the string,
+  // removing them from the matching set.
   Ref Src1Element0 = _VDupElement(OpSize::i128Bit, ElementSize, Src1, 0);
   Ref SanitizedSrc1 = _VBSL(OpSize::i128Bit, Src1ValidElements, Src1, Src1Element0);
 
-  // A Src2 element matches if it equals any Src1 element.
+  // Now walk through every element in Src1, broadcast it into a temporary vector,
+  // and compare it against every element in Src2, then OR the results
+  // together to get the final match vector.
   Ref Matches = _VCMPEQ(OpSize::i128Bit, ElementSize, Src2, Src1Element0);
   for (uint32_t i = 1; i < NumElements; i++) {
     Ref Src1Element = _VDupElement(OpSize::i128Bit, ElementSize, SanitizedSrc1, i);
@@ -5477,39 +5483,52 @@ Ref OpDispatchBuilder::PCMPXSTRXEqualAny(OpSize ElementSize, Ref Src1, Ref Src2,
     Matches = _VOr(OpSize::i128Bit, Matches, ElementMatches);
   }
 
-  // An empty Src1 matches nothing, and invalid Src2 elements never match.
+  // Handle the case where Src1 was entirely empty, and also sanitize the results
+  // for any NULLs in Src2, since those don't count towards matching.
   Ref Src1NotEmpty = _VDupElement(OpSize::i128Bit, ElementSize, Src1ValidElements, 0);
   Matches = _VAnd(OpSize::i128Bit, Matches, Src1NotEmpty);
   return _VAnd(OpSize::i128Bit, Matches, Src2ValidElements);
 }
 
+
+// The ranges aggregation is a weird one. It checks if every character in Src2 is
+// within a character range (ie. a-z or A-Z) similar to regex. 
+// Ranges are passed in Src1 as pairs of characters in adjacent lanes.
 Ref OpDispatchBuilder::PCMPXSTRXRanges(OpSize ElementSize, Ref Src1, Ref Src2, Ref Src1ValidElements, Ref Src2ValidElements, bool IsSigned) {
   const uint32_t NumElements = IR::NumElements(OpSize::i128Bit, ElementSize);
 
-  // Signed or unsigned greater than, depending on the source data format.
+  // Signed or unsigned greater than comparison, based on the Imm8 value
   const auto GreaterThan = [&](Ref Lhs, Ref Rhs) {
     return IsSigned ? _VCMPGT(OpSize::i128Bit, ElementSize, Lhs, Rhs) : _VUCMPGT(OpSize::i128Bit, ElementSize, Lhs, Rhs);
   };
 
-  // A Src2 element matches if it is within any valid [Src1[2k], Src1[2k+1]] range.
+  // First we walk through the ranges from Src1, and construct 
+  // temporary vectors to represent the lower and upper bounds
+  // of the comparison. Then check if both comparisons are true, 
+  // zero out invalid lanes, and OR the result into the final result vector.
   Ref Result {};
   for (uint32_t i = 0; i < NumElements; i += 2) {
     Ref LowerBound = _VDupElement(OpSize::i128Bit, ElementSize, Src1, i);
     Ref UpperBound = _VDupElement(OpSize::i128Bit, ElementSize, Src1, i + 1);
     Ref BelowLower = GreaterThan(LowerBound, Src2);
     Ref AboveUpper = GreaterThan(Src2, UpperBound);
-    Ref OutsideRange = _VOr(OpSize::i128Bit, BelowLower, AboveUpper);
 
     // A range is only valid if its upper bound is a valid Src1 element.
     Ref RangeValid = _VDupElement(OpSize::i128Bit, ElementSize, Src1ValidElements, i + 1);
-    Ref InRange = _VAndn(OpSize::i128Bit, RangeValid, OutsideRange);
+
+    // RangeValid & ~BelowLower & ~AboveUpper
+    Ref InRange = _VAndn(OpSize::i128Bit, RangeValid, BelowLower);
+    InRange = _VAndn(OpSize::i128Bit, InRange, AboveUpper);
     Result = Result ? _VOr(OpSize::i128Bit, Result, InRange) : InRange;
   }
 
-  // Invalid Src2 elements never match.
+  // Invalid (ie. NULL) Src2 characters don't count towards matching.
   return _VAnd(OpSize::i128Bit, Result, Src2ValidElements);
 }
 
+// This aggregation is the simplest, and is the most similar
+// to strcmp(). It Just compares lanewise which characters are
+// equal in each string.
 Ref OpDispatchBuilder::PCMPXSTRXEqualEach(OpSize ElementSize, Ref Src1, Ref Src2, Ref Src1ValidElements, Ref Src2ValidElements) {
   // Elements match when both are valid and equal, or when both are invalid.
   Ref Equal = _VCMPEQ(OpSize::i128Bit, ElementSize, Src1, Src2);
@@ -5519,33 +5538,43 @@ Ref OpDispatchBuilder::PCMPXSTRXEqualEach(OpSize ElementSize, Ref Src1, Ref Src2
   return _VOrn(OpSize::i128Bit, ValidMatches, EitherValid);
 }
 
+// EqualOrdered implements a strstr()-like semantic finding all instances
+// of the string Src1 in Src2.
 Ref OpDispatchBuilder::PCMPXSTRXEqualOrdered(OpSize ElementSize, Ref Src1, Ref Src2, Ref Src1Length, Ref Src2Length, Ref Src1ValidElements,
                                              Ref Indices) {
   const uint32_t NumElements = IR::NumElements(OpSize::i128Bit, ElementSize);
 
-  // Row i: does Src1[i] match at each start position? Rows past the needle length are forced to
-  // match, so ANDing all rows together leaves the positions where the whole needle matches.
+  // Broadcast needle[i] into every lane of a temp vector, then compare it to 
+  // the haystack vector. On succesive iterations, we shift the haystack over
+  // by one element, and compare it against the next needle element.
+  // AND together the results of all comparisons, and what is left should
+  // be a vector where the only 'true' elements are lanes where the full
+  // needle was found in the haystack, or those positions after the end of the string.
   Ref Result {};
   for (uint32_t i = 0; i < NumElements; i++) {
     Ref Needle = _VDupElement(OpSize::i128Bit, ElementSize, Src1, i);
     Ref Haystack = i == 0 ? Src2 : _VExtr(OpSize::i128Bit, ElementSize, Needle, Src2, i);
-    Ref Row = _VCMPEQ(OpSize::i128Bit, ElementSize, Haystack, Needle);
+    Ref ElementsEqual = _VCMPEQ(OpSize::i128Bit, ElementSize, Haystack, Needle);
 
-    // Row | ~RowValid: the row itself for valid needle elements, all ones otherwise.
-    Ref RowValid = _VDupElement(OpSize::i128Bit, ElementSize, Src1ValidElements, i);
-    Row = _VOrn(OpSize::i128Bit, Row, RowValid);
+    // TODO: I think a more optimal version of this is possible, perhaps using 
+    // MATCH from SVE2?
+    Ref ElementsValid = _VDupElement(OpSize::i128Bit, ElementSize, Src1ValidElements, i);
+    Ref ElementsEqualValid = _VOrn(OpSize::i128Bit, ElementsEqual, ElementsValid);
 
-    Result = Result ? _VAnd(OpSize::i128Bit, Result, Row) : Row;
+    // Ternary to handle the first row case
+    Result = Result ? _VAnd(OpSize::i128Bit, Result, ElementsEqualValid) : ElementsEqualValid;
   }
 
-  // Clear positions that run into invalid Src2 elements, unless Src2 is fully valid or Src1 is empty.
+  // Clear positions in the result after the end of the string.
   Ref FirstClearedPosition = Add(OpSize::i32Bit, _Sub(OpSize::i32Bit, Src2Length, Src1Length), 1);
   FirstClearedPosition =
     _Select(OpSize::i32Bit, OpSize::i32Bit, CondClass::ULT, Src2Length, Constant(NumElements), FirstClearedPosition, Constant(NumElements));
   FirstClearedPosition =
     _Select(OpSize::i32Bit, OpSize::i32Bit, CondClass::EQ, Src1Length, Constant(0), Constant(NumElements), FirstClearedPosition);
+
   Ref FirstClearedPositionVector = _VDupFromGPR(OpSize::i128Bit, ElementSize, FirstClearedPosition);
-  return _VAnd(OpSize::i128Bit, Result, _VCMPGT(OpSize::i128Bit, ElementSize, FirstClearedPositionVector, Indices));
+  Ref KeptPositions = _VCMPGT(OpSize::i128Bit, ElementSize, FirstClearedPositionVector, Indices);
+  return _VAnd(OpSize::i128Bit, Result, KeptPositions);
 }
 
 void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask, bool IsAVX) {
