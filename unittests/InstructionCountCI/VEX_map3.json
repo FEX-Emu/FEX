@@ -8,7 +8,7 @@
     "DisabledHostFeatures": [
       "AFP"
     ],
-    "BinaryCacheVersion": 27
+    "BinaryCacheVersion": 28
   },
   "Instructions": {
     "vpermq ymm0, ymm1, 1": {
@@ -4199,7 +4199,7 @@
         "Map 3 0b01 0xdf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3312]",
+        "ldr q2, [x28, #3344]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v3.16b",
@@ -4212,7 +4212,7 @@
         "Map 3 0b01 0xdf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3312]",
+        "ldr q2, [x28, #3344]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v3.16b",

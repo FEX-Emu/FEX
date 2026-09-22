@@ -8,6 +8,7 @@
 
 #include <cstring>
 
+// NOTE: Currently unused. See VectorFallbacks.h.
 namespace FEXCore::CPU {
 #ifdef ARCHITECTURE_arm64
 FEXCORE_PRESERVE_ALL_ATTR static int32_t GetImplicitLength(FEXCore::VectorRegType data, uint16_t control) {

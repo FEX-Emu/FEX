@@ -8,7 +8,7 @@
       "AFP",
       "CRYPTO"
     ],
-    "BinaryCacheVersion": 27
+    "BinaryCacheVersion": 28
   },
   "Comment": [
     "SSE4.2 string instructions are skipped here.",
@@ -328,7 +328,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3328]",
+        "ldr q2, [x28, #3360]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -338,7 +338,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3344]",
+        "ldr q2, [x28, #3376]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -357,7 +357,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3360]",
+        "ldr q2, [x28, #3392]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -377,7 +377,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3376]",
+        "ldr q2, [x28, #3408]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -396,7 +396,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3392]",
+        "ldr q2, [x28, #3424]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -406,7 +406,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3408]",
+        "ldr q2, [x28, #3440]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -475,7 +475,7 @@
         "0x66 0x0f 0x3a 0x0e"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2776]",
+        "ldr x0, [x28, #2784]",
         "ldr q2, [x0, #3440]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]

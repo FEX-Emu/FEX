@@ -2169,6 +2169,46 @@ DEF_OP(VCMPGT) {
   }
 }
 
+DEF_OP(VUCMPGT) {
+  const auto Op = IROp->C<IR::IROp_VUCMPGT>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
+  const auto IsScalar = ElementSize == OpSize;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1);
+  const auto Vector2 = GetVReg(Op->Vector2);
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Zeroing();
+    const auto ComparePred = ARMEmitter::PReg::p0;
+
+    // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
+    mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+
+    // General idea is to compare for unsigned greater-than, bitwise NOT
+    // the valid values, then ORR the NOTed values with the original
+    // values to form entries that are all 1s.
+    cmphi(SubRegSize.Vector, ComparePred, Mask, Vector1.Z(), Vector2.Z());
+    not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector1.Z());
+    movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector1.Z());
+    orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
+
+    // Restore NZCV
+    msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+  } else {
+    if (IsScalar) {
+      cmhi(SubRegSize.Scalar, Dst, Vector1, Vector2);
+    } else {
+      cmhi(SubRegSize.Vector, Dst.Q(), Vector1.Q(), Vector2.Q());
+    }
+  }
+}
+
 DEF_OP(VCMPGTZ) {
   const auto Op = IROp->C<IR::IROp_VCMPGTZ>();
   const auto OpSize = IROp->Size;
