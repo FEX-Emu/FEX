@@ -283,51 +283,11 @@ DEF_OP(CondJump) {
 }
 
 DEF_OP(Syscall) {
-  // Arguments are passed as follows:
-  // X0: SyscallHandler
-  // X1: ThreadState
+  SpillStaticRegs(TMP1);
 
-  PushDynamicRegs(TMP1);
-
-  uint32_t GPRSpillMask = ~0U;
-  uint32_t FPRSpillMask = ~0U;
-
-  SpillStaticRegs(TMP1, {
-                          .GPRSpillMask = GPRSpillMask,
-                          .FPRSpillMask = FPRSpillMask,
-                        });
-
-  // Now that we are spilled, store in the state that we are in a syscall
-  // Still without overwriting registers that matter
-  // 16bit LoadConstant to be a single instruction
-  // This gives the signal handler a value to check to see if we are in a syscall at all
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GPRSpillMask & 0xFFFF);
-  str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
-
-  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.SyscallHandlerObj));
-  ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.SyscallHandlerFunc));
-  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, STATE.R());
-
-  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-    GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(ARMEmitter::Reg::r3);
-  } else {
-    blr(ARMEmitter::Reg::r3);
-  }
-
-  // Fix the stack and any values that were stepped on
-  // Syscall result is in any static register that the frontend desired.
-  FillStaticRegs({
-    .OptionalReg = ARMEmitter::Reg::r1,
-    .OptionalReg2 = ARMEmitter::Reg::r2,
-    .GPRFillMask = GPRSpillMask,
-    .FPRFillMask = FPRSpillMask,
-  });
-
-  // Now the registers we've spilled are back in their original host registers
-  // We can safely claim we are no longer in a syscall
-  str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
-
-  PopDynamicRegs();
+  // Jump to the syscall dispatch handler. We won't return after this.
+  ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.ThreadDispatchSyscallHandler));
+  br(TMP1);
 }
 
 DEF_OP(Thunk) {

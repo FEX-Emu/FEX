@@ -13,7 +13,7 @@
       "SVE256",
       "SVE128"
     ],
-    "BinaryCacheVersion": 25
+    "BinaryCacheVersion": 26
   },
   "Instructions": {
     "vmovups xmm0, xmm0": {
@@ -486,7 +486,7 @@
       ],
       "ExpectedArm64ASM": [
         "ushr v2.4s, v16.4s, #31",
-        "ldr q3, [x28, #3280]",
+        "ldr q3, [x28, #3296]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
@@ -501,7 +501,7 @@
         "ldr q2, [x28, #192]",
         "uzp2 v2.8h, v16.8h, v2.8h",
         "ushr v2.8h, v2.8h, #15",
-        "ldr q3, [x28, #3120]",
+        "ldr q3, [x28, #3136]",
         "ushl v2.8h, v2.8h, v3.8h",
         "addv h2, v2.8h",
         "umov w4, v2.h[0]"
@@ -528,7 +528,7 @@
         "ldr q2, [x28, #192]",
         "uzp2 v2.4s, v16.4s, v2.4s",
         "ushr v2.4s, v2.4s, #31",
-        "ldr q3, [x28, #3280]",
+        "ldr q3, [x28, #3296]",
         "ushl v2.4s, v2.4s, v3.4s",
         "addv s2, v2.4s",
         "mov w4, v2.s[0]"
@@ -3936,7 +3936,7 @@
         "Map 1 0b01 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3184]",
+        "ldr q2, [x28, #3200]",
         "eor v2.16b, v18.16b, v2.16b",
         "fadd v16.2d, v17.2d, v2.2d",
         "stp xzr, xzr, [x28, #192]"
@@ -3950,7 +3950,7 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #208]",
         "ldr q3, [x28, #224]",
-        "ldr q4, [x28, #3184]",
+        "ldr q4, [x28, #3200]",
         "eor v5.16b, v18.16b, v4.16b",
         "fadd v16.2d, v17.2d, v5.2d",
         "eor v3.16b, v3.16b, v4.16b",
@@ -3964,7 +3964,7 @@
         "Map 1 0b11 0xd0 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3152]",
+        "ldr q2, [x28, #3168]",
         "eor v2.16b, v18.16b, v2.16b",
         "fadd v16.4s, v17.4s, v2.4s",
         "stp xzr, xzr, [x28, #192]"
@@ -3978,7 +3978,7 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #208]",
         "ldr q3, [x28, #224]",
-        "ldr q4, [x28, #3152]",
+        "ldr q4, [x28, #3168]",
         "eor v5.16b, v18.16b, v4.16b",
         "fadd v16.4s, v17.4s, v5.4s",
         "eor v3.16b, v3.16b, v4.16b",
@@ -4149,7 +4149,7 @@
         "Map 1 0b01 0xd7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3408]",
+        "ldr q2, [x28, #3424]",
         "cmlt v3.16b, v16.16b, #0",
         "and v2.16b, v3.16b, v2.16b",
         "addp v2.16b, v2.16b, v2.16b",
@@ -4165,7 +4165,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #192]",
-        "ldr q3, [x28, #3408]",
+        "ldr q3, [x28, #3424]",
         "cmlt v4.16b, v16.16b, #0",
         "and v4.16b, v4.16b, v3.16b",
         "addp v4.16b, v4.16b, v4.16b",

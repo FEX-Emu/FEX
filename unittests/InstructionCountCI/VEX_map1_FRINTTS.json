@@ -13,7 +13,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 25
+    "BinaryCacheVersion": 26
   },
   "Instructions": {
     "vcvttss2si eax, xmm0": {
@@ -174,7 +174,7 @@
         "Map 1 0b01 0xe6 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3664]",
+        "ldr q2, [x28, #3680]",
         "ldr x0, [x28, #2648]",
         "ld1b {z3.b}, p7/z, [x0]",
         "fcvtzs z4.s, p7/m, z17.d",
@@ -209,7 +209,7 @@
       ],
       "ExpectedArm64ASM": [
         "frinti z2.d, p7/m, z17.d",
-        "ldr q3, [x28, #3664]",
+        "ldr q3, [x28, #3680]",
         "ldr x0, [x28, #2648]",
         "ld1b {z4.b}, p7/z, [x0]",
         "fcvtzs z5.s, p7/m, z2.d",
