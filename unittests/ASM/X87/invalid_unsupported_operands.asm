@@ -5,7 +5,7 @@
     "RBX": "0xFFFF",
     "RCX": "0xC000000000000000",
     "RDX": "0xFFFF",
-    "RSI": "0x0",
+    "RSI": "0xC000000000000000",
     "RDI": "0xFFFFC000"
   }
 }
@@ -43,7 +43,7 @@ mov rcx, [rel .res_f2xm1]       ; 0xC000000000000000
 movzx rdx, word [rel .res_f2xm1 + 8] ; 0xFFFF
 
 ; FBSTP result (Packed BCD Indefinite):
-; Low 8 bytes are 0x00, bytes 8..9 are 0xC0, 0xFF
+; Bytes 0..6: 0x00, byte 7: 0xC0 (making low 8-bytes 0xC000000000000000), bytes 8..9: 0xFF, 0xFF
 mov rsi, [rel .res_fbstp]       ; 0x0
 mov edi, dword [rel .res_fbstp + 6] ; upper bytes: byte 8 is 0xC0, byte 9 is 0xFF -> 0xFFFFC000
 

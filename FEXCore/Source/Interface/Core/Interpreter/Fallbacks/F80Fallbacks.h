@@ -460,8 +460,9 @@ struct OpHandlers<IR::OP_F80BCDSTORE> {
       State.State.exceptionFlags |= softfloat_flag_invalid;
       X80SoftFloat Rv;
       uint8_t* BCD = reinterpret_cast<uint8_t*>(&Rv);
-      std::memset(BCD, 0, 8);
-      BCD[8] = 0xC0;
+      std::memset(BCD, 0, 7);
+      BCD[7] = 0xC0;
+      BCD[8] = 0xFF;
       BCD[9] = 0xFF;
       return Rv;
     };

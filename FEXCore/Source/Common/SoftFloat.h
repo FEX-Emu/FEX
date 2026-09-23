@@ -673,7 +673,7 @@ public:
     return (arg.Top.Exponent != 0) && ((arg.Significand & IntegerBit) == 0);
   }
 
-  static constexpr X80SoftFloat IndefiniteQNaN() {
+  static inline X80SoftFloat IndefiniteQNaN() {
     // Real QNaN Indefinite: Sign=1, Exponent=0x7FFF, Significand=0xC000000000000000ULL (0xFFFFC000000000000000)
     X80SoftFloat result;
     result.Top.Sign = 1;
