@@ -245,6 +245,7 @@ static void PrintArg(fextl::ostringstream* out, const IRListView*, NamedVectorCo
       case NamedVectorConstant::NAMED_VECTOR_CVTMAX_I64:
         return "cvtmax_i64";
       case NamedVectorConstant::NAMED_VECTOR_F80_SIGN_MASK:
+      case NamedVectorConstant::NAMED_VECTOR_X87_INDEFINITE:
         return "f80_sign_mask";
       case NamedVectorConstant::NAMED_VECTOR_SHA1RNDS_K0:
         return "sha1rnds_k0";

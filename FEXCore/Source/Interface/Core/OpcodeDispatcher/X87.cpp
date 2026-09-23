@@ -71,7 +71,42 @@ void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
 
 // Float LoaD operation with memory operand
 void OpDispatchBuilder::FLDFromStack(OpcodeArgs) {
-  _CopyPushStack(Op->OP & 7);
+  uint8_t Offset = Op->OP & 7;
+  auto ValidTag = _StackValidTag(Offset);
+
+  // If slot is empty (ValidTag == 0), Intel SDM specifies stack fault (#SF):
+  // IE = 1 (bit 0), SF = 1 (bit 6), C1 = 0 (underflow indicator).
+  // When masked, QNaN Indefinite (0xFFFFC000000000000000) is substituted and pushed.
+  auto IsEmpty = Select01(OpSize::i32Bit, CondClass::EQ, ValidTag, Constant(0));
+  auto One = Constant(1);
+
+  auto CurIE = GetRFLAG(FEXCore::X86State::X87FLAG_IE_LOC);
+  auto NewIE = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClass::NEQ, IsEmpty, Constant(0), One, CurIE);
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(NewIE);
+
+  auto CurSF = GetRFLAG(FEXCore::X86State::X87FLAG_SF_LOC);
+  auto NewSF = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClass::NEQ, IsEmpty, Constant(0), One, CurSF);
+  SetRFLAG<FEXCore::X86State::X87FLAG_SF_LOC>(NewSF);
+
+  auto Zero = Constant(0);
+  auto CurC1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
+  auto NewC1 = _Select(OpSize::i32Bit, OpSize::i32Bit, CondClass::NEQ, IsEmpty, Constant(0), Zero, CurC1);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(NewC1);
+
+  // Mask condition: all 1s if empty, all 0s if valid
+  Ref All1 = _InlineConstant(~0ULL);
+  Ref All0 = _InlineConstant(0);
+  Ref CondGPR = _Select(OpSize::i64Bit, OpSize::i32Bit, CondClass::EQ, ValidTag, Constant(0), All1, All0);
+  Ref VecCond = _VDupFromGPR(OpSize::i128Bit, OpSize::i64Bit, CondGPR);
+  Ref IndefiniteVal = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, IR::NamedVectorConstant::NAMED_VECTOR_X87_INDEFINITE);
+
+  _CopyPushStack(Offset);
+
+  // Replace ST(0) with Indefinite if empty
+  Ref St0 = _ReadStackValue(0);
+  Ref Selected = _VBSL(OpSize::i128Bit, VecCond, IndefiniteVal, St0);
+  _PopStackDestroy();
+  _PushStack(Selected, Invalid(), OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::FBLD(OpcodeArgs) {
@@ -426,12 +461,14 @@ Ref OpDispatchBuilder::ReconstructX87StateFromFSW_Helper(Ref FSW) {
   auto C2 = _Bfe(OpSize::i32Bit, 1, 10, FSW);
   auto C3 = _Bfe(OpSize::i32Bit, 1, 14, FSW);
   auto IE = _Bfe(OpSize::i32Bit, 1, 0, FSW);
+  auto SF = _Bfe(OpSize::i32Bit, 1, 6, FSW);
 
   SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
   SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(IE);
+  SetRFLAG<FEXCore::X86State::X87FLAG_SF_LOC>(SF);
   return Top;
 }
 
@@ -762,6 +799,9 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
   auto IE = GetRFLAG(FEXCore::X86State::X87FLAG_IE_LOC);
   FSW = _Or(OpSize::i64Bit, FSW, IE);
 
+  auto SF = GetRFLAG(FEXCore::X86State::X87FLAG_SF_LOC);
+  FSW = _Orlshl(OpSize::i64Bit, FSW, SF, 6);
+
   return FSW;
 }
 
@@ -779,8 +819,9 @@ void OpDispatchBuilder::X87FNSTSW(OpcodeArgs, bool DestRAX) {
 }
 
 void OpDispatchBuilder::FNCLEX(OpcodeArgs) {
-  // Clear the exception flag bit
+  // Clear the exception flag bit and stack fault flag
   SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_SF_LOC>(_Constant(0));
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
@@ -809,6 +850,7 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_SF_LOC>(Zero);
 }
 
 void OpDispatchBuilder::X87FFREE(OpcodeArgs) {
