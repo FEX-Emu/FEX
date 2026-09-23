@@ -453,6 +453,24 @@ struct OpHandlers<IR::OP_F80BCDSTORE> {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     X80SoftFloat Src1 = Src1q;
     ScopedSoftFloatState State {FCW, Frame};
+
+    // Helper lambda to construct the Packed BCD Integer Indefinite:
+    // 0xFFFFC000000000000000 (Bytes 0..7: 0x00, Byte 8: 0xC0, Byte 9: 0xFF)
+    auto EmitBCDIndefinite = [&]() -> VectorRegType {
+      State.State.exceptionFlags |= softfloat_flag_invalid;
+      X80SoftFloat Rv;
+      uint8_t* BCD = reinterpret_cast<uint8_t*>(&Rv);
+      std::memset(BCD, 0, 8);
+      BCD[8] = 0xC0;
+      BCD[9] = 0xFF;
+      return Rv;
+    };
+
+    // Check for unsupported operand formats (Unnormal, Pseudo-NaN, Pseudo-Infinity) or NaN/Infinity
+    if (X80SoftFloat::IsUnsupported(Src1) || Src1.Top.Exponent == 0x7FFF) {
+      return EmitBCDIndefinite();
+    }
+
     bool Negative = Src1.Top.Sign;
 
     Src1 = X80SoftFloat::FRNDINT(&State.State, Src1);
@@ -460,7 +478,14 @@ struct OpHandlers<IR::OP_F80BCDSTORE> {
     // Clear the Sign bit
     Src1.Top.Sign = 0;
 
+    // Largest representable 18-digit BCD integer is 999,999,999,999,999,999 (0xDE0B6B3A763FFFFULL).
+    // If rounded Src1 exceeds 18 digits or conversion triggers invalid, emit BCD Indefinite.
+    constexpr uint64_t MaxBCDInt = 999999999999999999ULL;
     uint64_t Tmp = Src1.ToI64(&State.State);
+    if ((State.State.exceptionFlags & softfloat_flag_invalid) || Tmp > MaxBCDInt) {
+      return EmitBCDIndefinite();
+    }
+
     X80SoftFloat Rv;
     uint8_t* BCD = reinterpret_cast<uint8_t*>(&Rv);
 

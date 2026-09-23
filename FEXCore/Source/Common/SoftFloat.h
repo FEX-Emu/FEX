@@ -165,7 +165,7 @@ struct FEX_PACKED X80SoftFloat {
      * for several cases including infinity dividend and zero divisor.
      */
     X80SoftFloat result = 0;
-    if (HandleInfinityOp(state, lhs, result)) {
+    if (HandleInvalidOrUnsupportedOp(state, lhs, result)) {
       return result;
     } else if (lhs.Top.Exponent == 0x7FFF && (lhs.Significand & 0x7FFFFFFFFFFFFFFFULL)) { // NaN
       // propagate NaN
@@ -355,6 +355,10 @@ struct FEX_PACKED X80SoftFloat {
   }
 
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat F2XM1(softfloat_state* state, const X80SoftFloat& lhs) {
+    if (IsUnsupported(lhs)) {
+      state->exceptionFlags |= softfloat_flag_invalid;
+      return IndefiniteQNaN();
+    }
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
     asm(R"(
@@ -378,6 +382,10 @@ struct FEX_PACKED X80SoftFloat {
   }
 
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FYL2X(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+    if (IsUnsupported(lhs) || IsUnsupported(rhs)) {
+      state->exceptionFlags |= softfloat_flag_invalid;
+      return IndefiniteQNaN();
+    }
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
     asm(R"(
@@ -402,6 +410,10 @@ struct FEX_PACKED X80SoftFloat {
   }
 
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FATAN(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+    if (IsUnsupported(lhs) || IsUnsupported(rhs)) {
+      state->exceptionFlags |= softfloat_flag_invalid;
+      return IndefiniteQNaN();
+    }
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
     asm(R"(
@@ -441,7 +453,7 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     X80SoftFloat result;
-    if (HandleInfinityOp(state, lhs, result)) {
+    if (HandleInvalidOrUnsupportedOp(state, lhs, result)) {
       return result;
     }
 
@@ -467,7 +479,7 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     X80SoftFloat result;
-    if (HandleInfinityOp(state, lhs, result)) {
+    if (HandleInvalidOrUnsupportedOp(state, lhs, result)) {
       return result;
     }
 
@@ -493,7 +505,7 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     X80SoftFloat result;
-    if (HandleInfinityOp(state, lhs, result)) {
+    if (HandleInvalidOrUnsupportedOp(state, lhs, result)) {
       return result;
     }
 
@@ -655,15 +667,35 @@ private:
   static constexpr uint64_t Bottom62Significand = ((1ULL << 62) - 1);
   static constexpr uint32_t ExponentBias = 16383;
 
-  // Helper function to check for infinity and set invalid operation flag.
-  // Returns true if infinity is dealt with, false otherwise.
-  FEXCORE_PRESERVE_ALL_ATTR static bool HandleInfinityOp(softfloat_state* state, const X80SoftFloat& arg, X80SoftFloat& result) {
+public:
+  static constexpr bool IsUnsupported(const X80SoftFloat& arg) {
+    // Unnormal, Pseudo-NaN, Pseudo-Infinity: Exponent != 0 but explicit integer bit (bit 63) is 0
+    return (arg.Top.Exponent != 0) && ((arg.Significand & IntegerBit) == 0);
+  }
+
+  static constexpr X80SoftFloat IndefiniteQNaN() {
+    // Real QNaN Indefinite: Sign=1, Exponent=0x7FFF, Significand=0xC000000000000000ULL (0xFFFFC000000000000000)
+    X80SoftFloat result;
+    result.Top.Sign = 1;
+    result.Top.Exponent = 0x7FFF;
+    result.Significand = 0xC000000000000000ULL;
+    return result;
+  }
+
+private:
+  // Helper function to check for infinity or unsupported format (Pseudo-NaN, Pseudo-Infinity, Unnormal)
+  // and set invalid operation flag. Returns true if dealt with, false otherwise.
+  FEXCORE_PRESERVE_ALL_ATTR static bool HandleInvalidOrUnsupportedOp(softfloat_state* state, const X80SoftFloat& arg, X80SoftFloat& result) {
+    // Check unsupported formats (Unnormal, Pseudo-NaN, Pseudo-Infinity)
+    if (IsUnsupported(arg)) {
+      state->exceptionFlags |= softfloat_flag_invalid;
+      result = IndefiniteQNaN();
+      return true;
+    }
+    // Check canonical infinity
     if (arg.Top.Exponent == 0x7FFF && arg.Significand == 0x8000000000000000ULL) {
       state->exceptionFlags |= softfloat_flag_invalid;
-      // Return QNaN.
-      result.Top.Sign = 0;
-      result.Top.Exponent = 0x7FFF;
-      result.Significand = 0xC000000000000000ULL;
+      result = IndefiniteQNaN();
       return true;
     }
     return false;
