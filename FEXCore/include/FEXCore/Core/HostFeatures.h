@@ -32,16 +32,23 @@ struct HostFeatures {
     return 4 << DCacheLineLog2;
   }
 
+  struct CacheHash {
+    uint64_t HostFeaturesHash;
+    HostTypeEnum HostType;
+  };
+
   [[nodiscard]]
-  uint64_t HashForCaching() const {
-    // As long as the number of options is 64-bit or below, we can just return it.
-    // Skip CPUMIDRs as it doesn't affect codegen.
-    static_assert(offsetof(HostFeatures, CPUMIDRs) == 8);
-    uint64_t Result {};
-    memcpy(&Result, this, sizeof(Result));
+  CacheHash HashForCaching() const {
+    static_assert(offsetof(HostFeatures, HostType) == 8);
+
+    CacheHash Result {};
+    memcpy(&Result.HostFeaturesHash, this, sizeof(uint64_t));
+    Result.HostType = HostType;
+
     return Result;
   }
 
+  // Affects codegen and is basically machine description.
   uint32_t DCacheLineLog2              : 4 {};
   uint32_t SupportsCacheMaintenanceOps : 1 {};
   uint32_t SupportsAES                 : 1 {};
@@ -78,8 +85,10 @@ struct HostFeatures {
   uint32_t SupportsFloatExceptions     : 1 {};
   // Flag if this is InstCountCI
   uint32_t IsInstCountCI : 1 {};
-  HostTypeEnum HostType  : 2 {};
-  uint32_t pad           : 24 {};
+  uint32_t pad           : 26 {};
+
+  // This affects codegen, but it isn't machine state
+  HostTypeEnum HostType {};
 
   // MIDR information
   // Also used for determining number of CPU cores for CPUID

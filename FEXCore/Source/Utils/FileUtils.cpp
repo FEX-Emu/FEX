@@ -117,7 +117,9 @@ FEX_DEFAULT_VISIBILITY bool RecursiveRemoveDirectory(const fextl::string& Direct
   return RecursiveRemoveDirectory(AT_FDCWD, Directory.c_str()) && unlinkat(AT_FDCWD, Directory.c_str(), true);
 }
 
-FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory, fextl::move_only_function<void(std::string_view name, bool is_dir)> Callback) {
+FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory,
+                                          fextl::move_only_function<void(std::string_view name, bool is_dir, const void* user_data)> Callback,
+                                          const void* user_data) {
   constexpr int DIR_FLAGS = O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC;
   int dir_fd = ::openat(AT_FDCWD, fextl::string(Directory).c_str(), DIR_FLAGS);
   if (dir_fd == -1) {
@@ -172,7 +174,7 @@ FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory, fextl::mov
         continue;
       }
 
-      Callback(path_name_view, path_dirent->d_type == DT_DIR);
+      Callback(path_name_view, path_dirent->d_type == DT_DIR, user_data);
 
       // dirent is a VLA so we need to increment by reported size.
       dirent_offset += path_dirent->d_reclen;
@@ -193,9 +195,11 @@ FEX_DEFAULT_VISIBILITY bool RecursiveRemoveDirectory(const fextl::string& Direct
   return std::filesystem::remove_all(Directory, ec) != ~0ULL;
 }
 
-FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory, fextl::move_only_function<void(std::string_view name, bool is_dir)> Callback) {
+FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory,
+                                          fextl::move_only_function<void(std::string_view name, bool is_dir, const void* user_data)> Callback,
+                                          const void* user_data) {
   for (const auto& iter : std::filesystem::directory_iterator(Directory)) {
-    Callback(iter.path().string(), iter.is_directory());
+    Callback(iter.path().string(), iter.is_directory(), user_data);
   }
 }
 #endif

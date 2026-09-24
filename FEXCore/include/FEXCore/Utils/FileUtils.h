@@ -13,5 +13,7 @@ namespace FEXCore::FileUtils {
  */
 FEX_DEFAULT_VISIBILITY bool RecursiveRemoveDirectory(const fextl::string& Directory);
 
-FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory, fextl::move_only_function<void(std::string_view name, bool is_dir)> Callback);
+FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory,
+                                          fextl::move_only_function<void(std::string_view name, bool is_dir, const void* user_data)> Callback,
+                                          const void* user_data);
 } // namespace FEXCore::FileUtils
