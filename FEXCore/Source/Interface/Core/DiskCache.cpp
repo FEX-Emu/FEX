@@ -367,28 +367,32 @@ namespace DiskCache {
 
     struct __attribute__((packed)) {
       uint16_t FormatVersion;
-      uint8_t Is64BitMode;
       uint64_t HostFeaturesHash;
-    } BucketHeader = {FormatVersion, CTX->Config.Is64BitMode, CTX->HostFeatures.HashForCaching()};
+    } MachineBucketData = {FormatVersion, CTX->HostFeatures.HashForCaching()};
 
-    fextl::vector<uint8_t> BucketBytes;
-    BucketBytes.resize(sizeof(BucketHeader) + SerializedConfig.size());
-    memcpy(BucketBytes.data(), &BucketHeader, sizeof(BucketHeader));
-    memcpy(BucketBytes.data() + sizeof(BucketHeader), SerializedConfig.data(), SerializedConfig.size());
-    BucketHash = XXH3_128bits(BucketBytes.data(), BucketBytes.size());
+    fextl::vector<uint8_t> BucketBytes(sizeof(MachineBucketData) + sizeof(uint8_t) + SerializedConfig.size());
+    memcpy(BucketBytes.data(), &MachineBucketData, sizeof(MachineBucketData));
+    BucketBytes[sizeof(MachineBucketData)] = CTX->Config.Is64BitMode;
+    memcpy(BucketBytes.data() + sizeof(MachineBucketData) + 1, SerializedConfig.data(), SerializedConfig.size());
+
+    uint64_t MachineBucketHash = XXH3_64bits(BucketBytes.data(), sizeof(MachineBucketData));
+    uint64_t ProcessBucketHash = XXH3_64bits(BucketBytes.data() + sizeof(MachineBucketData), 1 + SerializedConfig.size());
+    BucketHash.high64 = MachineBucketHash;
+    BucketHash.low64 = ProcessBucketHash;
 
     fextl::string BasePath = BasePathOverride();
     if (BasePath.empty()) {
       BasePath = FEXCore::Config::GetCacheDirectory() + "DiskCache/";
-      BasePath += fextl::fmt::format("{:016x}{:016x}", BucketHash.high64, BucketHash.low64) + "/";
     }
+    BasePath += fextl::fmt::format("{:016x}", MachineBucketHash) + "/";
     FHU::Filesystem::CreateDirectories(BasePath);
+    // todo could kick off clean up of leftover MachineBucketHash sibling directories here
 
     if (!MapDiskCacheFiles) {
       FileMapper = nullptr;
     }
 
-    fextl::string RWDBBasePath = BasePath + "RWCacheDB";
+    const auto RWDBBasePath = fextl::fmt::format("{}RWCacheDB_{:016x}", BasePath, ProcessBucketHash);
     OpenCacheDB(RWDBBasePath, false);
 
     if (RWCacheDB && !FoundMetadata) {
