@@ -32,6 +32,12 @@ static void AssertHandler(const char* Message) {
 }
 } // namespace
 
+
+namespace FEX::Windows::Logging {
+void UnimplementedLog(const char* Func) {
+  LogMan::Msg::DFmt("Unimplemented Function in: {}", Func);
+}
+} // namespace FEX::Windows::Logging
 namespace FEX::Windows::Logging {
 void Init() {
   FEX_CONFIG_OPT(SilentLog, SILENTLOG);
