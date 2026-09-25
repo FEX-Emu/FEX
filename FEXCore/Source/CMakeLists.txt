@@ -262,6 +262,10 @@ endfunction()
 # Build FEXCore_Base static library
 add_library(FEXCore_Base STATIC ${FEXCORE_BASE_SRCS})
 target_link_libraries(FEXCore_Base PUBLIC ${LIBS})
+if (MINGW)
+  target_link_libraries(FEXCore_Base PUBLIC ntdll)
+endif()
+
 AddDefaultOptionsToTarget(FEXCore_Base)
 
 if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")

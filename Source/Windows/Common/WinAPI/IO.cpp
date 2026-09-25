@@ -45,6 +45,37 @@ FILE_INFORMATION_CLASS FileInfoClassToNT(FILE_INFO_BY_HANDLE_CLASS InformationCl
 }
 } // namespace
 
+DLLEXPORT_FUNC(BOOL, RemoveDirectoryA, (LPCSTR lpFileName)) {
+  ScopedUnicodeString FileName {lpFileName};
+  return RemoveDirectoryW(FileName->Buffer);
+}
+
+DLLEXPORT_FUNC(BOOL, RemoveDirectoryW, (LPCWSTR lpFileName)) {
+  UNICODE_STRING PathW;
+  RtlInitUnicodeString(&PathW, lpFileName);
+
+  ScopedUnicodeString NTPath;
+  if (!RtlDosPathNameToNtPathName_U(PathW.Buffer, &*NTPath, nullptr, nullptr)) {
+    SetLastError(ERROR_PATH_NOT_FOUND);
+    return false;
+  }
+
+  OBJECT_ATTRIBUTES ObjAttributes;
+  InitializeObjectAttributes(&ObjAttributes, &*NTPath, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
+
+  HANDLE Handle;
+  IO_STATUS_BLOCK IOSB;
+
+  NTSTATUS Status =
+    NtCreateFile(&Handle, SYNCHRONIZE | DELETE, &ObjAttributes, &IOSB, nullptr, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                 FILE_OPEN, FILE_DELETE_ON_CLOSE | FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT | FILE_OPEN_REPARSE_POINT, nullptr, 0);
+  if (WinAPIReturn(Status)) {
+    Status = NtClose(Handle);
+  }
+
+  return WinAPIReturn(Status);
+}
+
 DLLEXPORT_FUNC(BOOL, DeleteFileA, (LPCSTR lpFileName)) {
   ScopedUnicodeString FileName {lpFileName};
   return DeleteFileW(FileName->Buffer);

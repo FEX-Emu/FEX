@@ -229,6 +229,15 @@
         "Desc": [
           "Size limit on the main cache file - index not included. Default 1G"
         ]
+      },
+      "DiskCachePruneStaleEntries": {
+        "Type": "bool",
+        "Default": "true",
+        "AffectsCodeGen": "false",
+        "Desc": [
+          "Allows FEX to prune stale disk cache entries on startup.",
+          "Frees space by removing cache entries associated with old FEX versions."
+        ]
       }
     },
     "Emulation": {

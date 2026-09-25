@@ -2,18 +2,22 @@
 
 #define XXH_STATIC_LINKING_ONLY
 
-#include "FEXCore/Utils/TypeDefines.h"
 #include "Interface/Core/Frontend.h"
-#include "FEXCore/Config/Config.h"
-#include "FEXCore/fextl/string.h"
-#include "FEXHeaderUtils/Filesystem.h"
-#include "FEXCore/Core/DiskCache.h"
-#include "FEXCore/Core/DiskCacheFileMapper.h"
-#include "FEXCore/Utils/LogManager.h"
 #include "Interface/Context/Context.h"
-#include "FEXCore/HLE/SyscallHandler.h"
-#include "FEXCore/Utils/File.h"
-#include "FEXCore/fextl/memory.h"
+
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/DiskCache.h>
+#include <FEXCore/Core/DiskCacheFileMapper.h>
+#include <FEXCore/fextl/memory.h>
+#include <FEXCore/fextl/string.h>
+#include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/File.h>
+#include <FEXCore/Utils/FileUtils.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/TypeDefines.h>
+#include <FEXHeaderUtils/Filesystem.h>
+
 #include <cstdint>
 #include <cstring>
 #include <atomic>
@@ -356,6 +360,39 @@ namespace DiskCache {
     FileMapper = Func;
   }
 
+  static inline void PruneStaleEntries(std::string_view CacheBase, std::string_view MachineBucketHash) {
+    FEXCORE_PROFILE_SCOPED("DiskCache::PruneStaleEntries");
+    FEX_CONFIG_OPT(DiskCachePruneStaleEntries, DISKCACHEPRUNESTALEENTRIES);
+
+    if (!DiskCachePruneStaleEntries) {
+      return;
+    }
+
+    struct SimpleCapture {
+      std::string_view CacheBase, MachineBucketHash;
+    } const SimpleCapture {
+      .CacheBase = CacheBase,
+      .MachineBucketHash = MachineBucketHash,
+    };
+
+    FEXCore::FileUtils::WalkDirectory(
+      CacheBase,
+      [](std::string_view name, bool is_dir, const void* user_data) {
+        if (!is_dir) {
+          return;
+        }
+
+        auto capture = reinterpret_cast<const struct SimpleCapture*>(user_data);
+
+        // Current behaviour is to remove entries that no longer match the MachineBucketHash.
+        // This means that if the Disk Cache version no longer matches, or the FEXCore::HostFeatures differ, then they get removed.
+        if (name != capture->MachineBucketHash) {
+          FEXCore::FileUtils::RecursiveRemoveDirectory(fextl::fmt::format("{}/{}", capture->CacheBase, name));
+        }
+      },
+      &SimpleCapture);
+  }
+
   void DiskCache::Init(FEXCore::Context::ContextImpl* CTX) {
     this->CTX = CTX;
 
@@ -365,18 +402,24 @@ namespace DiskCache {
 
     fextl::string SerializedConfig = FEXCore::Config::SerializeForCache();
 
+    const auto HostFeatureHash = CTX->HostFeatures.HashForCaching();
+
     struct __attribute__((packed)) {
       uint16_t FormatVersion;
       uint64_t HostFeaturesHash;
-    } MachineBucketData = {FormatVersion, CTX->HostFeatures.HashForCaching()};
+    } MachineBucketData = {FormatVersion, HostFeatureHash.HostFeaturesHash};
 
-    fextl::vector<uint8_t> BucketBytes(sizeof(MachineBucketData) + sizeof(uint8_t) + SerializedConfig.size());
+    fextl::vector<uint8_t> BucketBytes(sizeof(MachineBucketData) + (sizeof(uint8_t) * 2) + SerializedConfig.size());
     memcpy(BucketBytes.data(), &MachineBucketData, sizeof(MachineBucketData));
+
+    // 64-bit mode and HostType is in the ProcessBucket hash only instead of the MachineBucketHash
+    // These effect code-gen, but they aren't part of the MachineBucketHash, as it comes from Process state.
     BucketBytes[sizeof(MachineBucketData)] = CTX->Config.Is64BitMode;
-    memcpy(BucketBytes.data() + sizeof(MachineBucketData) + 1, SerializedConfig.data(), SerializedConfig.size());
+    BucketBytes[sizeof(MachineBucketData) + 1] = FEXCore::ToUnderlying(HostFeatureHash.HostType);
+    memcpy(BucketBytes.data() + sizeof(MachineBucketData) + 2, SerializedConfig.data(), SerializedConfig.size());
 
     uint64_t MachineBucketHash = XXH3_64bits(BucketBytes.data(), sizeof(MachineBucketData));
-    uint64_t ProcessBucketHash = XXH3_64bits(BucketBytes.data() + sizeof(MachineBucketData), 1 + SerializedConfig.size());
+    uint64_t ProcessBucketHash = XXH3_64bits(BucketBytes.data() + sizeof(MachineBucketData), 2 + SerializedConfig.size());
     BucketHash.high64 = MachineBucketHash;
     BucketHash.low64 = ProcessBucketHash;
 
@@ -384,9 +427,12 @@ namespace DiskCache {
     if (BasePath.empty()) {
       BasePath = FEXCore::Config::GetCacheDirectory() + "DiskCache/";
     }
-    BasePath += fextl::fmt::format("{:016x}", MachineBucketHash) + "/";
+
+    const auto MachineBucketHashAsString = fextl::fmt::format("{:016x}", MachineBucketHash);
+    PruneStaleEntries(BasePath, MachineBucketHashAsString);
+
+    BasePath += MachineBucketHashAsString + "/";
     FHU::Filesystem::CreateDirectories(BasePath);
-    // todo could kick off clean up of leftover MachineBucketHash sibling directories here
 
     if (!MapDiskCacheFiles) {
       FileMapper = nullptr;
