@@ -622,18 +622,23 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     return;
   }
 
-  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME);
+  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT);
 
   THREAD_BASIC_INFORMATION Info;
   if (auto Err = NtQueryInformationThread(*ThreadDup, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return;
   }
 
+  LogMan::Msg::IFmt("Terminating {}", Info.ClientId.UniqueThread);
   const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
   bool Self = ThreadTID == GetCurrentThreadId();
   if (!Self) {
+    CONTEXT TmpContext;
     // If we are suspending a thread that isn't ourselves, try to suspend it first so we know internal JIT locks aren't being held.
     RtlWow64SuspendThread(*ThreadDup, NULL);
+    // This will wait for the thread to be suspended
+    TmpContext.ContextFlags = CONTEXT_CONTROL;
+    NtGetContextThread(*ThreadDup, &TmpContext);
   }
 
   auto [Err, TLS] = GetThreadTLS(*ThreadDup);
