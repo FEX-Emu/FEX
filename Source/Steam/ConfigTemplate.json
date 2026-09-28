@@ -1,5 +1,6 @@
 {
     "Config": {
+        "DiskCache": "1",
         "X87ReducedPrecision": "1",
         "RootFS": "@FEX_ROOTFS_PATH@/",
         "ThunkHostLibs": "@FEX_COMPAT_TOOL@/usr/lib/aarch64-linux-gnu/fex-emu/HostThunks",
