@@ -101,7 +101,6 @@ ExitFunctionSuspendPoint:
   brk #0xCAFE
   // Resume will jump back to `ExitFunctionSuspendResumePoint`
 
-#ifdef ARCHITECTURE_arm64ec
   // This table will contain all of the possible SVC #x instructions that we might need.
   // We index into this table in DIRECT_SYSCALL_WRAPPER based on the syscall number we find
   // by parsing the table __arm64ec_syscall_ffs from NTDLL.
@@ -116,7 +115,6 @@ SyscallTable:
   .endr
 .global SyscallTableEnd
 SyscallTableEnd:
-#endif
 
   // Makes a wrapper for calling a system call directly, skipping the usual ntdll thunks
 #define HASH #
