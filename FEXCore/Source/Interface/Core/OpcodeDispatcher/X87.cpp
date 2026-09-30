@@ -930,7 +930,7 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   temp2 = _Or(OpSize::i64Bit, temp1, temp3);
   Ref NormalFiniteNumber = _Xor(OpSize::i64Bit, temp2, Constant(1));
 
-  // Set C3, C2, C0 based on the class of the FP value in ST(0)
+  // Set C3, C2, C0 based on the class of the FP value
   // Table is from "FXAM" page in the SDM.
   // +----------------------+----+----+----+
   // | Class                | C3 | C2 | C0 |
@@ -944,16 +944,16 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   // | Denormal number      | 1  | 1  | 0  |
   // +----------------------+----+----+----+
 
-  // c0 = IsNaN || IsInf || IsEmpty
-  // c2 = (IsInf || Denormal || NormalFiniteNumber) && !IsEmpty
-  // c3 = Zero || IsEmpty || Denormal
+  // C0 = IsNaN || IsInf || IsEmpty
   Ref C0 = _Or(OpSize::i64Bit, IsNaN, IsInf);
   C0 = _Or(OpSize::i64Bit, C0, IsEmpty);
 
+  // C2 = (IsInf || Denormal || NormalFiniteNumber) && !IsEmpty
   Ref C2 = _Or(OpSize::i64Bit, IsInf, IsDenormal);
   C2 = _Or(OpSize::i64Bit, C2, NormalFiniteNumber);
   C2 = _And(OpSize::i64Bit, C2, NotEmpty);
 
+  // C3 = Zero || IsEmpty || Denormal
   Ref C3 = _Or(OpSize::i64Bit, IsZero, IsEmpty);
   C3 = _Or(OpSize::i64Bit, C3, IsDenormal);
 
