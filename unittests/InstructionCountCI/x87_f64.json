@@ -12,7 +12,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 28
+    "BinaryCacheVersion": 29
   },
   "Instructions": {
     "fadd dword [rax]": {
@@ -2024,27 +2024,57 @@
       ]
     },
     "fxam": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 46,
       "Comment": [
         "0xd9 11b 0xe5 /4"
       ],
       "ExpectedArm64ASM": [
+        "sub sp, sp, #0x60 (96)",
         "ldrb w20, [x28, #1051]",
         "add x21, x28, x20, lsl #4",
         "ldr d2, [x21, #1056]",
         "mov x21, v2.d[0]",
-        "lsr x21, x21, #63",
-        "strb w21, [x28, #1049]",
-        "ldrb w21, [x28, #1202]",
-        "lsr w20, w21, w20",
+        "lsr x22, x21, #63",
+        "strb w22, [x28, #1049]",
+        "ldrb w22, [x28, #1202]",
+        "lsr w20, w22, w20",
         "and w20, w20, #0x1",
-        "mrs x21, nzcv",
-        "cmp w20, #0x1 (1)",
-        "cset x22, ne",
-        "strb w22, [x28, #1048]",
+        "eor x22, x20, #0x1",
+        "ubfx x21, x21, #0, #63",
+        "mov x23, #0x7ff0000000000000",
+        "mrs x24, nzcv",
+        "cmp x21, x23",
+        "cset x30, eq",
+        "cmp x21, x23",
+        "cset x23, hi",
+        "mov w18, #0x0",
+        "cmp x21, #0x0 (0)",
+        "cset x21, eq",
+        "str w24, [sp]",
+        "orr x24, x21, x18",
+        "orr x18, x30, x23",
+        "str x21, [sp, #32]",
+        "mov w21, #0x0",
+        "str w20, [sp, #64]",
+        "orr x20, x21, x22",
+        "orr x24, x24, x18",
+        "orr x20, x24, x20",
+        "eor x20, x20, #0x1",
+        "orr x23, x23, x30",
+        "orr x23, x23, x22",
+        "orr x24, x30, x21",
+        "orr x20, x24, x20",
+        "ldr w24, [sp, #64]",
+        "and x20, x20, x24",
+        "ldr x24, [sp, #32]",
+        "orr x22, x24, x22",
+        "orr x21, x22, x21",
+        "strb w23, [x28, #1048]",
         "strb w20, [x28, #1050]",
-        "strb w22, [x28, #1054]",
-        "msr nzcv, x21"
+        "strb w21, [x28, #1054]",
+        "ldr w20, [sp]",
+        "msr nzcv, x20",
+        "add sp, sp, #0x60 (96)"
       ]
     },
     "fld1": {
