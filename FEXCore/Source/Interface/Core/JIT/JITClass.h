@@ -629,7 +629,8 @@ private:
   void Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, ARMEmitter::VRegister Dst, ARMEmitter::VRegister IncomingDst,
                            std::optional<ARMEmitter::Register> BaseAddr, ARMEmitter::VRegister VectorIndexLow,
                            std::optional<ARMEmitter::VRegister> VectorIndexHigh, ARMEmitter::VRegister MaskReg, IR::OpSize VectorIndexSize,
-                           size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale, IR::OpSize AddrSize);
+                           size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale, IR::OpSize AddrSize,
+                           bool MaskAllOnes);
 
   void EmitTFCheck();
 

@@ -20,7 +20,7 @@
   "Instructions": {
     "vpcmpeqd + vpgatherdd": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "Setting the mask to all-ones using vpcmpeqd, and then performing the gather operation.",
         "This is an idiom emitted by Clang for an unmasked gather.",
@@ -37,12 +37,8 @@
         "ldr q3, [x28, #192]",
         "ldr q4, [x28, #208]",
         "mrs x20, nzcv",
-        "cmplt p0.s, p6/z, z18.s, #0",
-        "ld1w {z0.s}, p0/z, [x4, z17.s, sxtw #2]",
-        "mov z16.s, p0/m, z0.s",
-        "cmplt p0.s, p6/z, z2.s, #0",
-        "ld1w {z0.s}, p0/z, [x4, z4.s, sxtw #2]",
-        "mov z3.s, p0/m, z0.s",
+        "ld1w {z16.s}, p6/z, [x4, z17.s, sxtw #2]",
+        "ld1w {z3.s}, p6/z, [x4, z4.s, sxtw #2]",
         "movi v18.2d, #0x0",
         "msr nzcv, x20",
         "stp xzr, xzr, [x28, #224]",

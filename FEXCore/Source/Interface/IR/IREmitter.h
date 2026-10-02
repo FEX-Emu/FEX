@@ -341,6 +341,15 @@ public:
     return false;
   }
 
+  // Returns true if every bit of the vector value is set. 
+  // Currently this only recognizes the self compare equal idiom.
+  // TODO: Should this recognize other patterns?
+  bool IsValueVectorAllOnes(OrderedNodeWrapper ssa) const {
+    auto RealNode = ssa.GetNode(DualListData.ListBegin());
+    const auto* IROp = RealNode->Op(DualListData.DataBegin());
+    return IROp->Op == OP_VCMPEQ && IROp->Args[0].ID() == IROp->Args[1].ID();
+  }
+
   FEXCore::IR::IROp_Header* GetOpHeader(OrderedNodeWrapper ssa) {
     Ref RealNode = ssa.GetNode(DualListData.ListBegin());
     return RealNode->Op(DualListData.DataBegin());

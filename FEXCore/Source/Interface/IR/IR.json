@@ -604,11 +604,12 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
-      "FPR = VLoadVectorGatherMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Incoming, FPR:$Mask, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, OpSize:$VectorIndexElementSize, u8:$OffsetScale, u8:$DataElementOffsetStart, u8:$IndexElementOffsetStart, OpSize:$AddrSize": {
+      "FPR = VLoadVectorGatherMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Incoming, FPR:$Mask, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, OpSize:$VectorIndexElementSize, u8:$OffsetScale, u8:$DataElementOffsetStart, u8:$IndexElementOffsetStart, OpSize:$AddrSize, i1:$MaskAllOnes{false}": {
         "Desc": [
           "Does a masked load similar to VPGATHERD* where the upper bit of each element",
           "determines whether or not that element will be loaded from memory.",
-          "Most of VSIB encoding is passed directly through to the IR operation."
+          "Most of VSIB encoding is passed directly through to the IR operation.",
+          "MaskAllOnes is set when every mask element is provably all ones."
         ],
         "TiedSource": 0,
         "ImplicitFlagClobber": true,
@@ -618,12 +619,13 @@
           "$VectorIndexElementSize == OpSize::i32Bit || $VectorIndexElementSize == OpSize::i64Bit"
         ]
       },
-      "FPR = VLoadVectorGatherMaskedQPS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Incoming, FPR:$MaskReg, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$OffsetScale, OpSize:$AddrSize": {
+      "FPR = VLoadVectorGatherMaskedQPS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Incoming, FPR:$MaskReg, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$OffsetScale, OpSize:$AddrSize, i1:$MaskAllOnes{false}": {
         "Desc": [
           "Does a masked load similar to VPGATHERQPS where the upper bit of each element",
           "determines whether or not that element will be loaded from memory.",
           "Most of VSIB encoding is passed directly through to the IR operation.",
-          "Only supports the case of 32-bit data element sizes from 64-bit addresses"
+          "Only supports the case of 32-bit data element sizes from 64-bit addresses",
+          "MaskAllOnes is set when every mask element is provably all ones."
         ],
         "TiedSource": 0,
         "ImplicitFlagClobber": true,
