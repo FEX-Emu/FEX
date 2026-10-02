@@ -316,6 +316,10 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
   // This will stay inside of our emulated environment since binfmt_misc will capture it
   const bool IsBinfmtCompatible = SyscallHandler->IsInterpreterInstalled() && !NeedsFDCopy &&
                                   (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 || Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64);
+  // Without a visible binfmt interpreter, the next FEX process resolves guest paths through RootFS.
+  // Keep the already resolved host ELF open so a binary outside that RootFS can still be executed.
+  const bool NeedsLoaderFD = !IsFDExec && !SyscallHandler->IsInterpreterInstalled() &&
+                             (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 || Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64);
 
   // We are trying to execute an ELF of a different architecture
   // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
@@ -328,7 +332,7 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
   // - seccomp inheritance
   // - FEXServer FD inheritance (unshare(CLONE_NEWNET))
   // - FD_CLOEXEC set on FD on anonymous file FD.
-  const bool NeedsEnvpCopy = (IsFDExec && !(IsBinfmtCompatible || IsOtherELF)) || HasSeccomp || NeedsFDCopy;
+  const bool NeedsEnvpCopy = (IsFDExec && !(IsBinfmtCompatible || IsOtherELF)) || HasSeccomp || NeedsFDCopy || NeedsLoaderFD;
 
   // We are trying to execute a shebang handled by a different architecture interpreter (e.g. /usr/bin/python from the host FS).
   // In this case we just defer to the kernel.
@@ -350,6 +354,13 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
         // so duplicate the FD if FD_CLOEXEC is set, which removes the FD_CLOEXEC flag.
         Args.dirfd = dup(Args.dirfd);
         FDExecCopy = true;
+      } else if (NeedsLoaderFD) {
+        Args.dirfd = open(Filename.c_str(), O_RDONLY);
+        if (Args.dirfd == -1) {
+          CloseSeccompFD();
+          return -errno;
+        }
+        FDExecCopy = true;
       }
 
       // Remove AT_EMPTY_PATH flag now.
@@ -363,6 +374,10 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
 
       // Insert the FD for FEX to track.
       EnvpArgs.emplace_back(FDExecEnv.data());
+      if (NeedsLoaderFD) {
+        // Distinguish this path-backed FD from an anonymous memfd exec.
+        EnvpArgs.emplace_back("FEX_EXECVEFD_PATH=1");
+      }
     }
 
     if (HasSeccomp) {
@@ -424,8 +439,11 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
 
     // It is valid to provide nullptr first argument.
     if (*OldArgv) {
-      // Skip filename argument
-      ++OldArgv;
+      // The direct fallback uses the executable path as argv[0]. An FD-backed load uses the
+      // binfmt preserve-argv0 layout, so the caller-supplied argv[0] has to stay in the vector.
+      if (!NeedsLoaderFD) {
+        ++OldArgv;
+      }
       while (*OldArgv) {
         // Append the arguments together
         ExecveArgs.emplace_back(*OldArgv);

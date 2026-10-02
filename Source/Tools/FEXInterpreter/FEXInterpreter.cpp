@@ -393,6 +393,8 @@ int main(int argc, char** argv, char** const envp) {
 
   int FEXFD {StealFEXFDFromEnv("FEX_EXECVEFD")};
   int FEXSeccompFD {StealFEXFDFromEnv("FEX_SECCOMPFD")};
+  const bool FEXFDPathBacked = getenv("FEX_EXECVEFD_PATH") != nullptr;
+  unsetenv("FEX_EXECVEFD_PATH");
 
   // Early init trivial handlers.
   LogMan::Throw::InstallHandler(FEX::Logging::AssertHandler);
@@ -511,9 +513,14 @@ int main(int argc, char** argv, char** const envp) {
     FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
     FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
   } else if (FEXFD != -1) {
-    // Anonymous program.
-    FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, "<Anonymous>");
-    FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");
+    if (FEXFDPathBacked) {
+      FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
+      FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
+    } else {
+      // Anonymous program.
+      FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, "<Anonymous>");
+      FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");
+    }
   } else {
     {
       char ExistsTempPath[PATH_MAX];

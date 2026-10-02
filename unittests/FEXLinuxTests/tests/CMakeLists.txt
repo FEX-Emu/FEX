@@ -56,3 +56,6 @@ target_link_options(smc-exec-stack.${BITNESS} PRIVATE -Wl,-z,execstack)
 
 # Must use lld because it has the nognustack option
 target_link_options(smc-missing-gnustack.${BITNESS} PRIVATE -fuse-ld=lld -Wl,-z,nognustack)
+
+# Plain executable, outside the Catch2 guest harness. It re-execs itself twice.
+add_executable(exec_fd_chain.${BITNESS} exec_fd_chain.c)
