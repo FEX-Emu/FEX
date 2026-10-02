@@ -253,7 +253,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     });
 
   // launch a new process under fex
-  // currently does not propagate argv[0] correctly
+  // the ELF self-reexec fallback preserves the caller-supplied argv[0]
   REGISTER_SYSCALL_IMPL_X32(execve, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, uint32_t* argv, uint32_t* envp) -> uint64_t {
     fextl::vector<const char*> Args;
     fextl::vector<const char*> Envp;
