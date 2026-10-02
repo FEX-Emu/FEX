@@ -609,6 +609,12 @@ if (BUILD_TESTING)
     execute_process(COMMAND "nproc" OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE TEST_JOB_COUNT)
   endif()
   set(TEST_JOB_FLAG "-j${TEST_JOB_COUNT}")
+
+  # Runs the whole test suite, with large pages enabled to reduce the cost of fork() in ctest.
+  add_custom_target(tests
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+    USES_TERMINAL
+    COMMAND ${CMAKE_COMMAND} -E env GLIBC_TUNABLES=glibc.malloc.hugetlb=1 ctest "--progress" "--timeout" "302" ${TEST_JOB_FLAG})
 endif()
 
 add_subdirectory(External/SoftFloat-3e/)
