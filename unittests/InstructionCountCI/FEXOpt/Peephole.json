@@ -1,0 +1,86 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2",
+      "SVE128",
+      "SVE256",
+      "I8MM",
+      "DOTPROD"
+    ],
+    "BinaryCacheVersion": 29
+  },
+  "Comment": [
+    "This file tracks the translations for the 'peephole' optimizations in FEX.",
+    "Peephole optimizations are small targetted optimizations that recognize",
+    "specific patterns in x86 code and specialize the translation accordingly."
+  ],
+  "Instructions": {
+    "vpcmpeqd + vpgatherdd": {
+      "x86InstructionCount": 2,
+      "ExpectedInstructionCount": 48,
+      "Comment": [
+        "Setting the mask to all-ones using vpcmpeqd, and then performing the gather operation.",
+        "This is an idiom emitted by Clang for an unmasked gather.",
+        "https://godbolt.org/z/4devEvfKf"
+      ],
+      "x86Insts": [
+        "vpcmpeqd ymm2, ymm2, ymm2",
+        "vpgatherdd ymm0, [ymm1*4 + rax], ymm2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #224]",
+        "cmeq v18.4s, v18.4s, v18.4s",
+        "cmeq v2.4s, v2.4s, v2.4s",
+        "ldr q3, [x28, #192]",
+        "ldr q4, [x28, #208]",
+        "mov w0, v18.s[0]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v17.s[0]",
+        "add x1, x4, w0, sxtw #2",
+        "ld1 {v16.s}[0], [x1]",
+        "mov w0, v18.s[1]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v17.s[1]",
+        "add x1, x4, w0, sxtw #2",
+        "ld1 {v16.s}[1], [x1]",
+        "mov w0, v18.s[2]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v17.s[2]",
+        "add x1, x4, w0, sxtw #2",
+        "ld1 {v16.s}[2], [x1]",
+        "mov w0, v18.s[3]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v17.s[3]",
+        "add x1, x4, w0, sxtw #2",
+        "ld1 {v16.s}[3], [x1]",
+        "mov w0, v2.s[0]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v4.s[0]",
+        "add x1, x4, w0, sxtw #2",
+        "ld1 {v3.s}[0], [x1]",
+        "mov w0, v2.s[1]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v4.s[1]",
+        "add x1, x4, w0, sxtw #2",
+        "ld1 {v3.s}[1], [x1]",
+        "mov w0, v2.s[2]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v4.s[2]",
+        "add x1, x4, w0, sxtw #2",
+        "ld1 {v3.s}[2], [x1]",
+        "mov w0, v2.s[3]",
+        "tbz w0, #31, #+0x10",
+        "smov x0, v4.s[3]",
+        "add x1, x4, w0, sxtw #2",
+        "ld1 {v3.s}[3], [x1]",
+        "movi v18.2d, #0x0",
+        "stp xzr, xzr, [x28, #224]",
+        "str q3, [x28, #192]"
+      ]
+    }
+  }
+}
