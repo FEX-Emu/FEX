@@ -7,4 +7,4 @@ requests>=2.33.0
 idna>=3.15
 certifi>=2024.7.4
 PyNaCl>=1.6.2
-PyJWT>=2.13.0
+PyJWT>=2.15.1
