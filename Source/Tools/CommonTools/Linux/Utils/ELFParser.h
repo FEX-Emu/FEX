@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <FEXCore/Core/CodeCache.h>
-#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <elf.h>
 #include <fcntl.h>
@@ -286,6 +288,100 @@ struct ELFParser {
     }
 
     return false;
+  }
+
+  struct MappedSection {
+    const void* base {};
+    const void* ptr {};
+    size_t size {};
+  };
+
+  MappedSection MapSection(int fd, uint64_t offset, size_t Size) {
+    // Need to map from [offset, offset+Size).
+    const uint64_t PageAlignedBase = FEXCore::AlignDown(offset, FEXCore::Utils::FEX_PAGE_SIZE);
+    const uint64_t OffsetInPage = (offset - PageAlignedBase);
+    const uint64_t TotalSize = OffsetInPage + Size;
+    auto ptr = ::mmap(nullptr, TotalSize, PROT_READ, MAP_PRIVATE, fd, PageAlignedBase);
+    if (ptr == MAP_FAILED) {
+      return {};
+    }
+
+    return MappedSection {
+      .base = ptr,
+      .ptr = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(ptr) + OffsetInPage),
+      .size = TotalSize,
+    };
+  }
+
+  void FreeSection(MappedSection& section) {
+    ::munmap(const_cast<void*>(section.base), section.size);
+  }
+
+  // Returns an ELF file's build-id if it exists.
+  // Not all ELF files have a build id so it needs to be optional.
+  fextl::vector<uint8_t> GetBuildID() {
+    if (fd == -1 || !EnsureSectionHeadersLoaded()) {
+      return {};
+    }
+
+    const Elf64_Shdr* StrHeader = &shdrs->at(ehdr.e_shstrndx);
+    auto SHStringSection = MapSection(fd, StrHeader->sh_offset, StrHeader->sh_size);
+    if (SHStringSection.base == nullptr) {
+      return {};
+    }
+
+    auto find_name = [&SHStringSection](int offset) -> std::string_view {
+      if (offset >= SHStringSection.size) {
+        return {};
+      }
+
+      return reinterpret_cast<const char*>(SHStringSection.ptr) + offset;
+    };
+
+    fextl::vector<uint8_t> BuildID {};
+
+    for (const auto& shdr : *shdrs) {
+      if (shdr.sh_type != SHT_NOTE || shdr.sh_size == 0) {
+        continue;
+      }
+
+      auto SectionName = find_name(shdr.sh_name);
+      if (SectionName != ".note.gnu.build-id") {
+        continue;
+      }
+
+      auto BuildIDSection = MapSection(fd, shdr.sh_offset, shdr.sh_size);
+      if (BuildIDSection.base == nullptr) {
+        // Couldn't map
+        break;
+      }
+
+      struct ELFNote {
+        uint32_t NameSize;
+        uint32_t DescSize;
+        uint32_t Type;
+        char Name[];
+      };
+
+      auto Note = reinterpret_cast<const ELFNote*>(BuildIDSection.ptr);
+      const auto DataOffset = (Note->NameSize + 3) & ~3;
+
+      if (Note->Type == NT_GNU_BUILD_ID && Note->NameSize == 4 && std::string_view(Note->Name, Note->NameSize - 1) == "GNU" &&
+          shdr.sh_size <= (12 + DataOffset + Note->DescSize)) {
+        auto Desc = reinterpret_cast<const uint8_t*>(&Note->Name[0] + DataOffset);
+        BuildID.insert(BuildID.end(), Desc, Desc + Note->DescSize);
+      }
+
+      FreeSection(BuildIDSection);
+
+      if (!BuildID.empty()) {
+        // Found the build-id.
+        break;
+      }
+    }
+
+    FreeSection(SHStringSection);
+    return BuildID;
   }
 
   /**
