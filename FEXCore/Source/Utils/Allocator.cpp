@@ -218,7 +218,12 @@ fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
   const uintptr_t StackLocation_u64 = reinterpret_cast<uintptr_t>(alloca(0));
 
   const int MapsFD = open("/proc/self/maps", O_RDONLY);
-  LogMan::Throw::AFmt(MapsFD != -1, "Failed to open /proc/self/maps");
+  if (MapsFD == -1) {
+    // No procfs, as in BuildKit's emulator probe (an empty chroot). The assert
+    // above it compiles out in release, and CollectMemoryGaps then spins on
+    // read(-1) forever; reserve nothing instead.
+    return {};
+  }
 
   auto Regions = CollectMemoryGaps(Begin, End, MapsFD);
   close(MapsFD);
@@ -282,6 +287,9 @@ fextl::vector<MemoryRegion> Setup48BitAllocatorIfExists(size_t PageSize) {
   uintptr_t Begin48BitVA = 0x0'8000'0000'0000ULL;
   uintptr_t End48BitVA = 0x1'0000'0000'0000ULL;
   auto Regions = StealMemoryRegion(Begin48BitVA, End48BitVA);
+  if (Regions.empty()) {
+    return {};
+  }
 
   Alloc64 = Alloc::OSAllocator::Create64BitAllocatorWithRegions(Regions);
   AssignHookOverrides(PageSize);
