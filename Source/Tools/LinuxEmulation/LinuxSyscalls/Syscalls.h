@@ -205,6 +205,7 @@ public:
   FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
   FEX_CONFIG_OPT(NeedsSeccomp, NEEDSSECCOMP);
   FEX_CONFIG_OPT(EnableCodeCaching, ENABLECODECACHINGWIP);
+  FEX_CONFIG_OPT(EnableDiskCache, DISKCACHE);
 
   uint32_t GetHostKernelVersion() const {
     return HostKernelVersion;

@@ -236,14 +236,6 @@ public:
   virtual ~AbstractCodeCache() = default;
 
   /**
-   * Computes a unique identifier for the referenced binary file to be used for
-   * generating the code map.
-   * This identifier is independent of FEX build/runtime configuration and
-   * stable across FEX updates.
-   */
-  virtual uint64_t ComputeCodeMapId(std::string_view Filename, int FD) = 0;
-
-  /**
    * Bundles the current Core state (CodeBuffer, GuestToHostMapping, ...) to a code cache and writes it to the given file descriptor.
    * Returns true on success.
    */
