@@ -74,6 +74,8 @@ extern void* ExitFunctionEC;
 extern void* CheckCall;
 extern void* ExitFunctionSuspendPoint;
 extern void* ExitFunctionSuspendResumePoint;
+extern uint64_t SyscallTable[];
+extern uint64_t SyscallTableEnd[];
 
 void* X64ReturnInstr; // See Module.S
 uintptr_t NtDllBase;
@@ -82,7 +84,7 @@ uintptr_t NtDllBase;
 uint32_t* NtDllRedirectionLUT;
 uint32_t NtDllRedirectionLUTSize;
 
-// Wine doesn't support issuing direct system calls with SVC, and unlike Windows it doesn't have a 'stable' syscall number for NtContinue
+// Wine doesn't support issuing direct system calls with SVC, and like Windows it also doesn't have 'stable' syscall numbers
 void* WineSyscallDispatcher;
 uint64_t WineNtContinueSyscallId;
 uint64_t WineNtAllocateVirtualMemorySyscallId;
@@ -268,11 +270,51 @@ void ParseWineSyscallNumbers(HMODULE NtDll) {
   }
 }
 
+uint64_t GetNTSyscallNo(HMODULE NtDll, const char* ExportName) {
+  ULONG LoadConfigSize;
+  const _IMAGE_LOAD_CONFIG_DIRECTORY64* NtDllLoadConfig = reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(
+    RtlImageDirectoryEntryToData(NtDll, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &LoadConfigSize));
+
+  const IMAGE_ARM64EC_METADATA* NtDllARM64ECMetadata = reinterpret_cast<IMAGE_ARM64EC_METADATA*>(NtDllLoadConfig->CHPEMetadataPointer);
+
+  // This redirection table stores a mapping from x64 entry points for fast forward sequences,
+  // to the real ARM64EC implementation of the function.
+  const IMAGE_ARM64EC_REDIRECTION_ENTRY* RedirectionTableBegin =
+    reinterpret_cast<IMAGE_ARM64EC_REDIRECTION_ENTRY*>(NtDllBase + NtDllARM64ECMetadata->RedirectionMetadata);
+  const IMAGE_ARM64EC_REDIRECTION_ENTRY* RedirectionTableEnd = RedirectionTableBegin + NtDllARM64ECMetadata->RedirectionMetadataCount;
+
+  // Walk through the table until we find an entry matching the x64 FFS.
+  const uintptr_t x64FFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, ExportName)) - NtDllBase;
+  uintptr_t ARM64ECImplementation = 0;
+  for (const IMAGE_ARM64EC_REDIRECTION_ENTRY* RedirectionEntry = RedirectionTableBegin; RedirectionEntry != RedirectionTableEnd;
+       RedirectionEntry++) {
+    if (RedirectionEntry->Source == x64FFS) {
+      ARM64ECImplementation = NtDllBase + RedirectionEntry->Destination;
+      break;
+    }
+  }
+
+  // Now walk through the syscall FFS table and find which entry points to the ARM64EC implementation
+  // we found in the previous table. The index of this entry in that table will be the syscall number.
+  const uintptr_t* SyscallImplementationTable = reinterpret_cast<uintptr_t*>(GetProcAddress(NtDll, "__arm64ec_syscall_ffs"));
+  const uint32_t* SyscallImplementationCount = reinterpret_cast<uint32_t*>(GetProcAddress(NtDll, "__arm64ec_syscall_ffs_size"));
+  if (!ARM64ECImplementation || !SyscallImplementationTable || !SyscallImplementationCount) {
+    return -1;
+  }
+
+  for (uint64_t SyscallNo = 0; SyscallNo < *SyscallImplementationCount; SyscallNo++) {
+    if (SyscallImplementationTable[SyscallNo] == ARM64ECImplementation) {
+      return SyscallNo;
+    }
+  }
+  return -1;
+}
+
 // Syscall thunks may have been patched before FEX has loaded, the default call checker installed by ntdll into FEX will
 // try to invoke the JIT when calling such patched syscalls but this obviously doesn't work before FEX is initalised.
 // This function parses ntdll and sets up a custom call checker to prevent this, as such it must avoid using any syscall
 // thunks itself.
-void InitSyscalls() {
+bool InitSyscalls() {
   // The ntdll exports called by GetModuleHandle/GetProcAddress aren't known to be patched before JIT init by any current
   // software so are safe to call, but if that changes the loader structures in the PEB could be parsed manually.
   const auto NtDll = GetModuleHandleW(L"ntdll.dll");
@@ -282,10 +324,27 @@ void InitSyscalls() {
   if (WineSyscallDispatcherPtr) {
     WineSyscallDispatcher = *WineSyscallDispatcherPtr;
     ParseWineSyscallNumbers(NtDll);
+  } else {
+    // NT syscall numbers may change between versions, so we need to find the numbers
+    // for the syscalls we need ahead of time.
+    WineNtContinueSyscallId = GetNTSyscallNo(NtDll, "NtContinue");
+    WineNtAllocateVirtualMemorySyscallId = GetNTSyscallNo(NtDll, "NtAllocateVirtualMemory");
+    WineNtProtectVirtualMemorySyscallId = GetNTSyscallNo(NtDll, "NtProtectVirtualMemory");
+    WineNtRaiseExceptionSyscallId = GetNTSyscallNo(NtDll, "NtRaiseException");
+
+    // Fail if the syscall number we found is beyond the bounds
+    // of our static table. This is almost certainly not going
+    // to happen, but failing here will make debugging easier later on.
+    const uint64_t SyscallTableSize = SyscallTableEnd - SyscallTable;
+    if (std::max({WineNtContinueSyscallId, WineNtAllocateVirtualMemorySyscallId, WineNtProtectVirtualMemorySyscallId,
+                  WineNtRaiseExceptionSyscallId}) >= SyscallTableSize) {
+      return false;
+    }
   }
 
   FillNtDllLUTs(NtDll);
   PatchCallChecker();
+  return true;
 }
 
 void HandleImageMap(uint64_t Address, bool MainImage = false) {
@@ -580,7 +639,9 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
 }
 
 NTSTATUS ProcessInit() {
-  InitSyscalls();
+  if (!InitSyscalls()) {
+    return STATUS_NOT_SUPPORTED;
+  }
 
   FEX::Windows::InitCRTProcess();
   FEX::Windows::SetupThreadHandlers();
