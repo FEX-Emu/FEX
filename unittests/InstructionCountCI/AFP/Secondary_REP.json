@@ -9,7 +9,7 @@
       "SVE256",
       "RPRES"
     ],
-    "BinaryCacheVersion": 29
+    "BinaryCacheVersion": 30
   },
   "Instructions": {
     "cvtsi2ss xmm0, eax": {

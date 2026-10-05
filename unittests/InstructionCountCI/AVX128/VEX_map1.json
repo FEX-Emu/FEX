@@ -13,7 +13,7 @@
       "SVE256",
       "SVE128"
     ],
-    "BinaryCacheVersion": 29
+    "BinaryCacheVersion": 30
   },
   "Instructions": {
     "vmovups xmm0, xmm0": {
