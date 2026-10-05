@@ -273,16 +273,6 @@ CodeCache::CodeCache(ContextImpl& CTX_)
   : CTX(CTX_) {}
 CodeCache::~CodeCache() = default;
 
-uint64_t CodeCache::ComputeCodeMapId(std::string_view Filename, int FD) {
-  if (Filename.empty()) {
-    return 0xffff'ffff'ffff'ffff;
-  }
-
-  // For now, we just use the file path as an identifier.
-  // TODO: Ensure the hash is unique enough to distinguish executables while remaining independent of the installation location
-  return XXH3_64bits(Filename.data(), Filename.size());
-}
-
 struct CodeCacheHeader {
   std::array<char, 4> Magic = ExpectedMagic;
   // Version history:
