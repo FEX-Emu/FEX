@@ -16,7 +16,7 @@ def DoesFEXSupportAVX(mode):
     process = subprocess.run(args, capture_output=True, text=True)
     output = process.stdout
 
-    for line in output:
+    for line in output.splitlines():
         if 'flags' in line:
             flags = line.split(':')[1].strip().split(' ')
             return 'avx' in flags and 'avx2' in flags
