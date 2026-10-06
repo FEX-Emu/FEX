@@ -1179,7 +1179,7 @@ public:
     // At block boundaries, fix up the carry flag.
     if (!SRAOnly) {
       RectifyCarryInvert(CFInvertedABI);
-      
+
       // Also we can't trust the LastDef accross block boundaries, so clear that as well.
       for (auto& Def : RegCache.LastDef) {
         Def = nullptr;

@@ -341,7 +341,7 @@ public:
     return false;
   }
 
-  // Returns true if every bit of the vector value is set. 
+  // Returns true if every bit of the vector value is set.
   // Currently this only recognizes the self compare equal idiom.
   // TODO: Should this recognize other patterns?
   bool IsValueVectorAllOnes(OrderedNodeWrapper ssa) const {
