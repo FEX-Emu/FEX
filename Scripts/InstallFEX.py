@@ -86,7 +86,7 @@ def IsSupportedDistro():
 
     # We only support Ubuntu
     if Distro[0] == "ubuntu":
-        return Distro[1] in {"22.04", "24.04", "24.10", "25.04", "25.10"}
+        return Distro[1] in {"22.04", "24.04", "24.10", "25.04", "25.10", "26.04", "26.10"}
 
     return False
 
