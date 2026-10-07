@@ -1,0 +1,49 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128"
+    ],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2",
+      "SVE256"
+    ],
+    "BinaryCacheVersion": 30
+  },
+  "Comment": [
+    "This file tracks the translations for the 'peephole' optimizations in FEX.",
+    "Peephole optimizations are small targetted optimizations that recognize",
+    "specific patterns in x86 code and specialize the translation accordingly."
+  ],
+  "Instructions": {
+    "vpcmpeqd + vpgatherdd": {
+      "x86InstructionCount": 2,
+      "ExpectedInstructionCount": 12,
+      "Comment": [
+        "Setting the mask to all-ones using vpcmpeqd, and then performing the gather operation.",
+        "This is an idiom emitted by Clang for an unmasked gather.",
+        "https://godbolt.org/z/4devEvfKf"
+      ],
+      "x86Insts": [
+        "vpcmpeqd ymm2, ymm2, ymm2",
+        "vpgatherdd ymm0, [ymm1*4 + rax], ymm2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #224]",
+        "cmeq v18.4s, v18.4s, v18.4s",
+        "cmeq v2.4s, v2.4s, v2.4s",
+        "ldr q3, [x28, #192]",
+        "ldr q4, [x28, #208]",
+        "mrs x20, nzcv",
+        "ld1w {z16.s}, p6/z, [x4, z17.s, sxtw #2]",
+        "ld1w {z3.s}, p6/z, [x4, z4.s, sxtw #2]",
+        "movi v18.2d, #0x0",
+        "msr nzcv, x20",
+        "stp xzr, xzr, [x28, #224]",
+        "str q3, [x28, #192]"
+      ]
+    }
+  }
+}

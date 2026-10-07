@@ -1058,7 +1058,7 @@ void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, 
                                        ARMEmitter::VRegister IncomingDst, std::optional<ARMEmitter::Register> BaseAddr,
                                        ARMEmitter::VRegister VectorIndexLow, std::optional<ARMEmitter::VRegister> VectorIndexHigh,
                                        ARMEmitter::VRegister MaskReg, IR::OpSize VectorIndexSize, size_t DataElementOffsetStart,
-                                       size_t IndexElementOffsetStart, uint8_t OffsetScale, IR::OpSize AddrSize) {
+                                       size_t IndexElementOffsetStart, uint8_t OffsetScale, IR::OpSize AddrSize, bool MaskAllOnes) {
   LOGMAN_THROW_A_FMT(ElementSize >= IR::OpSize::i8Bit && ElementSize <= IR::OpSize::i64Bit, "Invalid element size");
 
   const auto PerformSMove = [this](IR::OpSize ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
@@ -1116,11 +1116,13 @@ void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, 
 
   for (size_t i = DataElementOffsetStart, IndexElement = IndexElementOffsetStart; i < NumDataElements; ++i, ++IndexElement) {
     ARMEmitter::ForwardLabel Skip {};
-    // Extract mask element
-    PerformMove(ElementSize, WorkingReg, MaskReg, i);
+    if (!MaskAllOnes) {
+      // Extract mask element
+      PerformMove(ElementSize, WorkingReg, MaskReg, i);
 
-    // Skip if the mask's sign bit isn't set
-    (void)tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
+      // Skip if the mask's sign bit isn't set
+      (void)tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
+    }
 
     // Extract Index Element
     if ((IndexElement * IR::OpSizeToSize(VectorIndexSize)) >= 16) {
@@ -1216,12 +1218,15 @@ DEF_OP(VLoadVectorGatherMasked) {
 
     const auto SubRegSize = ConvertSubRegSize8(IROp);
 
-    const auto CMPPredicate = ARMEmitter::PReg::p0;
     const auto GoverningPredicate = Is256Bit ? PRED_TMP_32B : PRED_TMP_16B;
 
-    // Check if the sign bit is set for the given element size.
-    cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
-    auto TempDst = VTMP1;
+    // A mask known to be all-ones loads every element straight into the destination under the governing predicate.
+    const ARMEmitter::PRegister CMPPredicate = Op->MaskAllOnes ? GoverningPredicate : ARMEmitter::PReg::p0;
+    auto TempDst = Op->MaskAllOnes ? Dst : VTMP1;
+    if (!Op->MaskAllOnes) {
+      // Check if the sign bit is set for the given element size.
+      cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
+    }
 
     // No need to load a temporary register in the case that we weren't provided a base address and there is no scaling.
     ARMEmitter::SVEMemOperand MemDst {ARMEmitter::SVEMemOperand(VectorIndexLow.Z(), 0)};
@@ -1256,12 +1261,14 @@ DEF_OP(VLoadVectorGatherMasked) {
     default: break;
     }
 
-    ///< Merge elements based on predicate.
-    sel(SubRegSize, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
+    if (!Op->MaskAllOnes) {
+      ///< Merge elements based on predicate.
+      sel(SubRegSize, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
+    }
   } else {
     LOGMAN_THROW_A_FMT(!Is256Bit, "Can't emulate this gather load in the backend! Programming error!");
     Emulate128BitGather(IROp->Size, IROp->ElementSize, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg,
-                        VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale, Op->AddrSize);
+                        VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale, Op->AddrSize, Op->MaskAllOnes);
   }
 }
 
@@ -1295,16 +1302,20 @@ DEF_OP(VLoadVectorGatherMaskedQPS) {
     }
 
     const auto CMPPredicate = ARMEmitter::PReg::p0;
-    const auto CMPPredicate2 = ARMEmitter::PReg::p1;
+    // A mask known to be all-ones loads every element under the governing predicate and narrows straight into the destination.
+    const ARMEmitter::PRegister CMPPredicate2 = Op->MaskAllOnes ? PRED_TMP_16B : ARMEmitter::PReg::p1;
 
     const auto GoverningPredicate = PRED_TMP_16B;
 
-    // Check if the sign bit is set for the given element size.
-    // This will set the predicate bits for elements [0, 1, 2, 3]
-    // We then use punpklo to extend the low results to be for 64-bit elements.
-    cmplt(ARMEmitter::SubRegSize::i32Bit, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
-    punpklo(CMPPredicate2, CMPPredicate);
+    if (!Op->MaskAllOnes) {
+      // Check if the sign bit is set for the given element size.
+      // This will set the predicate bits for elements [0, 1, 2, 3]
+      // We then use punpklo to extend the low results to be for 64-bit elements.
+      cmplt(ARMEmitter::SubRegSize::i32Bit, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
+      punpklo(CMPPredicate2, CMPPredicate);
+    }
     auto TempDst = VTMP1;
+    const auto NarrowDst = Op->MaskAllOnes ? Dst : TempDst;
 
     auto GatherExtend = [this](ARMEmitter::VRegister Dst, std::optional<ARMEmitter::Register> BaseAddr, ARMEmitter::VRegister VectorIndex,
                                ARMEmitter::PRegister CMPPredicate, ARMEmitter::SVEModType ModType, uint8_t OffsetScale) {
@@ -1328,21 +1339,23 @@ DEF_OP(VLoadVectorGatherMaskedQPS) {
     GatherExtend(TempDst, BaseAddr, VectorIndexLow, CMPPredicate2, ModType, OffsetScale);
 
     if (VectorIndexHigh.has_value()) {
-      punpkhi(CMPPredicate2, CMPPredicate);
+      if (!Op->MaskAllOnes) {
+        punpkhi(CMPPredicate2, CMPPredicate);
+      }
       GatherExtend(VTMP2, BaseAddr, *VectorIndexHigh, CMPPredicate2, ModType, OffsetScale);
       // Move elements to the lower half.
-      uzp1(ARMEmitter::SubRegSize::i32Bit, TempDst.Q(), TempDst.Q(), VTMP2.Q());
-      ///< Merge elements based on predicate.
-      sel(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
+      uzp1(ARMEmitter::SubRegSize::i32Bit, NarrowDst.Q(), TempDst.Q(), VTMP2.Q());
     } else {
       // Move elements to the lower half.
-      xtn(ARMEmitter::SubRegSize::i32Bit, TempDst.Q(), TempDst.Q());
+      xtn(ARMEmitter::SubRegSize::i32Bit, NarrowDst.Q(), TempDst.Q());
+    }
+    if (!Op->MaskAllOnes) {
       ///< Merge elements based on predicate.
       sel(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
     }
   } else {
     Emulate128BitGather(IR::OpSize::i128Bit, IR::OpSize::i32Bit, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg,
-                        IR::OpSize::i64Bit, 0, 0, OffsetScale, Op->AddrSize);
+                        IR::OpSize::i64Bit, 0, 0, OffsetScale, Op->AddrSize, Op->MaskAllOnes);
   }
 }
 
