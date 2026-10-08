@@ -160,7 +160,7 @@ DIRECT_SYSCALL_WRAPPER("#NtProtectVirtualMemoryNative", WineNtProtectVirtualMemo
   adrp x17, NtDllRedirectionLUTSize
   ldr w17, [x17, #:lo12:NtDllRedirectionLUTSize]
   cmp x16, x17
-  b.hi end
+  b.hs end
   adrp x17, NtDllRedirectionLUT
   ldr x17, [x17, #:lo12:NtDllRedirectionLUT]
   ldr w11, [x17, x16, lsl #2]
