@@ -410,7 +410,7 @@ private:
   } while (0)
 #define SYSCALL_EFAULT_IF_NULL(Ptr)     \
   do {                                  \
-    if (Ptr == nullptr) return -EFAULT; \
+    if ((Ptr) == nullptr) return -EFAULT; \
   } while (0)
 
 extern FEX::HLE::SyscallHandler* _SyscallHandler;
