@@ -12,6 +12,12 @@
     CHECK(errno == EFAULT); \
   } while (0)
 
+#define CHECK_ENOENT(Expr)  \
+  do {                      \
+    REQUIRE((Expr) == -1);  \
+    CHECK(errno == ENOENT); \
+  } while (0)
+
 TEST_CASE("stat et al. returns EFAULT for null pointers") {
   int FD = ::open("/", O_RDONLY);
   CHECK_EFAULT(::syscall(SYS_oldstat, "/", nullptr));
@@ -28,4 +34,16 @@ TEST_CASE("stat et al. returns EFAULT for null pointers") {
   CHECK_EFAULT(::syscall(SYS_fstatfs64, FD, sizeof(struct statfs64), nullptr));
   CHECK_EFAULT(::syscall(SYS_statfs64, "/", sizeof(struct statfs64), nullptr));
   CHECK_EFAULT(::syscall(SYS_fstatat64, AT_FDCWD, "/", nullptr, 0));
+}
+
+TEST_CASE("stat et al. returns ENOENT for missing paths with null buffers") {
+  CHECK_ENOENT(::syscall(SYS_oldstat, "/does/not/exist", nullptr));
+  CHECK_ENOENT(::syscall(SYS_oldlstat, "/does/not/exist", nullptr));
+  CHECK_ENOENT(::syscall(SYS_stat, "/does/not/exist", nullptr));
+  CHECK_ENOENT(::syscall(SYS_lstat, "/does/not/exist", nullptr));
+  CHECK_ENOENT(::syscall(SYS_stat64, "/does/not/exist", nullptr));
+  CHECK_ENOENT(::syscall(SYS_lstat64, "/does/not/exist", nullptr));
+  CHECK_ENOENT(::syscall(SYS_statfs, "/does/not/exist", nullptr));
+  CHECK_ENOENT(::syscall(SYS_statfs64, "/does/not/exist", sizeof(struct statfs64), nullptr));
+  CHECK_ENOENT(::syscall(SYS_fstatat64, AT_FDCWD, "/does/not/exist", nullptr, 0));
 }
