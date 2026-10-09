@@ -408,6 +408,10 @@ private:
     if (Result == 0) return -errno; \
     return Result;                  \
   } while (0)
+#define SYSCALL_EFAULT_IF_NULL(Ptr)     \
+  do {                                  \
+    if (Ptr == nullptr) return -EFAULT; \
+  } while (0)
 
 extern FEX::HLE::SyscallHandler* _SyscallHandler;
 

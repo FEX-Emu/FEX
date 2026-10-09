@@ -315,6 +315,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
         return -EOVERFLOW;
       }
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
       *buf = host_stat;
@@ -332,6 +333,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
         return -EOVERFLOW;
       }
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
       *buf = host_stat;
@@ -349,6 +351,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
         return -EOVERFLOW;
       }
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
       *buf = host_stat;
@@ -360,6 +363,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Stat(pathname, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -370,6 +374,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat host_stat;
     uint64_t Result = ::fstat(fd, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -380,6 +385,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Lstat(path, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -390,6 +396,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Stat(pathname, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -401,6 +408,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Lstat(path, &host_stat);
 
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -411,6 +419,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat64 host_stat;
     uint64_t Result = ::fstat64(fd, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -421,6 +430,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct statfs host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -431,6 +441,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct statfs host_stat;
     uint64_t Result = ::fstatfs(fd, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -443,6 +454,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct statfs64 host_stat;
     uint64_t Result = ::fstatfs64(fd, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -455,6 +467,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct statfs host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, &host_stat);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
@@ -564,6 +577,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat64 host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.NewFSStatAt64(dirfd, pathname, &host_stat, flag);
     if (Result != -1) {
+      SYSCALL_EFAULT_IF_NULL(buf);
       FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
