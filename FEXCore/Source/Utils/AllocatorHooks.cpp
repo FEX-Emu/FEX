@@ -27,9 +27,13 @@ using vma_name_hook_type = void (*)(const char* name, const void* address, size_
 #ifdef ENABLE_FEX_ALLOCATOR
 typedef void* (*rp_mmap_hook_type)(size_t size, size_t alignment, size_t* offset, size_t* mapped_size);
 typedef void (*rp_munmap_hook_type)(void* address, size_t offset, size_t mapped_size);
+typedef void (*rp_mcommit_hook_type)(void* address, size_t size);
+typedef void (*rp_mdecommit_hook_type)(void* address, size_t size);
 typedef void (*vma_name_hook_type)(const char* name, const void* address, size_t size);
 extern "C" rp_mmap_hook_type rp_mmap_hook;
 extern "C" rp_munmap_hook_type rp_munmap_hook;
+extern "C" rp_mcommit_hook_type rp_mcommit_hook;
+extern "C" rp_mdecommit_hook_type rp_mdecommit_hook;
 extern "C" vma_name_hook_type rp_name_hook;
 
 #ifndef _WIN32
@@ -112,8 +116,11 @@ static void* FEX_rp_mmap(size_t size, size_t alignment, size_t* offset, size_t* 
     alignment = 0;
   }
 
+  // Protect with PROT_NONE so that the whole heap is not charged against VmData.
+  // In the memory commit callback, FEX_rp_memory_commit, we reprotect with
+  // PROT_READ | PROT_WRITE to commit memory on demand.
   size_t map_size = AlignUp(size + alignment, global_config.page_size);
-  auto ptr = fex_mmap_hook(0, map_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+  auto ptr = fex_mmap_hook(0, map_size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 
   if (ptr == MAP_FAILED) {
     ptr = nullptr;
@@ -149,7 +156,9 @@ static void* FEX_rp_mmap(size_t size, size_t alignment, size_t* offset, size_t* 
 }
 
 static void FEX_rp_memory_commit(void* address, size_t size) {
-  // NOP-implementation.
+  if (mprotect(address, size, PROT_READ | PROT_WRITE)) {
+    fprintf(stderr, "Failed to commit VMA region.");
+  }
 }
 
 static void FEX_rp_memory_decommit(void* address, size_t size) {
@@ -158,6 +167,11 @@ static void FEX_rp_memory_decommit(void* address, size_t size) {
   }
 
   if (madvise(address, size, MADV_DONTNEED)) {
+    fprintf(stderr, "Failed to decommit VMA region.");
+  }
+
+  // Drop the protections back to PROT_NONE so the pages are no longer charged towards VmData.
+  if (mprotect(address, size, PROT_NONE)) {
     fprintf(stderr, "Failed to decommit VMA region.");
   }
 }
@@ -190,6 +204,8 @@ void InitializeAllocator(size_t PageSize) {
   rpmalloc_initialize_config(&global_interface, &global_config);
   rp_mmap_hook = FEX_rp_mmap;
   rp_munmap_hook = FEX_rp_memory_unmap;
+  rp_mcommit_hook = FEX_rp_memory_commit;
+  rp_mdecommit_hook = FEX_rp_memory_decommit;
   rp_name_hook = LocalVirtualName;
 }
 #else
