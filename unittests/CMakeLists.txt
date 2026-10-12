@@ -1,3 +1,8 @@
+# -S skips importing the "site" package which cuts down on interpreter startup time.
+# This means that these scripts can only use the python standard library, since "site"
+# is what resolves third-party packages from pip or apt.
+set(PYTHON_TEST_RUNNER "python3" "-S")
+
 if (NOT MINGW)
   add_subdirectory(APITests/)
   add_subdirectory(POSIX/)
