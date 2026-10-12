@@ -840,6 +840,8 @@ bool GenerateThunkLibsActionFactory::runInvocation(std::shared_ptr<clang::Compil
 
   const bool Success = Compiler.ExecuteAction(Action);
 
+#if LLVM_VERSION_MAJOR < 23
   Files->clearStatCache();
+#endif
   return Success;
 }
