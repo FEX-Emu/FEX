@@ -356,6 +356,10 @@ struct JITPointers {
   // Handles returning/calling ARM64EC code from the JIT, expects the target PC in TMP3
   uint64_t ExitFunctionEC {};
 
+  // Optional frontend handler for the guest signal stubs (GuestSignal_*). When set, the stubs branch to it with the
+  // static registers spilled instead of raising a host signal. It must not return.
+  uint64_t GuestSignalHandler {};
+
   FallbackABIInfo FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
   uint64_t NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX];
   uint64_t IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_MAX];

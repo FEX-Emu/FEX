@@ -397,12 +397,22 @@ void Dispatcher::EmitDispatcher() {
     hlt(0);
   }
 
+  // If the frontend has a guest signal handler, branch to it instead of raising a host signal.
+  auto EmitBranchToGuestSignalHandler = [&]() {
+    ARMEmitter::ForwardLabel NoHandler;
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.GuestSignalHandler));
+    (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &NoHandler);
+    br(TMP1);
+    (void)Bind(&NoHandler);
+  };
+
   {
     // Guest SIGILL handler
     // Needs to be distinct from the SignalHandlerReturnAddress
     GuestSignal_SIGILL = GetCursorAddress<uint64_t>();
 
     SpillStaticRegs(TMP1);
+    EmitBranchToGuestSignalHandler();
 
     hlt(0);
   }
@@ -413,6 +423,7 @@ void Dispatcher::EmitDispatcher() {
     GuestSignal_SIGTRAP = GetCursorAddress<uint64_t>();
 
     SpillStaticRegs(TMP1);
+    EmitBranchToGuestSignalHandler();
 
     brk(0);
   }
@@ -423,6 +434,7 @@ void Dispatcher::EmitDispatcher() {
     GuestSignal_SIGSEGV = GetCursorAddress<uint64_t>();
 
     SpillStaticRegs(TMP1);
+    EmitBranchToGuestSignalHandler();
 
     // hlt/udf = SIGILL
     // brk = SIGTRAP

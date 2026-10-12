@@ -542,16 +542,9 @@ static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThrea
   return ECContext;
 }
 
-static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& Context) {
-  auto* Thread = GetCPUArea().ThreadState();
+// Raises the guest exception for the JIT's synchronous fault data, starting from the exception the host raised for it.
+static void RaiseGuestException(FEXCore::Core::InternalThreadState* Thread, const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& GuestContext) {
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
-
-  LogMan::Msg::DFmt("Reconstructing context");
-  if (!IsDispatcherAddress(Context.Pc)) {
-    ReconstructThreadState(Thread, Context);
-  }
-  ARM64_NT_CONTEXT GuestContext = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
-  LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, GuestContext.Pc);
 
   // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
   // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
@@ -570,6 +563,42 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   }
 
   NtRaiseExceptionNative(&GuestRec, &GuestContext, FirstChance);
+}
+
+static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& Context) {
+  auto* Thread = GetCPUArea().ThreadState();
+
+  LogMan::Msg::DFmt("Reconstructing context");
+  if (!IsDispatcherAddress(Context.Pc)) {
+    ReconstructThreadState(Thread, Context);
+  }
+  ARM64_NT_CONTEXT GuestContext = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
+  LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, GuestContext.Pc);
+
+  RaiseGuestException(Thread, Rec, GuestContext);
+}
+
+// Entered from the JIT's guest signal stubs (Pointers.GuestSignalHandler) with the static registers spilled, in place
+// of the host trap they would otherwise raise. This skips the host signal, its dispatch through ntdll and the state
+// reconstruction in RethrowGuestException.
+static void HandleGuestSignal() {
+  uint64_t FPCR, FPSR;
+  __asm volatile("mrs %[fpcr], fpcr" : [fpcr] "=r"(FPCR));
+  __asm volatile("mrs %[fpsr], fpsr" : [fpsr] "=r"(FPSR));
+
+  auto* Thread = GetCPUArea().ThreadState();
+
+  // The exception that the stub's host trap would have raised: hlt for SIGILL, brk for SIGTRAP, a null load for SIGSEGV.
+  EXCEPTION_RECORD HostRec {};
+  switch (Thread->CurrentFrame->SynchronousFaultData.Signal) {
+  case FEXCore::Core::FAULT_SIGILL: HostRec.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; break;
+  case FEXCore::Core::FAULT_SIGTRAP: HostRec.ExceptionCode = EXCEPTION_BREAKPOINT; break;
+  default: HostRec.ExceptionCode = EXCEPTION_ACCESS_VIOLATION; break;
+  }
+
+  ARM64_NT_CONTEXT GuestContext = StoreStateToPackedECContext(Thread, static_cast<uint32_t>(FPCR), static_cast<uint32_t>(FPSR));
+  RaiseGuestException(Thread, HostRec, GuestContext);
+  ERROR_AND_DIE_FMT("Failed to raise guest exception");
 }
 
 class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
@@ -1038,6 +1067,7 @@ NTSTATUS ThreadInit() {
 
   FEX::Windows::CallRetStack::InitializeThread(Thread);
   Thread->CurrentFrame->Pointers.ExitFunctionEC = reinterpret_cast<uintptr_t>(&ExitFunctionEC);
+  Thread->CurrentFrame->Pointers.GuestSignalHandler = reinterpret_cast<uintptr_t>(&Exception::HandleGuestSignal);
   CPUArea.StateFrame() = Thread->CurrentFrame;
 
   uint64_t EnterEC = Thread->CurrentFrame->Pointers.DispatcherLoopTopEnterEC;
