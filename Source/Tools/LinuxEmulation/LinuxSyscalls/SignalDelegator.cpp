@@ -586,6 +586,11 @@ bool SignalDelegator::HandleFrontendSIGSEGV(FEXCore::Core::InternalThreadState* 
   }
 #endif
 
+  // If this fault is in the main thread stack guard region, we should try to grow the main thread stack.
+  if (SigInfo.si_code == SEGV_ACCERR && FEXCore::Allocator::TryGrowMainThreadStack(reinterpret_cast<uintptr_t>(SigInfo.si_addr))) {
+    return true;
+  }
+
   return false;
 }
 
