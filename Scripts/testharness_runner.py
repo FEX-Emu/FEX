@@ -1,8 +1,9 @@
 #!/usr/bin/python3
+import os
 import sys
-import subprocess
 from os import path
 from shutil import which
+# NB: This script is run with the "-S" flag, and therefore it can only use the Python standard library.
 
 # Args: <Known Failures file> <Known Failures Type File> <DisabledTestsFile> <DisabledTestsTypeFile> <DisabledTestsRunnerFile> <TestName> <FullTestName> <Test Harness Executable> <Args>...
 
@@ -59,9 +60,9 @@ if (disabled_tests.get(current_test)):
     sys.exit(125)
 
 # Run the test and wait for it to end to get the result
-Process = subprocess.Popen(RunnerArgs)
-Process.wait()
-ResultCode = Process.returncode
+Process = os.posix_spawnp(RunnerArgs[0], RunnerArgs, os.environ)
+_, Status = os.waitpid(Process, 0)
+ResultCode = os.waitstatus_to_exitcode(Status)
 
 # Check for known failures - try full test name first, then partial test name
 is_known_failure = known_failures.get(full_test_name) or known_failures.get(current_test)

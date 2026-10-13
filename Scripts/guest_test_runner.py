@@ -1,11 +1,13 @@
 #!/usr/bin/python3
-import json
 import os
 import sys
-import subprocess
+# NB: This script is run with the "-S" flag, and therefore it can only use the Python standard library.
 
 def DoesFEXSupportAVX(mode):
     # Check if FEX indicates support for AVX
+    
+    # Import this here lazily to save on startup time
+    import subprocess
     fex_interpreter_path = os.path.dirname(sys.argv[7]) + "/FEX"
 
     args = list()
@@ -30,6 +32,8 @@ def TestRequiresAVXSupport():
     try:
         with open(json_path) as json_file:
             try:
+                # Import this here lazily to save on startup time
+                import json
                 json_data = json.load(json_file)
                 if not isinstance(json_data, dict):
                     raise TypeError('JSON data must be a dict')
@@ -130,9 +134,9 @@ if ResultCode == 0:
     for Try in range(TryCount):
         # Run the test and wait for it to end to get the result
         print(RunnerArgs)
-        Process = subprocess.Popen(RunnerArgs)
-        Process.wait()
-        ResultCode = Process.returncode
+        Process = os.posix_spawnp(RunnerArgs[0], RunnerArgs, os.environ)
+        _, Status = os.waitpid(Process, 0)
+        ResultCode = os.waitstatus_to_exitcode(Status)
 
         # Break if the expected output is the result code
         if (expected_output[test_name] == ResultCode):

@@ -80,7 +80,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     set(TEST_NAME "${TEST_DESC}/Test_32Bit_${REL_TEST_ASM}")
     string(REPLACE " " ";" FEX_ARGS_LIST ${FEX_ARGS})
     add_test(NAME ${TEST_NAME}
-      COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
+      COMMAND ${PYTHON_TEST_RUNNER} "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
       "${CMAKE_SOURCE_DIR}/unittests/32Bit_ASM/Known_Failures"
       "${CMAKE_SOURCE_DIR}/unittests/32Bit_ASM/Known_Failures_${TEST_TYPE}"
       "${CMAKE_SOURCE_DIR}/unittests/32Bit_ASM/Disabled_Tests"

@@ -14,7 +14,7 @@ foreach(TEST ${TESTS})
     string(APPEND TEST_NAME ".n${BLOCK_SIZE}.gcc-target-32")
 
     add_test(NAME "${TEST_NAME}"
-      COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
+      COMMAND ${PYTHON_TEST_RUNNER} "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
       "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
       "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
       "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"

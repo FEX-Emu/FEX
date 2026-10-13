@@ -618,11 +618,21 @@ if (BUILD_TESTING)
   endif()
   set(TEST_JOB_FLAG "-j${TEST_JOB_COUNT}")
 
+  # When running "ninja tests", defined below, it is useful to intentionally
+  # oversubscribe the CPU cores since many of the tests spend their time idle.
+  if ("$CACHE{TEST_JOB_COUNT}" STREQUAL "")
+    execute_process(COMMAND "nproc" OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE TESTS_TARGET_JOB_COUNT)
+    math(EXPR TESTS_TARGET_JOB_COUNT "${TESTS_TARGET_JOB_COUNT} * 3 / 2")
+    set(TESTS_TARGET_JOB_FLAG "-j${TESTS_TARGET_JOB_COUNT}")
+  else()
+    set(TESTS_TARGET_JOB_FLAG ${TEST_JOB_FLAG})
+  endif()
+
   # Runs the whole test suite, with large pages enabled to reduce the cost of fork() in ctest.
   add_custom_target(tests
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     USES_TERMINAL
-    COMMAND ${CMAKE_COMMAND} -E env GLIBC_TUNABLES=glibc.malloc.hugetlb=1 ctest "--progress" "--timeout" "302" ${TEST_JOB_FLAG})
+    COMMAND ${CMAKE_COMMAND} -E env GLIBC_TUNABLES=glibc.malloc.hugetlb=1 ctest "--progress" "--timeout" "302" ${TESTS_TARGET_JOB_FLAG})
 endif()
 
 add_subdirectory(External/SoftFloat-3e/)

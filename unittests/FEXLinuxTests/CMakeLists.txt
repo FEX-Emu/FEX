@@ -47,7 +47,7 @@ function(AddTests Tests BinDirectory Bitness)
 
     # Add jit test case
     add_test(NAME "${TEST_CASE}.jit.flt"
-      COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
+      COMMAND ${PYTHON_TEST_RUNNER} "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
       "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
       "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
       "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
@@ -76,7 +76,7 @@ function(AddTests Tests BinDirectory Bitness)
     if (ARCHITECTURE_x86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib" AND NOT TEST_NAME STREQUAL "vulkan_procaddr")
       # Add host test case
       add_test(NAME "${TEST_CASE}.host.flt"
-        COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
+        COMMAND ${PYTHON_TEST_RUNNER} "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures_Host"
         "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
         "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests_Host"
