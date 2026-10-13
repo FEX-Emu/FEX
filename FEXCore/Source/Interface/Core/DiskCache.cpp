@@ -1026,9 +1026,8 @@ namespace DiskCache {
     const size_t TotalSize = GuestCodeOffset + GuestCode.size();
 
     // we'll copy everything into here and pass it to the Writer, then return to caller quickly
-    fextl::vector<uint8_t> Blob;
-    Blob.resize(TotalSize);
-    uint8_t* BlobData = Blob.data();
+    auto BlobRef = fextl::make_shared<fextl::vector<uint8_t>>(TotalSize);
+    uint8_t* BlobData = BlobRef->data();
 
     BlobFixedHeader Header {
       .GuestSize = (uint32_t)GuestCode.size(),
@@ -1182,7 +1181,6 @@ namespace DiskCache {
       MakeLookupKey(Thread, GuestCodeKey, RangeInfo.Writable, GuestRIP == CTX->GetMonoBackPatcherBlock().load(std::memory_order_relaxed));
 
     // blob done, publish to index as in-memory for now, flush to disk below
-    auto BlobRef = fextl::make_shared<fextl::vector<uint8_t>>(std::move(Blob));
     struct IndexEntry NewEntry {nullptr, 0, (uint32_t)TotalSize, Header.GuestSize, Header.GuestHash, BlobRef};
     NewEntry.GuestExtents = ExactGuestCodeExtents;
     {
