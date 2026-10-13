@@ -136,7 +136,9 @@ public:
 
     const bool Success = Compiler.ExecuteAction(ScopedToolAction);
 
+#if LLVM_VERSION_MAJOR < 23
     files->clearStatCache();
+#endif
     return Success;
   }
 };
