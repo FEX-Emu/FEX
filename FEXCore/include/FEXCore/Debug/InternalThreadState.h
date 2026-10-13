@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <shared_mutex>
 #include <type_traits>
+#include <optional>
 
 namespace FEXCore {
 class LookupCache;
@@ -117,6 +118,9 @@ struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCo
   uintptr_t JITGuardPage {};
   uint64_t JITGuardOverflowArgument {};
   FEXCore::UncheckedLongJump::JumpBuf RestartJump;
+
+  // SIGBUS result shared between thread and vfork child.
+  std::optional<int32_t> vfork_sigbus_handler_ret {};
 
   // BaseFrameState should always be at the end, directly before the interrupt fault page
   FEXCore::Core::CpuStateFrame BaseFrameState {};

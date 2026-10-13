@@ -618,6 +618,16 @@
           "This is required to ensure a split-lock doesn't tear inside the process"
         ]
       },
+      "StrictestInProcessSplitLocks": {
+        "Type": "bool",
+        "Default": "false",
+        "AffectsCodeGen": "false",
+        "Desc": [
+          "Even more strict than the `StrictInProcessSplitLocks` option.",
+          "Not only does it take a process-wide lock, it pauses all the parent threads from a vfork process."
+        ]
+      },
+
       "KernelUnalignedAtomicBackpatching": {
         "Type": "bool",
         "Default": "true",
