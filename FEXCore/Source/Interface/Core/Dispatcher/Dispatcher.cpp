@@ -440,6 +440,26 @@ void Dispatcher::EmitDispatcher() {
   }
 
   {
+    // Faultless synchronous signal.
+    // Some games abuse SIGILL/SIGTRAP/SIGSEGV heavily and the fault overhead is visible.
+    // Instead of double faulting, clean up state and jump to the frontend to handle this.
+    // `FEXCore::Core::CpuStateFrame::SynchronousFaultData` needs to be setup at this point.
+    GuestSignal_SynchronousFault = GetCursorAddress<uint64_t>();
+
+    SpillStaticRegs(TMP1);
+
+    ldr(ARMEmitter::XReg::x0, &l_CTX);
+    mov(ARMEmitter::XReg::x1, STATE);
+    ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.SynchronousExceptionHandler));
+
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
+    } else {
+      br(ARMEmitter::Reg::r2);
+    }
+  }
+
+  {
     ThreadPauseHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
     SpillStaticRegs(TMP1);
 
@@ -2690,6 +2710,7 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     Ptrs.GuestSignal_SIGILL = GuestSignal_SIGILL;
     Ptrs.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
     Ptrs.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
+    Ptrs.GuestSignal_SynchronousFault = GuestSignal_SynchronousFault;
     Ptrs.SignalReturnHandler = SignalHandlerReturnAddress;
     Ptrs.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;
     Ptrs.LUDIVHandler = LUDIVHandlerAddress;

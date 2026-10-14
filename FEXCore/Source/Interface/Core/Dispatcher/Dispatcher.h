@@ -89,6 +89,7 @@ private:
   uint64_t GuestSignal_SIGILL {};
   uint64_t GuestSignal_SIGTRAP {};
   uint64_t GuestSignal_SIGSEGV {};
+  uint64_t GuestSignal_SynchronousFault {};
 
   uint64_t PauseReturnInstruction {};
   std::array<uint64_t, FallbackABI::FABI_UNKNOWN> ABIPointers {};
