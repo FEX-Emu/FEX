@@ -542,16 +542,8 @@ static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThrea
   return ECContext;
 }
 
-static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& Context) {
-  auto* Thread = GetCPUArea().ThreadState();
+static void RaiseException(FEXCore::Core::InternalThreadState* Thread, const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& GuestContext) {
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
-
-  LogMan::Msg::DFmt("Reconstructing context");
-  if (!IsDispatcherAddress(Context.Pc)) {
-    ReconstructThreadState(Thread, Context);
-  }
-  ARM64_NT_CONTEXT GuestContext = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
-  LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, GuestContext.Pc);
 
   // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
   // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
@@ -570,6 +562,40 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   }
 
   NtRaiseExceptionNative(&GuestRec, &GuestContext, FirstChance);
+}
+
+static void RethrowGuestException(FEXCore::Core::InternalThreadState* Thread, const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& HostContext) {
+  LogMan::Msg::DFmt("Reconstructing context");
+  if (!IsDispatcherAddress(HostContext.Pc)) {
+    ReconstructThreadState(Thread, HostContext);
+  }
+  auto GuestContext = StoreStateToPackedECContext(Thread, HostContext.Fpcr, HostContext.Fpsr);
+  LogMan::Msg::DFmt("pc: {:X} rip: {:X}", HostContext.Pc, GuestContext.Pc);
+
+  RaiseException(Thread, Rec, GuestContext);
+}
+
+[[noreturn]]
+static void SynchronousExceptionHandler(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {
+  // Coming in to this function, the guest state is synchronized and the host thread is in a safe location.
+  auto Thread = Frame->Thread;
+  auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
+
+  uint64_t FPCR, FPSR;
+  __asm volatile("mrs %[fpcr], fpcr" : [fpcr] "=r"(FPCR));
+  __asm volatile("mrs %[fpsr], fpsr" : [fpsr] "=r"(FPSR));
+
+  auto Context = StoreStateToPackedECContext(Thread, static_cast<uint32_t>(FPCR), static_cast<uint32_t>(FPSR));
+  EXCEPTION_RECORD Record = {};
+  switch (Fault.Signal) {
+  case FEXCore::Core::FAULT_SIGILL: Record.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; break;
+  case FEXCore::Core::FAULT_SIGTRAP: Record.ExceptionCode = EXCEPTION_BREAKPOINT; break;
+  case FEXCore::Core::FAULT_SIGSEGV: Record.ExceptionCode = EXCEPTION_ACCESS_VIOLATION; break;
+  default: ERROR_AND_DIE_FMT("Unknown fault signal"); break;
+  }
+
+  RaiseException(Thread, Record, Context);
+  ERROR_AND_DIE_FMT("This should always noreturn");
 }
 
 class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
@@ -805,7 +831,7 @@ bool ResetToConsistentStateImpl(const ThreadCPUArea CPUArea, EXCEPTION_RECORD* E
   }
 
   if (IsEmulatorStackAddress(CPUArea, reinterpret_cast<uint64_t>(__builtin_frame_address(0)))) {
-    Exception::RethrowGuestException(*Exception, *NativeContext);
+    Exception::RethrowGuestException(Thread, *Exception, *NativeContext);
     LogMan::Msg::DFmt("Rethrowing onto guest stack: {:X}", NativeContext->Sp);
     return true;
   } else {
@@ -1038,6 +1064,7 @@ NTSTATUS ThreadInit() {
 
   FEX::Windows::CallRetStack::InitializeThread(Thread);
   Thread->CurrentFrame->Pointers.ExitFunctionEC = reinterpret_cast<uintptr_t>(&ExitFunctionEC);
+  Thread->CurrentFrame->Pointers.SynchronousExceptionHandler = reinterpret_cast<uintptr_t>(&Exception::SynchronousExceptionHandler);
   CPUArea.StateFrame() = Thread->CurrentFrame;
 
   uint64_t EnterEC = Thread->CurrentFrame->Pointers.DispatcherLoopTopEnterEC;
