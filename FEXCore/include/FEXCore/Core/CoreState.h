@@ -353,8 +353,14 @@ struct JITPointers {
   uint64_t RDRANDFallback {};
   uint64_t ThunkCallbackRet {};
 
+  /**
+   * @name Frontend handler pointers.
+   * @{ */
   // Handles returning/calling ARM64EC code from the JIT, expects the target PC in TMP3
   uint64_t ExitFunctionEC {};
+  // Handles a synchronous exception without faulting to jump in to the handler. Frontend specific.
+  uint64_t SynchronousExceptionHandler {};
+  /**  @} */
 
   FallbackABIInfo FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
   uint64_t NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX];
@@ -376,6 +382,7 @@ struct JITPointers {
   uint64_t GuestSignal_SIGILL {};
   uint64_t GuestSignal_SIGTRAP {};
   uint64_t GuestSignal_SIGSEGV {};
+  uint64_t GuestSignal_SynchronousFault {};
   uint64_t SignalReturnHandler {};
   uint64_t SignalReturnHandlerRT {};
   uint64_t L2Pointer {};

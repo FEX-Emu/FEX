@@ -76,23 +76,28 @@ DEF_OP(Break) {
   LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant);
   str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
 
-  switch (Op->Reason.Signal) {
-  case Core::FAULT_SIGILL:
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGILL));
+  if (CTX->HostFeatures.SupportsFaultFreeSynchronousFaults) {
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SynchronousFault));
     br(TMP1);
-    break;
-  case Core::FAULT_SIGTRAP:
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
-    br(TMP1);
-    break;
-  case Core::FAULT_SIGSEGV:
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGSEGV));
-    br(TMP1);
-    break;
-  default:
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
-    br(TMP1);
-    break;
+  } else {
+    switch (Op->Reason.Signal) {
+    case Core::FAULT_SIGILL:
+      ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGILL));
+      br(TMP1);
+      break;
+    case Core::FAULT_SIGTRAP:
+      ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
+      br(TMP1);
+      break;
+    case Core::FAULT_SIGSEGV:
+      ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGSEGV));
+      br(TMP1);
+      break;
+    default:
+      ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
+      br(TMP1);
+      break;
+    }
   }
 }
 
