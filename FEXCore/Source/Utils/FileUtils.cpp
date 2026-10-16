@@ -49,7 +49,7 @@ static bool RecursiveRemoveDirectory(int parent_fd, const char* Directory) {
   // Four pages arbitrary chosen to be a balance between NFS wanting to return data in page-size granules and
   // local filesystems returning arbitrary sizes.
   size_t dirent_size = 4096 * 4;
-  uint8_t* dirent_buffer = reinterpret_cast<uint8_t*>(FEXCore::Allocator::malloc(dirent_size));
+  struct dirent * dirent_buffer = reinterpret_cast<struct dirent *>(FEXCore::Allocator::malloc(dirent_size));
 
   if (!dirent_buffer) {
     // Ran out of memory?
@@ -65,7 +65,7 @@ static bool RecursiveRemoveDirectory(int parent_fd, const char* Directory) {
         // Buffer too small? Scale and try again.
         dirent_size *= 2;
         FEXCore::Allocator::free(dirent_buffer);
-        dirent_buffer = reinterpret_cast<uint8_t*>(FEXCore::Allocator::malloc(dirent_size));
+        dirent_buffer = reinterpret_cast<struct dirent *>(FEXCore::Allocator::malloc(dirent_size));
         if (!dirent_buffer) {
           // Ran out of memory?
           Result = false;
@@ -143,7 +143,7 @@ FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory,
   // Four pages arbitrary chosen to be a balance between NFS wanting to return data in page-size granules and
   // local filesystems returning arbitrary sizes.
   size_t dirent_size = 4096 * 4;
-  uint8_t* dirent_buffer = reinterpret_cast<uint8_t*>(FEXCore::Allocator::malloc(dirent_size));
+  struct dirent * dirent_buffer = reinterpret_cast<struct dirent *>(FEXCore::Allocator::malloc(dirent_size));
 
   if (!dirent_buffer) {
     // Ran out of memory?
@@ -158,7 +158,7 @@ FEX_DEFAULT_VISIBILITY void WalkDirectory(std::string_view Directory,
         // Buffer too small? Scale and try again.
         dirent_size *= 2;
         FEXCore::Allocator::free(dirent_buffer);
-        dirent_buffer = reinterpret_cast<uint8_t*>(FEXCore::Allocator::malloc(dirent_size));
+        dirent_buffer = reinterpret_cast<struct dirent *>(FEXCore::Allocator::malloc(dirent_size));
         if (!dirent_buffer) {
           // Ran out of memory?
           goto end;
