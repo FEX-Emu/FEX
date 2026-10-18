@@ -89,7 +89,11 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
   if (HostType == FEXCore::HostFeatures::HostTypeEnum::Wow64) {
     // AVX is unsupported for WOW64
     HostFeatures.SupportsAVX = false;
+  } else {
+    // arm64ec supports synchronous faults without a double-fault dance.
+    HostFeatures.SupportsFaultFreeSynchronousFaults = true;
   }
+
   return HostFeatures;
 }
 
