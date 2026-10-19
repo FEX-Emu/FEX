@@ -312,10 +312,22 @@ namespace AVX128 {
     {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VariableShiftImpl, IROps::OP_VSSHR>}, // VPSRAVD
     {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VariableShiftImpl, IROps::OP_VUSHL>}, // VPSLLV
 
-    {OPD(2, 0b01, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBUSD, false>},
-    {OPD(2, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBUSD, true>},
-    {OPD(2, 0b01, 0x52), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWSSD, false>},
-    {OPD(2, 0b01, 0x53), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWSSD, true>},
+    {OPD(2, 0b00, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBxxD, false, false, false>}, // VPDPBUUD
+    {OPD(2, 0b00, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBxxD, false, false, true>},  // VPDPBUUDS
+    {OPD(2, 0b01, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBxxD, false, true, false>},  // VPDPBUSD
+    {OPD(2, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBxxD, false, true, true>},   // VPDPBUSDS
+    {OPD(2, 0b10, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBxxD, true, false, false>},  // VPDPBSUD
+    {OPD(2, 0b10, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBxxD, true, false, true>},   // VPDPBSUDS
+    {OPD(2, 0b11, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBxxD, true, true, false>},   // VPDPBSSD
+    {OPD(2, 0b11, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPBxxD, true, true, true>},    // VPDPBSSDS
+    {OPD(2, 0b00, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWxxD, false, false, false>}, // VPDPWUUD
+    {OPD(2, 0b00, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWxxD, false, false, true>},  // VPDPWUUDS
+    {OPD(2, 0b01, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWxxD, false, true, false>},  // VPDPWUSD
+    {OPD(2, 0b01, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWxxD, false, true, true>},   // VPDPWUSDS
+    {OPD(2, 0b10, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWxxD, true, false, false>},  // VPDPWSUD
+    {OPD(2, 0b10, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWxxD, true, false, true>},   // VPDPWSUDS
+    {OPD(2, 0b01, 0x52), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWxxD, true, true, false>},   // VPDPWSSD
+    {OPD(2, 0b01, 0x53), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPDPWxxD, true, true, true>},    // VPDPWSSDS
 
     {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i32Bit>},
     {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i64Bit>},
@@ -770,10 +782,22 @@ namespace AVX256 {
     {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::VPSRAVDOp},
     {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::VPSLLVOp},
 
-    {OPD(2, 0b01, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBUSDOp, false>},
-    {OPD(2, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBUSDOp, true>},
-    {OPD(2, 0b01, 0x52), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWSSDOp, false>},
-    {OPD(2, 0b01, 0x53), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWSSDOp, true>},
+    {OPD(2, 0b00, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBxxDOp, false, false, false>}, // VPDPBUUD
+    {OPD(2, 0b00, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBxxDOp, false, false, true>},  // VPDPBUUDS
+    {OPD(2, 0b01, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBxxDOp, false, true, false>},  // VPDPBUSD
+    {OPD(2, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBxxDOp, false, true, true>},   // VPDPBUSDS
+    {OPD(2, 0b10, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBxxDOp, true, false, false>},  // VPDPBSUD
+    {OPD(2, 0b10, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBxxDOp, true, false, true>},   // VPDPBSUDS
+    {OPD(2, 0b11, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBxxDOp, true, true, false>},   // VPDPBSSD
+    {OPD(2, 0b11, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPBxxDOp, true, true, true>},    // VPDPBSSDS
+    {OPD(2, 0b00, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWxxDOp, false, false, false>}, // VPDPWUUD
+    {OPD(2, 0b00, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWxxDOp, false, false, true>},  // VPDPWUUDS
+    {OPD(2, 0b01, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWxxDOp, false, true, false>},  // VPDPWUSD
+    {OPD(2, 0b01, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWxxDOp, false, true, true>},   // VPDPWUSDS
+    {OPD(2, 0b10, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWxxDOp, true, false, false>},  // VPDPWSUD
+    {OPD(2, 0b10, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWxxDOp, true, false, true>},   // VPDPWSUDS
+    {OPD(2, 0b01, 0x52), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWxxDOp, true, true, false>},   // VPDPWSSD
+    {OPD(2, 0b01, 0x53), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPDPWxxDOp, true, true, true>},    // VPDPWSSDS
 
     {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i32Bit>},
     {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i64Bit>},
@@ -1233,8 +1257,20 @@ auto BaseTableLambda = [](const auto RuntimeTable) consteval {
     {OPD(2, 0b01, 0x46), 1, X86InstInfo{"VPSRAVD", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
     {OPD(2, 0b01, 0x47), 1, X86InstInfo{"VPSLLV", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0}},
 
+    {OPD(2, 0b00, 0x50), 1, X86InstInfo{"VPDPBUUD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b00, 0x51), 1, X86InstInfo{"VPDPBUUDS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
     {OPD(2, 0b01, 0x50), 1, X86InstInfo{"VPDPBUSD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
     {OPD(2, 0b01, 0x51), 1, X86InstInfo{"VPDPBUSDS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b10, 0x50), 1, X86InstInfo{"VPDPBSUD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b10, 0x51), 1, X86InstInfo{"VPDPBSUDS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b11, 0x50), 1, X86InstInfo{"VPDPBSSD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b11, 0x51), 1, X86InstInfo{"VPDPBSSDS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b00, 0xD2), 1, X86InstInfo{"VPDPWUUD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b00, 0xD3), 1, X86InstInfo{"VPDPWUUDS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b01, 0xD2), 1, X86InstInfo{"VPDPWUSD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b01, 0xD3), 1, X86InstInfo{"VPDPWUSDS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b10, 0xD2), 1, X86InstInfo{"VPDPWSUD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
+    {OPD(2, 0b10, 0xD3), 1, X86InstInfo{"VPDPWSUDS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
     {OPD(2, 0b01, 0x52), 1, X86InstInfo{"VPDPWSSD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
     {OPD(2, 0b01, 0x53), 1, X86InstInfo{"VPDPWSSDS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_REX_W_0 | FLAGS_XMM_FLAGS, 0}},
 
