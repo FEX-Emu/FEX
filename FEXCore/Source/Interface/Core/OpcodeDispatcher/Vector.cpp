@@ -3785,81 +3785,185 @@ void OpDispatchBuilder::VPMADDUBSWOp(OpcodeArgs) {
   StoreResultFPR(Op, Result);
 }
 
-Ref OpDispatchBuilder::VPDPBUSDOpImpl(IR::OpSize Size, Ref Acc, Ref Src1, Ref Src2, bool Saturating) {
-  // Does four 8-bit unsigned * signed byte multiplies per 32-bit element, sums them and accumulates in to the destination
-
-  if (CTX->HostFeatures.SupportsI8MM) {
-    // The I8MM extension maps onto VPDP* almost directly.
-    if (!Saturating) {
-      return _VUSDot(Size, Acc, Src1, Src2);
-    }
-
-    auto DotProduct = _VUSDot(Size, LoadZeroVector(Size), Src1, Src2);
-    return _VSQAdd(Size, OpSize::i32Bit, Acc, DotProduct);
-  }
+Ref OpDispatchBuilder::VPDPBxxDOpImpl(IR::OpSize Size, Ref Acc, Ref Src1, Ref Src2, bool LHSSigned, bool RHSSigned, bool Saturating) {
+  // Does four 8-bit byte multiplies per 32-bit element, sums them and accumulates into the destination.
+  // The DotProd and I8MM extensions map onto VPDPB* almost directly.
 
   if (CTX->HostFeatures.SupportsDotProd) {
-    // VSDOT assumes signed input, so we need to convert Src1 to signed, and then
-    // perform correction afterwards using 0x40 to account for the unsigned input.
-    auto Src1Signed = _VXor(Size, Src1, _VectorImm(Size, OpSize::i8Bit, 0x80));
-    auto SixtyFour = _VectorImm(Size, OpSize::i8Bit, 0x40);
+    auto Init = Saturating ? LoadZeroVector(Size) : Acc;
 
-    auto DotProduct = _VSDot(Size, Saturating ? LoadZeroVector(Size) : Acc, Src2, SixtyFour);
-    DotProduct = _VSDot(Size, DotProduct, Src2, SixtyFour);
-    DotProduct = _VSDot(Size, DotProduct, Src1Signed, Src2);
-    if (Saturating) {
-      return _VSQAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+    if (LHSSigned) {
+      if (RHSSigned) {
+
+        // signed * signed -> signed
+        auto DotProduct = _VSDot(Size, Init, Src1, Src2);
+        if (Saturating) {
+          auto NegDotProduct = _VNeg(Size, OpSize::i32Bit, DotProduct);
+          return _VSQSub(Size, OpSize::i32Bit, Acc, NegDotProduct);
+        }
+        return DotProduct;
+
+      } else {
+
+        // signed * unsigned -> signed
+        auto DotProduct = Init;
+        if (CTX->HostFeatures.SupportsI8MM) {
+          // intentionally reversed inputs: instruction SUDOT only exists in indexed form.
+          DotProduct = _VUSDot(Size, DotProduct, Src2, Src1);
+        } else {
+          // VSDOT assumes signed input, so we need to convert Src2 to signed, and then
+          // perform correction afterwards using 0x40 to account for the unsigned input.
+          auto Src2Signed = _VXor(Size, Src2, _VectorImm(Size, OpSize::i8Bit, 0x80));
+          auto SixtyFour = _VectorImm(Size, OpSize::i8Bit, 0x40);
+          DotProduct = _VSDot(Size, DotProduct, Src1, SixtyFour);
+          DotProduct = _VSDot(Size, DotProduct, Src1, SixtyFour);
+          DotProduct = _VSDot(Size, DotProduct, Src2Signed, Src1);
+        }
+        if (Saturating) {
+          return _VSQAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+        }
+        return DotProduct;
+      }
+    } else {
+      if (RHSSigned) {
+
+        // unsigned * signed -> signed
+        auto DotProduct = Init;
+        if (CTX->HostFeatures.SupportsI8MM) {
+          DotProduct = _VUSDot(Size, DotProduct, Src1, Src2);
+        } else {
+          // VSDOT assumes signed input, so we need to convert Src1 to signed, and then
+          // perform correction afterwards using 0x40 to account for the unsigned input.
+          auto Src1Signed = _VXor(Size, Src1, _VectorImm(Size, OpSize::i8Bit, 0x80));
+          auto SixtyFour = _VectorImm(Size, OpSize::i8Bit, 0x40);
+          DotProduct = _VSDot(Size, DotProduct, Src2, SixtyFour);
+          DotProduct = _VSDot(Size, DotProduct, Src2, SixtyFour);
+          DotProduct = _VSDot(Size, DotProduct, Src1Signed, Src2);
+        }
+        if (Saturating) {
+          return _VSQAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+        }
+        return DotProduct;
+
+      } else {
+
+        // unsigned * unsigned -> unsigned
+        auto DotProduct = _VUDot(Size, Init, Src1, Src2);
+        if (Saturating) {
+          return _VUQAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+        }
+        return DotProduct;
+      }
     }
-    return DotProduct;
   }
 
   // Naive software implementation.
   auto Even = _VUnZip(Size, OpSize::i16Bit, Src1, Src2);
-  auto Even1_16b = _VUXTL(Size, OpSize::i8Bit, Even);
-  auto Even2_16b = _VSXTL2(Size, OpSize::i8Bit, Even);
+  auto Even1_16b = LHSSigned ? _VSXTL(Size, OpSize::i8Bit, Even) : _VUXTL(Size, OpSize::i8Bit, Even);
+  auto Even2_16b = RHSSigned ? _VSXTL2(Size, OpSize::i8Bit, Even) : _VUXTL2(Size, OpSize::i8Bit, Even);
   auto ResMul_Even = _VMul(Size, OpSize::i16Bit, Even1_16b, Even2_16b);
 
   auto Odd = _VUnZip2(Size, OpSize::i16Bit, Src1, Src2);
-  auto Odd1_16b = _VUXTL(Size, OpSize::i8Bit, Odd);
-  auto Odd2_16b = _VSXTL2(Size, OpSize::i8Bit, Odd);
+  auto Odd1_16b = LHSSigned ? _VSXTL(Size, OpSize::i8Bit, Odd) : _VUXTL(Size, OpSize::i8Bit, Odd);
+  auto Odd2_16b = RHSSigned ? _VSXTL2(Size, OpSize::i8Bit, Odd) : _VUXTL2(Size, OpSize::i8Bit, Odd);
   auto ResMul_Odd = _VMul(Size, OpSize::i16Bit, Odd1_16b, Odd2_16b);
 
   auto DotProduct = _VSAdALP(Size, OpSize::i16Bit, _VSAddLP(Size, OpSize::i16Bit, ResMul_Even), ResMul_Odd);
   if (Saturating) {
+    if (LHSSigned && RHSSigned) {
+      auto NegDotProduct = _VNeg(Size, OpSize::i32Bit, DotProduct);
+      return _VSQSub(Size, OpSize::i32Bit, Acc, NegDotProduct);
+    }
     return _VSQAdd(Size, OpSize::i32Bit, Acc, DotProduct);
   }
   return _VAdd(Size, OpSize::i32Bit, Acc, DotProduct);
 }
 
-Ref OpDispatchBuilder::VPDPWSSDOpImpl(IR::OpSize Size, Ref Acc, Ref Src1, Ref Src2, bool Saturating) {
-  auto DotProduct = PMADDWDOpImpl(Size, Src1, Src2);
-  if (!Saturating) {
-    return _VAdd(Size, OpSize::i32Bit, Acc, DotProduct);
-  }
+Ref OpDispatchBuilder::VPDPWxxDOpImpl(IR::OpSize Size, Ref Acc, Ref Src1, Ref Src2, bool LHSSigned, bool RHSSigned, bool Saturating) {
+  // Does two 16-bit subelement multiplies per 32-bit element, sums them and accumulates into the destination.
+  // TODO: implement more efficiently using SVE2.1's 16->32 SDOT or SVE's 16->64 SDOT
 
-  auto NegDotProduct = _VNeg(Size, OpSize::i32Bit, DotProduct);
-  return _VSQSub(Size, OpSize::i32Bit, Acc, NegDotProduct);
+  if (LHSSigned) {
+    if (RHSSigned) {
+
+      // signed * signed -> signed
+      auto Lower = _VSMull(Size, OpSize::i16Bit, Src1, Src2);
+      auto Upper = _VSMull2(Size, OpSize::i16Bit, Src1, Src2);
+      auto DotProduct = _VAddP(Size, OpSize::i32Bit, Lower, Upper);
+      if (Saturating) {
+        auto NegDotProduct = _VNeg(Size, OpSize::i32Bit, DotProduct);
+        return _VSQSub(Size, OpSize::i32Bit, Acc, NegDotProduct);
+      }
+      return _VAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+
+    } else {
+
+      // signed * unsigned -> signed
+      auto Src1Lower = _VSXTL(Size, OpSize::i16Bit, Src1);
+      auto Src2Lower = _VUXTL(Size, OpSize::i16Bit, Src2);
+      auto ProdLower = _VMul(Size, OpSize::i32Bit, Src1Lower, Src2Lower);
+      auto Src1Upper = _VSXTL2(Size, OpSize::i16Bit, Src1);
+      auto Src2Upper = _VUXTL2(Size, OpSize::i16Bit, Src2);
+      auto ProdUpper = _VMul(Size, OpSize::i32Bit, Src1Upper, Src2Upper);
+      auto DotProduct = _VAddP(Size, OpSize::i32Bit, ProdLower, ProdUpper);
+      if (Saturating) {
+        return _VSQAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+      }
+      return _VAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+    }
+  } else {
+    if (RHSSigned) {
+
+      // unsigned * signed -> signed
+      auto Src1Lower = _VUXTL(Size, OpSize::i16Bit, Src1);
+      auto Src2Lower = _VSXTL(Size, OpSize::i16Bit, Src2);
+      auto ProdLower = _VMul(Size, OpSize::i32Bit, Src1Lower, Src2Lower);
+      auto Src1Upper = _VUXTL2(Size, OpSize::i16Bit, Src1);
+      auto Src2Upper = _VSXTL2(Size, OpSize::i16Bit, Src2);
+      auto ProdUpper = _VMul(Size, OpSize::i32Bit, Src1Upper, Src2Upper);
+      auto DotProduct = _VAddP(Size, OpSize::i32Bit, ProdLower, ProdUpper);
+      if (Saturating) {
+        return _VSQAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+      }
+      return _VAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+
+    } else {
+
+      // unsigned * unsigned -> unsigned
+      auto Lower = _VUMull(Size, OpSize::i16Bit, Src1, Src2);
+      auto Upper = _VUMull2(Size, OpSize::i16Bit, Src1, Src2);
+      if (Saturating) {
+        auto AccLower = _VUXTL(Size, OpSize::i32Bit, Acc);
+        auto AccUpper = _VUXTL2(Size, OpSize::i32Bit, Acc);
+        auto ResLower = _VUAdALP(Size, OpSize::i32Bit, AccLower, Lower);
+        auto ResUpper = _VUAdALP(Size, OpSize::i32Bit, AccUpper, Upper);
+        return _VUQXTNPair(Size, OpSize::i64Bit, ResLower, ResUpper);
+      }
+      auto DotProduct = _VAddP(Size, OpSize::i32Bit, Lower, Upper);
+      return _VAdd(Size, OpSize::i32Bit, Acc, DotProduct);
+    }
+  }
 }
 
-void OpDispatchBuilder::VPDPBUSDOp(OpcodeArgs, bool Saturating) {
+void OpDispatchBuilder::VPDPBxxDOp(OpcodeArgs, bool LHSSigned, bool RHSSigned, bool Saturating) {
   const auto Size = OpSizeFromSrc(Op);
 
   Ref Acc = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src1 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
 
-  Ref Result = VPDPBUSDOpImpl(Size, Acc, Src1, Src2, Saturating);
+  Ref Result = VPDPBxxDOpImpl(Size, Acc, Src1, Src2, LHSSigned, RHSSigned, Saturating);
   StoreResultFPR(Op, Result);
 }
 
-void OpDispatchBuilder::VPDPWSSDOp(OpcodeArgs, bool Saturating) {
+void OpDispatchBuilder::VPDPWxxDOp(OpcodeArgs, bool LHSSigned, bool RHSSigned, bool Saturating) {
   const auto Size = OpSizeFromSrc(Op);
 
   Ref Acc = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src1 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
 
-  Ref Result = VPDPWSSDOpImpl(Size, Acc, Src1, Src2, Saturating);
+  Ref Result = VPDPWxxDOpImpl(Size, Acc, Src1, Src2, LHSSigned, RHSSigned, Saturating);
   StoreResultFPR(Op, Result);
 }
 
