@@ -14,7 +14,7 @@
       "I8MM",
       "DOTPROD"
     ],
-    "BinaryCacheVersion": 33
+    "BinaryCacheVersion": 34
   },
   "Instructions": {
     "vpshufb xmm0, xmm1, xmm2": {
@@ -65,7 +65,7 @@
         "uzp2 z1.h, z0.h, z0.h",
         "uzp1 z2.h, z0.h, z0.h",
         "splice z2.d, p6, z2.d, z1.d",
-        "ldr x0, [x28, #2576]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z3.b}, p7/z, [x0]",
         "tbl z16.b, {z2.b}, z3.b"
       ]
@@ -90,7 +90,7 @@
         "uzp2 z1.s, z0.s, z0.s",
         "uzp1 z2.s, z0.s, z0.s",
         "splice z2.d, p6, z2.d, z1.d",
-        "ldr x0, [x28, #2576]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z3.b}, p7/z, [x0]",
         "tbl z16.b, {z2.b}, z3.b"
       ]
@@ -115,7 +115,7 @@
         "uzp1 z2.h, z17.h, z18.h",
         "uzp2 z3.h, z17.h, z18.h",
         "sqadd z2.h, z2.h, z3.h",
-        "ldr x0, [x28, #2576]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z3.b}, p7/z, [x0]",
         "tbl z16.b, {z2.b}, z3.b"
       ]
@@ -174,7 +174,7 @@
         "uzp1 z2.h, z17.h, z18.h",
         "uzp2 z3.h, z17.h, z18.h",
         "sub z2.h, z2.h, z3.h",
-        "ldr x0, [x28, #2576]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z3.b}, p7/z, [x0]",
         "tbl z16.b, {z2.b}, z3.b"
       ]
@@ -199,7 +199,7 @@
         "uzp1 z2.s, z17.s, z18.s",
         "uzp2 z3.s, z17.s, z18.s",
         "sub z2.s, z2.s, z3.s",
-        "ldr x0, [x28, #2576]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z3.b}, p7/z, [x0]",
         "tbl z16.b, {z2.b}, z3.b"
       ]
@@ -224,7 +224,7 @@
         "uzp1 z2.h, z17.h, z18.h",
         "uzp2 z3.h, z17.h, z18.h",
         "sqsub z2.h, z2.h, z3.h",
-        "ldr x0, [x28, #2576]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z3.b}, p7/z, [x0]",
         "tbl z16.b, {z2.b}, z3.b"
       ]
@@ -918,7 +918,7 @@
         "sqxtunb z2.h, z17.s",
         "uzp1 z2.h, z2.h, z2.h",
         "splice z2.h, p6, z2.h, z1.h",
-        "ldr x0, [x28, #2576]",
+        "ldr x0, [x28, #2560]",
         "ld1b {z3.b}, p7/z, [x0]",
         "tbl z16.b, {z2.b}, z3.b"
       ]
@@ -1512,7 +1512,7 @@
         "Map 2 0b01 0x41 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3168]",
+        "ldr q2, [x28, #3136]",
         "zip1 v3.8h, v2.8h, v17.8h",
         "zip2 v2.8h, v2.8h, v17.8h",
         "umin v2.4s, v3.4s, v2.4s",
@@ -3780,7 +3780,7 @@
         "Map 2 0b01 0x96 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3216]",
+        "ldr q2, [x28, #3184]",
         "eor v2.16b, v17.16b, v2.16b",
         "fmla v2.4s, v16.4s, v18.4s",
         "mov v16.16b, v2.16b"
@@ -3792,7 +3792,7 @@
         "Map 2 0b01 0x96 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2432]",
+        "ldr x0, [x28, #2416]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z17.d, z2.d",
         "mov z0.d, z2.d",
@@ -3806,7 +3806,7 @@
         "Map 2 0b01 0x96 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3248]",
+        "ldr q2, [x28, #3216]",
         "eor v2.16b, v17.16b, v2.16b",
         "fmla v2.2d, v16.2d, v18.2d",
         "mov v16.16b, v2.16b"
@@ -3818,7 +3818,7 @@
         "Map 2 0b01 0x96 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2448]",
+        "ldr x0, [x28, #2432]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z17.d, z2.d",
         "mov z0.d, z2.d",
@@ -3832,7 +3832,7 @@
         "Map 2 0b01 0x97 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3280]",
+        "ldr q2, [x28, #3248]",
         "eor v2.16b, v17.16b, v2.16b",
         "fmla v2.4s, v16.4s, v18.4s",
         "mov v16.16b, v2.16b"
@@ -3844,7 +3844,7 @@
         "Map 2 0b01 0x97 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2464]",
+        "ldr x0, [x28, #2448]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z17.d, z2.d",
         "mov z0.d, z2.d",
@@ -3858,7 +3858,7 @@
         "Map 2 0b01 0x97 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3312]",
+        "ldr q2, [x28, #3280]",
         "eor v2.16b, v17.16b, v2.16b",
         "fmla v2.2d, v16.2d, v18.2d",
         "mov v16.16b, v2.16b"
@@ -3870,7 +3870,7 @@
         "Map 2 0b01 0x97 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2480]",
+        "ldr x0, [x28, #2464]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z17.d, z2.d",
         "mov z0.d, z2.d",
@@ -4732,7 +4732,7 @@
         "Map 2 0b01 0xa6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3216]",
+        "ldr q2, [x28, #3184]",
         "eor v2.16b, v18.16b, v2.16b",
         "fmla v2.4s, v17.4s, v16.4s",
         "mov v16.16b, v2.16b"
@@ -4744,7 +4744,7 @@
         "Map 2 0b01 0xa6 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2432]",
+        "ldr x0, [x28, #2416]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "mov z0.d, z2.d",
@@ -4758,7 +4758,7 @@
         "Map 2 0b01 0xa6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3248]",
+        "ldr q2, [x28, #3216]",
         "eor v2.16b, v18.16b, v2.16b",
         "fmla v2.2d, v17.2d, v16.2d",
         "mov v16.16b, v2.16b"
@@ -4770,7 +4770,7 @@
         "Map 2 0b01 0xa6 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2448]",
+        "ldr x0, [x28, #2432]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "mov z0.d, z2.d",
@@ -4784,7 +4784,7 @@
         "Map 2 0b01 0xa7 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3280]",
+        "ldr q2, [x28, #3248]",
         "eor v2.16b, v18.16b, v2.16b",
         "fmla v2.4s, v17.4s, v16.4s",
         "mov v16.16b, v2.16b"
@@ -4796,7 +4796,7 @@
         "Map 2 0b01 0xa7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2464]",
+        "ldr x0, [x28, #2448]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "mov z0.d, z2.d",
@@ -4810,7 +4810,7 @@
         "Map 2 0b01 0xa7 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3312]",
+        "ldr q2, [x28, #3280]",
         "eor v2.16b, v18.16b, v2.16b",
         "fmla v2.2d, v17.2d, v16.2d",
         "mov v16.16b, v2.16b"
@@ -4822,7 +4822,7 @@
         "Map 2 0b01 0xa7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2480]",
+        "ldr x0, [x28, #2464]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z18.d, z2.d",
         "mov z0.d, z2.d",
@@ -4964,7 +4964,7 @@
         "Map 2 0b01 0xb6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3216]",
+        "ldr q2, [x28, #3184]",
         "eor v2.16b, v16.16b, v2.16b",
         "fmla v2.4s, v17.4s, v18.4s",
         "mov v16.16b, v2.16b"
@@ -4976,7 +4976,7 @@
         "Map 2 0b01 0xb6 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2432]",
+        "ldr x0, [x28, #2416]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z16.d, z2.d",
         "mov z16.d, z2.d",
@@ -4989,7 +4989,7 @@
         "Map 2 0b01 0xb6 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3248]",
+        "ldr q2, [x28, #3216]",
         "eor v2.16b, v16.16b, v2.16b",
         "fmla v2.2d, v17.2d, v18.2d",
         "mov v16.16b, v2.16b"
@@ -5001,7 +5001,7 @@
         "Map 2 0b01 0xb6 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2448]",
+        "ldr x0, [x28, #2432]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z16.d, z2.d",
         "mov z16.d, z2.d",
@@ -5014,7 +5014,7 @@
         "Map 2 0b01 0xb7 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3280]",
+        "ldr q2, [x28, #3248]",
         "eor v2.16b, v16.16b, v2.16b",
         "fmla v2.4s, v17.4s, v18.4s",
         "mov v16.16b, v2.16b"
@@ -5026,7 +5026,7 @@
         "Map 2 0b01 0xb7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2464]",
+        "ldr x0, [x28, #2448]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z16.d, z2.d",
         "mov z16.d, z2.d",
@@ -5039,7 +5039,7 @@
         "Map 2 0b01 0xb7 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3312]",
+        "ldr q2, [x28, #3280]",
         "eor v2.16b, v16.16b, v2.16b",
         "fmla v2.2d, v17.2d, v18.2d",
         "mov v16.16b, v2.16b"
@@ -5051,7 +5051,7 @@
         "Map 2 0b01 0xb7 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2480]",
+        "ldr x0, [x28, #2464]",
         "ld1b {z2.b}, p7/z, [x0]",
         "eor z2.d, z16.d, z2.d",
         "mov z16.d, z2.d",

@@ -8,7 +8,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 33
+    "BinaryCacheVersion": 34
   },
   "Instructions": {
     "dpps xmm0, xmm1, 00000000b": {

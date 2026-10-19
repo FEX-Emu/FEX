@@ -11,7 +11,7 @@
       "I8MM",
       "DOTPROD"
     ],
-    "BinaryCacheVersion": 33
+    "BinaryCacheVersion": 34
   },
   "Comment": [
     "This file tracks the translations for the 'peephole' optimizations in FEX.",
