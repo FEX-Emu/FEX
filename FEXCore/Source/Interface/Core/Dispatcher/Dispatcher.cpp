@@ -592,44 +592,6 @@ void Dispatcher::EmitDispatcher() {
     (void)b(&LoopTop);
   }
 
-  auto EmitLongALUOpHandler = [&](auto R, auto Offset) {
-    auto Address = GetCursorAddress<uint64_t>();
-
-    PushDynamicRegs(TMP4);
-    SpillStaticRegs(TMP4);
-
-    if (!TMP_ABIARGS) {
-      mov(ARMEmitter::XReg::x0, TMP1);
-      mov(ARMEmitter::XReg::x1, TMP2);
-      mov(ARMEmitter::XReg::x2, TMP3);
-    }
-
-    ldr(ARMEmitter::XReg::x3, R, Offset);
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<__uint128_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-    } else {
-      blr(ARMEmitter::Reg::r3);
-    }
-
-    // Result is now in x0, x1
-    if (!TMP_ABIARGS) {
-      mov(TMP1, ARMEmitter::XReg::x0);
-      mov(TMP2, ARMEmitter::XReg::x1);
-    }
-
-    FillStaticRegs();
-
-    // Fix the stack and any values that were stepped on
-    PopDynamicRegs();
-
-    // Go back to our code block
-    ret();
-    return Address;
-  };
-
-  LUDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.LUDIV));
-  LDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.LDIV));
-
   EmitF64Sin();
   EmitF64Cos();
   EmitF64Tan();
@@ -2713,8 +2675,6 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     Ptrs.GuestSignal_SynchronousFault = GuestSignal_SynchronousFault;
     Ptrs.SignalReturnHandler = SignalHandlerReturnAddress;
     Ptrs.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;
-    Ptrs.LUDIVHandler = LUDIVHandlerAddress;
-    Ptrs.LDIVHandler = LDIVHandlerAddress;
     Ptrs.F64SinHandler = F64SinHandlerAddress;
     Ptrs.F64CosHandler = F64CosHandlerAddress;
     Ptrs.F64TanHandler = F64TanHandlerAddress;

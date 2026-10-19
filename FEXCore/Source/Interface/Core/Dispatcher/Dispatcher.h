@@ -98,10 +98,6 @@ private:
   uint64_t Start {};
   uint64_t End {};
 
-  // Long division helpers
-  uint64_t LUDIVHandlerAddress {};
-  uint64_t LDIVHandlerAddress {};
-
   // F64 reduced-precision shared handlers
   uint64_t F64SinHandlerAddress {};
   uint64_t F64CosHandlerAddress {};
