@@ -1004,6 +1004,7 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex, bool DestRAX) {
   }
 
   InvalidateAF();
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::ARPLOp(OpcodeArgs) {
@@ -1410,6 +1411,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
 
   Ref Result = _Lshl(Size == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
@@ -1423,6 +1425,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   CalculateFlags_ShiftLeftImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
   CalculateDeferredFlags();
   StoreResultGPR(Op, Result);
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
@@ -1432,6 +1435,8 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
 
   auto ALUOp = _Lshr(std::max(OpSize::i32Bit, Size), Dest, Src);
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
@@ -1444,6 +1449,8 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
   CalculateFlags_ShiftRightImmediate(OpSizeFromSrc(Op), ALUOp, Dest, Shift);
   CalculateDeferredFlags();
   StoreResultGPR(Op, ALUOp);
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
@@ -1487,6 +1494,8 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   Res = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Shift, Constant(0), Dest, Res);
 
   HandleShift(Op, Res, Dest, ShiftType::LSL, Shift);
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
@@ -1518,6 +1527,8 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
     // Ensure Zext still occurs
     StoreResultGPR(Op, Dest);
   }
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
@@ -1552,6 +1563,8 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   Res = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Shift, Constant(0), Dest, Res);
 
   HandleShift(Op, Res, Dest, ShiftType::LSR, Shift);
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
@@ -1582,6 +1595,8 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
     // Ensure Zext still occurs
     StoreResultGPR(Op, Dest);
   }
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
@@ -1611,6 +1626,8 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
 
     HandleShift(Op, Result, Dest, ShiftType::ASR, Src);
   }
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
 }
 
 void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit) {
@@ -1681,6 +1698,8 @@ void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
 
   StoreResultGPR(Op, Dest);
   CalculateFlags_Logical(OpSizeFromSrc(Op), Dest);
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
@@ -1724,6 +1743,8 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // AF are undefined.
   SetNZ_ZeroCV(GetOpSize(Dest), Dest);
   InvalidatePF_AF();
+
+  AcidTestFlags(X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
@@ -1745,6 +1766,8 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   SetNZ_ZeroCV(Size, Result);
   InvalidatePF_AF();
   SetCFInverted(GetRFLAG(X86State::RFLAG_ZF_RAW_LOC));
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
@@ -1765,6 +1788,8 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   // and O) while setting S.
   SetNZ_ZeroCV(Size, Result);
   SetCFInverted(CFInv);
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
@@ -1782,6 +1807,8 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   SetNZ_ZeroCV(Size, Result);
   SetCFInverted(CFInv);
   InvalidatePF_AF();
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 // Handles SARX, SHLX, and SHRX
@@ -1841,6 +1868,8 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   InvalidatePF_AF();
   SetNZ_ZeroCV(Size, Result);
   SetCFInverted(CFInv);
+
+  AcidTestFlags(X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
@@ -2565,6 +2594,9 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     // to insert into CF directly. We could optimize perhaps.
     SetCFDirect(Value, 0, true);
   }
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_ZF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC,
+                X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
@@ -2604,6 +2636,8 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
 
   StoreResultGPR(Op, Dest);
   CalculateFlags_MUL(Size, Dest, ResultHigh);
+
+  AcidTestFlags(X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_ZF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
@@ -2643,6 +2677,8 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
 
   StoreResultGPR(Op, Dest);
   CalculateFlags_MUL(Size, Dest, ResultHigh);
+
+  AcidTestFlags(X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_ZF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::IMULOp(OpcodeArgs) {
@@ -2698,6 +2734,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   }
 
   CalculateFlags_MUL(Size, Result, ResultHigh);
+
+  AcidTestFlags(X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_ZF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
@@ -2868,6 +2906,8 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   SetCFInverted(CFInv);
   CalculatePF(AL);
   SetAFAndFixup(AF);
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC);
 }
 
 void OpDispatchBuilder::DASOp(OpcodeArgs) {
@@ -2894,6 +2934,8 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetCFDirect(NewCF);
   CalculatePF(AL);
   SetAFAndFixup(AF);
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC);
 }
 
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
@@ -2911,6 +2953,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, Constant(0xFF0F));
   StoreGPRRegister(X86State::REG_RAX, A, OpSize::i16Bit);
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_ZF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::AASOp(OpcodeArgs) {
@@ -2928,6 +2971,8 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, Constant(0xFF0F));
   StoreGPRRegister(X86State::REG_RAX, A, OpSize::i16Bit);
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_ZF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
@@ -2942,6 +2987,8 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   SetNZ_ZeroCV(OpSize::i8Bit, Res);
   CalculatePF(Res);
   InvalidateAF();
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_CF_RAW_LOC);
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
@@ -2955,6 +3002,8 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   SetNZ_ZeroCV(OpSize::i8Bit, Result);
   CalculatePF(Result);
   InvalidateAF();
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_CF_RAW_LOC);
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
@@ -3754,6 +3803,10 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RAX, Quotient, Size);
     StoreGPRRegister(X86State::REG_RDX, Remainder, Size);
   }
+
+  // All flags are undefined.
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_ZF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC,
+                X86State::RFLAG_PF_RAW_LOC, X86State::RFLAG_CF_RAW_LOC);
 }
 
 void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
@@ -3797,6 +3850,10 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RAX, Quotient, Size);
     StoreGPRRegister(X86State::REG_RDX, Remainder, Size);
   }
+
+  // All flags are undefined.
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_ZF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC,
+                X86State::RFLAG_PF_RAW_LOC, X86State::RFLAG_CF_RAW_LOC);
 }
 
 void OpDispatchBuilder::BSFOp(OpcodeArgs) {
@@ -3819,6 +3876,9 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   // applications might rely on that in the wild.
   auto SelectOp = NZCVSelect(GPRSize, CondClass::EQ, Dest, Result);
   StoreResultGPR_WithOpSize(Op, Op->Dest, SelectOp, DstSize);
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC,
+                X86State::RFLAG_CF_RAW_LOC);
 }
 
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
@@ -3837,6 +3897,9 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
   // If Src was zero then the destination doesn't get modified
   auto SelectOp = NZCVSelect(GPRSize, CondClass::EQ, Dest, Result);
   StoreResultGPR_WithOpSize(Op, Op->Dest, SelectOp, DstSize);
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC,
+                X86State::RFLAG_CF_RAW_LOC);
 }
 
 void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
@@ -4782,12 +4845,14 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   case FEXCore::IR::IROps::OP_AND:
   case FEXCore::IR::IROps::OP_OR: {
     CalculateFlags_Logical(Size, Result);
+    AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
     break;
   }
   case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {
     HandleNZ00Write();
     CalculatePF(Result);
     InvalidateAF();
+    AcidTestFlags(X86State::RFLAG_AF_RAW_LOC);
     break;
   }
   default: break;
@@ -4938,6 +5003,8 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   StoreResultGPR(Op, Src);
 
   CalculateFlags_ZCNT(OpSizeFromSrc(Op), Src);
+
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
@@ -4947,6 +5014,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResultGPR(Op, Res);
   CalculateFlags_ZCNT(OpSizeFromSrc(Op), Res);
+  AcidTestFlags(X86State::RFLAG_OF_RAW_LOC, X86State::RFLAG_SF_RAW_LOC, X86State::RFLAG_AF_RAW_LOC, X86State::RFLAG_PF_RAW_LOC);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {

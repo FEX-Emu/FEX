@@ -1321,6 +1321,7 @@ protected:
 
 private:
   FEX_CONFIG_OPT(ReducedPrecisionMode, X87REDUCEDPRECISION);
+  FEX_CONFIG_OPT(UndefinedFlagAcidTest, UNDEFINEDFLAGACIDTEST);
 
   struct JumpTargetInfo {
     Ref BlockEntry;
@@ -1904,6 +1905,55 @@ private:
     InvalidateReg(Core::CPUState::AF_AS_GREG);
   }
 
+  // Sets the desired flags to zero when acid test is enabled.
+  // Not meant to be fast, just meant to produce consistent results.
+  void AcidTestFlags(unsigned BitOffset = 0, unsigned BitOffset2 = 0, unsigned BitOffset3 = 0, unsigned BitOffset4 = 0,
+                     unsigned BitOffset5 = 0, unsigned BitOffset6 = 0) {
+    if (!UndefinedFlagAcidTest) [[likely]] {
+      return;
+    }
+
+    unsigned BitFlags {};
+    if (BitOffset) {
+      BitFlags |= 1U << BitOffset;
+    }
+    if (BitOffset2) {
+      BitFlags |= 1U << BitOffset2;
+    }
+    if (BitOffset3) {
+      BitFlags |= 1U << BitOffset3;
+    }
+    if (BitOffset4) {
+      BitFlags |= 1U << BitOffset4;
+    }
+    if (BitOffset5) {
+      BitFlags |= 1U << BitOffset5;
+    }
+    if (BitOffset6) {
+      BitFlags |= 1U << BitOffset6;
+    }
+
+    auto Flag = Constant(0);
+    if (BitFlags & (1U << X86State::RFLAG_SF_RAW_LOC)) {
+      SetRFLAG(Flag, FEXCore::X86State::RFLAG_SF_RAW_LOC);
+    }
+    if (BitFlags & (1U << X86State::RFLAG_ZF_RAW_LOC)) {
+      SetRFLAG(Flag, FEXCore::X86State::RFLAG_ZF_RAW_LOC);
+    }
+    if (BitFlags & (1U << X86State::RFLAG_CF_RAW_LOC)) {
+      SetRFLAG(Flag, FEXCore::X86State::RFLAG_CF_RAW_LOC);
+    }
+    if (BitFlags & (1U << X86State::RFLAG_OF_RAW_LOC)) {
+      SetRFLAG(Flag, FEXCore::X86State::RFLAG_OF_RAW_LOC);
+    }
+    if (BitFlags & (1U << X86State::RFLAG_AF_RAW_LOC)) {
+      SetRFLAG(Flag, FEXCore::X86State::RFLAG_AF_RAW_LOC);
+    }
+    if (BitFlags & (1U << X86State::RFLAG_AF_RAW_LOC)) {
+      SetRFLAG(Flag, FEXCore::X86State::RFLAG_AF_RAW_LOC);
+    }
+  }
+
   [[nodiscard]]
   static CondClass CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {
@@ -2207,8 +2257,7 @@ private:
     Ref V_inv = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC, true);
     SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(V_inv);
 
-    // Intel: OF, SF, and AF set to zero
-    // AMD:   no mention of OF, SF and AF but actual hardware seems to always zero
+    // Both Intel and AMD manual state that OF, SF, and AF are set to zero.
     //
     // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so
     // PF[4] is 0 so the XOR with PF will have no effect, so setting the AF
