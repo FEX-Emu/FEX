@@ -288,6 +288,7 @@ int main(int argc, char** argv, char** const envp) {
   const bool SupportsCLFLOPT = Feature.Feat_clflopt;
   const bool SupportsFSGSBase = Feature.Feat_fsgsbase;
   const bool SupportsAVXVNNI = Feature.Feat_avx_vnni;
+  const bool SupportsSerialize = Feature.Feat_serialize;
 
   TestUnsupported |=
     (!Supports3DNow && Loader.Requires3DNow()) || (!SupportsSSE4A && Loader.RequiresSSE4A()) || (!SupportsBMI1 && Loader.RequiresBMI1()) ||
@@ -297,6 +298,7 @@ int main(int argc, char** argv, char** const envp) {
     (!SupportsADX && Loader.RequiresADX()) || (!SupportsXSAVE && Loader.RequiresXSAVE()) || (!SupportsRDPID && Loader.RequiresRDPID()) ||
     (!SupportsCLFLOPT && Loader.RequiresCLFLOPT()) || (!SupportsFSGSBase && Loader.RequiresFSGSBase()) || Loader.RequiresEMMI();
   TestUnsupported |= !SupportsAVXVNNI && Loader.RequiresAVXVNNI();
+  TestUnsupported |= !SupportsSerialize && Loader.RequiresSerialize();
 #endif
 
 #ifdef _WIN32
