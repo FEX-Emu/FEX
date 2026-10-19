@@ -5025,6 +5025,11 @@ void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::SerializeOp(OpcodeArgs) {
+  _Fence(FenceType::Inst);
+  _Fence(FenceType::Store);
+}
+
 void OpDispatchBuilder::UMonitorOrCLRSSBSY(OpcodeArgs) {
   if (DestIsMem(Op) || !CTX->HostFeatures.SupportsWFXT) {
     // CLRSSBSY

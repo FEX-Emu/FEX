@@ -828,6 +828,7 @@ public:
   void LoadFenceOrXRSTOR(OpcodeArgs);
   void MemFenceOrXSAVEOPT(OpcodeArgs);
   void StoreFenceOrCLFlush(OpcodeArgs);
+  void SerializeOp(OpcodeArgs);
   void UMonitorOrCLRSSBSY(OpcodeArgs);
   void UMWaitOp(OpcodeArgs);
   void CLZeroOp(OpcodeArgs);

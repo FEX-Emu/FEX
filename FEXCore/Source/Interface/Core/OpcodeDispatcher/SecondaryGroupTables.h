@@ -36,6 +36,8 @@ constexpr DispatchTableEntry OpDispatch_SecondaryGroupTables[] = {
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 4), 1, &OpDispatchBuilder::SMSWOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 4), 1, &OpDispatchBuilder::SMSWOp},
 
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 5), 1, &OpDispatchBuilder::SerializeOp},
+
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},

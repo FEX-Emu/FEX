@@ -758,7 +758,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 11) |                  // rtm-always-abort
               (0 << 12) |                  // Reserved
               (0 << 13) |                  // TSX Force Abort (TSX will force abort if attempted)
-              (0 << 14) |                  // SERIALIZE instruction
+              (1 << 14) |                  // SERIALIZE instruction
               ((Hybrid ? 1U : 0U) << 15) | // Hybrid
               (0 << 16) |                  // TSXLDTRK (TSX Suspend load address tracking) - Allows untracked memory loads inside TSX region
               (0 << 17) |                  // Reserved
