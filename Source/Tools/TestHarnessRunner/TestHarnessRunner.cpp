@@ -290,6 +290,8 @@ int main(int argc, char** argv, char** const envp) {
   const bool SupportsAVXVNNI = Feature.Feat_avx_vnni;
   const bool SupportsSerialize = Feature.Feat_serialize;
   const bool SupportsAVXNEConvert = Feature.Feat_avx_ne_convert;
+  const bool SupportsAVXVNNIINT8 = Feature.Feat_avx_vnni_int8;
+  const bool SupportsAVXVNNIINT16 = Feature.Feat_avx_vnni_int16;
 
   TestUnsupported |=
     (!Supports3DNow && Loader.Requires3DNow()) || (!SupportsSSE4A && Loader.RequiresSSE4A()) || (!SupportsBMI1 && Loader.RequiresBMI1()) ||
@@ -301,6 +303,8 @@ int main(int argc, char** argv, char** const envp) {
   TestUnsupported |= !SupportsAVXVNNI && Loader.RequiresAVXVNNI();
   TestUnsupported |= !SupportsSerialize && Loader.RequiresSerialize();
   TestUnsupported |= !SupportsAVXNEConvert && Loader.RequiresAVXNEConvert();
+  TestUnsupported |= !SupportsAVXVNNIINT8 && Loader.RequiresAVXVNNIINT8();
+  TestUnsupported |= !SupportsAVXVNNIINT16 && Loader.RequiresAVXVNNIINT16();
 #endif
 
 #ifdef _WIN32
