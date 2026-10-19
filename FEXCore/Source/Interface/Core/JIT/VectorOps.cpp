@@ -3888,6 +3888,54 @@ DEF_OP(VMul) {
   }
 }
 
+DEF_OP(VUDot) {
+  ///< Dest = Acc + dot(Vector1 (signed 8-bit), Vector2 (signed 8-bit))
+  // Matches:
+  // - SVE    - UDOT
+  // - ASIMD  - UDOT
+  const auto Op = IROp->C<IR::IROp_VUDot>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+
+  const auto Dst = GetVReg(Node);
+  const auto Acc = GetVReg(Op->Acc);
+  const auto Vector1 = GetVReg(Op->Vector1);
+  const auto Vector2 = GetVReg(Op->Vector2);
+
+  // UDOT accumulates in to its destination register,
+  // so we need to emit a move if Acc != Dst
+  ARMEmitter::VRegister DestTmp = Dst;
+  if (Dst != Acc) {
+    if (Dst != Vector1 && Dst != Vector2) {
+      DestTmp = Dst;
+    } else {
+      DestTmp = VTMP1;
+    }
+  }
+
+  if (HostSupportsSVE256 && Is256Bit) {
+    if (Dst != Acc) {
+      mov(DestTmp.Z(), Acc.Z());
+    }
+
+    udot(ARMEmitter::SubRegSize::i32Bit, DestTmp.Z(), Vector1.Z(), Vector2.Z());
+    if (Dst != DestTmp) {
+      mov(Dst.Z(), DestTmp.Z());
+    }
+  } else {
+    if (Dst != Acc) {
+      mov(DestTmp.Q(), Acc.Q());
+    }
+
+    udot(ARMEmitter::SubRegSize::i32Bit, DestTmp.Q(), Vector1.Q(), Vector2.Q());
+    if (Dst != DestTmp) {
+      mov(Dst.Q(), DestTmp.Q());
+    }
+  }
+}
+
 DEF_OP(VUSDot) {
   ///< Dest = Acc + dot(Vector1 (unsigned 8-bit), Vector2 (signed 8-bit))
   // Matches:
