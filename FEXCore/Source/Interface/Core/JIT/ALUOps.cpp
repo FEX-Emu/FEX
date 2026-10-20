@@ -872,7 +872,7 @@ DEF_OP(PExt) {
 // divllu() is itself an adaptation of Knuth's classic Algorithm D for long division, with some optimizations.
 // Where possible we have followed divllu() to the letter, including comments, but some changes were needed
 // due to our limited set of temp registers. Some comments below represent the original C code from divllu()
-// which matches the emitted assembly.
+// which is intended to match the assembly we emit.
 //
 // Additional reading:
 // https://ridiculousfish.com/blog/posts/labor-of-division-episode-iv.html
