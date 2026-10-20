@@ -354,6 +354,15 @@
           "Can potentially introduce more stutters, more likely the higher the number.",
           "Don't have this number larger than the increase count!"
         ]
+      },
+      "UndefinedFlagAcidTest": {
+        "Type": "bool",
+        "Default": "false",
+        "AffectsCodeGen": "true",
+        "Desc": [
+          "Ensures that all undefined flags generate consistent results",
+          "This is a useful test to determine if undefined flags are causing problems"
+        ]
       }
     },
     "Debug": {
