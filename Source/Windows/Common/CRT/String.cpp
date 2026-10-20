@@ -44,6 +44,10 @@ DLLEXPORT_FUNC(double, _strtod_l, (const char* __restrict__ _Str, char** __restr
   UNIMPLEMENTED();
 }
 
+DLLEXPORT_FUNC(float, _strtof_l, (const char* __restrict__ _Str, char** __restrict__ _EndPtr, _locale_t _Locale)) {
+  UNIMPLEMENTED();
+}
+
 long long wcstoll(const wchar_t* __restrict__ nptr, wchar_t** __restrict__ endptr, int base) {
   UNIMPLEMENTED();
 }
