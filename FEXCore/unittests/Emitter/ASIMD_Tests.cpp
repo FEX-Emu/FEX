@@ -644,6 +644,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD two-register m
   TEST_SINGLE(frecpe(SubRegSize::i32Bit, DReg::d30, DReg::d29), "frecpe v30.2s, v29.2s");
   // TEST_SINGLE(frecpe(SubRegSize::i64Bit, DReg::d30, DReg::d29), "frecpe v30.1d, v29.1d");
 
+  TEST_SINGLE(bfcvtn(QReg::q30, QReg::q29), "bfcvtn v30.4h, v29.4s");
+  TEST_SINGLE(bfcvtn2(QReg::q30, QReg::q29), "bfcvtn2 v30.8h, v29.4s");
+
   TEST_SINGLE(rev32(SubRegSize::i8Bit, QReg::q30, QReg::q29), "rev32 v30.16b, v29.16b");
   TEST_SINGLE(rev32(SubRegSize::i16Bit, QReg::q30, QReg::q29), "rev32 v30.8h, v29.8h");
   // TEST_SINGLE(rev32(SubRegSize::i32Bit, QReg::q30, QReg::q29), "rev32 v30.4s, v29.4s");

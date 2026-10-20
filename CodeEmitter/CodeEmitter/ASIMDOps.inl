@@ -768,6 +768,16 @@ public:
       ASIMD2RegMisc(0, size, 0b11101, rd, rn);
     }
   }
+  ///< size is the destination size.
+  ///< source size is the next size up.
+  void bfcvtn(QRegister rd, QRegister rn) {
+    ASIMD2RegMisc(0, SubRegSize::i32Bit, 0b10110, rd.D(), rn.D());
+  }
+  ///< size is the destination size.
+  ///< source size is the next size up.
+  void bfcvtn2(QRegister rd, QRegister rn) {
+    ASIMD2RegMisc(0, SubRegSize::i32Bit, 0b10110, rd, rn);
+  }
 
   template<IsQOrDRegister T>
   void rev32(SubRegSize size, T rd, T rn) {
