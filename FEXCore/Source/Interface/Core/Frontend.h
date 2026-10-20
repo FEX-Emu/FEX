@@ -30,6 +30,10 @@ public:
     PARTIAL_DECODE_INST,
     BAD_RELOCATION,
     UNIMPLEMENTED_INST,
+    BREAKPOINT_0,
+    BREAKPOINT_1,
+    BREAKPOINT_2,
+    BREAKPOINT_3,
   };
 
   enum class DataMaskType : uint8_t { NONE, MOV, BRANCH, DISP, NOP };
@@ -153,6 +157,7 @@ private:
   bool ExecutableRangeWritable {};
   bool HitNonExecutableRange {};
   bool HitBadRelocation {};
+  uint32_t HitBreakpoint {~0U};
 
   struct DecodeStream {
     // Original instruction stream RIP location.

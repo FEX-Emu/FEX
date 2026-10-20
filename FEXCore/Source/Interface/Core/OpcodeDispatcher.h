@@ -897,6 +897,7 @@ public:
   void Insertq(OpcodeArgs);
 
   void BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition);
+  void BreakpointOp(OpcodeArgs, uint32_t BP);
   void UnimplementedOp(OpcodeArgs);
   void PermissionRestrictedOp(OpcodeArgs);
 
