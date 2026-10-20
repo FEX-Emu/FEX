@@ -321,6 +321,7 @@ namespace AVX128 {
     {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i64Bit>},
     {OPD(2, 0b01, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i128Bit>},
 
+    {OPD(2, 0b10, 0x72), 1, &OpDispatchBuilder::AVX128_VCVTNEPS2BF16},
     {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i8Bit>},
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i16Bit>},
 
@@ -364,6 +365,13 @@ namespace AVX128 {
 
     {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 2, 1, 3>},  // VFMADDSUB
     {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, false, 2, 1, 3>}, // VFMSUBADD
+
+    {OPD(2, 0b00, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEBF162PS, false>},
+    {OPD(2, 0b01, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEBF162PS, true>},
+    {OPD(2, 0b10, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEBF162PS, true>},
+    {OPD(2, 0b11, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEBF162PS, false>},
+    {OPD(2, 0b01, 0xB1), 1, &IR::OpDispatchBuilder::AVX128_VBCSTNEBF162PS},
+    {OPD(2, 0b10, 0xB1), 1, &IR::OpDispatchBuilder::AVX128_VBCSTNEBF162PS},
 
     {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 2, 3, 1>},  // VFMADDSUB
     {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, false, 2, 3, 1>}, // VFMSUBADD
@@ -771,6 +779,7 @@ namespace AVX256 {
     {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i64Bit>},
     {OPD(2, 0b01, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i128Bit>},
 
+    {OPD(2, 0b10, 0x72), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i8Bit>},
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i16Bit>},
 
@@ -814,6 +823,13 @@ namespace AVX256 {
 
     {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 1, 3>},  // VFMADDSUB
     {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 2, 1, 3>}, // VFMSUBADD
+
+    {OPD(2, 0b00, 0xB0), 1, &IR::OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b01, 0xB0), 1, &IR::OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b10, 0xB0), 1, &IR::OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b11, 0xB0), 1, &IR::OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b01, 0xB1), 1, &IR::OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b10, 0xB1), 1, &IR::OpDispatchBuilder::UnimplementedOp},
 
     {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 3, 1>},  // VFMADDSUB
     {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 2, 3, 1>}, // VFMSUBADD
