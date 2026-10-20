@@ -925,10 +925,9 @@ void Arm64JITCore::EmitDivllu(ARMEmitter::Register Quotient, ARMEmitter::Registe
   // numhi <<= shift;
   lslv(EmitSize, NumHi, NumHi, Shift);
   // numhi |= (numlo >> (-shift & 63)) & (-(int64_t)shift >> 63);
-  neg(EmitSize, Remainder, Shift);
-  lsrv(EmitSize, Remainder, Lower, Remainder);
-  cmp(EmitSize, Shift, 0);
-  csel(EmitSize, Remainder, Remainder, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_NE);
+  mvn(EmitSize, Quotient, Shift);
+  lsr(EmitSize, Remainder, Lower, 1);
+  lsrv(EmitSize, Remainder, Remainder, Quotient);
   orr(EmitSize, NumHi, NumHi, Remainder);
   // numlo <<= shift;
   lslv(EmitSize, NumLo, Lower, Shift);
