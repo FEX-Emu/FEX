@@ -89,6 +89,7 @@ class HostFeatures(Flag) :
     FEATURE_EMMI      = (1 << 23)
     FEATURE_AVX_VNNI  = (1 << 24)
     FEATURE_SERIALIZE = (1 << 25)
+    FEATURE_AVX_NE_CONVERT = (1 << 26)
 
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
@@ -177,6 +178,7 @@ HostFeaturesLookup = {
     "EMMI"      : HostFeatures.FEATURE_EMMI,
     "AVX_VNNI"  : HostFeatures.FEATURE_AVX_VNNI,
     "SERIALIZE" : HostFeatures.FEATURE_SERIALIZE,
+    "AVX_NE_CONVERT" : HostFeatures.FEATURE_AVX_NE_CONVERT,
 }
 
 def parse_hexstring(s):

@@ -45,6 +45,7 @@ public:
       if (data_7.eax >= 1) {
         auto data_7_1 = cpuid(0x7, 0x1);
         Feat_avx_vnni = Feat_avx && (data_7_1.eax & (1U << 4));
+        Feat_avx_ne_convert = Feat_avx && (data_7_1.edx & (1U << 1));
       }
     }
 
@@ -87,6 +88,7 @@ public:
   bool Feat_fsgsbase {};
   bool Feat_avx_vnni {};
   bool Feat_serialize {};
+  bool Feat_avx_ne_convert {};
 
 private:
   struct cpuid_data {
