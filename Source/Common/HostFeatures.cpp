@@ -508,6 +508,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsWFXT = Features.Supports(CPUFeatures::Feature::WFxt);
   HostFeatures.SupportsI8MM = Features.Supports(CPUFeatures::Feature::I8MM);
   HostFeatures.SupportsDotProd = Features.Supports(CPUFeatures::Feature::DotProd);
+  HostFeatures.SupportsBF16 = Features.Supports(CPUFeatures::Feature::BF16);
 
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.
