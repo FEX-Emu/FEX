@@ -930,6 +930,9 @@ DEF_OP(VectorImm) {
 
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  if (Op->Do64BitExpansion) {
+    LOGMAN_THROW_A_FMT(!Is256Bit, "64-bit expansion unsupported on 256-bit operations.");
+  }
   const auto ElementSize = Op->Header.ElementSize;
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
@@ -945,12 +948,22 @@ DEF_OP(VectorImm) {
       dup_imm(SubRegSize, Dst.Z(), static_cast<int8_t>(Op->Immediate));
     }
   } else {
-    if (ElementSize == IR::OpSize::i64Bit) {
+    if (!Op->Do64BitExpansion && ElementSize == IR::OpSize::i64Bit) {
       // movi with 64bit element size doesn't do what we want here
       LoadConstant(ARMEmitter::Size::i64Bit, TMP1, static_cast<uint64_t>(Op->Immediate) << Op->ShiftAmount);
       dup(SubRegSize, Dst.Q(), TMP1.R());
     } else {
-      movi(SubRegSize, Dst.Q(), Op->Immediate, Op->ShiftAmount);
+      uint64_t Imm = Op->Immediate;
+      if (Op->Do64BitExpansion) {
+        // Need to manually expand the immediate for this case.
+        Imm = 0;
+        for (size_t i = 0; i < 8; ++i) {
+          if ((Op->Immediate >> i) & 1) {
+            Imm |= (0xFFULL << (i * 8));
+          }
+        }
+      }
+      movi(SubRegSize, Dst.Q(), Imm, Op->ShiftAmount);
     }
   }
 }

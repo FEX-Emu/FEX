@@ -1863,7 +1863,7 @@
         "DestSize": "RegisterSize"
       },
 
-      "FPR = VectorImm OpSize:#RegisterSize, OpSize:#ElementSize, u8:$Immediate, u8:$ShiftAmount{0}": {
+      "FPR = VectorImm OpSize:#RegisterSize, OpSize:#ElementSize, u8:$Immediate, u8:$ShiftAmount{0}, i1:$Do64BitExpansion{false}": {
         "Desc": ["Generates a vector with each element containg the immediate zexted"
                 ],
         "DestSize": "RegisterSize",
