@@ -246,6 +246,62 @@ void LoadStateFromWowContext(FEXCore::Core::InternalThreadState* Thread) {
   State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (XSave->StatusWord >> 14) & 1;
   State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (XSave->StatusWord >> 11) & 0b111;
   State.AbridgedFTW = XSave->TagWord;
+
+  // If any of the debug register state changed then we need to invalidate.
+  const bool Dr0Changed = (Context->Dr0 != State.Dr0) || ((Context->Dr7 ^ State.Dr7) & ((0b1111 << 16) | (0b11 << 0)));
+  const bool Dr1Changed = (Context->Dr1 != State.Dr1) || ((Context->Dr7 ^ State.Dr7) & ((0b1111 << 20) | (0b11 << 2)));
+  const bool Dr2Changed = (Context->Dr2 != State.Dr2) || ((Context->Dr7 ^ State.Dr7) & ((0b1111 << 24) | (0b11 << 4)));
+  const bool Dr3Changed = (Context->Dr3 != State.Dr3) || ((Context->Dr7 ^ State.Dr7) & ((0b1111 << 28) | (0b11 << 6)));
+
+  if (Dr0Changed || Dr1Changed || Dr2Changed || Dr3Changed) {
+    std::scoped_lock Lock(ThreadCreationMutex);
+    // Need to clear both context and state addresses if changed.
+    // Only if the BP type was instruction class.
+    if (Dr0Changed) {
+      if (Context->Dr0 && ((Context->Dr7 >> 16) & 0b11) == 0) {
+        InvalidationTracker->InvalidateAlignedInterval(Context->Dr0, 8, false);
+      }
+
+      if (State.Dr0 && ((State.Dr7 >> 16) & 0b11) == 0) {
+        InvalidationTracker->InvalidateAlignedInterval(State.Dr0, 8, false);
+      }
+    }
+    if (Dr1Changed) {
+      if (Context->Dr1 && ((Context->Dr7 >> 20) & 0b11) == 0) {
+        InvalidationTracker->InvalidateAlignedInterval(Context->Dr1, 8, false);
+      }
+
+      if (State.Dr1 && ((State.Dr7 >> 20) & 0b11) == 0) {
+        InvalidationTracker->InvalidateAlignedInterval(State.Dr1, 8, false);
+      }
+    }
+    if (Dr2Changed) {
+      if (Context->Dr2 && ((Context->Dr7 >> 24) & 0b11) == 0) {
+        InvalidationTracker->InvalidateAlignedInterval(Context->Dr2, 8, false);
+      }
+
+      if (State.Dr2 && ((State.Dr7 >> 24) & 0b11) == 0) {
+        InvalidationTracker->InvalidateAlignedInterval(State.Dr2, 8, false);
+      }
+    }
+    if (Dr3Changed) {
+      if (Context->Dr3 && ((Context->Dr7 >> 28) & 0b11) == 0) {
+        InvalidationTracker->InvalidateAlignedInterval(Context->Dr3, 8, false);
+      }
+
+      if (State.Dr3 && ((State.Dr7 >> 28) & 0b11) == 0) {
+        InvalidationTracker->InvalidateAlignedInterval(State.Dr3, 8, false);
+      }
+    }
+  }
+
+  // Update context now that we have invalidated.
+  State.Dr0 = Context->Dr0;
+  State.Dr1 = Context->Dr1;
+  State.Dr2 = Context->Dr2;
+  State.Dr3 = Context->Dr3;
+  State.Dr6 = Context->Dr6;
+  State.Dr7 = Context->Dr7;
 }
 
 void StoreWowContextFromState(WOW64_CONTEXT* Context) {
@@ -294,6 +350,13 @@ void StoreWowContextFromState(WOW64_CONTEXT* Context) {
   Context->FloatSave.DataOffset = XSave->DataOffset;
   Context->FloatSave.DataSelector = XSave->DataSelector;
   Context->FloatSave.Cr0NpxState = XSave->StatusWord | 0xffff0000;
+
+  Context->Dr0 = State.Dr0;
+  Context->Dr1 = State.Dr1;
+  Context->Dr2 = State.Dr2;
+  Context->Dr3 = State.Dr3;
+  Context->Dr6 = State.Dr6;
+  Context->Dr7 = State.Dr7;
 }
 
 void FlushThreadStateContext() {
