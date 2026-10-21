@@ -1,0 +1,63 @@
+%ifdef CONFIG
+{
+  "RegData": {
+    "XMM0": ["0x8142000081420000", "0x8142000081420000", "0", "0"],
+    "XMM1": ["0x8142000081420000", "0x8142000081420000", "0x8142000081420000", "0x8142000081420000"],
+    "XMM2": ["0xffff0000ffff0000", "0xffff0000ffff0000", "0", "0"],
+    "XMM3": ["0xffff0000ffff0000", "0xffff0000ffff0000", "0xffff0000ffff0000", "0xffff0000ffff0000"],
+    "XMM4": ["0x0001000000010000", "0x0001000000010000", "0", "0"],
+    "XMM5": ["0x0001000000010000", "0x0001000000010000", "0x0001000000010000", "0x0001000000010000"],
+    "XMM6": ["0xff800000ff800000", "0xff800000ff800000", "0", "0"],
+    "XMM7": ["0xff800000ff800000", "0xff800000ff800000", "0xff800000ff800000", "0xff800000ff800000"],
+    "XMM8": ["0x7f8000007f800000", "0x7f8000007f800000", "0", "0"],
+    "XMM9": ["0x7f8000007f800000", "0x7f8000007f800000", "0x7f8000007f800000", "0x7f8000007f800000"]
+  },
+  "HostFeatures": ["AVX_NE_CONVERT"]
+}
+%endif
+
+; Tests bfloat16 convert and broadcast.
+; Does not round, is exact.
+vmovups ymm0, [rel .data_junk]
+vmovups ymm1, [rel .data_junk]
+vmovups ymm2, [rel .data_junk]
+vmovups ymm3, [rel .data_junk]
+vmovups ymm4, [rel .data_junk]
+vmovups ymm5, [rel .data_junk]
+vmovups ymm6, [rel .data_junk]
+vmovups ymm7, [rel .data_junk]
+vmovups ymm8, [rel .data_junk]
+vmovups ymm9, [rel .data_junk]
+
+; Old nasm can't encode these.
+db 0xc4, 0xe2, 0x7a, 0xb1, 0x05, 0xa7, 0x0f, 0x00, 0x00 ; vbcstnebf162ps xmm0, [rel .data]
+db 0xc4, 0xe2, 0x7e, 0xb1, 0x0d, 0x9e, 0x0f, 0x00, 0x00 ; vbcstnebf162ps ymm1, [rel .data]
+db 0xc4, 0xe2, 0x7a, 0xb1, 0x15, 0x97, 0x0f, 0x00, 0x00 ; vbcstnebf162ps xmm2, [rel .data2]
+db 0xc4, 0xe2, 0x7e, 0xb1, 0x1d, 0x8e, 0x0f, 0x00, 0x00 ; vbcstnebf162ps ymm3, [rel .data2]
+db 0xc4, 0xe2, 0x7a, 0xb1, 0x25, 0x87, 0x0f, 0x00, 0x00 ; vbcstnebf162ps xmm4, [rel .data3]
+db 0xc4, 0xe2, 0x7e, 0xb1, 0x2d, 0x7e, 0x0f, 0x00, 0x00 ; vbcstnebf162ps ymm5, [rel .data3]
+db 0xc4, 0xe2, 0x7a, 0xb1, 0x35, 0x77, 0x0f, 0x00, 0x00 ; vbcstnebf162ps xmm6, [rel .data4]
+db 0xc4, 0xe2, 0x7e, 0xb1, 0x3d, 0x6e, 0x0f, 0x00, 0x00 ; vbcstnebf162ps ymm7, [rel .data4]
+db 0xc4, 0x62, 0x7a, 0xb1, 0x05, 0x67, 0x0f, 0x00, 0x00 ; vbcstnebf162ps xmm8, [rel .data5]
+db 0xc4, 0x62, 0x7e, 0xb1, 0x0d, 0x5e, 0x0f, 0x00, 0x00 ; vbcstnebf162ps ymm9, [rel .data5]
+
+hlt
+
+align 4096
+.data:
+dw 0x8142 ; Regular number
+.data2:
+dw 0xFFFF ; NaN
+.data3:
+dw 0x0001 ; Subnormal
+.data4:
+dw 0xFF80 ; -infinity
+.data5:
+dw 0x7F80 ; +infinity
+
+.data_junk:
+dq 0x4142434445464748
+dq 0x5152535455565758
+dq 0x6162636465666768
+dq 0x7172737475767778
+

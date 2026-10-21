@@ -84,9 +84,10 @@ struct HostFeatures {
   uint32_t SupportsAFP                        : 1 {};
   uint32_t SupportsFloatExceptions            : 1 {};
   uint32_t SupportsFaultFreeSynchronousFaults : 1 {};
+  uint32_t SupportsBF16                       : 1 {};
   // Flag if this is InstCountCI
   uint32_t IsInstCountCI : 1 {};
-  uint32_t pad           : 25 {};
+  uint32_t pad           : 24 {};
 
   // This affects codegen, but it isn't machine state
   HostTypeEnum HostType {};

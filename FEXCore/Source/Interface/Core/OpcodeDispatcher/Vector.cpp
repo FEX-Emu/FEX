@@ -6056,4 +6056,58 @@ void OpDispatchBuilder::Insertq(OpcodeArgs) {
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);
 }
 
+void OpDispatchBuilder::AVXVBCSTNEBF162PS(OpcodeArgs) {
+  const auto DstSize = OpSizeFromDst(Op);
+
+  auto Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  // bfloat16 is converted to fp32 and broadcast through the vector.
+  // bfloat16->float32 is left-shift by 16.
+  Src = _VShlI(DstSize, OpSize::i32Bit, Src, 16);
+  Src = _VDupElement(DstSize, OpSize::i32Bit, Src, 0);
+
+  StoreResultFPR(Op, Src);
+}
+
+void OpDispatchBuilder::AVXVCVTNEEBF162PS(OpcodeArgs, bool Even) {
+  const auto DstSize = OpSizeFromDst(Op);
+  auto Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  auto Convert = [&](auto Src, bool Even) -> Ref {
+    // Even or odd elements of each 128-bit register is converted from bfloat16 to float32.
+    // For even, just left shift the elements.
+    if (Even) {
+      return _VShlI(DstSize, OpSize::i32Bit, Src, 16);
+    }
+
+    // For Odds, we just need to mask off the lower 16-bits of each 32-bit element.
+    // Can't do the same movi+vbsl instruction as ASIMD. Just use shifts instead.
+    auto Tmp = _VUShrI(DstSize, OpSize::i32Bit, Src, 16);
+    return _VShlI(DstSize, OpSize::i32Bit, Tmp, 16);
+  };
+  StoreResultFPR(Op, Convert(Src, Even));
+}
+
+void OpDispatchBuilder::AVXVCVTNEPS2BF16(OpcodeArgs) {
+  const auto DstSize = OpSizeFromDst(Op);
+  const auto Is128Bit = DstSize == OpSize::i128Bit;
+
+  auto Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  // Convert 4 or 8 32-bits floats in to bfloat16.
+  // This instruction only operates with rounding mode set to `Rounds to Nearest (even)`.
+  Ref Result {};
+  if (Is128Bit) {
+    // Just do the operation in the lower half of the register.
+    Result = _VBFCVTN(OpSize::i128Bit, Src);
+  } else {
+    // Split the operation in to two and recombine.
+    Ref UpperLane = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, Src, 1);
+    auto ResultLow = _VBFCVTN(OpSize::i128Bit, Src);
+    Result = _VBFCVTN2(OpSize::i128Bit, ResultLow, UpperLane);
+  }
+
+  StoreResultFPR(Op, Result);
+}
+
 } // namespace FEXCore::IR

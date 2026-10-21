@@ -3,7 +3,8 @@
     "Bitness": 64,
     "EnabledHostFeatures": [
       "SVE256",
-      "SVE128"
+      "SVE128",
+      "BF16"
     ],
     "DisabledHostFeatures": [
       "AFP",
@@ -13,7 +14,7 @@
       "I8MM",
       "DOTPROD"
     ],
-    "BinaryCacheVersion": 32
+    "BinaryCacheVersion": 33
   },
   "Instructions": {
     "vpshufb xmm0, xmm1, xmm2": {
@@ -1913,6 +1914,28 @@
       ],
       "ExpectedArm64ASM": [
         "ld1rqb {z16.b}, p7/z, [x4]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7a, 0x72, 0xd4 ; {vex} vcvtneps2bf16 xmm2, xmm4": {
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0x72 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "bfcvtn v18.4h, v20.4s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7e, 0x72, 0xdc ; {vex} vcvtneps2bf16 xmm3, ymm4": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 2 0b01 0x72 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov z2.q, z20.q[1]",
+        "bfcvtn v3.4h, v20.4s",
+        "mov v0.16b, v3.16b",
+        "bfcvtn2 v0.8h, v2.4s",
+        "mov v19.16b, v0.16b"
       ]
     },
     "vpbroadcastb xmm0, xmm1": {
@@ -4805,6 +4828,134 @@
         "mov z0.d, z2.d",
         "fmla z0.d, p7/m, z17.d, z16.d",
         "mov z16.d, z0.d"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x78, 0xb0, 0x00 ; vcvtneoph2ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b00 0xb0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x4]",
+        "ushr v2.4s, v2.4s, #16",
+        "shl v16.4s, v2.4s, #16"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7c, 0xb0, 0x00 ; vcvtneoph2ps ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b00 0xb0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z2.b}, p7/z, [x4]",
+        "lsr z2.s, z2.s, #16",
+        "lsl z16.s, z2.s, #16"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x79, 0xb0, 0x00 ; vcvtneeph2ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b01 0xb0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x4]",
+        "shl v16.4s, v2.4s, #16"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7d, 0xb0, 0x00 ; vcvtneeph2ps ymm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b01 0xb0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z2.b}, p7/z, [x4]",
+        "lsl z16.s, z2.s, #16"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7b, 0xb0, 0x00 ; vcvtneobf162ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b10 0xb0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x4]",
+        "ushr v2.4s, v2.4s, #16",
+        "shl v16.4s, v2.4s, #16"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7f, 0xb0, 0x00 ; vcvtneobf162ps ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b10 0xb0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z2.b}, p7/z, [x4]",
+        "lsr z2.s, z2.s, #16",
+        "lsl z16.s, z2.s, #16"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7a, 0xb0, 0x00 ; vcvtneebf162ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b11 0xb0 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x4]",
+        "shl v16.4s, v2.4s, #16"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7e, 0xb0, 0x00 ; vcvtneebf162ps ymm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b11 0xb0 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z2.b}, p7/z, [x4]",
+        "lsl z16.s, z2.s, #16"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x79, 0xb1, 0x00 ; vbcstnesh2ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xb1 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x4]",
+        "shl v2.4s, v2.4s, #16",
+        "dup v16.4s, v2.s[0]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7d, 0xb1, 0x00 ; vbcstnesh2ps ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xb1 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z2.b}, p7/z, [x4]",
+        "lsl z2.s, z2.s, #16",
+        "mov z16.s, s2"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7a, 0xb1, 0x00 ; vbcstnebf162ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b10 0xb1 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x4]",
+        "shl v2.4s, v2.4s, #16",
+        "dup v16.4s, v2.s[0]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7e, 0xb1, 0x00 ; vbcstnebf162ps ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b10 0xb1 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ld1b {z2.b}, p7/z, [x4]",
+        "lsl z2.s, z2.s, #16",
+        "mov z16.s, s2"
       ]
     },
     "vfmaddsub231ps xmm0, xmm1, xmm2": {

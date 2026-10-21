@@ -777,6 +777,8 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 30) |                  // Arch capabilities - MSR module specific
               (0 << 31);                   // SSBD - Speculative Store Bypass Disable
   } else if (Leaf == 1) {
+    const uint32_t SupportsAVXConvert = SupportsAVX() && CTX->HostFeatures.SupportsBF16;
+
     Res.eax = (0U << 0) |              // SHA512
               (0U << 1) |              // SM3
               (0U << 2) |              // SM4
@@ -825,31 +827,31 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0U << 5);  // MSR_IMM
 
     // Bits 25-31 also reserved.
-    Res.edx = (0U << 0) |  // Reserved
-              (0U << 1) |  // Reserved
-              (0U << 2) |  // Reserved
-              (0U << 3) |  // Reserved
-              (0U << 4) |  // AVX_VNNI_INT8
-              (0U << 5) |  // AVX_NE_CONVERT
-              (0U << 6) |  // Reserved
-              (0U << 7) |  // Reserved
-              (0U << 8) |  // AMX_COMPLEX
-              (0U << 9) |  // Reserved
-              (0U << 10) | // AVX_VNNI_INT16
-              (0U << 11) | // Reserved
-              (0U << 12) | // Reserved
-              (0U << 13) | // UTMR (User-timer events)
-              (0U << 14) | // PREFETCHI
-              (0U << 15) | // USER_MSR
-              (0U << 16) | // Reserved
-              (0U << 17) | // UIRET_UIF
-              (0U << 18) | // CET_SSS
-              (0U << 19) | // AVX10
-              (0U << 20) | // Reserved
-              (0U << 21) | // APX_F
-              (0U << 22) | // SEC-TEE_ATTESTATION
-              (0U << 23) | // MWAIT
-              (0U << 24);  // SLSM (Static LSM)
+    Res.edx = (0U << 0) |                 // Reserved
+              (0U << 1) |                 // Reserved
+              (0U << 2) |                 // Reserved
+              (0U << 3) |                 // Reserved
+              (0U << 4) |                 // AVX_VNNI_INT8
+              (SupportsAVXConvert << 5) | // AVX_NE_CONVERT
+              (0U << 6) |                 // Reserved
+              (0U << 7) |                 // Reserved
+              (0U << 8) |                 // AMX_COMPLEX
+              (0U << 9) |                 // Reserved
+              (0U << 10) |                // AVX_VNNI_INT16
+              (0U << 11) |                // Reserved
+              (0U << 12) |                // Reserved
+              (0U << 13) |                // UTMR (User-timer events)
+              (0U << 14) |                // PREFETCHI
+              (0U << 15) |                // USER_MSR
+              (0U << 16) |                // Reserved
+              (0U << 17) |                // UIRET_UIF
+              (0U << 18) |                // CET_SSS
+              (0U << 19) |                // AVX10
+              (0U << 20) |                // Reserved
+              (0U << 21) |                // APX_F
+              (0U << 22) |                // SEC-TEE_ATTESTATION
+              (0U << 23) |                // MWAIT
+              (0U << 24);                 // SLSM (Static LSM)
   } else if (Leaf == 2) {
     // All bits are reserved except for EDX
     Res.eax = 0;

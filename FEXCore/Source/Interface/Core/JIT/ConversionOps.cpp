@@ -405,6 +405,37 @@ DEF_OP(VFCVTN2) {
   }
 }
 
+DEF_OP(VBFCVTN) {
+  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsBF16, "Need BF16 for VBFCVTN");
+  const auto Op = IROp->C<IR::IROp_VBFCVTN>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector);
+
+  bfcvtn(Dst.Q(), Vector.Q());
+}
+
+DEF_OP(VBFCVTN2) {
+  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsBF16, "Need BF16 for VBFCVTN");
+  const auto Op = IROp->C<IR::IROp_VBFCVTN2>();
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower);
+  const auto VectorUpper = GetVReg(Op->VectorUpper);
+
+  auto Lower = VectorLower;
+  if (Dst != VectorLower) {
+    mov(VTMP1.Q(), VectorLower.Q());
+    Lower = VTMP1;
+  }
+
+  bfcvtn2(Lower.Q(), VectorUpper.Q());
+
+  if (Dst != VectorLower) {
+    mov(Dst.Q(), Lower.Q());
+  }
+}
+
 DEF_OP(Vector_FToI) {
   const auto Op = IROp->C<IR::IROp_Vector_FToI>();
   const auto OpSize = IROp->Size;

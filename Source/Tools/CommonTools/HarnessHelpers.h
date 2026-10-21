@@ -323,6 +323,7 @@ public:
     FEATURE_EMMI = (1 << 23),
     FEATURE_AVX_VNNI = (1 << 24),
     FEATURE_SERIALIZE = (1 << 25),
+    FEATURE_AVX_NE_CONVERT = (1 << 26),
   };
 
   bool Requires3DNow() const {
@@ -402,6 +403,9 @@ public:
   }
   bool RequiresSerialize() const {
     return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SERIALIZE;
+  }
+  bool RequiresAVXNEConvert() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX_NE_CONVERT;
   }
 
 private:
@@ -615,6 +619,9 @@ public:
   }
   bool RequiresSerialize() const {
     return Config.RequiresSerialize();
+  }
+  bool RequiresAVXNEConvert() const {
+    return Config.RequiresAVXNEConvert();
   }
 
 private:

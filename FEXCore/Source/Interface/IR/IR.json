@@ -1863,7 +1863,7 @@
         "DestSize": "RegisterSize"
       },
 
-      "FPR = VectorImm OpSize:#RegisterSize, OpSize:#ElementSize, u8:$Immediate, u8:$ShiftAmount{0}": {
+      "FPR = VectorImm OpSize:#RegisterSize, OpSize:#ElementSize, u8:$Immediate, u8:$ShiftAmount{0}, i1:$Do64BitExpansion{false}": {
         "Desc": ["Generates a vector with each element containg the immediate zexted"
                 ],
         "DestSize": "RegisterSize",
@@ -2757,6 +2757,28 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize >> 1",
+        "EmitValidation": [
+          "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
+        ]
+      },
+      "FPR = VBFCVTN OpSize:#RegisterSize, FPR:$Vector": {
+        "Desc": [
+          "Converts fp32 to bf16."
+        ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "FEXCore::IR::OpSize::i16Bit",
+        "EmitValidation": [
+          "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
+        ]
+      },
+      "FPR = VBFCVTN2 OpSize:#RegisterSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "TiedSource": 0,
+        "Desc": [
+          "Converts fp32 to bf16 and inserting in to the high bits.",
+          "Bottom half is untouched"
+        ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "FEXCore::IR::OpSize::i16Bit",
         "EmitValidation": [
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
