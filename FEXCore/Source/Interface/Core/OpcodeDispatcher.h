@@ -1130,6 +1130,10 @@ public:
   void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
 
+  void AVXVBCSTNEBF162PS(OpcodeArgs);
+  void AVXVCVTNEEBF162PS(OpcodeArgs, bool Even);
+  void AVXVCVTNEPS2BF16(OpcodeArgs);
+
   // End of AVX 256-bit implementation
 
   void InvalidOp(OpcodeArgs);
