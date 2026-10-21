@@ -95,7 +95,9 @@
           "ENABLEI8MM": "enablei8mm",
           "DISABLEI8MM": "disablei8mm",
           "ENABLEDOTPROD": "enabledotprod",
-          "DISABLEDOTPROD": "disabledotprod"
+          "DISABLEDOTPROD": "disabledotprod",
+          "ENABLEBF16": "enablebf16",
+          "DISABLEBF16": "disablebf16"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -122,7 +124,8 @@
           "\t{enable,disable}sse4a: Will force enable or disable SSE4a even if the host doesn't support it",
           "\t{enable,disable}mops: Will force enable or disable FEAT_MOPS even if the host doesn't support it",
           "\t{enable,disable}i8mm: Will force enable or disable i8mm even if the host doesn't support it",
-          "\t{enable,disable}dotprod: Will force enable or disable dotprod even if the host doesn't support it"
+          "\t{enable,disable}dotprod: Will force enable or disable dotprod even if the host doesn't support it",
+          "\t{enable,disable}bf16: Will force enable or disable bf16 even if the host doesn't support it"
         ]
       },
       "SmallTSCScale": {
