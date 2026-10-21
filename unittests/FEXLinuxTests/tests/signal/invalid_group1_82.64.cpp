@@ -8,19 +8,19 @@
 // In 64-bit mode it is an invalid opcode and must raise SIGILL,
 // which this test verifies.
 
-#define TEST(name, ...)                                            \
-  TEST_CASE("Signals: Invalid 0x82 " name) {                       \
-    struct sigaction act {};                                       \
-    act.sa_sigaction = CapturingHandler;                           \
-    act.sa_flags = SA_SIGINFO;                                     \
-    sigaction(SIGILL, &act, nullptr);                              \
-                                                                   \
-    from_handler.reset();                                          \
+#define TEST(name, ...)                                                     \
+  TEST_CASE("Signals: Invalid 0x82 " name) {                                \
+    struct sigaction act {};                                                \
+    act.sa_sigaction = CapturingHandler;                                    \
+    act.sa_flags = SA_SIGINFO;                                              \
+    sigaction(SIGILL, &act, nullptr);                                       \
+                                                                            \
+    from_handler.reset();                                                   \
     capturing_handler_skip = sizeof((const unsigned char[]) {__VA_ARGS__}); \
-    __asm volatile(".byte " #__VA_ARGS__ ::: "memory");            \
-                                                                   \
-    REQUIRE(from_handler.has_value());                             \
-    CHECK(from_handler->signal == SIGILL);                         \
+    __asm volatile(".byte " #__VA_ARGS__ ::: "memory");                     \
+                                                                            \
+    REQUIRE(from_handler.has_value());                                      \
+    CHECK(from_handler->signal == SIGILL);                                  \
   }
 
 // <op> byte [rax], 0x12
