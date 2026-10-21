@@ -5,6 +5,6 @@ cryptography>=50.0.0
 urllib3>=2.8.0
 requests>=2.33.0
 idna>=3.15
-certifi>=2024.7.4
+certifi>=2026.10.19
 PyNaCl>=1.6.2
 PyJWT>=2.15.1
