@@ -245,7 +245,7 @@ int main(int argc, char** argv, char** const envp) {
   bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
 
-  auto HostFeatures = FEX::FetchHostFeatures();
+  auto HostFeatures = FEX::FetchHostFeatures(Loader.Is64BitMode());
   auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
 
 #ifndef _WIN32

@@ -692,6 +692,6 @@ void FillMIDRInformationViaLinux(FEXCore::HostFeatures* Features);
 
 void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFeatures, bool SupportsCacheMaintenanceOps, uint64_t CTR,
                        uint64_t MIDR);
-FEXCore::HostFeatures FetchHostFeatures();
+FEXCore::HostFeatures FetchHostFeatures(bool Is64BitMode);
 FEX::CPUFeatures GetCPUFeaturesFromIDRegisters();
 } // namespace FEX

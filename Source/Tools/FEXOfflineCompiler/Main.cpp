@@ -410,7 +410,7 @@ static std::optional<std::string> GenerateSingleCache(FEXCore::ExecutableFileInf
 
   // Load HostFeatures
 #ifndef _WIN32
-  auto HostFeatures = FEX::FetchHostFeatures();
+  auto HostFeatures = FEX::FetchHostFeatures(Is64Bit);
 #else
   const auto NtDll = GetModuleHandleW(L"ntdll.dll");
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");

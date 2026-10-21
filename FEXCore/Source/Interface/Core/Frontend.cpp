@@ -1352,8 +1352,8 @@ const Decoder::DecodeStream Decoder::AdjustAddrForSpecialRegion(const uint8_t* _
   constexpr uint64_t VSyscall_Base = 0xFFFF'FFFF'FF60'0000ULL;
   constexpr uint64_t VSyscall_End = VSyscall_Base + 0x1000;
 
-  if (BlockInfo.Is64BitMode && CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Linux && RIP >= VSyscall_Base &&
-      RIP < VSyscall_End) {
+  if (BlockInfo.Is64BitMode && CTX->HostFeatures.ProcessFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Linux &&
+      RIP >= VSyscall_Base && RIP < VSyscall_End) {
     // VSyscall
     // This doesn't exist on AArch64 and on x86_64 hosts this is emulated with faults to a region mapped with --xp permissions
     // Offset     0: vgettimeofday

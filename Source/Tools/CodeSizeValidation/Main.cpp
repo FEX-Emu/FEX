@@ -702,7 +702,7 @@ int main(int argc, char** argv, char** const envp) {
   // Create FEXCore context.
   fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {
-    auto HostFeatures = FEX::FetchHostFeatures();
+    auto HostFeatures = FEX::FetchHostFeatures(TestHeaderData->Bitness == 64);
     HostFeatures.IsInstCountCI = true;
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
