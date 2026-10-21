@@ -1,7 +1,8 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "0xdeadbe02"
+    "RAX": "0xdeadbe02",
+    "RBX": "0xdeadbe02"
   },
   "Mode": "32BIT"
 }
@@ -14,5 +15,14 @@ stc
 
 ; adc al, 0x12
 db 0x82, 0xd0, 0x12
+
+mov edi, 0xe0000000
+mov dword [edi], 0xdeadbeef
+stc
+
+; lock adc byte [edi], 0x12
+db 0xf0, 0x82, 0x17, 0x12
+
+mov ebx, [edi]
 
 hlt
