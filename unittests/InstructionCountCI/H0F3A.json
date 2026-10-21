@@ -8,7 +8,7 @@
       "AFP",
       "CRYPTO"
     ],
-    "BinaryCacheVersion": 34
+    "BinaryCacheVersion": 35
   },
   "Comment": [
     "SSE4.2 string instructions are skipped here.",

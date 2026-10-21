@@ -83,16 +83,15 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
 
   HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine;
 
-  HostFeatures.HostType = HostType;
   HostFeatures.ProcessPID = ProcessPID;
 
-  if (HostType == FEXCore::HostFeatures::HostTypeEnum::Wow64) {
-    // AVX is unsupported for WOW64
-    HostFeatures.SupportsAVX = false;
-  } else {
-    // arm64ec supports synchronous faults without a double-fault dance.
-    HostFeatures.SupportsFaultFreeSynchronousFaults = true;
-  }
+  // AVX is unsupported for WOW64
+  HostFeatures.SupportsAVX = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
+
+  HostFeatures.ProcessFeatures.HostType = HostType;
+  HostFeatures.ProcessFeatures.Is64BitMode = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
+  // arm64ec supports synchronous faults without a double-fault dance.
+  HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
 
   return HostFeatures;
 }

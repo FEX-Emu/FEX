@@ -4884,7 +4884,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   case 0xCD: { // INT imm8
     uint8_t Literal = Op->Src[0].Literal();
 
-    if (CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Linux) {
+    if (CTX->HostFeatures.ProcessFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Linux) {
       constexpr uint8_t SYSCALL_LITERAL = 0x80;
       if (Literal == SYSCALL_LITERAL) {
         if (Is64BitMode) [[unlikely]] {
@@ -4896,8 +4896,8 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
         SyscallOp(Op, false);
         return;
       }
-    } else if (CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Wow64 ||
-               CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec) {
+    } else if (CTX->HostFeatures.ProcessFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Wow64 ||
+               CTX->HostFeatures.ProcessFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec) {
       constexpr uint8_t SYSCALL_LITERAL = 0x2E;
       if (Literal == SYSCALL_LITERAL) {
         // Can be used for both 64-bit and 32-bit syscalls on windows
@@ -4905,7 +4905,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
         return;
       }
 
-      if (CTX->HostFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec) {
+      if (CTX->HostFeatures.ProcessFeatures.HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec) {
         // This is used when QueryPerformanceCounter is called on recent Windows versions, it causes CNTVCT to be written into RAX.
         constexpr uint8_t GET_CNTVCT_LITERAL = 0x81;
         if (Literal == GET_CNTVCT_LITERAL) {
@@ -5151,7 +5151,7 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
   //  - Explicitly use an MFENCE before this instruction if you want this behaviour
   // This instruction is not an execution fence, so subsequent instructions can execute after this
   //  - Explicitly use an LFENCE after RDTSCP if you want to block this behaviour
-  if (CTX->HostFeatures.HostType != FEXCore::HostFeatures::HostTypeEnum::Linux && !CTX->HostFeatures.SupportsCPUIndexInTPIDRRO) {
+  if (CTX->HostFeatures.ProcessFeatures.HostType != FEXCore::HostFeatures::HostTypeEnum::Linux && !CTX->HostFeatures.SupportsCPUIndexInTPIDRRO) {
     // RDTSCP is unsupported on Win32 platforms if TPIDRRO isn't supported.
     UnimplementedOp(Op);
     return;
@@ -5165,7 +5165,7 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RDPIDOp(OpcodeArgs) {
-  if (CTX->HostFeatures.HostType != FEXCore::HostFeatures::HostTypeEnum::Linux && !CTX->HostFeatures.SupportsCPUIndexInTPIDRRO) {
+  if (CTX->HostFeatures.ProcessFeatures.HostType != FEXCore::HostFeatures::HostTypeEnum::Linux && !CTX->HostFeatures.SupportsCPUIndexInTPIDRRO) {
     // RDTSCP is unsupported on Win32 platforms if TPIDRRO isn't supported.
     UnimplementedOp(Op);
     return;

@@ -76,7 +76,7 @@ DEF_OP(Break) {
   LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant);
   str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
 
-  if (CTX->HostFeatures.SupportsFaultFreeSynchronousFaults) {
+  if (CTX->HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults) {
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SynchronousFault));
     br(TMP1);
   } else {

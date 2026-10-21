@@ -601,7 +601,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   OverrideFeatures(&HostFeatures, ForceSVEWidth());
 }
 
-FEXCore::HostFeatures FetchHostFeatures() {
+FEXCore::HostFeatures FetchHostFeatures(bool Is64BitMode) {
   FEX_CONFIG_OPT(CPUFeatureRegisters, CPUFEATUREREGISTERS);
 
   CPUFeatures Features {};
@@ -634,7 +634,10 @@ FEXCore::HostFeatures FetchHostFeatures() {
   FetchHostFeatures(Features, HostFeatures, true, CTR, MIDR);
 
   HostFeatures.SupportsCPUIndexInTPIDRRO = false;
-  HostFeatures.HostType = FEXCore::HostFeatures::HostTypeEnum::Linux;
+  HostFeatures.ProcessFeatures.HostType = FEXCore::HostFeatures::HostTypeEnum::Linux;
+  HostFeatures.ProcessFeatures.Is64BitMode = Is64BitMode;
+  // Fault free syncronous faults unsupported on Linux for now.
+  HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults = false;
   HostFeatures.ProcessPID = ::getpid();
   return HostFeatures;
 }
