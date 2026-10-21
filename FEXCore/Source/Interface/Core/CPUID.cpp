@@ -89,6 +89,18 @@ namespace ProductNames {
   static const char ARM_Blizzard_M2Pro[] = "Apple Blizzard (M2 Pro)";
   static const char ARM_Avalanche_M2Max[] = "Apple Avalanche (M2 Max)";
   static const char ARM_Blizzard_M2Max[] = "Apple Blizzard (M2 Max)";
+  static const char ARM_Sawtooth_M3[] = "Apple Sawtooth (M3)";
+  static const char ARM_Everest_M3[] = "Apple Everest (M3)";
+  static const char ARM_Sawtooth_M3Pro[] = "Apple Sawtooth (M3 Pro)";
+  static const char ARM_Everest_M3Pro[] = "Apple Everest (M3 Pro)";
+  static const char ARM_Sawtooth_M3Max[] = "Apple Sawtooth (M3 Max)";
+  static const char ARM_Everest_M3Max[] = "Apple Everest (M3 Max)";
+  static const char ARM_DonanP_M4[] = "Apple DonanP (M4)";
+  static const char ARM_DonanE_M4[] = "Apple DonanE (M4)";
+  static const char ARM_TahitiP_A18[] = "Apple TahitiP (A18)";
+  static const char ARM_TahitiE_A18[] = "Apple TahitiE (A18)";
+  static const char ARM_SotraP_M5[] = "Apple SotraP (M5)";
+  static const char ARM_SotraE_M5[] = "Apple SotraE (M5)";
   static const char ARM_AppleSilicon[] = "Apple Silicon";
 
   static const char ARM_ORYON_1[] = "Oryon-1";
@@ -187,11 +199,17 @@ void CPUIDEmu::SetupHostHybridFlag() {
   // CPU priority order
   // This is mostly arbitrary but will sort by some sort of CPU priority by performance
   // Relative list so things they will commonly end up in big.little configurations sort of relate
-  static constexpr std::array<CPUMIDR, 68> CPUMIDRs = {{
+  static constexpr std::array<CPUMIDR, 80> CPUMIDRs = {{
     // Typically big CPU cores
     {0x51, 0x002, 1, ProductNames::ARM_ORYON_3}, // Qualcomm Oryon-3
     {0x51, 0x001, 1, ProductNames::ARM_ORYON_1}, // Qualcomm Oryon-1
 
+    {0x61, 0x065, 1, ProductNames::ARM_SotraP_M5},       // Apple SotraP (M5)
+    {0x61, 0x061, 1, ProductNames::ARM_TahitiP_A18},     // Apple TahitiP (A18)
+    {0x61, 0x053, 1, ProductNames::ARM_DonanP_M4},       // Apple DonanP (M4)
+    {0x61, 0x048, 1, ProductNames::ARM_Sawtooth_M3Max},  // Apple Sawtooth (M3 Max)
+    {0x61, 0x044, 1, ProductNames::ARM_Sawtooth_M3Pro},  // Apple Sawtooth (M3 Pro)
+    {0x61, 0x042, 1, ProductNames::ARM_Sawtooth_M3},     // Apple Sawtooth (M3)
     {0x61, 0x039, 1, ProductNames::ARM_Avalanche_M2Max}, // Apple Avalanche (M2 Max)
     {0x61, 0x035, 1, ProductNames::ARM_Avalanche_M2Pro}, // Apple Avalanche (M2 Pro)
     {0x61, 0x033, 1, ProductNames::ARM_Avalanche_M2},    // Apple Avalanche (M2)
@@ -248,6 +266,12 @@ void CPUIDEmu::SetupHostHybridFlag() {
     {0x41, 0xd07, 1, ProductNames::ARM_A57}, // A57
 
     // Typically Little CPU cores
+    {0x61, 0x064, 1, ProductNames::ARM_SotraE_M5},      // Apple SotraE (M5)
+    {0x61, 0x060, 1, ProductNames::ARM_TahitiE_A18},    // Apple TahitiE (A18)
+    {0x61, 0x052, 1, ProductNames::ARM_DonanE_M4},      // Apple DonanE (M4)
+    {0x61, 0x049, 0, ProductNames::ARM_Everest_M3Max},  // Apple Everest (M3 Max)
+    {0x61, 0x045, 0, ProductNames::ARM_Everest_M3Pro},  // Apple Everest (M3 Pro)
+    {0x61, 0x043, 0, ProductNames::ARM_Everest_M3},     // Apple Everest (M3)
     {0x61, 0x038, 0, ProductNames::ARM_Blizzard_M2Max}, // Apple Blizzard (M2 Max)
     {0x61, 0x034, 0, ProductNames::ARM_Blizzard_M2Pro}, // Apple Blizzard (M2 Pro)
     {0x61, 0x032, 0, ProductNames::ARM_Blizzard_M2},    // Apple Blizzard (M2)
