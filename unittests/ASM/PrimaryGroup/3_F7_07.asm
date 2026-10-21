@@ -14,7 +14,9 @@
     "R10": "0x0000000000000001",
     "R11": "0x0000000000000000",
     "R12": "0x4000000000000000",
-    "R13": "0x0000000000000000"
+    "R13": "0x0000000000000000",
+    "R14": "0xDB6DB6DB6DB6DB6D",
+    "R15": "0x5555555555555555"
   }
 }
 %endif
@@ -116,6 +118,20 @@ idiv rcx
 mov qword [r15 + 8 * 12 + 0], rax
 mov qword [r15 + 8 * 13 + 0], rdx
 
+; 128bit divide of a negative dividend with real data in the lower half
+mov rax, 0xfffffffffffffffb
+mov rdx, 0xfffffffffffffffe
+mov rcx, 7
+idiv rcx
+mov qword [r15 + 8 * 14 + 0], rax
+
+; 128bit divide of a negative dividend with a zero lower half
+mov rax, 0x0
+mov rdx, 0xffffffffffffffff
+mov rcx, -3
+idiv rcx
+mov qword [r15 + 8 * 15 + 0], rax
+
 ; Positive / Positive results
 mov rax, [r15 + 8 * 0]
 mov rbx, [r15 + 8 * 1]
@@ -137,6 +153,8 @@ mov r11, [r15 + 8 * 11]
 ; 128bit results
 mov r12, [r15 + 8 * 12]
 mov r13, [r15 + 8 * 13]
+mov r14, [r15 + 8 * 14]
+mov r15, [r15 + 8 * 15]
 
 hlt
 

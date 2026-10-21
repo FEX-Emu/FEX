@@ -348,8 +348,6 @@ struct JITPointers {
   uint64_t SyscallHandlerFunc {};
   uint64_t ExitFunctionLink {};
   uint64_t MonoBackpatcherWrite {};
-  uint64_t LUDIV {};
-  uint64_t LDIV {};
   uint64_t RDRANDFallback {};
   uint64_t ThunkCallbackRet {};
 
@@ -386,8 +384,6 @@ struct JITPointers {
   uint64_t SignalReturnHandler {};
   uint64_t SignalReturnHandlerRT {};
   uint64_t L2Pointer {};
-  uint64_t LUDIVHandler {};
-  uint64_t LDIVHandler {};
   uint64_t F64SinHandler {};
   uint64_t F64CosHandler {};
   uint64_t F64TanHandler {};
