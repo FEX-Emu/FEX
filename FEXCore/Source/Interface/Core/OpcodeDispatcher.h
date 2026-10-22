@@ -488,6 +488,7 @@ public:
   void SGDTOp(OpcodeArgs);
   void SIDTOp(OpcodeArgs);
   void SMSWOp(OpcodeArgs);
+  void SLDTOp(OpcodeArgs);
 
   enum class VectorOpType {
     MMX,
