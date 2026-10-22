@@ -9,7 +9,7 @@
       "SVE256",
       "RPRES"
     ],
-    "BinaryCacheVersion": 35
+    "BinaryCacheVersion": 36
   },
   "Comment": [
     "These are instruction combinations that could be more optimal if FEX optimized for them"

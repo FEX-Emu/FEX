@@ -10,6 +10,11 @@ constexpr uint16_t PF_66 = 2;
 constexpr uint16_t PF_F2 = 3;
 constexpr DispatchTableEntry OpDispatch_SecondaryGroupTables[] = {
   // GROUP 6
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_NONE, 0), 1, &OpDispatchBuilder::SLDTOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_F3, 0), 1, &OpDispatchBuilder::SLDTOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_66, 0), 1, &OpDispatchBuilder::SLDTOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_F2, 0), 1, &OpDispatchBuilder::SLDTOp},
+
   {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_NONE, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_F3, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_66, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},

@@ -11,3 +11,7 @@ Test_X87/D9_F8.asm
 
 # This is basically a benchmark.
 FEX_bugs/XeSS_quadratic.asm
+
+# Relies on UMIP behaviour returning a hardcoded value.
+# FEX doesn't currently emulate this.
+Test_Secondary/06_XX_00_2.asm

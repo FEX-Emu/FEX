@@ -3156,7 +3156,38 @@ void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
   }
 
   if (IsMemDst) {
-    // Memory destinatino always writes only 16-bits.
+    // Memory destination always writes only 16-bits.
+    DstSize = OpSize::i16Bit;
+  }
+
+  StoreResultGPR_WithOpSize(Op, Op->Dest, Const, DstSize);
+}
+
+void OpDispatchBuilder::SLDTOp(OpcodeArgs) {
+  const bool IsMemDst = DestIsMem(Op);
+
+  IR::OpSize DstSize {OpSize::iInvalid};
+  Ref Const = _Constant(0);
+
+  const auto OpAddr = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0);
+  if (Is64BitMode) {
+    DstSize = OpAddr == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? OpSize::i16Bit :
+              OpAddr == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? OpSize::i64Bit :
+                                                                          OpSize::i32Bit;
+
+    if (!IsMemDst && DstSize == OpSize::i32Bit) {
+      // Special-case version of `sldt ebx`. This instruction does an insert in to the lower 32-bits on 64-bit hosts.
+      // Override and insert.
+      auto Dest = LoadSourceGPR_WithOpSize(Op, Op->Dest, GetGPROpSize(), Op->Flags);
+      Const = _Bfi(OpSize::i64Bit, 32, 0, Dest, Const);
+      DstSize = OpSize::i64Bit;
+    }
+  } else {
+    DstSize = OpAddr == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? OpSize::i16Bit : OpSize::i32Bit;
+  }
+
+  if (IsMemDst) {
+    // Memory destination always writes only 16-bits.
     DstSize = OpSize::i16Bit;
   }
 

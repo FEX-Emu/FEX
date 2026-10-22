@@ -247,7 +247,6 @@ struct alignas(64) CPUState {
   // Follows encoding of the TI bit in segment selector encoding.
   constexpr static uint32_t SEGMENT_ARRAY_INDEX_GDT = 0;
   constexpr static uint32_t SEGMENT_ARRAY_INDEX_LDT = 1;
-  Core::CPUState::gdt_segment private_gdt[32] {};
 };
 static_assert(std::is_trivially_copyable_v<CPUState>, "Needs to be trivial");
 static_assert(std::is_standard_layout_v<CPUState>, "This needs to be standard layout");

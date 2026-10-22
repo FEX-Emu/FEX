@@ -11,7 +11,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 35
+    "BinaryCacheVersion": 36
   },
   "Instructions": {
     "sgdt [rax]": {
@@ -1041,7 +1041,7 @@
         "str x25, [x28, #176]",
         "str x8, [x28, #64]",
         "mov w0, #0x100",
-        "str x0, [x28, #1480]",
+        "str x0, [x28, #1224]",
         "sub sp, sp, #0x10 (16)",
         "mov w8, #0xa8",
         "mov x0, sp",
@@ -1053,7 +1053,7 @@
         "ldr w8, [x28, #1032]",
         "msr nzcv, x8",
         "ldr x8, [x28, #64]",
-        "str xzr, [x28, #1480]",
+        "str xzr, [x28, #1224]",
         "orr x20, x0, x1, lsl #12",
         "mov w4, w20"
       ]
@@ -1067,7 +1067,7 @@
         "str x25, [x28, #176]",
         "str x8, [x28, #64]",
         "mov w0, #0x100",
-        "str x0, [x28, #1480]",
+        "str x0, [x28, #1224]",
         "sub sp, sp, #0x10 (16)",
         "mov w8, #0xa8",
         "mov x0, sp",
@@ -1079,7 +1079,7 @@
         "ldr w8, [x28, #1032]",
         "msr nzcv, x8",
         "ldr x8, [x28, #64]",
-        "str xzr, [x28, #1480]",
+        "str xzr, [x28, #1224]",
         "orr x20, x0, x1, lsl #12",
         "mov w4, w20"
       ]

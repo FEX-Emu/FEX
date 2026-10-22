@@ -5,3 +5,6 @@ Test_32Bit_X87/D9_F2.asm
 
 # Relies on rounding correctness
 Test_32Bit_X87/D9_F8.asm
+
+# Relies on HostHarness behaviour which isn't quite right.
+Test_32Bit_Secondary/06_XX_00.asm
