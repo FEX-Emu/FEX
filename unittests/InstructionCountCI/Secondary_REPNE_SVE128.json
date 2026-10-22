@@ -10,7 +10,7 @@
       "FCMA",
       "AFP"
     ],
-    "BinaryCacheVersion": 35
+    "BinaryCacheVersion": 36
   },
   "Instructions": {
     "cvtpd2dq xmm0, xmm1": {
