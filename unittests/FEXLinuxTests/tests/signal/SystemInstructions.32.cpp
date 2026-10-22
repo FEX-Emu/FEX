@@ -1,0 +1,98 @@
+#include "invalid_util.h"
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <atomic>
+#include <signal.h>
+#include <sys/mman.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <cstdlib>
+
+#ifndef REG_RIP
+#define REG_RIP REG_EIP
+#endif
+
+enum trapno {
+  X86_TRAPNO_UD = 6,
+  X86_TRAPNO_GP = 13,
+};
+
+#define CONCAT(x, y) x##y
+#define TestSymbols(num)                       \
+  extern "C" uint64_t CONCAT(TestBegin_, num); \
+  extern "C" uint64_t CONCAT(TestEnd_, num);
+
+#define Test(num, asm, trapno, errno, si_code, signal)                                                      \
+  capturing_handler_skip = (unsigned long)&CONCAT(TestEnd_, num) - (unsigned long)&CONCAT(TestBegin_, num); \
+  const unsigned long EXPECTED_RIP = (unsigned long)&CONCAT(TestBegin_, num);                               \
+  const int EXPECTED_TRAPNO = trapno;                                                                       \
+  const int EXPECTED_ERR = errno;                                                                           \
+  const int EXPECTED_SI_CODE = si_code;                                                                     \
+  const int EXPECTED_SIGNAL = signal;                                                                       \
+  __asm volatile("TestBegin_" #num ":" asm ";"                                                              \
+                                           "TestEnd_" #num ":" ::                                           \
+                                             : "memory");
+
+
+#define TEST(num, name, asm, trapno, errno, _si_code, _signal)      \
+  TestSymbols(num);                                                 \
+  TEST_CASE("Signals: " #name) {                                    \
+    struct sigaction act {};                                        \
+    act.sa_sigaction = CapturingHandler;                            \
+    act.sa_flags = SA_SIGINFO;                                      \
+    sigaction(SIGSEGV, &act, nullptr);                              \
+    sigaction(SIGTRAP, &act, nullptr);                              \
+    sigaction(SIGILL, &act, nullptr);                               \
+                                                                    \
+    Test(num, asm, trapno, errno, _si_code, _signal);               \
+                                                                    \
+    REQUIRE(from_handler.has_value());                              \
+    CHECK(from_handler->mctx.gregs[REG_RIP] == EXPECTED_RIP);       \
+    CHECK(from_handler->mctx.gregs[REG_TRAPNO] == EXPECTED_TRAPNO); \
+    CHECK(from_handler->mctx.gregs[REG_ERR] == EXPECTED_ERR);       \
+    CHECK(from_handler->si_code == EXPECTED_SI_CODE);               \
+    CHECK(from_handler->signal == EXPECTED_SIGNAL);                 \
+    from_handler.reset();                                           \
+  }
+
+// Instructions that explicitly are supported but must only work in CPL-0
+TEST(0, "rdmsr", "rdmsr", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(1, "outs", "outs dx, byte ptr [esi]", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(2, "ins", "ins byte ptr [edi], dx", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(3, "cli", "cli", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(4, "clts", "clts", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(5, "invlpg", "invlpg [eax]", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(6, "lmsw", "lmsw [eax]", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(7, "ltr", "ltr [eax]", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(8, "mov cr0", "mov cr0, eax", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(10, "mov eax, cr0", "mov eax, cr0", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(12, "mov eax, dr0", "mov eax, dr0", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(13, "mov dr0, eax", "mov dr0, eax", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(14, "rdpmc", "rdpmc", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(15, "sti", "sti", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(16, "swapgs", "swapgs", X86_TRAPNO_UD, 0, 2, SIGILL);
+#ifdef __clang__
+TEST(17, "sysret", "sysret", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+#else
+TEST(17, "sysret", "sysretd", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+#endif
+TEST(18, "wrmsr", "wrmsr", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(19, "invd", "invd", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+TEST(20, "wbinvd", "wbinvd", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+
+// Instructions not implemented
+TEST(21, "monitor", "monitor", X86_TRAPNO_UD, 0, 2, SIGILL);
+TEST(22, "mwait", "mwait", X86_TRAPNO_UD, 0, 2, SIGILL);
+TEST(23, "sysenter", "sysenter", X86_TRAPNO_UD, 0, 2, SIGILL);
+#ifdef __clang__
+TEST(24, "sysexit", "sysexit", X86_TRAPNO_UD, 0, 2, SIGILL);
+#else
+TEST(24, "sysexit", "sysexitd", X86_TRAPNO_UD, 0, 2, SIGILL);
+#endif
+
+TEST(25, "in eax, dx", "in eax, dx", X86_TRAPNO_GP, 0, 0x80, SIGSEGV);
+// Differs between dr8 and dr0-7 variants.
+// dr0-7: SIGSEGV
+// dr8-15: SIGILL
+// TEST(20, "mov eax, dr8", "mov eax, dr8", X86_TRAPNO_UD, 0, 2, SIGILL);
