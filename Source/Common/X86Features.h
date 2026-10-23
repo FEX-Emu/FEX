@@ -44,8 +44,12 @@ public:
 
       if (data_7.eax >= 1) {
         auto data_7_1 = cpuid(0x7, 0x1);
+        Feat_sha512 = Feat_avx && (data_7_1.eax & (1U << 0));
         Feat_avx_vnni = Feat_avx && (data_7_1.eax & (1U << 4));
+        Feat_avx_ifma = Feat_avx && (data_7_1.eax & (1U << 23));
+        Feat_avx_vnni_int8 = Feat_avx && (data_7_1.edx & (1U << 4));
         Feat_avx_ne_convert = Feat_avx && (data_7_1.edx & (1U << 5));
+        Feat_avx_vnni_int16 = Feat_avx && (data_7_1.edx & (1U << 10));
       }
     }
 
@@ -89,6 +93,10 @@ public:
   bool Feat_avx_vnni {};
   bool Feat_serialize {};
   bool Feat_avx_ne_convert {};
+  bool Feat_avx_vnni_int8 {};
+  bool Feat_avx_vnni_int16 {};
+  bool Feat_avx_ifma {};
+  bool Feat_sha512 {};
 
 private:
   struct cpuid_data {
