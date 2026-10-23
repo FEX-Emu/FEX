@@ -324,6 +324,10 @@ public:
     FEATURE_AVX_VNNI = (1 << 24),
     FEATURE_SERIALIZE = (1 << 25),
     FEATURE_AVX_NE_CONVERT = (1 << 26),
+    FEATURE_AVX_VNNI_INT8 = (1 << 27),
+    FEATURE_AVX_VNNI_INT16 = (1 << 28),
+    FEATURE_AVX_IFMA = (1 << 29),
+    FEATURE_SHA512 = (1 << 30),
   };
 
   bool Requires3DNow() const {
@@ -406,6 +410,18 @@ public:
   }
   bool RequiresAVXNEConvert() const {
     return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX_NE_CONVERT;
+  }
+  bool RequiresAVXVNNIINT8() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX_VNNI_INT8;
+  }
+  bool RequiresAVXVNNIINT16() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX_VNNI_INT16;
+  }
+  bool RequiresAVXIFMA() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX_IFMA;
+  }
+  bool RequiresSHA512() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SHA512;
   }
 
 private:
@@ -622,6 +638,18 @@ public:
   }
   bool RequiresAVXNEConvert() const {
     return Config.RequiresAVXNEConvert();
+  }
+  bool RequiresAVXVNNIINT8() const {
+    return Config.RequiresAVXVNNIINT8();
+  }
+  bool RequiresAVXVNNIINT16() const {
+    return Config.RequiresAVXVNNIINT16();
+  }
+  bool RequiresAVXIFMA() const {
+    return Config.RequiresAVXIFMA();
+  }
+  bool RequiresSHA512() const {
+    return Config.RequiresSHA512();
   }
 
 private:

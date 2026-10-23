@@ -90,6 +90,10 @@ class HostFeatures(Flag) :
     FEATURE_AVX_VNNI  = (1 << 24)
     FEATURE_SERIALIZE = (1 << 25)
     FEATURE_AVX_NE_CONVERT = (1 << 26)
+    FEATURE_AVX_VNNI_INT8 = (1 << 27)
+    FEATURE_AVX_VNNI_INT16 = (1 << 28)
+    FEATURE_AVX_IFMA = (1 << 29)
+    FEATURE_SHA512 = (1 << 30)
 
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
@@ -179,6 +183,10 @@ HostFeaturesLookup = {
     "AVX_VNNI"  : HostFeatures.FEATURE_AVX_VNNI,
     "SERIALIZE" : HostFeatures.FEATURE_SERIALIZE,
     "AVX_NE_CONVERT" : HostFeatures.FEATURE_AVX_NE_CONVERT,
+    "AVX_VNNI_INT8" : HostFeatures.FEATURE_AVX_VNNI_INT8,
+    "AVX_VNNI_INT16" : HostFeatures.FEATURE_AVX_VNNI_INT16,
+    "AVX_IFMA" : HostFeatures.FEATURE_AVX_IFMA,
+    "SHA512" : HostFeatures.FEATURE_SHA512,
 }
 
 def parse_hexstring(s):

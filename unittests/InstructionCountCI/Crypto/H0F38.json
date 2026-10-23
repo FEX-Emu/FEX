@@ -80,6 +80,48 @@
         "sha256su1 v16.4s, v2.4s, v3.4s"
       ]
     },
+    "db 0xc4, 0xe2, 0x77, 0xcb, 0xc2 ; vsha512rnds2 ymm0, ymm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xcb"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1240]",
+        "ldr x0, [x28, #2736]",
+        "br x0"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7f, 0xcc, 0xc1 ; vsha512msg1 ymm0, xmm1": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xcc"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1240]",
+        "ldr x0, [x28, #2736]",
+        "br x0"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x7f, 0xcd, 0xc1 ; vsha512msg2 ymm0, ymm1": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "0xf2 0x0f 0x38 0xcd"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1240]",
+        "ldr x0, [x28, #2736]",
+        "br x0"
+      ]
+    },
     "aesimc xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Comment": [
