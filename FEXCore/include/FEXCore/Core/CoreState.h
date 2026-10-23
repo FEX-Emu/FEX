@@ -192,6 +192,14 @@ struct alignas(64) CPUState {
   uint8_t AbridgedFTW {};
 
   uint8_t _pad2[5];
+
+  uint64_t Dr0 {};
+  uint64_t Dr1 {};
+  uint64_t Dr2 {};
+  uint64_t Dr3 {};
+  uint64_t Dr6 {};
+  uint64_t Dr7 {};
+
   // PF/AF are statically mapped as-if they were r16/r17 (which do not exist in
   // x86 otherwise). This allows a straightforward mapping for SRA.
   static constexpr uint8_t PF_AS_GREG = 16;

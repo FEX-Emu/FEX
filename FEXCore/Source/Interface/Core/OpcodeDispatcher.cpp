@@ -5270,6 +5270,26 @@ void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDe
   }
 }
 
+void OpDispatchBuilder::BreakpointOp(OpcodeArgs, uint32_t BP) {
+  const auto GPRSize = GetGPROpSize();
+  auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
+  _StoreContextGPR(GPRSize, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
+
+  LogMan::Msg::DFmt("FEX:Breakpoint op at BP: {}", BP);
+  uint32_t DR6Value {1U << BP};
+  _StoreContextGPR(GPRSize, _Constant(DR6Value), offsetof(FEXCore::Core::CPUState, Dr6));
+
+  IR::BreakDefinition Reason;
+  Reason.ErrorRegister = 0;
+  Reason.Signal = Core::FAULT_SIGTRAP;
+  Reason.TrapNumber = X86State::X86_TRAPNO_DB;
+  Reason.si_code = 0x80;
+
+  Break(Reason);
+
+  BlockSetRIP = true;
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   BreakOp(Op, FEXCore::IR::BreakDefinition {
                 .ErrorRegister = 0,

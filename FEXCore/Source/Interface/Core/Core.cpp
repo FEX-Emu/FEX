@@ -522,6 +522,38 @@ ContextImpl::GenerateIRResult
 ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("GenerateIR");
 
+  if (Thread->CurrentFrame->State.Dr7) {
+    // Debug register is enabled. Check it.
+    if (GuestRIP == Thread->CurrentFrame->State.Dr0 &&           // Debug Register 0 address
+        (Thread->CurrentFrame->State.Dr7 & (0b11 << 0)) &&       // If enabled
+        ((Thread->CurrentFrame->State.Dr7 >> 16) & 0b11) == 0) { // If type is instruction fault.
+      LogMan::Msg::DFmt("Guest Rip matched Dr0");
+      MaxInst = 1;
+      Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC] = 1;
+    }
+    if (GuestRIP == Thread->CurrentFrame->State.Dr1 &&           // Debug Register 1 address
+        (Thread->CurrentFrame->State.Dr7 & (0b11 << 2)) &&       // If enabled
+        ((Thread->CurrentFrame->State.Dr7 >> 20) & 0b11) == 0) { // If type is instruction fault.
+      LogMan::Msg::DFmt("Guest Rip matched Dr1");
+      MaxInst = 1;
+      Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC] = 1;
+    }
+    if (GuestRIP == Thread->CurrentFrame->State.Dr2 &&           // Debug Register 2 address
+        (Thread->CurrentFrame->State.Dr7 & (0b11 << 4)) &&       // If enabled
+        ((Thread->CurrentFrame->State.Dr7 >> 24) & 0b11) == 0) { // If type is instruction fault.
+      LogMan::Msg::DFmt("Guest Rip matched Dr2");
+      MaxInst = 1;
+      Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC] = 1;
+    }
+    if (GuestRIP == Thread->CurrentFrame->State.Dr3 &&           // Debug Register 3 address
+        (Thread->CurrentFrame->State.Dr7 & (0b11 << 6)) &&       // If enabled
+        ((Thread->CurrentFrame->State.Dr7 >> 28) & 0b11) == 0) { // If type is instruction fault.
+      LogMan::Msg::DFmt("Guest Rip matched Dr3");
+      MaxInst = 1;
+      Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC] = 1;
+    }
+  }
+
   Thread->OpDispatcher->ResetWorkingList();
 
   uint64_t TotalInstructions {0};
@@ -715,8 +747,14 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
               LogMan::Msg::EFmt("Invalid or Unknown instruction: {} 0x{:x}", TableInfo->Name ?: "UND", Block.Entry - GuestRIP);
             }
 
-            if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST ||
-                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BAD_RELOCATION) {
+            if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_0 ||
+                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_1 ||
+                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_2 ||
+                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_3) {
+              Thread->OpDispatcher->BreakpointOp(DecodedInfo, FEXCore::ToUnderlying(Block.BlockStatus) -
+                                                                FEXCore::ToUnderlying(Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_0));
+            } else if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST ||
+                       Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BAD_RELOCATION) {
               Thread->OpDispatcher->InvalidOp(DecodedInfo);
             } else if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::UNIMPLEMENTED_INST) {
               Thread->OpDispatcher->UnimplementedOp(DecodedInfo);

@@ -94,6 +94,52 @@ bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
     return false;
   }
 
+  if (Thread->CurrentFrame->State.Dr7) [[unlikely]] {
+    auto TranslateSize = [](uint32_t Size) -> uint32_t {
+      switch (Size) {
+      case 0: return 1;
+      case 1: return 2;
+      case 2: return 8;
+      case 3: return 4;
+      default: FEX_UNREACHABLE;
+      }
+    };
+
+    // If Dr7 has anything enabled then check it.
+    if (Thread->CurrentFrame->State.Dr7 & (0b11 << 0) && ((Thread->CurrentFrame->State.Dr7 >> 16) & 0b11) == 0) {
+      size_t DrSize = TranslateSize((Thread->CurrentFrame->State.Dr7 >> 18) & 0b11);
+      if (Address >= Thread->CurrentFrame->State.Dr0 && (Address + Size - 1) < (Thread->CurrentFrame->State.Dr0 + DrSize)) {
+        LogMan::Msg::DFmt("Found one in dr0");
+        HitBreakpoint = 0;
+        return false;
+      }
+    }
+    if (Thread->CurrentFrame->State.Dr7 & (0b11 << 2) && ((Thread->CurrentFrame->State.Dr7 >> 20) & 0b11) == 0) {
+      size_t DrSize = TranslateSize((Thread->CurrentFrame->State.Dr7 >> 22) & 0b11);
+      if (Address >= Thread->CurrentFrame->State.Dr1 && (Address + Size - 1) < (Thread->CurrentFrame->State.Dr1 + DrSize)) {
+        LogMan::Msg::DFmt("Found one in dr1");
+        HitBreakpoint = 1;
+        return false;
+      }
+    }
+    if (Thread->CurrentFrame->State.Dr7 & (0b11 << 4) && ((Thread->CurrentFrame->State.Dr7 >> 24) & 0b11) == 0) {
+      size_t DrSize = TranslateSize((Thread->CurrentFrame->State.Dr7 >> 26) & 0b11);
+      if (Address >= Thread->CurrentFrame->State.Dr2 && (Address + Size - 1) < (Thread->CurrentFrame->State.Dr2 + DrSize)) {
+        LogMan::Msg::DFmt("Found one in dr2");
+        HitBreakpoint = 2;
+        return false;
+      }
+    }
+    if (Thread->CurrentFrame->State.Dr7 & (0b11 << 6) && ((Thread->CurrentFrame->State.Dr7 >> 28) & 0b11) == 0) {
+      size_t DrSize = TranslateSize((Thread->CurrentFrame->State.Dr7 >> 30) & 0b11);
+      if (Address >= Thread->CurrentFrame->State.Dr3 && (Address + Size - 1) < (Thread->CurrentFrame->State.Dr3 + DrSize)) {
+        LogMan::Msg::DFmt("Found one in dr3");
+        HitBreakpoint = 3;
+        return false;
+      }
+    }
+  }
+
   while (Address < ExecutableRangeBase || Address + Size > ExecutableRangeEnd) {
     auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, Address);
     ExecutableRangeBase = RangeInfo.Base;
@@ -1078,6 +1124,7 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
   // Will be set if DecodeInstructionImpl tries to read non-executable memory
   HitNonExecutableRange = false;
   HitBadRelocation = false;
+  HitBreakpoint = ~0U;
   auto ErrorDuringDecoding = DecodeInstructionImpl(PC);
 
   if (ErrorDuringDecoding != DecodedBlockStatus::SUCCESS || HitNonExecutableRange || HitBadRelocation) [[unlikely]] {
@@ -1086,6 +1133,10 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
     const auto InstSize = DecodeInst->InstSize;
     DecodeInst->TableInfo = nullptr;
     DecodeInst->InstSize = 0;
+
+    if (HitBreakpoint != ~0U) {
+      return static_cast<Decoder::DecodedBlockStatus>(FEXCore::ToUnderlying(DecodedBlockStatus::BREAKPOINT_0) + HitBreakpoint);
+    }
 
     // A decode error can be caused by substituting zero for an inaccessible
     // instruction byte, so the instruction fetch fault takes priority.
@@ -1650,6 +1701,10 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
           EraseBlock = true;
         } else {
           LogMan::Msg::EFmt("{} instruction in entry block: {:X}",
+                            BlockIt->BlockStatus == DecodedBlockStatus::BREAKPOINT_0       ? "Breakpoint" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::BREAKPOINT_1       ? "Breakpoint" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::BREAKPOINT_2       ? "Breakpoint" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::BREAKPOINT_3       ? "Breakpoint" :
                             BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST       ? "Invalid" :
                             BlockIt->BlockStatus == DecodedBlockStatus::NOEXEC_INST        ? "NoExec" :
                             BlockIt->BlockStatus == DecodedBlockStatus::BAD_RELOCATION     ? "BadRelocation" :
