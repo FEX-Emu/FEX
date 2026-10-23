@@ -53,6 +53,7 @@ enum trapno {
     CHECK(from_handler->mctx.gregs[REG_ERR] == EXPECTED_ERR);       \
     CHECK(from_handler->si_code == EXPECTED_SI_CODE);               \
     CHECK(from_handler->signal == EXPECTED_SIGNAL);                 \
+    from_handler.reset();                                           \
   }
 
 // Instructions that explicitly are supported but must only work in CPL-0

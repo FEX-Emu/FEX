@@ -12,6 +12,19 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
+enum ModRM_LUT {
+  ENTRY_3_0,
+  ENTRY_MAX,
+};
+
+constexpr std::array<X86InstInfo[2], ENTRY_MAX> ModRM_ArchSelect_LUT = {{
+  // ENTRY_3_0
+  {
+    {"SWAPGS",   TYPE_INST,    FLAGS_NONE, 0, { .OpDispatch = &IR::OpDispatchBuilder::UnimplementedOp }},
+    {"SWAPGS",   TYPE_INST,    FLAGS_NONE, 0, { .OpDispatch = &IR::OpDispatchBuilder::PermissionRestrictedOp }},
+  },
+}};
+
 constexpr std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps = []() consteval {
   std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> Table{};
   constexpr U8U8InfoStruct SecondaryModRMExtensionOpTable[] = {
@@ -46,7 +59,7 @@ constexpr std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableO
     {((2 << 3) | 7), 1, X86InstInfo{"INVLPGA",  TYPE_INST,    FLAGS_NONE, 0}},
 
     // REG /7
-    {((3 << 3) | 0), 1, X86InstInfo{"SWAPGS",   TYPE_INST,    FLAGS_NONE, 0}},
+    {((3 << 3) | 0), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = ModRM_ArchSelect_LUT[ENTRY_3_0] }}},
     {((3 << 3) | 1), 1, X86InstInfo{"RDTSCP",   TYPE_INST,    FLAGS_NONE, 0}},
     {((3 << 3) | 2), 1, X86InstInfo{"MONITORX", TYPE_PRIV,    FLAGS_NONE, 0}},
     {((3 << 3) | 3), 1, X86InstInfo{"MWAITX",   TYPE_PRIV,    FLAGS_NONE, 0}},
