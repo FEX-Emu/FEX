@@ -48,8 +48,7 @@ $end_info$
 namespace {
 #ifndef _WIN32
 
-static std::optional<uint64_t>
-RDRANDFallback(uint64_t Reseed) {
+static std::optional<uint64_t> RDRANDFallback(uint64_t Reseed) {
   uint64_t Value {};
   FHU::Syscalls::getrandom(&Value, sizeof(Value), 0);
   return Value;
@@ -63,8 +62,7 @@ RDRANDFallback(uint64_t Reseed) {
 
 // Reference implementation by Sebastiano Vigna, public domain (CC0)
 // https://prng.di.unimi.it/splitmix64.c
-static std::atomic<uint64_t>
-  RNGState {static_cast<uint64_t>(__builtin_readcyclecounter())};
+static std::atomic<uint64_t> RNGState {static_cast<uint64_t>(__builtin_readcyclecounter())};
 
 static std::optional<uint64_t> RDRANDFallback(uint64_t Reseed) {
   const uint64_t State = RNGState.load(std::memory_order_relaxed) + 0x9E3779B97F4A7C15ULL;
