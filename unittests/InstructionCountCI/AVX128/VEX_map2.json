@@ -6049,6 +6049,62 @@
         "str q16, [x28, #192]"
       ]
     },
+    "vpmadd52luq xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0xb4 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1240]",
+        "ldr x0, [x28, #2736]",
+        "br x0"
+      ]
+    },
+    "vpmadd52luq ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0xb4 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1240]",
+        "ldr x0, [x28, #2736]",
+        "br x0"
+      ]
+    },
+    "vpmadd52huq xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0xb5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1240]",
+        "ldr x0, [x28, #2736]",
+        "br x0"
+      ]
+    },
+    "vpmadd52huq ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0xb5 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x10000",
+        "str x20, [x28, #24]",
+        "mov w0, #0x401",
+        "str x0, [x28, #1240]",
+        "ldr x0, [x28, #2736]",
+        "br x0"
+      ]
+    },
     "vfmaddsub231ps xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 5,
       "Comment": [
