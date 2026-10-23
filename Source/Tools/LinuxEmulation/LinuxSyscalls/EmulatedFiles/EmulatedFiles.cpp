@@ -359,6 +359,7 @@ static fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CP
     add_flag_if(res_d_1.eax & (1 << 3), "xsaves");
     add_flag_if(res_d_1.eax & (1 << 4), "xfd");
 
+    add_flag_if(res_7_1.eax & (1 << 0), "sha512");
     add_flag_if(res_7_1.eax & (1 << 4), "avx_vnni");
     add_flag_if(res_7_1.eax & (1 << 5), "avx512_bf16");
     add_flag_if(res_7_1.eax & (1 << 23), "avx_ifma");
