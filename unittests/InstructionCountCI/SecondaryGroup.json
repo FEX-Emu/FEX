@@ -11,7 +11,7 @@
       "FLAGM",
       "FLAGM2"
     ],
-    "BinaryCacheVersion": 36
+    "BinaryCacheVersion": 37
   },
   "Instructions": {
     "sgdt [rax]": {
@@ -1556,7 +1556,7 @@
       ]
     },
     "fxsave [rax]": {
-      "ExpectedInstructionCount": 68,
+      "ExpectedInstructionCount": 70,
       "Comment": "GROUP15 0x0F 0xAE /0",
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #1200]",
@@ -1574,6 +1574,8 @@
         "ldrb w21, [x28, #1040]",
         "orr x20, x20, x21",
         "strh w20, [x4, #2]",
+        "ldr x20, [x28, #1208]",
+        "str w20, [x4, #8]",
         "ldrb w20, [x28, #1202]",
         "strb w20, [x4, #4]",
         "ldrb w20, [x28, #1051]",
@@ -1644,7 +1646,7 @@
       ]
     },
     "fxrstor [rax]": {
-      "ExpectedInstructionCount": 86,
+      "ExpectedInstructionCount": 88,
       "Comment": "GROUP15 0x0F 0xAE /1",
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
@@ -1662,6 +1664,8 @@
         "strb w24, [x28, #1050]",
         "strb w30, [x28, #1054]",
         "strb w20, [x28, #1040]",
+        "ldr w20, [x4, #8]",
+        "str x20, [x28, #1208]",
         "ldrb w20, [x4, #4]",
         "strb w20, [x28, #1202]",
         "mov x20, #0xffffffffffffffff",
@@ -1806,12 +1810,12 @@
       ]
     },
     "xsave [rax]": {
-      "ExpectedInstructionCount": 98,
+      "ExpectedInstructionCount": 100,
       "Comment": "GROUP15 0x0F 0xAE /4",
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #1",
         "cbnz x20, #+0x8",
-        "b #+0xe4",
+        "b #+0xec",
         "ldrh w20, [x28, #1200]",
         "strh w20, [x4]",
         "ldrb w20, [x28, #1051]",
@@ -1827,6 +1831,8 @@
         "ldrb w21, [x28, #1040]",
         "orr x20, x20, x21",
         "strh w20, [x4, #2]",
+        "ldr x20, [x28, #1208]",
+        "str w20, [x4, #8]",
         "ldrb w20, [x28, #1202]",
         "strb w20, [x4, #4]",
         "ldrb w20, [x28, #1051]",
@@ -1917,14 +1923,14 @@
       ]
     },
     "xrstor [rax]": {
-      "ExpectedInstructionCount": 171,
+      "ExpectedInstructionCount": 174,
       "Comment": "GROUP15 0x0F 0xAE /5",
       "ExpectedArm64ASM": [
         "sub sp, sp, #0x40 (64)",
         "ldr x20, [x4, #512]",
         "ubfx x20, x20, #0, #1",
         "cbnz x20, #+0x8",
-        "b #+0x114",
+        "b #+0x11c",
         "ldrh w20, [x4]",
         "strh w20, [x28, #1200]",
         "ldrh w20, [x4, #2]",
@@ -1940,6 +1946,8 @@
         "strb w24, [x28, #1050]",
         "strb w30, [x28, #1054]",
         "strb w20, [x28, #1040]",
+        "ldr w20, [x4, #8]",
+        "str x20, [x28, #1208]",
         "ldrb w20, [x4, #4]",
         "strb w20, [x28, #1202]",
         "mov x20, #0xffffffffffffffff",
@@ -1992,7 +2000,7 @@
         "and v2.16b, v3.16b, v2.16b",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #1056]",
-        "b #+0x4c",
+        "b #+0x50",
         "mov w20, #0x37f",
         "strh w20, [x28, #1200]",
         "strb wzr, [x28, #1051]",
@@ -2002,6 +2010,7 @@
         "strb wzr, [x28, #1050]",
         "strb wzr, [x28, #1054]",
         "strb wzr, [x28, #1040]",
+        "str xzr, [x28, #1208]",
         "movi v2.2d, #0x0",
         "str q2, [x28, #1056]",
         "str q2, [x28, #1072]",

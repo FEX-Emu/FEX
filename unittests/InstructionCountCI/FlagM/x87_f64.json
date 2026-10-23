@@ -13,7 +13,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 36
+    "BinaryCacheVersion": 37
   },
   "Instructions": {
     "fadd dword [rax]": {
@@ -1539,7 +1539,7 @@
       ]
     },
     "fnstenv [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xd9 !11b /6"
       ],
@@ -1569,7 +1569,8 @@
         "orr w20, w20, w20, lsl #1",
         "eor w20, w20, #0xffff",
         "str w20, [x4, #8]",
-        "str wzr, [x4, #12]",
+        "ldr x20, [x28, #1208]",
+        "str w20, [x4, #12]",
         "str wzr, [x4, #16]",
         "str wzr, [x4, #20]",
         "str wzr, [x4, #24]"
@@ -4161,7 +4162,7 @@
       ]
     },
     "fninit": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "0xdb 11b 0xe3 /4"
       ],
@@ -4182,7 +4183,8 @@
         "strb wzr, [x28, #1049]",
         "strb wzr, [x28, #1050]",
         "strb wzr, [x28, #1054]",
-        "strb wzr, [x28, #1040]"
+        "strb wzr, [x28, #1040]",
+        "str xzr, [x28, #1208]"
       ]
     },
     "fucomi st0, st0": {
@@ -5497,7 +5499,7 @@
       ]
     },
     "frstor [rax]": {
-      "ExpectedInstructionCount": 141,
+      "ExpectedInstructionCount": 143,
       "Comment": [
         "0xdd !11b /4"
       ],
@@ -5536,6 +5538,8 @@
         "and w20, w20, #0xf0f0f0f",
         "orr w20, w20, w20, lsr #4",
         "strb w20, [x28, #1202]",
+        "ldr w20, [x4, #12]",
+        "str x20, [x28, #1208]",
         "mov x20, #0xffffffffffffffff",
         "mov w22, #0xffff",
         "fmov d2, x20",
@@ -5646,7 +5650,7 @@
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 143,
+      "ExpectedInstructionCount": 145,
       "Comment": [
         "0xdd !11b /6"
       ],
@@ -5678,7 +5682,8 @@
         "orr w22, w22, w22, lsl #1",
         "eor w22, w22, #0xffff",
         "str w22, [x4, #8]",
-        "str wzr, [x4, #12]",
+        "ldr x22, [x28, #1208]",
+        "str w22, [x4, #12]",
         "str wzr, [x4, #16]",
         "str wzr, [x4, #20]",
         "str wzr, [x4, #24]",
@@ -5793,7 +5798,8 @@
         "strb wzr, [x28, #1049]",
         "strb wzr, [x28, #1050]",
         "strb wzr, [x28, #1054]",
-        "strb wzr, [x28, #1040]"
+        "strb wzr, [x28, #1040]",
+        "str xzr, [x28, #1208]"
       ]
     },
     "fnstsw [rax]": {
