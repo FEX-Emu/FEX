@@ -566,8 +566,23 @@ void Dispatcher::EmitDispatcher() {
     // We can safely claim we are no longer in a syscall
     str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
-    // Now go back to the regular dispatcher loop
-    (void)b(&LoopTop);
+    {
+      // L1 lookup after syscall. Mirrors the implementation in `ExitFunction`.
+      // Most syscall instructions just return to the following RIP, so it is highly likely to be in the L1 in tight loops.
+      ldr(TMP3, STATE_PTR(CpuStateFrame, State.rip));
+      ldp<ARMEmitter::IndexType::OFFSET>(TMP1, TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.L1Pointer));
+
+      // Calculate (tmp1 + ((ripreg & L1_ENTRIES_MASK) << 4)) for the address
+      // L1Mask is pre-shifted.
+      and_(ARMEmitter::Size::i64Bit, TMP2, TMP2, TMP3, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(sizeof(LookupCache::LookupCacheEntry)));
+      add(TMP1, TMP1, TMP2);
+
+      ldp<ARMEmitter::IndexType::OFFSET>(TMP2, TMP1, TMP1, 0);
+
+      sub(TMP1, TMP1, TMP3);
+      (void)cbnz(ARMEmitter::Size::i64Bit, TMP1, &LoopTop);
+      br(TMP2);
+    }
   }
 
   {
