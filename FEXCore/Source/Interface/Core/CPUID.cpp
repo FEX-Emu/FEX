@@ -855,13 +855,13 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0U << 1) |                 // Reserved
               (0U << 2) |                 // Reserved
               (0U << 3) |                 // Reserved
-              (0U << 4) |                 // AVX_VNNI_INT8
+              (SupportsAVXVNNI << 4) |    // AVX_VNNI_INT8
               (SupportsAVXConvert << 5) | // AVX_NE_CONVERT
               (0U << 6) |                 // Reserved
               (0U << 7) |                 // Reserved
               (0U << 8) |                 // AMX_COMPLEX
               (0U << 9) |                 // Reserved
-              (0U << 10) |                // AVX_VNNI_INT16
+              (SupportsAVXVNNI << 10) |   // AVX_VNNI_INT16
               (0U << 11) |                // Reserved
               (0U << 12) |                // Reserved
               (0U << 13) |                // UTMR (User-timer events)

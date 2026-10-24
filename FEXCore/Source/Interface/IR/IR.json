@@ -2380,6 +2380,17 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
+      "FPR = VUDot OpSize:#RegisterSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Unsigned 8-bit dot product, accumulating four products in to each 32-bit element of Acc.",
+                 "Requires FEAT_DotProd."
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "OpSize::i32Bit",
+        "TiedSource": 0,
+        "EmitValidation": [
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
+        ]
+      },
       "FPR = VUSDot OpSize:#RegisterSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Unsigned by signed 8-bit dot product, accumulating four products in to each 32-bit element of Acc.",
                  "Requires FEAT_I8MM."

@@ -62,38 +62,38 @@ class Mode(Flag) :
     MODE_64   = 1
 
 class HostFeatures(Flag) :
-    FEATURE_ANY       = 0
-    FEATURE_3DNOW     = (1 << 0)
-    FEATURE_SSE4A     = (1 << 1)
-    FEATURE_AVX       = (1 << 2)
-    FEATURE_RAND      = (1 << 3)
-    FEATURE_SHA       = (1 << 4)
-    FEATURE_CLZERO    = (1 << 5)
-    FEATURE_BMI1      = (1 << 6)
-    FEATURE_BMI2      = (1 << 7)
-    FEATURE_CLWB      = (1 << 8)
-    FEATURE_LINUX     = (1 << 9)
-    FEATURE_AES256    = (1 << 10)
-    FEATURE_AFP       = (1 << 11)
-    FEATURE_SSSE3     = (1 << 12)
-    FEATURE_SSE4_1    = (1 << 13)
-    FEATURE_SSE4_2    = (1 << 14)
-    FEATURE_AES       = (1 << 15)
-    FEATURE_PCLMUL    = (1 << 16)
-    FEATURE_MOVBE     = (1 << 17)
-    FEATURE_ADX       = (1 << 18)
-    FEATURE_XSAVE     = (1 << 19)
-    FEATURE_RDPID     = (1 << 20)
-    FEATURE_CLFLOPT   = (1 << 21)
-    FEATURE_FSGSBASE  = (1 << 22)
-    FEATURE_EMMI      = (1 << 23)
-    FEATURE_AVX_VNNI  = (1 << 24)
-    FEATURE_SERIALIZE = (1 << 25)
+    FEATURE_ANY            = 0
+    FEATURE_3DNOW          = (1 << 0)
+    FEATURE_SSE4A          = (1 << 1)
+    FEATURE_AVX            = (1 << 2)
+    FEATURE_RAND           = (1 << 3)
+    FEATURE_SHA            = (1 << 4)
+    FEATURE_CLZERO         = (1 << 5)
+    FEATURE_BMI1           = (1 << 6)
+    FEATURE_BMI2           = (1 << 7)
+    FEATURE_CLWB           = (1 << 8)
+    FEATURE_LINUX          = (1 << 9)
+    FEATURE_AES256         = (1 << 10)
+    FEATURE_AFP            = (1 << 11)
+    FEATURE_SSSE3          = (1 << 12)
+    FEATURE_SSE4_1         = (1 << 13)
+    FEATURE_SSE4_2         = (1 << 14)
+    FEATURE_AES            = (1 << 15)
+    FEATURE_PCLMUL         = (1 << 16)
+    FEATURE_MOVBE          = (1 << 17)
+    FEATURE_ADX            = (1 << 18)
+    FEATURE_XSAVE          = (1 << 19)
+    FEATURE_RDPID          = (1 << 20)
+    FEATURE_CLFLOPT        = (1 << 21)
+    FEATURE_FSGSBASE       = (1 << 22)
+    FEATURE_EMMI           = (1 << 23)
+    FEATURE_AVX_VNNI       = (1 << 24)
+    FEATURE_SERIALIZE      = (1 << 25)
     FEATURE_AVX_NE_CONVERT = (1 << 26)
-    FEATURE_AVX_VNNI_INT8 = (1 << 27)
+    FEATURE_AVX_VNNI_INT8  = (1 << 27)
     FEATURE_AVX_VNNI_INT16 = (1 << 28)
-    FEATURE_AVX_IFMA = (1 << 29)
-    FEATURE_SHA512 = (1 << 30)
+    FEATURE_AVX_IFMA       = (1 << 29)
+    FEATURE_SHA512         = (1 << 30)
 
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
@@ -156,37 +156,37 @@ ModeStringLookup = {
 }
 
 HostFeaturesLookup = {
-    "3DNOW"     : HostFeatures.FEATURE_3DNOW,
-    "SSE4A"     : HostFeatures.FEATURE_SSE4A,
-    "AVX"       : HostFeatures.FEATURE_AVX,
-    "RAND"      : HostFeatures.FEATURE_RAND,
-    "SHA"       : HostFeatures.FEATURE_SHA,
-    "CLZERO"    : HostFeatures.FEATURE_CLZERO,
-    "BMI1"      : HostFeatures.FEATURE_BMI1,
-    "BMI2"      : HostFeatures.FEATURE_BMI2,
-    "CLWB"      : HostFeatures.FEATURE_CLWB,
-    "LINUX"     : HostFeatures.FEATURE_LINUX,
-    "AES256"    : HostFeatures.FEATURE_AES256,
-    "AFP"       : HostFeatures.FEATURE_AFP,
-    "SSSE3"     : HostFeatures.FEATURE_SSSE3,
-    "SSE4.1"    : HostFeatures.FEATURE_SSE4_1,
-    "SSE4.2"    : HostFeatures.FEATURE_SSE4_2,
-    "AES"       : HostFeatures.FEATURE_AES,
-    "PCLMUL"    : HostFeatures.FEATURE_PCLMUL,
-    "MOVBE"     : HostFeatures.FEATURE_MOVBE,
-    "ADX"       : HostFeatures.FEATURE_ADX,
-    "XSAVE"     : HostFeatures.FEATURE_XSAVE,
-    "RDPID"     : HostFeatures.FEATURE_RDPID,
-    "CLFLOPT"   : HostFeatures.FEATURE_CLFLOPT,
-    "FSGSBASE"  : HostFeatures.FEATURE_FSGSBASE,
-    "EMMI"      : HostFeatures.FEATURE_EMMI,
-    "AVX_VNNI"  : HostFeatures.FEATURE_AVX_VNNI,
-    "SERIALIZE" : HostFeatures.FEATURE_SERIALIZE,
+    "3DNOW"          : HostFeatures.FEATURE_3DNOW,
+    "SSE4A"          : HostFeatures.FEATURE_SSE4A,
+    "AVX"            : HostFeatures.FEATURE_AVX,
+    "RAND"           : HostFeatures.FEATURE_RAND,
+    "SHA"            : HostFeatures.FEATURE_SHA,
+    "CLZERO"         : HostFeatures.FEATURE_CLZERO,
+    "BMI1"           : HostFeatures.FEATURE_BMI1,
+    "BMI2"           : HostFeatures.FEATURE_BMI2,
+    "CLWB"           : HostFeatures.FEATURE_CLWB,
+    "LINUX"          : HostFeatures.FEATURE_LINUX,
+    "AES256"         : HostFeatures.FEATURE_AES256,
+    "AFP"            : HostFeatures.FEATURE_AFP,
+    "SSSE3"          : HostFeatures.FEATURE_SSSE3,
+    "SSE4.1"         : HostFeatures.FEATURE_SSE4_1,
+    "SSE4.2"         : HostFeatures.FEATURE_SSE4_2,
+    "AES"            : HostFeatures.FEATURE_AES,
+    "PCLMUL"         : HostFeatures.FEATURE_PCLMUL,
+    "MOVBE"          : HostFeatures.FEATURE_MOVBE,
+    "ADX"            : HostFeatures.FEATURE_ADX,
+    "XSAVE"          : HostFeatures.FEATURE_XSAVE,
+    "RDPID"          : HostFeatures.FEATURE_RDPID,
+    "CLFLOPT"        : HostFeatures.FEATURE_CLFLOPT,
+    "FSGSBASE"       : HostFeatures.FEATURE_FSGSBASE,
+    "EMMI"           : HostFeatures.FEATURE_EMMI,
+    "AVX_VNNI"       : HostFeatures.FEATURE_AVX_VNNI,
+    "SERIALIZE"      : HostFeatures.FEATURE_SERIALIZE,
     "AVX_NE_CONVERT" : HostFeatures.FEATURE_AVX_NE_CONVERT,
-    "AVX_VNNI_INT8" : HostFeatures.FEATURE_AVX_VNNI_INT8,
+    "AVX_VNNI_INT8"  : HostFeatures.FEATURE_AVX_VNNI_INT8,
     "AVX_VNNI_INT16" : HostFeatures.FEATURE_AVX_VNNI_INT16,
-    "AVX_IFMA" : HostFeatures.FEATURE_AVX_IFMA,
-    "SHA512" : HostFeatures.FEATURE_SHA512,
+    "AVX_IFMA"       : HostFeatures.FEATURE_AVX_IFMA,
+    "SHA512"         : HostFeatures.FEATURE_SHA512,
 }
 
 def parse_hexstring(s):
