@@ -398,7 +398,8 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
 
   {
     // Instruction Offset
-    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
+    auto FIP = _LoadContextGPR(OpSize::i64Bit, offsetof(FEXCore::Core::CPUState, FIP));
+    _StoreMemGPR(Size, FIP, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
   }
 
   {
@@ -496,7 +497,8 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
   {
     // Instruction Offset
-    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
+    auto FIP = _LoadContextGPR(OpSize::i64Bit, offsetof(FEXCore::Core::CPUState, FIP));
+    _StoreMemGPR(Size, FIP, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
   }
 
   {
@@ -564,6 +566,12 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   {
     // FTW
     SetX87FTW(_LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1));
+  }
+
+  {
+    // FIP
+    auto FIP = _LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
+    _StoreContextGPR(OpSize::i64Bit, FIP, offsetof(FEXCore::Core::CPUState, FIP));
   }
 
   auto SevenConst = Constant(7);
@@ -809,6 +817,9 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(Zero);
+
+  // fninit resets the FIP.
+  _StoreContextGPR(OpSize::i64Bit, _Constant(0), offsetof(FEXCore::Core::CPUState, FIP));
 }
 
 void OpDispatchBuilder::X87FFREE(OpcodeArgs) {

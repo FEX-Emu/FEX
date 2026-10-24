@@ -1513,7 +1513,7 @@ private:
   void SaveAVXState(Ref MemBase);
 
   void XRstorOpImpl(OpcodeArgs);
-  void RestoreX87State(Ref MemBase);
+  void RestoreX87State(OpcodeArgs, Ref MemBase);
   void RestoreSSEState(Ref MemBase);
   void RestoreMXCSRState(Ref MXCSR);
   void RestoreAVXState(Ref MemBase);

@@ -3073,6 +3073,12 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
   { _StoreMemGPR(OpSize::i16Bit, ReconstructFSW_Helper(), MemBase, Constant(2), OpSize::i16Bit, MemOffsetType::SXTX, 1); }
 
   {
+    auto FIPSize = Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING ? OpSize::i64Bit : OpSize::i32Bit;
+    auto FIP = _LoadContextGPR(OpSize::i64Bit, offsetof(FEXCore::Core::CPUState, FIP));
+    _StoreMemGPR(FIPSize, FIP, MemBase, Constant(8), FIPSize, MemOffsetType::SXTX, 1);
+  }
+
+  {
     // Abridged FTW
     auto FTW = _LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     _StoreMemGPR(OpSize::i8Bit, FTW, MemBase, Constant(4), OpSize::i8Bit, MemOffsetType::SXTX, 1);
@@ -3173,7 +3179,7 @@ Ref OpDispatchBuilder::GetMXCSR() {
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
-  RestoreX87State(Mem);
+  RestoreX87State(Op, Mem);
   RestoreSSEState(Mem);
 
   Ref MXCSR = _LoadMemGPR(OpSize::i32Bit, Mem, Constant(24), OpSize::i32Bit, MemOffsetType::SXTX, 1);
@@ -3219,7 +3225,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
 
   // x87
   {
-    RestoreIfFlagSetOrDefault(0, [this, Op] { RestoreX87State(XSaveBase(Op)); }, [this, Op] { DefaultX87State(Op); });
+    RestoreIfFlagSetOrDefault(0, [this, Op] { RestoreX87State(Op, XSaveBase(Op)); }, [this, Op] { DefaultX87State(Op); });
   }
   // SSE
   {
@@ -3244,7 +3250,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
   }
 }
 
-void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
+void OpDispatchBuilder::RestoreX87State(OpcodeArgs, Ref MemBase) {
   _StackForceSlow();
 
   auto NewFCW = _LoadMemGPR(OpSize::i16Bit, MemBase, OpSize::i16Bit);
@@ -3254,6 +3260,12 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
   {
     auto NewFSW = _LoadMemGPR(OpSize::i16Bit, MemBase, Constant(2), OpSize::i16Bit, MemOffsetType::SXTX, 1);
     Top = ReconstructX87StateFromFSW_Helper(NewFSW);
+  }
+
+  {
+    auto FIPSize = Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING ? OpSize::i64Bit : OpSize::i32Bit;
+    auto FIP = _LoadMemGPR(FIPSize, MemBase, Constant(8), FIPSize, MemOffsetType::SXTX, 1);
+    _StoreContextGPR(OpSize::i64Bit, FIP, offsetof(FEXCore::Core::CPUState, FIP));
   }
 
   {
