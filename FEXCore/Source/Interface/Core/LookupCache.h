@@ -12,6 +12,7 @@
 #include <FEXCore/fextl/vector.h>
 #include <FEXCore/fextl/memory_resource.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <span>
 #include <stddef.h>
@@ -246,10 +247,11 @@ public:
       if (AveragePerSecond >= DynamicL1CacheIncreaseCountHeuristic()) {
         if (CurrentL1Entries < MAX_L1_ENTRIES) {
           // Entries whose address has the new mask bit set would be unreachable by InvalidateCache
-          FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(L1Pointer), CurrentL1Entries * sizeof(LookupCacheEntry), false);
+          DecommitBackingMemory(L1Pointer, CurrentL1Entries * sizeof(LookupCacheEntry));
 
           CurrentL1Entries <<= 1;
           L1PointerMask = CurrentL1Entries - 1;
+          CommitBackingMemory(L1Pointer, CurrentL1Entries * sizeof(LookupCacheEntry));
 
           // Update the thread's L1 pointer mask to increase how much cache it uses.
           // Since we're in C-code, this is safe to update here.
@@ -266,7 +268,7 @@ public:
           // Madvise the entries that we are dropping. Gives the memory back to the OS.
           LookupCacheEntry* FirstZeroL1Entry = &reinterpret_cast<LookupCacheEntry*>(L1Pointer)[CurrentL1Entries];
           size_t ZeroMemorySize = (MAX_L1_ENTRIES - CurrentL1Entries) * sizeof(LookupCacheEntry);
-          FEXCore::Allocator::VirtualDontNeed(FirstZeroL1Entry, ZeroMemorySize, false);
+          DecommitBackingMemory(reinterpret_cast<uintptr_t>(FirstZeroL1Entry), ZeroMemorySize);
 
           // Update the thread's L1 pointer mask to increase how much cache it uses.
           // Since we're in C-code, this is safe to update here.
@@ -423,6 +425,8 @@ private:
           CacheBlockMapping(FullAddress, Entry, false, lk);
           return;
         }
+
+        CommitBackingMemory(reinterpret_cast<uintptr_t>(&Pointers[Address]), sizeof(uintptr_t));
         Pointers[Address] = NewPageBacking;
         LocalPagePointer = NewPageBacking;
       }
@@ -447,8 +451,38 @@ private:
     }
 
     AllocateOffset = NewEnd;
+    CommitBackingMemory(PageMemory + NewBase, SIZE_PER_PAGE);
     return PageMemory + NewBase;
   }
+
+  // The L1 and L2 tables are allocated uncommitted, so that we can commit on demand.
+  // CommittedGranules tracks what is already committed so redundant commits don't cost a syscall.
+  void CommitBackingMemory(uintptr_t Address, size_t Size) {
+    const auto Begin = FEXCore::AlignDown(Address - PagePointer, CACHE_COMMIT_SIZE) / CACHE_COMMIT_SIZE;
+    const auto End = FEXCore::AlignUp(Address + Size - PagePointer, CACHE_COMMIT_SIZE) / CACHE_COMMIT_SIZE;
+
+    for (auto Granule = Begin; Granule < End; ++Granule) {
+      if (CommittedGranules[Granule]) {
+        continue;
+      }
+
+      if (!FEXCore::Allocator::VirtualCommit(reinterpret_cast<void*>(PagePointer + Granule * CACHE_COMMIT_SIZE), CACHE_COMMIT_SIZE)) {
+        ERROR_AND_DIE_FMT("LookupCache: Failed to commit backing memory.");
+      }
+      CommittedGranules[Granule] = true;
+    }
+  }
+
+  void DecommitBackingMemory(uintptr_t Address, size_t Size) {
+    FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(Address), Size, false);
+
+    const auto Begin = FEXCore::AlignDown(Address - PagePointer, CACHE_COMMIT_SIZE) / CACHE_COMMIT_SIZE;
+    const auto End = FEXCore::AlignUp(Address + Size - PagePointer, CACHE_COMMIT_SIZE) / CACHE_COMMIT_SIZE;
+    std::fill(CommittedGranules.begin() + Begin, CommittedGranules.begin() + End, false);
+  }
+
+  // Bitmap to track which memory has been committed, so that we can avoid redundant syscalls.
+  fextl::vector<bool> CommittedGranules;
 
   // Maps from a page index to all blocks in the page that have at some point been fetched into L1/L2
   fextl::map<uint64_t, fextl::robin_set<uint64_t>> CachedCodePages;
@@ -468,6 +502,9 @@ private:
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
   constexpr static size_t SIZE_PER_PAGE = FEXCore::Utils::FEX_PAGE_SIZE * sizeof(LookupCacheEntry);
   constexpr static size_t MAX_L1_SIZE = MAX_L1_ENTRIES * sizeof(LookupCacheEntry);
+
+  // 1MB commit size is a reasonable compromise between overcommitting, and syscall overhead.
+  constexpr static size_t CACHE_COMMIT_SIZE = 1024 * 1024;
 
   size_t AllocateOffset {};
 
