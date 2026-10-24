@@ -637,6 +637,13 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         // that more explicitly later.
         Thread->OpDispatcher->FlushRegisterCache(true);
 
+        // Keep the carry flag in its ABI (inverted) form at every instruction boundary. Signal delivery reconstructs
+        // EFLAGS from the host NZCV assuming that form, so if an instruction faults while the carry from a previous
+        // logical op is still held non-inverted, the guest's signal frame gets the opposite CF. A handler that
+        // resumes from that frame (Wine's exception dispatch always does, through NtContinue) then runs with a
+        // flipped CF, and the next jb/jae goes the wrong way.
+        Thread->OpDispatcher->RectifyCarryInvertForSignals();
+
         if (ExtendedDebugInfo || Thread->OpDispatcher->CanHaveSideEffects(TableInfo, DecodedInfo)) {
           Thread->OpDispatcher->_GuestOpcode(InstAddress - GuestRIP);
         }

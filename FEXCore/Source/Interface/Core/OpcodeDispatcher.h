@@ -1184,6 +1184,10 @@ public:
     _StoreContext(Size, Class, Value, Offset);
   }
 
+  void RectifyCarryInvertForSignals() {
+    RectifyCarryInvert(CFInvertedABI);
+  }
+
   void FlushRegisterCache(bool SRAOnly = false, bool MMXOnly = false) {
     // At block boundaries, fix up the carry flag.
     if (!SRAOnly) {
