@@ -10,17 +10,11 @@
 namespace FEXCore {
 namespace Allocator {
 
-/* Writable address mapping for Horizon code buffers */
-inline void* HorizonWritableAddress(void* Pointer) {
-    return Pointer;  // Direct mapping for fallback; overridden when FEX_HORIZON is active
-}
-
-/* Flush instruction cache after code emission */
-inline void HorizonFlushICache(void* Begin, std::size_t Length) {
-#if defined(__linux__) || defined(__unix__)
-    __builtin___clear_cache(static_cast<char*>(Begin), static_cast<char*>(Begin) + Length);
-#endif
-}
+/* Writable address mapping for Horizon code buffers, and the instruction
+   cache flush after code emission: defined once by the Horizon CRT in
+   Source/Windows/Common/CRT/HorizonHeap.cpp, like Autorun's horizon.patch. */
+void* HorizonWritableAddress(void* Pointer);
+void HorizonFlushICache(void* Begin, std::size_t Length);
 
 } // namespace Allocator
 } // namespace FEXCore

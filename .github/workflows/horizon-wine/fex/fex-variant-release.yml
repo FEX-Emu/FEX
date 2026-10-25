@@ -1,66 +1,94 @@
-name: FEX Variant Release (fex-opt)
+# The tuned Horizon FEX modules, built here because this tree is what changes
+# them, and published as the fex-opt release that Autorun's FEX variant
+# workflow (and anything else) downloads instead of building FEX itself.
+#
+# To start publishing: copy this file to .github/workflows/ on the branch that
+# holds the tuned tree (arena/799d045b-fex). The three compile fixes the port
+# needs are in berlint-hub/autorun's horizon-wine/fex/tegra-x1-fixes.patch;
+# this workflow applies them to the build when the tree does not have them
+# yet, and it is better to merge them into the branch itself.
+name: FEX Horizon modules
 
 on:
-  push:
-    branches:
-      - arena/799d045b-fex
-      - main
   workflow_dispatch:
+  push:
+    branches: [ "arena/**" ]
+
+permissions:
+  contents: write
 
 jobs:
-  build-fex-opt:
+  modules:
+    name: Build and publish
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: FEX
 
-      - name: Configure (FEX_HORIZON + FEX_TUNE_TEGRA_X1)
-        working-directory: FEX
+      # Autorun holds the CPU ABI headers the modules are built and validated
+      # against, and the DLL repository's tools hold the recipe.
+      - name: Fetch Autorun and the DLL tools
         run: |
-          mkdir -p build-opt
-          cmake -S . -B build-opt \
-            -DFEX_HORIZON=ON \
-            -DFEX_HORIZON_ABI_DIR=Source/Windows/include/ \
-            -DFEX_TUNE_TEGRA_X1=ON \
-            -DBUILD_TESTING=OFF
+          git clone --depth 1 -b arena/6fd3131b-autorun \
+            https://github.com/berlint-hub/autorun.git "$RUNNER_TEMP/autorun"
+          git clone --depth 1 \
+            https://github.com/autorunhq/autorun-horizon-dlls.git "$RUNNER_TEMP/dlls"
+          git -C "$RUNNER_TEMP/dlls" apply \
+            "$RUNNER_TEMP/autorun/horizon-wine/fex/dlls-fex-variants.patch"
 
-      - name: Build
-        working-directory: FEX
-        run: cmake --build build-opt --parallel $(nproc)
-
-      - name: Package modules
-        working-directory: FEX
+      - name: The compile fixes
         run: |
-          mkdir -p fex-opt
-          cp build-opt/Source/Windows/libarm64ecfex.dll fex-opt/ 2>/dev/null || \
-          cp build-opt/Source/Windows/libwow64fex.dll fex-opt/ 2>/dev/null || \
-          find build-opt -name '*.dll' -o -name '*.so' | head -n 5
-          # In practice: the DLL targets are built by Source/Windows/CMakeLists.txt
+          if git apply --check "$RUNNER_TEMP/autorun/horizon-wine/fex/tegra-x1-fixes.patch"; then
+            echo "WINE_NX_FEX_PATCH=tegra-x1-fixes.patch" >> "$GITHUB_ENV"
+          else
+            echo "The compile fixes are already in the tree." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
-      - name: Create release assets
-        working-directory: FEX
+      - name: Fetch llvm-mingw
         run: |
-          zip -r fex-opt-modules.zip fex-opt/
-          sha256sum fex-opt-modules.zip > SHA256SUMS
+          llvm_version=20260505
+          llvm_name="llvm-mingw-$llvm_version-ucrt-ubuntu-22.04-x86_64"
+          llvm="$RUNNER_TEMP/$llvm_name"
+          curl -fL --retry 3 -o "$llvm.tar.xz" \
+            "https://github.com/mstorsjo/llvm-mingw/releases/download/$llvm_version/$llvm_name.tar.xz"
+          tar -xJf "$llvm.tar.xz" -C "$RUNNER_TEMP"
+          echo "WINE_NX_LLVM_MINGW=$llvm" >> "$GITHUB_ENV"
 
-      - name: Upload release assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: fex-opt-release
-          path: |
-            FEX/fex-opt-modules.zip
-            FEX/SHA256SUMS
+      - name: Build the modules
+        shell: bash
+        run: |
+          set -o pipefail
+          export AUTORUN="$RUNNER_TEMP/autorun"
+          export WINE_NX_FEX_DIR="$GITHUB_WORKSPACE"
+          export WINE_NX_FEX_REVISION="$(git rev-parse HEAD)"
+          export WINE_NX_FEX_TUNE_TEGRA_X1=ON
+          export WINE_NX_FEX_SUFFIX=-opt
+          export WINE_NX_FEX_VERSION=FEX-2610
+          export WINE_NX_JOBS="$(nproc)"
+          if sh "$RUNNER_TEMP/dlls/tools/build-fex.sh" 2>&1 | tee fex-build.log; then
+            exit 0
+          fi
+          { grep -m2 -B1 -A8 "error" fex-build.log || tail -n 20 fex-build.log; } | \
+            tr '\n' '\v' | sed 's/%/%25/g; s/\v/%0A/g' | cut -c1-3400 | \
+            xargs -0 -I{} echo "::error::fex-build.log: {}"
+          exit 1
 
-      - name: Publish GitHub Release (fex-opt)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: fex-opt
-          name: FEX Variant fex-opt (Tegra X1 + Horizon ABI)
-          files: |
-            FEX/fex-opt-modules.zip
-            FEX/SHA256SUMS
-          draft: false
-          prerelease: false
+      # The contract: fex-opt-modules.zip lays out switch/wine/ as on the card
+      # (the two modules and fex-opt-manifest.json), and SHA256SUMS covers it.
+      - name: Publish the fex-opt release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          payload="$RUNNER_TEMP/autorun/horizon-wine/toolchains/build-fex-2609-opt-horizon/payload"
+          stage=overlay/switch/wine
+          mkdir -p "$stage/drive_c/windows/system32"
+          cp "$payload/libwow64fex-opt.dll" "$payload/libarm64ecfex-opt.dll" \
+            "$stage/drive_c/windows/system32/"
+          cp "$payload/fex-manifest.json" "$stage/fex-opt-manifest.json"
+          (cd overlay && zip -qr ../fex-opt-modules.zip switch)
+          sha256sum fex-opt-modules.zip > SHA256SUMS
+          gh release create fex-opt fex-opt-modules.zip SHA256SUMS \
+            --title "Tuned Horizon FEX modules" \
+            --notes "libwow64fex-opt.dll and libarm64ecfex-opt.dll, built with the Tegra X1 tuning, for Autorun's A/B switch (sdmc:/switch/wine/fex-variant.txt = opt)." \
+            --latest=false || \
+            gh release upload fex-opt fex-opt-modules.zip SHA256SUMS --clobber

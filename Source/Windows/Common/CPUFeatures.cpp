@@ -90,7 +90,6 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
   HostFeatures.SupportsAtomics = false;
   HostFeatures.SupportsSVE128 = false;
   HostFeatures.SupportsSVE256 = false;
-  HostFeatures.SupportsAVX256 = false;
   HostFeatures.SupportsRPRES = false;
   HostFeatures.SupportsAFP = false;
 
