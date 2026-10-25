@@ -42,6 +42,19 @@
           "Enable expensive validation when loading code caches"
         ]
       },
+      "JITFeatures": {
+        "Type": "strenum",
+        "Default": "FEXCore::Config::JITFeatures::OFF",
+        "AffectsCodeGen": "true",
+        "Enums": {
+          "ENABLEX87FIP": "enablex87fip"
+        },
+        "Desc": [
+          "Allows controlling JIT features in the unified location",
+          "\toff: Default JIT features.",
+          "\tenablex86fip: Turns on the x87 FIP emulation feature"
+        ]
+      },
       "HostFeatures": {
         "Type": "strenum",
         "Default": "FEXCore::Config::HostFeatures::OFF",

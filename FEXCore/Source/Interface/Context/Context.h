@@ -371,6 +371,7 @@ public:
     FEX_CONFIG_OPT(SoftwareRNG, SOFTWARERNG);
     FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
     FEX_CONFIG_OPT(MonoHacks, MONOHACKS);
+    FEX_CONFIG_OPT(JITFeatures, JITFEATURES);
   } Config;
 
   bool SoftwareRNGEnabled() const {

@@ -67,11 +67,13 @@ void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
     ConvertedData = _F80CVTTo(Data, Width);
   }
   _PushStack(ConvertedData, Data, Width);
+  StoreX87FIP(Op);
 }
 
 // Float LoaD operation with memory operand
 void OpDispatchBuilder::FLDFromStack(OpcodeArgs) {
   _CopyPushStack(Op->OP & 7);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FBLD(OpcodeArgs) {
@@ -79,18 +81,21 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
   Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
   _PushStack(ConvertedData, Invalid(), OpSize::iInvalid);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   Ref converted = _F80BCDStore(_ReadStackValue(0));
   StoreResultFPR_WithOpSize(Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
   _PopStackDestroy();
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant K) {
   // Update TOP
   Ref Data = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, K);
   _PushStack(Data, Data, OpSize::f80Bit);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FILD(OpcodeArgs) {
@@ -122,6 +127,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
 
   Ref ConvertedData = _VLoadTwoGPRs(shifted, upper);
   _PushStack(ConvertedData, Invalid(), OpSize::iInvalid);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
@@ -135,6 +141,7 @@ void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FSTToStack(OpcodeArgs) {
@@ -144,6 +151,7 @@ void OpDispatchBuilder::FSTToStack(OpcodeArgs) {
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 // Store integer to memory (possibly with truncation)
@@ -183,6 +191,7 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
@@ -197,6 +206,7 @@ void OpDispatchBuilder::FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispa
     if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
       _PopStackDestroy();
     }
+    StoreX87FIP(Op);
     return;
   }
 
@@ -213,6 +223,7 @@ void OpDispatchBuilder::FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispa
 
   // top of stack is at offset zero
   _F80AddValue(0, Arg);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
@@ -227,6 +238,7 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispa
     if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
       _PopStackDestroy();
     }
+    StoreX87FIP(Op);
     return;
   }
 
@@ -247,6 +259,7 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispa
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
@@ -264,6 +277,7 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Re
     if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
       _PopStackDestroy();
     }
+    StoreX87FIP(Op);
     return;
   }
 
@@ -288,6 +302,7 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Re
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
@@ -305,6 +320,7 @@ void OpDispatchBuilder::FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Re
     if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
       _PopStackDestroy();
     }
+    StoreX87FIP(Op);
     return;
   }
 
@@ -329,6 +345,7 @@ void OpDispatchBuilder::FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Re
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 Ref OpDispatchBuilder::GetX87FTW_Helper() {
@@ -627,6 +644,7 @@ void OpDispatchBuilder::FXCH(OpcodeArgs) {
     _F80StackXchange(Offset);
   }
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::X87FYL2X(OpcodeArgs, bool IsFYL2XP1) {
@@ -635,6 +653,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs, bool IsFYL2XP1) {
   } else {
     _F80FYL2XStack();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
@@ -699,6 +718,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
   } else if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FTST(OpcodeArgs) {
@@ -718,6 +738,7 @@ void OpDispatchBuilder::FTST(OpcodeArgs) {
   // Set Invalid Operation flag when unordered (NaN comparison)
   // The x87 exception flags are sticky. Preserve earlier result
   SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Or(OpSize::i32Bit, GetRFLAG(FEXCore::X86State::X87FLAG_IE_LOC), HostFlag_Unordered));
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2) {
@@ -725,6 +746,7 @@ void OpDispatchBuilder::X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool Ze
   if (ZeroC2) {
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Constant(0));
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::X87ModifySTP(OpcodeArgs, bool Inc) {
@@ -736,6 +758,7 @@ void OpDispatchBuilder::X87ModifySTP(OpcodeArgs, bool Inc) {
 
   // C1 set to 0
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
+  StoreX87FIP(Op);
 }
 
 // Operations dealing with loading and storing environment pieces
@@ -824,11 +847,13 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FFREE(OpcodeArgs) {
   _InvalidateStack(Op->OP & 7);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::X87EMMS(OpcodeArgs) {
   // Tags all get set to 0b11
   _InvalidateStack(0xff);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
@@ -867,6 +892,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
 
   Ref VecCond = _VDupFromGPR(OpSize::i128Bit, OpSize::i64Bit, SelectCC0All1(CC));
   _F80VBSLStack(OpSize::i128Bit, VecCond, Op->OP & 7, 0);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
@@ -971,6 +997,7 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::X87FXTRACT(OpcodeArgs) {
@@ -981,6 +1008,11 @@ void OpDispatchBuilder::X87FXTRACT(OpcodeArgs) {
   auto Sig = _F80XTRACT_SIG(Top);
   _PushStack(Exp, Invalid(), OpSize::iInvalid);
   _PushStack(Sig, Invalid(), OpSize::iInvalid);
+  StoreX87FIP(Op);
+}
+
+void OpDispatchBuilder::X87NOP(OpcodeArgs) {
+  StoreX87FIP(Op);
 }
 
 } // namespace FEXCore::IR

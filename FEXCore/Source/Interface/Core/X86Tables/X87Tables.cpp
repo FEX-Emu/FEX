@@ -69,7 +69,7 @@ constexpr std::array<DispatchTableEntry, 140> X87F64OpTable = {{
 
   {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDFromStack>},
   {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
-  {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
+  {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::X87NOP}, // FNOP
   // D1 = Invalid
   // D8 = Invalid
   {OPD(0xD9, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKCHANGESIGN, false>},
@@ -341,7 +341,7 @@ constexpr std::array<DispatchTableEntry, 140> X87F80OpTable = {{
 
   {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDFromStack>},
   {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
-  {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
+  {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::X87NOP}, // FNOP
   // D1 = Invalid
   // D8 = Invalid
   {OPD(0xD9, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKCHANGESIGN, false>},

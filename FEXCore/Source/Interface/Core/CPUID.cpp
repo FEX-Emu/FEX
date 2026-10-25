@@ -697,6 +697,9 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
     const uint32_t SupportsWFXT = CTX->HostFeatures.SupportsWFXT;
 
     const uint32_t SupportsRAND = CTX->HostFeatures.SupportsRAND || CTX->SoftwareRNGEnabled();
+    // When the X87 FIP feature is enabled, we update the state pointers on every instruction.
+    // We don't even update them on exception so this isn't quite true the other way anyway.
+    const uint32_t X87DataPtrExcept = (CTX->Config.JITFeatures & FEXCore::Config::JITFeatures::ENABLEX87FIP) == 0;
 
     // Number of subfunctions
     // TODO: For now, subfunction 1 only exposes AVX-VNNI so we make it conditional
@@ -708,7 +711,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (SupportsAVX() << 3) |           // BMI1
               (0 << 4) |                       // Intel Hardware Lock Elison
               (SupportsAVX() << 5) |           // AVX2 support
-              (1 << 6) |                       // FPU data pointer updated only on exception
+              (X87DataPtrExcept << 6) |        // FPU data pointer updated only on exception
               (1 << 7) |                       // SMEP support
               (SupportsAVX() << 8) |           // BMI2
               (SupportsEnhancedREPMOVS << 9) | // Enhanced REP MOVSB/STOSB
