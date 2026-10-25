@@ -68,6 +68,7 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs, IR::OpSize Width) {
     ConvertedData = _F80CVT(OpSize::i64Bit, Data);
   }
   _PushStack(ConvertedData, Data, Width);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
@@ -76,6 +77,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   Ref ConvertedData = _F80BCDLoad(Data);
   ConvertedData = _F80CVT(OpSize::i64Bit, ConvertedData);
   _PushStack(ConvertedData, Invalid(), OpSize::iInvalid);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
@@ -83,11 +85,13 @@ void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
   converted = _F80BCDStore(converted);
   StoreResultFPR_WithOpSize(Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
   _PopStackDestroy();
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FLDF64_Const(OpcodeArgs, uint64_t Num) {
   auto Data = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(Num));
   _PushStack(Data, Data, OpSize::i64Bit);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FILDF64(OpcodeArgs) {
@@ -100,6 +104,7 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   }
   auto ConvertedData = _Float_FromGPR_S(OpSize::i64Bit, ReadWidth == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, Data);
   _PushStack(ConvertedData, Invalid(), OpSize::iInvalid);
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
@@ -128,6 +133,7 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
@@ -142,6 +148,7 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDi
     if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
       _PopStackDestroy();
     }
+    StoreX87FIP(Op);
     return;
   }
 
@@ -165,6 +172,7 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDi
 
   // top of stack is at offset zero
   _F80AddValue(0, arg);
+  StoreX87FIP(Op);
 }
 
 // FIXME: following is very similar to FADDF64
@@ -180,6 +188,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDi
     if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
       _PopStackDestroy();
     }
+    StoreX87FIP(Op);
     return;
   }
 
@@ -207,6 +216,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDi
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
@@ -231,6 +241,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool
     if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
       _PopStackDestroy();
     }
+    StoreX87FIP(Op);
     return;
   }
 
@@ -264,6 +275,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
@@ -288,6 +300,8 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool
     if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
       _PopStackDestroy();
     }
+    StoreX87FIP(Op);
+
     return;
   }
 
@@ -321,6 +335,7 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
@@ -330,6 +345,7 @@ void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   // Now we do our comparison.
   _F80StackTest(0);
   ConvertNZCVToX87();
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
@@ -376,6 +392,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpD
   } else if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
   }
+  StoreX87FIP(Op);
 }
 
 void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
@@ -429,5 +446,6 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   _PopStackDestroy();
   _PushStack(Exp, Invalid(), OpSize::iInvalid);
   _PushStack(Sig, Invalid(), OpSize::iInvalid);
+  StoreX87FIP(Op);
 }
 } // namespace FEXCore::IR

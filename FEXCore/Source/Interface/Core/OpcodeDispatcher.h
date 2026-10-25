@@ -756,6 +756,7 @@ public:
   void X87LDENV(OpcodeArgs);
   void X87ModifySTP(OpcodeArgs, bool Inc);
   void X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2);
+  void X87NOP(OpcodeArgs);
 
   enum class FCOMIFlags {
     FLAGS_X87,
@@ -2497,6 +2498,12 @@ private:
   void SetX87FTW(Ref FTW);
   Ref GetX87FTW_Helper();
   void SetX87Top(Ref Value);
+  void StoreX87FIP(FEXCore::X86Tables::DecodedOp Op) {
+    if (CTX->Config.JITFeatures & FEXCore::Config::JITFeatures::ENABLEX87FIP) {
+      // Only store FIP if the feature is enabled.
+      _StoreContextGPR(OpSize::i64Bit, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, FIP));
+    }
+  }
 
   void ChgStateX87_MMX() override {
     LOGMAN_THROW_A_FMT(MMXState == MMXState_X87, "Expected state to be x87");

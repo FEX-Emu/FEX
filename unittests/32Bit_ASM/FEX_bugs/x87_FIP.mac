@@ -1,0 +1,459 @@
+; FEX-Emu had a bug where FIP wasn't being calculated for ALU operations.
+; Not all x87 instructions update FIP, but run through the suite just in case.
+; Which will catch any instructions accidentally setting FIP, but shouldn't be.
+; FDP isn't calculated here, but keep it around in-case we care in the future.
+
+; Split/Second (SteamID 297860) had a SecuROM implementation that used this for some form of anti-tamper/cheat.
+
+; Follow the formula:
+; - finit
+; - <inst>
+; - get_result <expected FIP>, <expected FDP>
+; Or:
+; - <load inputs>
+; - basic_op <instruction>
+
+%macro get_result 2
+  mov eax, 0x41424344
+  mov ebx, 0
+
+  fsave [rel .data]
+  ; Load FIP.
+  mov eax, [rel .data + 0xc]
+  ; Load FDP
+  ; XXX: Not validated in this test.
+  ; mov ebx, [rel .data + 0x14]
+
+  mov dword [ecx + 0], eax
+  mov dword [ecx + 4], ebx
+  cmp eax, %1
+  jne %%.bad_end
+  cmp ebx, %2
+  jne %%.bad_end
+
+  add ecx, 8
+  ; Reset the state.
+  finit
+  jmp %%.good
+  %%.bad_end:
+  mov edx, 1
+  ud2
+  %%.good:
+%endmacro
+
+%macro basic_op 1
+  lea esi, [rel %%.local_op]
+  %%.local_op:
+  %1
+  get_result esi, 0
+%endmacro
+
+lea ecx, [rel .data_results]
+mov edx, 0
+
+basic_op f2xm1
+basic_op fabs
+basic_op fadd
+fldz
+basic_op fadd dword [rel .data_tmp]
+fldz
+basic_op fadd qword [rel .data_tmp]
+fldz
+basic_op faddp
+fldz
+basic_op fiadd word [rel .data_tmp]
+fldz
+basic_op fiadd dword [rel .data_tmp]
+basic_op fbld [rel .data_tmp]
+fldz
+basic_op fbstp [rel .data_tmp]
+fldz
+basic_op fchs
+fnclex
+get_result 0, 0
+
+fldz
+fldz
+basic_op fcmovb
+
+fldz
+fldz
+basic_op fcmovbe
+
+fldz
+fldz
+basic_op fcmove
+
+fldz
+fldz
+basic_op fcmovnb
+
+fldz
+fldz
+basic_op fcmovnbe
+
+fldz
+fldz
+basic_op fcmovne
+
+fldz
+fldz
+basic_op fcmovnu
+
+fldz
+fldz
+basic_op fcmovu
+
+fldz
+fldz
+basic_op fcom
+
+fldz
+basic_op fcom dword [rel .data_tmp]
+
+fldz
+basic_op fcom qword [rel .data_tmp]
+
+fldz
+fldz
+basic_op fcomp
+
+fldz
+basic_op fcomp dword [rel .data_tmp]
+
+fldz
+basic_op fcomp qword [rel .data_tmp]
+
+fldz
+fldz
+basic_op fcompp
+
+fldz
+fldz
+basic_op fcomip
+
+fld1
+basic_op fcos
+
+basic_op fdecstp
+
+fld1
+fld1
+basic_op fdiv
+
+fld1
+fst dword [rel .data_tmp]
+basic_op fdiv dword [rel .data_tmp]
+
+fld1
+fst qword [rel .data_tmp]
+basic_op fdiv qword [rel .data_tmp]
+
+fld1
+fld1
+basic_op fdivp
+
+fld1
+mov word [rel .data_tmp], 1
+basic_op fidiv word [rel .data_tmp]
+
+fld1
+mov dword [rel .data_tmp], 1
+basic_op fidiv dword [rel .data_tmp]
+
+fld1
+fld1
+basic_op fdivr
+
+fld1
+basic_op fst dword [rel .data_tmp]
+
+fld1
+fst dword [rel .data_tmp]
+basic_op fdivr qword [rel .data_tmp]
+
+fld1
+fld1
+basic_op fdivrp
+
+fld1
+mov word [rel .data_tmp], 1
+basic_op fidivr word [rel .data_tmp]
+
+fld1
+mov dword [rel .data_tmp], 1
+basic_op fidivr dword [rel .data_tmp]
+
+fldz
+basic_op ffree
+
+fldz
+basic_op ffreep
+
+fldz
+basic_op ficom word [rel .data_tmp]
+
+fldz
+basic_op ficom dword [rel .data_tmp]
+
+fldz
+basic_op ficomp word [rel .data_tmp]
+
+fldz
+basic_op ficomp dword [rel .data_tmp]
+
+basic_op fild word [rel .data_tmp]
+
+basic_op fild dword [rel .data_tmp]
+
+basic_op fild qword [rel .data_tmp]
+
+fldz
+basic_op fincstp
+
+; Sets FIP to zero, not the instruction location.
+fninit
+get_result 0, 0
+
+fldz
+basic_op fist word [rel .data_tmp]
+
+fldz
+basic_op fist dword [rel .data_tmp]
+
+fldz
+basic_op fistp word [rel .data_tmp]
+
+fldz
+basic_op fistp dword [rel .data_tmp]
+
+fldz
+basic_op fistp qword [rel .data_tmp]
+
+fldz
+basic_op fisttp word [rel .data_tmp]
+
+fldz
+basic_op fisttp dword [rel .data_tmp]
+
+fldz
+basic_op fisttp qword [rel .data_tmp]
+
+fldz
+basic_op fld
+
+basic_op fld dword [rel .data_tmp]
+
+basic_op fld qword [rel .data_tmp]
+
+basic_op fld tword [rel .data_tmp]
+
+basic_op fld1
+
+; Load Control word doesn't set FIP.
+mov word [rel .data_tmp], 0
+fldcw [rel .data_tmp]
+get_result 0, 0
+
+; LoadEnv doesn't set FIP.
+mov word [rel .data_tmp], 0
+fldenv [rel .data_tmp]
+get_result 0, 0
+
+basic_op fldl2e
+
+basic_op fldl2t
+
+basic_op fldlg2
+
+basic_op fldln2
+
+basic_op fldpi
+
+basic_op fldz
+
+basic_op fmul
+
+fldz
+fldz
+basic_op fmul dword [rel .data_tmp]
+
+fldz
+fldz
+basic_op fmul qword [rel .data_tmp]
+
+fldz
+fldz
+basic_op fmulp
+
+fldz
+basic_op fimul word [rel .data_tmp]
+
+fldz
+basic_op fimul dword [rel .data_tmp]
+
+basic_op fnop
+
+fldz
+fldz
+basic_op fpatan
+
+fld1
+fld1
+basic_op fprem
+
+fld1
+fld1
+basic_op fprem1
+
+fldz
+basic_op fptan
+
+fldz
+basic_op frndint
+
+fldz
+fldz
+basic_op fscale
+
+fldz
+basic_op fsin
+
+fldz
+basic_op fsincos
+
+fld1
+basic_op fsqrt
+
+fldz
+fldz
+basic_op fst
+
+fldz
+basic_op fst dword [rel .data_tmp]
+
+fldz
+basic_op fst qword [rel .data_tmp]
+
+fldz
+basic_op fstp
+
+fldz
+basic_op fstp dword [rel .data_tmp]
+
+fldz
+basic_op fstp qword [rel .data_tmp]
+
+fldz
+basic_op fstp tword [rel .data_tmp]
+
+; Storing control word doesn't set FIP
+fnstcw [rel .data_tmp]
+get_result 0, 0
+
+; Neither does storing the environment
+fnstenv [rel .data_tmp]
+get_result 0, 0
+
+; Nor storing the status word
+fnstsw ax
+get_result 0, 0
+
+fnstsw [rel .data_tmp]
+get_result 0, 0
+
+fldz
+fldz
+basic_op fsub
+
+fldz
+basic_op fsub dword [rel .data_tmp]
+
+fldz
+basic_op fsub qword [rel .data_tmp]
+
+fldz
+fldz
+basic_op fsubp
+
+fldz
+basic_op fisub word [rel .data_tmp]
+
+fldz
+basic_op fisub dword [rel .data_tmp]
+
+fldz
+fldz
+basic_op fsubr
+
+fldz
+basic_op fsubr dword [rel .data_tmp]
+
+fldz
+basic_op fsubr qword [rel .data_tmp]
+
+fldz
+fldz
+basic_op fsubrp
+
+fldz
+basic_op fisubr word [rel .data_tmp]
+
+fldz
+basic_op fisubr dword [rel .data_tmp]
+
+fldz
+fldz
+basic_op ftst
+
+fldz
+fldz
+basic_op fucom
+
+fldz
+fldz
+basic_op fucomp
+
+fldz
+fldz
+basic_op fucompp
+
+fldz
+fldz
+basic_op fucomi
+
+; fwait doesn't set FIP
+fwait
+get_result 0, 0
+
+fldz
+basic_op fxam
+
+fldz
+fldz
+basic_op fxch
+
+fldz
+basic_op fxtract
+
+fldz
+fldz
+basic_op fyl2x
+
+fldz
+fldz
+basic_op  fyl2xp1
+
+; rdx == 0 here means success.
+hlt
+
+align 4096
+.data:
+times 64 dq 0x5152535455565758
+
+align 32
+.data_tmp:
+times 64 dq 0
+
+.data_results:
+times 512 dd 0x91929394
