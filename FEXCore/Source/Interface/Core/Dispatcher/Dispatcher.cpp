@@ -183,16 +183,24 @@ void Dispatcher::EmitDispatcher() {
 
     // Mask the address by the virtual address size so we can check for aliases
     uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
+#if defined(FEX_HORIZON) || defined(FEX_HORIZON_CACHE_TEST)
+    lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg.R(), 12);
+    eor(ARMEmitter::Size::i64Bit, TMP2, TMP2, TMP2, ARMEmitter::ShiftType::LSR, 16);
+    and_(ARMEmitter::Size::i64Bit, TMP2, TMP2, VirtualMemorySize / FEXCore::Utils::FEX_PAGE_SIZE - 1);
+#else
     if (std::popcount(VirtualMemorySize) == 1) {
       and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), VirtualMemorySize - 1);
     } else {
       LoadConstant(ARMEmitter::Size::i64Bit, TMP4, VirtualMemorySize);
       and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), TMP4);
     }
+#endif
 
     {
       // Offset the address and add to our page pointer
+#if !defined(FEX_HORIZON) && !defined(FEX_HORIZON_CACHE_TEST)
       lsr(ARMEmitter::Size::i64Bit, TMP2, TMP4, 12);
+#endif
 
       // Load the pointer from the offset
       ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 3);
@@ -201,7 +209,11 @@ void Dispatcher::EmitDispatcher() {
       (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &NoBlock);
 
       // Steal the page offset
+#if defined(FEX_HORIZON) || defined(FEX_HORIZON_CACHE_TEST)
+      and_(ARMEmitter::Size::i64Bit, TMP2, RipReg.R(), 0x0FFF);
+#else
       and_(ARMEmitter::Size::i64Bit, TMP2, TMP4, 0x0FFF);
+#endif
 
       // Shift the offset by the size of the block cache entry
       add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(sizeof(LookupCache::LookupCacheEntry)));

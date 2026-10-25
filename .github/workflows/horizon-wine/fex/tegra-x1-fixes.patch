@@ -1,0 +1,125 @@
+From c53b1df1a3f5a8c7b2e4d6f9a0b1c2d3e4f5a6 Mon Sep 17 00:00:00 2001
+From: FEX-2610 Tegra X1 Port <fex@berlint-hub.dev>
+Date: Sun, 26 Oct 2025 15:00:00 +0100
+Subject: [PATCH] Tegra X1 (Cortex-A57) compilation fixes for FEX-2610
+
+Without these the branch does not compile when FEX_HORIZON or
+FEX_TUNE_TEGRA_X1 is enabled.
+
+Fixes:
+1. CMake: add FEX_HORIZON option + ABI fallback + FEX_TUNE_TEGRA_X1
+2. JIT: constexpr false for unsupported ARMv8.1+ features
+3. Windows/CPUFeatures: hardcode Tegra X1 registers
+---
+ CMakeLists.txt                                     | 26 +++++++++++++
+ FEXCore/Source/Interface/Core/JIT/JITClass.h       |  9 +++++
+ Source/Windows/Common/CPUFeatures.cpp              | 51 ++++++++++++++++++++++++++++
+ 3 files changed, 86 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1c4f04b..2df7c59 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -169,6 +169,32 @@ set(TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
+ set(OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version")
+ set(OVERRIDE_HASH "detect" CACHE STRING "Override the FEX git hash")
+ 
++# Tegra X1 (Nintendo Switch / Horizon OS) optimization profile
++option(FEX_TUNE_TEGRA_X1 "Tune exclusively for Nvidia Tegra X1 (Cortex-A57, ARMv8-A)" OFF)
++if (FEX_TUNE_TEGRA_X1)
++  add_compile_definitions(FEX_TUNE_TEGRA_X1)
++  set(TUNE_CPU "cortex-a57" CACHE STRING "Tegra X1 CPU" FORCE)
++  set(TUNE_ARCH "armv8-a+crc" CACHE STRING "Tegra X1 arch" FORCE)
++  message(STATUS "FEX tuned for Tegra X1 (Cortex-A57) — disabling SVE/AVX branches at compile time")
++endif()
++
++option(FEX_HORIZON "Build the Autorun Horizon ARM64EC backend" OFF)
++if(FEX_HORIZON)
++  if(NOT WIN32 OR NOT EXISTS "${FEX_HORIZON_ABI_DIR}/unixlib.h")
++    message(FATAL_ERROR "FEX_HORIZON requires the Windows toolchain and FEX_HORIZON_ABI_DIR")
++  endif()
++  add_compile_definitions(FEX_HORIZON)
++  if(FEX_HORIZON_ABI_DIR)
++    include_directories("${FEX_HORIZON_ABI_DIR}")
++  else()
++    include_directories("${CMAKE_SOURCE_DIR}/Source/Windows/include/")
++  endif()
++endif()
++
+ get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+ if (NOT IS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE)
+ 
+diff --git a/FEXCore/Source/Interface/Core/JIT/JITClass.h b/FEXCore/Source/Interface/Core/JIT/JITClass.h
+index 2a3c4d5..5b6e7f8 100644
+--- a/FEXCore/Source/Interface/Core/JIT/JITClass.h
++++ b/FEXCore/Source/Interface/Core/JIT/JITClass.h
+@@ -55,10 +55,17 @@ public:
+ 
+ private:
++#if defined(FEX_TUNE_TEGRA_X1)
++  static constexpr bool HostSupportsSVE128 = false;
++  static constexpr bool HostSupportsSVE256 = false;
++  static constexpr bool HostSupportsAVX256 = false;
++  static constexpr bool HostSupportsRPRES = false;
++  static constexpr bool HostSupportsAFP = false;
++#else
+   const bool HostSupportsSVE128 {};
+   const bool HostSupportsSVE256 {};
+   const bool HostSupportsAVX256 {};
+   const bool HostSupportsRPRES {};
+   const bool HostSupportsAFP {};
++#endif
+ 
+diff --git a/Source/Windows/Common/CPUFeatures.cpp b/Source/Windows/Common/CPUFeatures.cpp
+index 3a4b5c6..7e8f9a0 100644
+--- a/Source/Windows/Common/CPUFeatures.cpp
++++ b/Source/Windows/Common/CPUFeatures.cpp
+@@ -15,6 +15,21 @@ namespace {
+     return nullptr;
+   }
+   return Out;
+ }
+ 
++#ifdef FEX_HORIZON
++#ifndef FEX_TEGRA_X1_FEATURES_DEFINED
++#define FEX_TEGRA_X1_FEATURES_DEFINED
++static const uint64_t TEGRA_X1_ISAR0 = 1ULL << 16;
++static const uint32_t TEGRA_X1_DCZID = 0x10;
++static const uint32_t TEGRA_X1_CTR = 0x8444c004;
++static const uint32_t TEGRA_X1_MIDR = 0x411fd071;
++#endif
++#endif
++
+ } // namespace
+ 
+ namespace FEX::Windows {
+@@ -60,6 +75,42 @@ class CPUFeaturesFromRegistry final : public FEX::CPUFeatures {
+ 
+ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, ...) {
++#ifdef FEX_HORIZON
++  CPUFeaturesFromRegistry Features {nullptr};
++  uint64_t CTR = TEGRA_X1_CTR;
++  uint64_t MIDR = TEGRA_X1_MIDR;
++  FEXCore::HostFeatures HostFeatures = {};
++  HostFeatures.CPUMIDRs.push_back(TEGRA_X1_MIDR);
++  FEX::FetchHostFeatures(Features, HostFeatures, !IsWine, CTR, MIDR);
++  HostFeatures.SupportsCRC = true;
++  HostFeatures.SupportsAES = false;
++  HostFeatures.SupportsSHA = false;
++  HostFeatures.SupportsPMULL_128Bit = false;
++  HostFeatures.SupportsAtomics = false;
++  HostFeatures.SupportsSVE128 = false;
++  HostFeatures.SupportsSVE256 = false;
++  HostFeatures.SupportsAVX256 = false;
++  HostFeatures.SupportsRPRES = false;
++  HostFeatures.SupportsAFP = false;
++  HostFeatures.SupportsAVX = false;
++  HostFeatures.ProcessFeatures.HostType = HostType;
++  HostFeatures.ProcessFeatures.Is64BitMode = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
++  HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
++  return HostFeatures;
++#else
+   HKEY Key = OpenProcessorKey(0);
+   ...
++#endif
+ }

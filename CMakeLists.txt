@@ -1,6 +1,21 @@
 cmake_minimum_required(VERSION 3.14)
 project(FEX C CXX ASM)
 
+# Horizon ABI / Tegra X1 (Nintendo Switch) support — FEX-2610
+option(FEX_HORIZON "Build the Autorun Horizon ARM64EC backend" OFF)
+if(FEX_HORIZON)
+  if(NOT WIN32 OR NOT EXISTS "${FEX_HORIZON_ABI_DIR}/unixlib.h")
+    message(FATAL_ERROR "FEX_HORIZON requires the Windows toolchain and FEX_HORIZON_ABI_DIR")
+  endif()
+  add_compile_definitions(FEX_HORIZON)
+  if(FEX_HORIZON_ABI_DIR)
+    include_directories("${FEX_HORIZON_ABI_DIR}")
+  else()
+    # Fallback to bundled ABI headers when ABI_DIR is not set (FEX-2610)
+    include_directories("${CMAKE_SOURCE_DIR}/Source/Windows/include/")
+  endif()
+endif()
+
 include(CheckIncludeFiles)
 check_include_files("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
 
@@ -169,6 +184,17 @@ endif()
 # These options are meant for package management
 set(TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
 set(TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
+
+# Tegra X1 (Nintendo Switch / Horizon OS) optimization profile
+option(FEX_TUNE_TEGRA_X1 "Tune exclusively for Nvidia Tegra X1 (Cortex-A57, ARMv8-A) for Horizon OS builds" OFF)
+if (FEX_TUNE_TEGRA_X1)
+  add_compile_definitions(FEX_TUNE_TEGRA_X1)
+  set(TUNE_CPU "cortex-a57" CACHE STRING "Tegra X1 CPU" FORCE)
+  set(TUNE_ARCH "armv8-a+crc" CACHE STRING "Tegra X1 arch" FORCE)
+  message(STATUS "FEX tuned for Tegra X1 (Cortex-A57) — disabling SVE/AVX branches at compile time")
+endif()
+
+option(FEX_HORIZON "Build the Autorun Horizon ARM64EC backend" OFF)
 set(OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version")
 set(OVERRIDE_HASH "detect" CACHE STRING "Override the FEX git hash")
 

@@ -340,9 +340,13 @@ namespace CPU {
 
   bool CPUBackend::IsAddressInCodeBuffer(uintptr_t Address) const {
     const auto CheckCodeBuffer = [](const CodeBuffer& Buffer, uintptr_t Address) {
+#if defined(FEX_HORIZON) || defined(FEX_HORIZON_CACHE_TEST)
+      return Buffer.Contains(Address);
+#else
       const auto BufferPtr = reinterpret_cast<uintptr_t>(Buffer.GetBufferBase());
       const uintptr_t LastPageAddr = BufferPtr + Buffer.UsableSize();
       return (Address >= BufferPtr && Address < LastPageAddr);
+#endif
     };
 
     if (CheckCodeBuffer(*CurrentCodeBuffer, Address)) {

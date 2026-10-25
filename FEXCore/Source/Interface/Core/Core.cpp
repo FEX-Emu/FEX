@@ -77,6 +77,9 @@ $end_info$
 #include <unordered_map>
 #include <utility>
 #include <xxhash.h>
+#if defined(FEX_HORIZON) || defined(FEX_HORIZON_CACHE_TEST)
+#include "cache_policy.h"
+#endif
 
 namespace FEXCore::Context {
 ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
@@ -87,6 +90,10 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
     // When operating in 32-bit mode, the virtual memory we care about is only the lower 32-bits.
     Config.VirtualMemSize = 1ULL << 32;
   }
+
+#if defined(FEX_HORIZON) || defined(FEX_HORIZON_CACHE_TEST)
+  Config.VirtualMemSize = WineNX::FEX::LookupAddressSpace(Config.Is64BitMode());
+#endif
 
   if (Config.BlockJITNaming() || Config.GlobalJITNaming() || Config.LibraryJITNaming()) {
     // Only initialize symbols file if enabled. Ensures we don't pollute /tmp with empty files.

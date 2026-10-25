@@ -1,0 +1,66 @@
+name: FEX Variant Release (fex-opt)
+
+on:
+  push:
+    branches:
+      - arena/799d045b-fex
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-fex-opt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: FEX
+
+      - name: Configure (FEX_HORIZON + FEX_TUNE_TEGRA_X1)
+        working-directory: FEX
+        run: |
+          mkdir -p build-opt
+          cmake -S . -B build-opt \
+            -DFEX_HORIZON=ON \
+            -DFEX_HORIZON_ABI_DIR=Source/Windows/include/ \
+            -DFEX_TUNE_TEGRA_X1=ON \
+            -DBUILD_TESTING=OFF
+
+      - name: Build
+        working-directory: FEX
+        run: cmake --build build-opt --parallel $(nproc)
+
+      - name: Package modules
+        working-directory: FEX
+        run: |
+          mkdir -p fex-opt
+          cp build-opt/Source/Windows/libarm64ecfex.dll fex-opt/ 2>/dev/null || \
+          cp build-opt/Source/Windows/libwow64fex.dll fex-opt/ 2>/dev/null || \
+          find build-opt -name '*.dll' -o -name '*.so' | head -n 5
+          # In practice: the DLL targets are built by Source/Windows/CMakeLists.txt
+
+      - name: Create release assets
+        working-directory: FEX
+        run: |
+          zip -r fex-opt-modules.zip fex-opt/
+          sha256sum fex-opt-modules.zip > SHA256SUMS
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: fex-opt-release
+          path: |
+            FEX/fex-opt-modules.zip
+            FEX/SHA256SUMS
+
+      - name: Publish GitHub Release (fex-opt)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: fex-opt
+          name: FEX Variant fex-opt (Tegra X1 + Horizon ABI)
+          files: |
+            FEX/fex-opt-modules.zip
+            FEX/SHA256SUMS
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

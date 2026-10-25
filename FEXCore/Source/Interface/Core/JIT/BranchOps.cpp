@@ -250,6 +250,43 @@ DEF_OP(CondJump) {
 
   auto TrueTargetLabel = JumpTarget(Op->TrueBlock);
 
+#ifdef FEX_HORIZON
+  // A backward conditional branch closes a loop, which then has no block
+  // entry to check the suspend doorbell at. Elsewhere a signal interrupts
+  // such a loop; Horizon has none, so a thread spinning in one could never be
+  // suspended. Branch over the check and the jump back when not taken.
+  if (TrueTargetLabel->Backward.Location) {
+    ARMEmitter::ForwardLabel NotTaken {};
+
+    if (Op->FromNZCV) {
+      (void)b(InvertCondition(MapCC(Op->Cond)), &NotTaken);
+    } else {
+      uint64_t Const;
+      [[maybe_unused]] const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
+      auto Reg = GetReg(Op->Cmp1);
+      const auto Size = Op->CompareSize == IR::OpSize::i32Bit ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
+
+      LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1) && isConst, "CondJump: Expected GPR and constant source");
+      if (Op->Cond == IR::CondClass::EQ) {
+        (void)cbnz(Size, Reg, &NotTaken);
+      } else if (Op->Cond == IR::CondClass::NEQ) {
+        (void)cbz(Size, Reg, &NotTaken);
+      } else if (Op->Cond == IR::CondClass::TSTZ) {
+        (void)tbnz(Reg, Const, &NotTaken);
+      } else if (Op->Cond == IR::CondClass::TSTNZ) {
+        (void)tbz(Reg, Const, &NotTaken);
+      } else {
+        LOGMAN_THROW_A_FMT(false, "CondJump expected simple condition");
+      }
+    }
+    EmitSuspendInterruptCheck();
+    b_OrRestart(TrueTargetLabel);
+    (void)Bind(&NotTaken);
+    PendingTargetLabel = JumpTarget(Op->FalseBlock);
+    return;
+  }
+#endif
+
   if (Op->FromNZCV) {
     b_OrRestart(MapCC(Op->Cond), TrueTargetLabel);
   } else {

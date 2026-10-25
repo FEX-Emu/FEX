@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
+#ifdef FEX_HORIZON
+#include <FEXCore/Utils/Horizon.h>
+#endif
 
 namespace ARMEmitter {
 class Buffer {
@@ -20,12 +23,15 @@ public:
     BufferBase = Base;
     CurrentOffset = BufferBase;
     Size = BaseSize;
+#ifdef FEX_HORIZON
+    WritableOffset = reinterpret_cast<uintptr_t>(FEXCore::Allocator::HorizonWritableAddress(Base)) - reinterpret_cast<uintptr_t>(Base);
+#endif
   }
 
   template<typename T>
   requires (std::is_trivially_copyable_v<T>)
   void dcn(const T& Data) {
-    std::memcpy(CurrentOffset, &Data, sizeof(Data));
+    std::memcpy(WritableCursor(), &Data, sizeof(Data));
     CurrentOffset += sizeof(Data);
   }
   void dc8(uint8_t Data) {
@@ -43,7 +49,7 @@ public:
 
   void EmitString(const char* String) {
     const auto StringLength = strlen(String);
-    memcpy(CurrentOffset, String, StringLength);
+    memcpy(WritableCursor(), String, StringLength);
     CurrentOffset += StringLength;
   }
 
@@ -53,7 +59,7 @@ public:
     if (!CurrentAlignment) {
       return;
     }
-    std::memset(CurrentOffset, 0, Size - CurrentAlignment);
+    std::memset(WritableCursor(), 0, Size - CurrentAlignment);
     CurrentOffset += Size - CurrentAlignment;
   }
 
@@ -63,7 +69,20 @@ public:
   }
 
   static void ClearICache(void* Begin, std::size_t Length) {
+#ifdef FEX_HORIZON
+    FEXCore::Allocator::HorizonFlushICache(Begin, Length);
+#else
     __builtin___clear_cache(static_cast<char*>(Begin), static_cast<char*>(Begin) + Length);
+#endif
+  }
+
+  template<typename T>
+  static T* WritableAddress(T* Pointer) {
+#ifdef FEX_HORIZON
+    return static_cast<T*>(FEXCore::Allocator::HorizonWritableAddress(Pointer));
+#else
+    return Pointer;
+#endif
   }
 
   size_t GetCursorOffset() const {
@@ -91,10 +110,21 @@ public:
     return static_cast<size_t>(reinterpret_cast<const uint8_t*>(Address) - BufferBase);
   }
 
+  void* WritableCursor() const {
+#ifdef FEX_HORIZON
+    return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentOffset) + WritableOffset);
+#else
+    return CurrentOffset;
+#endif
+  }
+
 protected:
 
   uint8_t* BufferBase;
   uint8_t* CurrentOffset;
   uint64_t Size;
+#ifdef FEX_HORIZON
+  uintptr_t WritableOffset {};
+#endif
 };
 } // namespace ARMEmitter

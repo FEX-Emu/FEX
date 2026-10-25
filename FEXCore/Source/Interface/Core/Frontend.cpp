@@ -1631,7 +1631,7 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
       BlockIt->Size += DecodeInst->InstSize;
 
       // if we weren't provided relocations (guest JIT), try to detect what we can
-      if (WantsDataMasks && BlockIt->BlockStatus == DecodedBlockStatus::SUCCESS && BlockInfo.Is64BitMode && !Relocations) {
+      if (WantsDataMasks && !BlockIt->ForceFullSMCDetection && BlockIt->BlockStatus == DecodedBlockStatus::SUCCESS && BlockInfo.Is64BitMode && !Relocations) {
         DetectDataMasks(OpAddress, *BlockIt);
       }
 

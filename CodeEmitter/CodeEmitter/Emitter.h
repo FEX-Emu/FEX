@@ -363,6 +363,7 @@ enum class SystemRegister : uint32_t {
   FPCR = GenSystemReg<0b11, 0b011, 0b0100, 0b0100, 0b000>,
   TPIDRRO_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b011>,
   CNTFRQ_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b000>,
+  CNTPCT_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b001>,
   CNTVCT_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b010>,
   CNTVCTSS_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b110>,
 };
@@ -671,7 +672,7 @@ public:
       uint32_t Inst = *Instruction & ~InstMask;
       Inst |= (Offset & 0b11) << 29;
       Inst |= (Offset >> 2) << 5;
-      *Instruction = Inst;
+      *WritableAddress(Instruction) = Inst;
       break;
     }
     case ForwardLabel::InstType::ADRP: {
@@ -689,7 +690,7 @@ public:
       uint32_t Inst = *Instruction & ~InstMask;
       Inst |= (Offset & 0b11) << 29;
       Inst |= (Offset >> 2) << 5;
-      *Instruction = Inst;
+      *WritableAddress(Instruction) = Inst;
       break;
     }
     case ForwardLabel::InstType::B: {
@@ -704,7 +705,7 @@ public:
       uint32_t Offset = static_cast<uint32_t>(Imm) & InstMask;
       uint32_t Inst = *Instruction & ~InstMask;
       Inst |= Offset;
-      *Instruction = Inst;
+      *WritableAddress(Instruction) = Inst;
 
       break;
     }
@@ -720,7 +721,7 @@ public:
       uint32_t Offset = static_cast<uint32_t>(Imm) & InstMask;
       uint32_t Inst = *Instruction & ~(InstMask << 5);
       Inst |= Offset << 5;
-      *Instruction = Inst;
+      *WritableAddress(Instruction) = Inst;
 
       break;
     }
@@ -737,7 +738,7 @@ public:
       uint32_t Offset = static_cast<uint32_t>(Imm) & InstMask;
       uint32_t Inst = *Instruction & ~(InstMask << 5);
       Inst |= Offset << 5;
-      *Instruction = Inst;
+      *WritableAddress(Instruction) = Inst;
       break;
     }
     case ForwardLabel::InstType::LONG_ADDRESS_GEN: {

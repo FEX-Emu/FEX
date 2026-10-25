@@ -64,11 +64,20 @@ public:
   }
 
 private:
+#if defined(FEX_TUNE_TEGRA_X1)
+  // Tegra X1 (Cortex-A57) compile-time optimization: disable all ARMv8.1+ branches
+  static constexpr bool HostSupportsSVE128 = false;
+  static constexpr bool HostSupportsSVE256 = false;
+  static constexpr bool HostSupportsAVX256 = false;
+  static constexpr bool HostSupportsRPRES = false;
+  static constexpr bool HostSupportsAFP = false;
+#else
   const bool HostSupportsSVE128 {};
   const bool HostSupportsSVE256 {};
   const bool HostSupportsAVX256 {};
   const bool HostSupportsRPRES {};
   const bool HostSupportsAFP {};
+#endif
 
   struct RestartOptions {
     enum class Control : uint64_t {

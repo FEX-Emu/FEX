@@ -10,6 +10,17 @@
 
 #include "CPUFeatures.h"
 
+/* Tegra X1 (Cortex-A57) hardcoded feature flags for FEX_HORIZON (FEX-2610) */
+#ifdef FEX_HORIZON
+#ifndef FEX_TEGRA_X1_FEATURES_DEFINED
+#define FEX_TEGRA_X1_FEATURES_DEFINED
+static const uint64_t TEGRA_X1_ISAR0 = 1ULL << 16; /* CRC32 */
+static const uint32_t TEGRA_X1_DCZID = 0x10;
+static const uint32_t TEGRA_X1_CTR = 0x8444c004;
+static const uint32_t TEGRA_X1_MIDR = 0x411fd071; /* 4x Cortex-A57 r1p1 */
+#endif
+#endif
+
 namespace {
 
 HKEY OpenProcessorKey(uint32_t Idx) {
@@ -57,6 +68,45 @@ public:
 };
 
 FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostFeatures::HostTypeEnum HostType, uint32_t ProcessPID) {
+#ifdef FEX_HORIZON
+  // Tegra X1 (Cortex-A57) hardcoded feature flags — bypass Windows registry
+  CPUFeaturesFromRegistry Features {nullptr};  // Registry not used in Horizon mode
+
+  // Hardcode Tegra X1 registers
+  uint64_t CTR = TEGRA_X1_CTR;
+  uint64_t MIDR = TEGRA_X1_MIDR;
+
+  FEXCore::HostFeatures HostFeatures = {};
+  HostFeatures.CPUMIDRs.push_back(TEGRA_X1_MIDR);
+
+  // Force-disable all ARMv8.1+ features for Tegra X1; only CRC32 (ISAR0 bit 16) enabled
+  FEX::FetchHostFeatures(Features, HostFeatures, !IsWine, CTR, MIDR);
+
+  // Hard-disable unsupported features per Tegra X1 / Horizon ABI
+  HostFeatures.SupportsCRC = true;
+  HostFeatures.SupportsAES = false;
+  HostFeatures.SupportsSHA = false;
+  HostFeatures.SupportsPMULL_128Bit = false;
+  HostFeatures.SupportsAtomics = false;
+  HostFeatures.SupportsSVE128 = false;
+  HostFeatures.SupportsSVE256 = false;
+  HostFeatures.SupportsAVX256 = false;
+  HostFeatures.SupportsRPRES = false;
+  HostFeatures.SupportsAFP = false;
+
+  // Force-disable SVE until wine/windows gain support
+  HostFeatures.SupportsSVE128 = false;
+  HostFeatures.SupportsSVE256 = false;
+
+  HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine;
+  HostFeatures.ProcessPID = ProcessPID;
+  HostFeatures.SupportsAVX = false;  // No AVX on ARM64EC / Tegra X1
+
+  HostFeatures.ProcessFeatures.HostType = HostType;
+  HostFeatures.ProcessFeatures.Is64BitMode = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
+  HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
+  return HostFeatures;
+#else
   HKEY Key = OpenProcessorKey(0);
   if (!Key) {
     ERROR_AND_DIE_FMT("Couldn't detect CPU features");
@@ -94,6 +144,7 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
   HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
 
   return HostFeatures;
+#endif
 }
 
 CPUFeatures::CPUFeatures(FEXCore::Context::Context& CTX) {
