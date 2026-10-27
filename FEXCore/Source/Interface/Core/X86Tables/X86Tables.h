@@ -407,7 +407,9 @@ namespace InstFlags {
   constexpr InstFlagType FLAGS_CALL = (1ULL << 30);
   constexpr InstFlagType FLAGS_SUPPORTS_LOCK = (1ULL << 31);
   constexpr InstFlagType FLAGS_LITERAL_PATCHABLE = (1ULL << 32);
-  // Flags [57..33]: Undefined
+  constexpr InstFlagType FLAGS_NO_PREFIX_ORDER = (1ULL << 33);
+
+  // Flags [57..34]: Undefined
   // Flags [60..58]: Dst size
   constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
   // Flags [63..61]: Src size
