@@ -942,23 +942,24 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstructionImpl(uint64_t PC) {
           // If any of these three prefixes are used then it falls down the subtable
           // Additionally: If you hit repeat of differnt prefixes then only the LAST one before this one works for subtable selection
 
-          bool NoOverlay = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY) != 0;
-          bool NoOverlay66 = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
+          const bool NoOverlay = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY) != 0;
+          const bool NoOverlay66 = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
+          const bool NoPrefixOrder = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_PREFIX_ORDER) != 0;
 
           DecodeREXIfValid(-2);
           if (NoOverlay) { // This section of the table ignores prefix extention
             return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
-          } else if (LastEscapePrefix == 0xF3) { // REP
+          } else if (LastEscapePrefix == 0xF3 || (NoPrefixOrder && DecodeInst->Flags & DecodeFlags::FLAG_REP_PREFIX)) { // REP
             // Remove prefix so it doesn't effect calculations.
             // This is only an escape prefix rather tan modifier now
             DecodeInst->Flags &= ~DecodeFlags::FLAG_REP_PREFIX;
             return NormalOpHeader(&FEXCore::X86Tables::RepModOps[EscapeOp], EscapeOp);
-          } else if (LastEscapePrefix == 0xF2) { // REPNE
+          } else if (LastEscapePrefix == 0xF2 || (NoPrefixOrder && DecodeInst->Flags & DecodeFlags::FLAG_REPNE_PREFIX)) { // REPNE
             // Remove prefix so it doesn't effect calculations.
             // This is only an escape prefix rather tan modifier now
             DecodeInst->Flags &= ~DecodeFlags::FLAG_REPNE_PREFIX;
             return NormalOpHeader(&FEXCore::X86Tables::RepNEModOps[EscapeOp], EscapeOp);
-          } else if (LastEscapePrefix == 0x66 && !NoOverlay66) { // Operand Size
+          } else if ((LastEscapePrefix == 0x66 || (NoPrefixOrder && DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE)) && !NoOverlay66) { // Operand Size
             // Remove prefix so it doesn't effect calculations.
             // This is only an escape prefix rather tan modifier now
             DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
