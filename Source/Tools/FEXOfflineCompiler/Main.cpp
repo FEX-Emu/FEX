@@ -844,6 +844,10 @@ int main(int argc, char** argv) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 #else
+  {
+    char* envp[] = {nullptr};
+    FEX::Config::LoadConfig("", envp, FEX::ReadPortabilityInformation());
+  }
   FEX::Windows::Logging::Init();
 #endif
 
