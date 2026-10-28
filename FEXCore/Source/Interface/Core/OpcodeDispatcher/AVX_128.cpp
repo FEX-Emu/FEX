@@ -2377,6 +2377,27 @@ void OpDispatchBuilder::AVX128_VBCSTNEBF162PS(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
+void OpDispatchBuilder::AVX128_VBCSTNESH2PS(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src1 = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::i16Bit, Op->Flags);
+
+  // float16 is converted to fp32 and broadcast through the vector.
+  Src1 = _Float_FToF(OpSize::i32Bit, OpSize::i16Bit, Src1);
+  Src1 = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Src1, 0);
+
+  RefPair Result {};
+  Result.Low = Src1;
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = Result.Low;
+  }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
 void OpDispatchBuilder::AVX128_VCVTNEEBF162PS(OpcodeArgs, bool Even) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
@@ -2396,6 +2417,34 @@ void OpDispatchBuilder::AVX128_VCVTNEEBF162PS(OpcodeArgs, bool Even) {
     // Easiest way to do this is with a right then left shift.
     auto Tmp = _VUShrI(OpSize::i128Bit, OpSize::i32Bit, Src, 16);
     return _VShlI(OpSize::i128Bit, OpSize::i32Bit, Tmp, 16);
+  };
+
+  Result.Low = Convert(Src.Low, Even);
+
+  if (Is128Bit) {
+    Result.High = LoadZeroVector(OpSize::i128Bit);
+  } else {
+    Result.High = Convert(Src.High, Even);
+  }
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VCVTNEEPH2PS(OpcodeArgs, bool Even) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+
+  RefPair Result {};
+
+  auto Convert = [&](auto Src, bool Even) -> Ref {
+    // Transpose even or odd elements and then fcvtl.
+    if (Even) {
+      Src = _VUnZip(OpSize::i128Bit, OpSize::i16Bit, Src, Src);
+    } else {
+      Src = _VUnZip2(OpSize::i128Bit, OpSize::i16Bit, Src, Src);
+    }
+    return _Vector_FToF(OpSize::i128Bit, OpSize::i32Bit, Src, OpSize::i16Bit);
   };
 
   Result.Low = Convert(Src.Low, Even);

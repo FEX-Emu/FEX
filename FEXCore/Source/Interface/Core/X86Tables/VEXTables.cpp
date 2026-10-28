@@ -366,11 +366,11 @@ namespace AVX128 {
     {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 2, 1, 3>},  // VFMADDSUB
     {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, false, 2, 1, 3>}, // VFMSUBADD
 
-    {OPD(2, 0b00, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEBF162PS, false>},
-    {OPD(2, 0b01, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEBF162PS, true>},
+    {OPD(2, 0b00, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEPH2PS, false>},
+    {OPD(2, 0b01, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEPH2PS, true>},
     {OPD(2, 0b10, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEBF162PS, true>},
     {OPD(2, 0b11, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVX128_VCVTNEEBF162PS, false>},
-    {OPD(2, 0b01, 0xB1), 1, &IR::OpDispatchBuilder::AVX128_VBCSTNEBF162PS},
+    {OPD(2, 0b01, 0xB1), 1, &IR::OpDispatchBuilder::AVX128_VBCSTNESH2PS},
     {OPD(2, 0b10, 0xB1), 1, &IR::OpDispatchBuilder::AVX128_VBCSTNEBF162PS},
 
     {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 2, 3, 1>},  // VFMADDSUB
@@ -824,11 +824,11 @@ namespace AVX256 {
     {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 1, 3>},  // VFMADDSUB
     {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 2, 1, 3>}, // VFMSUBADD
 
-    {OPD(2, 0b00, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVXVCVTNEEBF162PS, false>},
-    {OPD(2, 0b01, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVXVCVTNEEBF162PS, true>},
+    {OPD(2, 0b00, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVXVCVTNEEPH2PS, false>},
+    {OPD(2, 0b01, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVXVCVTNEEPH2PS, true>},
     {OPD(2, 0b10, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVXVCVTNEEBF162PS, true>},
     {OPD(2, 0b11, 0xB0), 1, &OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::AVXVCVTNEEBF162PS, false>},
-    {OPD(2, 0b01, 0xB1), 1, &IR::OpDispatchBuilder::AVXVBCSTNEBF162PS},
+    {OPD(2, 0b01, 0xB1), 1, &IR::OpDispatchBuilder::AVXVBCSTNESH2PS},
     {OPD(2, 0b10, 0xB1), 1, &IR::OpDispatchBuilder::AVXVBCSTNEBF162PS},
 
     {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 3, 1>},  // VFMADDSUB

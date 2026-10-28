@@ -8,7 +8,7 @@
     "DisabledHostFeatures": [
       "AFP"
     ],
-    "BinaryCacheVersion": 37
+    "BinaryCacheVersion": 38
   },
   "Instructions": {
     "vpermq ymm0, ymm1, 1": {

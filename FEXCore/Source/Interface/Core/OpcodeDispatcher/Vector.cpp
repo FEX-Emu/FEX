@@ -6081,6 +6081,34 @@ void OpDispatchBuilder::AVXVBCSTNEBF162PS(OpcodeArgs) {
   StoreResultFPR(Op, Src);
 }
 
+void OpDispatchBuilder::AVXVBCSTNESH2PS(OpcodeArgs) {
+  const auto DstSize = OpSizeFromDst(Op);
+
+  auto Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  // float16 is converted to fp32 and broadcast through the vector.
+  Src = _Float_FToF(OpSize::i32Bit, OpSize::i16Bit, Src);
+  Src = _VDupElement(DstSize, OpSize::i32Bit, Src, 0);
+
+  StoreResultFPR(Op, Src);
+}
+
+void OpDispatchBuilder::AVXVCVTNEEPH2PS(OpcodeArgs, bool Even) {
+  const auto DstSize = OpSizeFromDst(Op);
+
+  auto Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  // float16 is converted to fp32 and broadcast through the vector.
+  if (Even) {
+    Src = _VUnZip(DstSize, OpSize::i16Bit, Src, Src);
+  } else {
+    Src = _VUnZip2(DstSize, OpSize::i16Bit, Src, Src);
+  }
+  Src = _Vector_FToF(DstSize, OpSize::i32Bit, Src, OpSize::i16Bit);
+
+  StoreResultFPR(Op, Src);
+}
+
 void OpDispatchBuilder::AVXVCVTNEEBF162PS(OpcodeArgs, bool Even) {
   const auto DstSize = OpSizeFromDst(Op);
   auto Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);

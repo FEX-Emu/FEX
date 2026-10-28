@@ -1096,7 +1096,9 @@ public:
   void AVX128_VCVTPH2PS(OpcodeArgs);
   void AVX128_VCVTPS2PH(OpcodeArgs);
   void AVX128_VBCSTNEBF162PS(OpcodeArgs);
+  void AVX128_VBCSTNESH2PS(OpcodeArgs);
   void AVX128_VCVTNEEBF162PS(OpcodeArgs, bool Even);
+  void AVX128_VCVTNEEPH2PS(OpcodeArgs, bool Even);
   void AVX128_VCVTNEPS2BF16(OpcodeArgs);
 
   // End of AVX 128-bit implementation
@@ -1133,7 +1135,9 @@ public:
   void AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
 
   void AVXVBCSTNEBF162PS(OpcodeArgs);
+  void AVXVBCSTNESH2PS(OpcodeArgs);
   void AVXVCVTNEEBF162PS(OpcodeArgs, bool Even);
+  void AVXVCVTNEEPH2PS(OpcodeArgs, bool Even);
   void AVXVCVTNEPS2BF16(OpcodeArgs);
 
   // End of AVX 256-bit implementation
