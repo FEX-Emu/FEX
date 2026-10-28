@@ -395,9 +395,12 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
     ValidationCTX->SetSignalDelegator(CTX.SignalDelegation);
     ValidationCTX->SetSyscallHandler(CTX.SyscallHandler);
     ValidationCTX->SetThunkHandler(CTX.ThunkHandler);
+    // InitCore points the shared SignalDelegator at the validation context's dispatcher; keep the main one
+    const auto SignalConfig = CTX.SignalDelegation->GetConfig();
     if (!ValidationCTX->InitCore()) {
       ERROR_AND_DIE_FMT("Failed to create cache load validation context");
     }
+    CTX.SignalDelegation->SetConfig(SignalConfig);
 
     ValidationThread.reset(ValidationCTX->CreateThread(nullptr));
 
