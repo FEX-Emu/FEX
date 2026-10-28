@@ -729,6 +729,16 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   auto* Context = Ptrs->ContextRecord;
   auto* Exception = Ptrs->ExceptionRecord;
   auto Thread = GetTLS().ThreadState();
+
+  if (!Thread) {
+    // BTCpuProcessInit runs before any thread state exists, and loading code caches there can touch overcommitted memory
+    if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && OvercommitTracker &&
+        OvercommitTracker->HandleAccessViolation(static_cast<uint64_t>(Exception->ExceptionInformation[1]))) {
+      return true;
+    }
+    return false;
+  }
+
   FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedSignalTime);
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
