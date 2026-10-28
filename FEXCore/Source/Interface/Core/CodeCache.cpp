@@ -51,7 +51,7 @@ MappedCodeCacheFile::~MappedCodeCacheFile() {
   if (!CodeBuffer.empty()) {
     FEXCore::Allocator::munmap(CodeBuffer.data(), CodeBuffer.size_bytes());
   }
-#elif defined(_M_ARM64EC)
+#else
   if (!CodeBuffer.empty()) {
     FEXCore::Allocator::VirtualFree(CodeBuffer.data(), CodeBuffer.size_bytes());
   }
@@ -718,18 +718,16 @@ CodeCache::LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo& F
     return nullptr;
   }
   auto CodeBuffer = std::span {static_cast<std::byte*>(CodeBufferAllocation), header.CodeBufferSize};
-#elif defined(_M_ARM64EC)
+#else
   // TODO: Implement lazy mapping on Windows
-  // NOTE: The executed code must have MEM_EXTENDED_PARAMETER_EC_CODE set, so we can't operate on the mapped cache file directly
+  // NOTE: The cache file is mapped read-only, so relocations must be applied to a separate buffer.
+  //       On ARM64EC, the executed code must also have MEM_EXTENDED_PARAMETER_EC_CODE set.
   void* CodeBufferAllocation = Allocator::VirtualAlloc(header.CodeBufferSize, true);
   if (!CodeBufferAllocation) {
     LogMan::Msg::EFmt("Failed to allocate code cache memory");
     return nullptr;
   }
   auto CodeBuffer = std::span {reinterpret_cast<std::byte*>(CodeBufferAllocation), header.CodeBufferSize};
-#else // WoW64
-  // TODO: Implement lazy mapping on Windows
-  auto CodeBuffer = CodeDataInFile;
 #endif
 
   // Group relocations by page
@@ -997,9 +995,7 @@ void CodeCache::FinalizeCodePages(MappedCodeCacheFile& Code, std::span<std::byte
   Allocator::VirtualDontNeed(Code.CodeBufferInFile.data() + StartOffset, Size);
 #else
   // TODO: Implement lazy mapping on Windows
-#ifdef _M_ARM64EC
   memcpy(Code.CodeBuffer.data() + StartOffset, Code.CodeBufferInFile.data() + StartOffset, Size);
-#endif
   for (size_t i = StartPage; i < EndPage; ++i) {
     auto PageRelocations = SpanPageRelocations(Code, i);
     (void)ApplyCodeRelocations(Code.GuestBase, Code.CodeBuffer, PageRelocations, false);
