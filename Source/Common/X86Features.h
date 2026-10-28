@@ -1,15 +1,60 @@
 #pragma once
 #include <cstdint>
 
-#ifdef ARCHITECTURE_x86_64
+#include <FEXCore/Core/Context.h>
+
+#if !defined(VIXL_SIMULATOR) && defined(ARCHITECTURE_x86_64)
 #include <cpuid.h>
+#endif
 
 namespace FEX::X86 {
 class Features final {
 public:
+#if !defined(VIXL_SIMULATOR) && defined(ARCHITECTURE_x86_64)
   Features() {
-    cpuid_data data {};
-    data = cpuid(0);
+    GetFeatures();
+  }
+#else
+  Features(FEXCore::Context::Context* CTX)
+    : CTX {CTX} {
+    GetFeatures();
+  }
+#endif
+
+  // Features.
+  bool Feat_3dnow {};
+  bool Feat_sse4a {};
+  bool Feat_bmi1 {};
+  bool Feat_bmi2 {};
+  bool Feat_clwb {};
+  bool Feat_aes {};
+  bool Feat_crc {};
+  bool Feat_rand {};
+  bool Feat_sha {};
+  bool Feat_pclmulqdq {};
+  bool Feat_vaes {};
+  bool Feat_clzero {};
+  bool Feat_avx {};
+  bool Feat_ssse3 {};
+  bool Feat_sse4_1 {};
+  bool Feat_sse4_2 {};
+  bool Feat_movbe {};
+  bool Feat_adx {};
+  bool Feat_xsave {};
+  bool Feat_rdpid {};
+  bool Feat_clflopt {};
+  bool Feat_fsgsbase {};
+  bool Feat_avx_vnni {};
+  bool Feat_serialize {};
+  bool Feat_avx_ne_convert {};
+  bool Feat_avx_vnni_int8 {};
+  bool Feat_avx_vnni_int16 {};
+  bool Feat_avx_ifma {};
+  bool Feat_sha512 {};
+
+private:
+  void GetFeatures() {
+    auto data = cpuid(0);
 
     if (data.eax >= 1) {
       auto data_1 = cpuid(0x1);
@@ -67,47 +112,17 @@ public:
     }
   }
 
-  // Features.
-  bool Feat_3dnow {};
-  bool Feat_sse4a {};
-  bool Feat_bmi1 {};
-  bool Feat_bmi2 {};
-  bool Feat_clwb {};
-  bool Feat_aes {};
-  bool Feat_crc {};
-  bool Feat_rand {};
-  bool Feat_sha {};
-  bool Feat_pclmulqdq {};
-  bool Feat_vaes {};
-  bool Feat_clzero {};
-  bool Feat_avx {};
-  bool Feat_ssse3 {};
-  bool Feat_sse4_1 {};
-  bool Feat_sse4_2 {};
-  bool Feat_movbe {};
-  bool Feat_adx {};
-  bool Feat_xsave {};
-  bool Feat_rdpid {};
-  bool Feat_clflopt {};
-  bool Feat_fsgsbase {};
-  bool Feat_avx_vnni {};
-  bool Feat_serialize {};
-  bool Feat_avx_ne_convert {};
-  bool Feat_avx_vnni_int8 {};
-  bool Feat_avx_vnni_int16 {};
-  bool Feat_avx_ifma {};
-  bool Feat_sha512 {};
-
-private:
-  struct cpuid_data {
-    uint32_t eax, ebx, ecx, edx;
-  };
-
-  cpuid_data cpuid(uint32_t Function, uint32_t Leaf = 0) {
-    cpuid_data data;
+#if !defined(VIXL_SIMULATOR) && defined(ARCHITECTURE_x86_64)
+  FEXCore::CPUID::FunctionResults cpuid(uint32_t Function, uint32_t Leaf = 0) {
+    FEXCore::CPUID::FunctionResults data;
     __cpuid_count(Function, Leaf, data.eax, data.ebx, data.ecx, data.edx);
     return data;
   }
+#else
+  FEXCore::CPUID::FunctionResults cpuid(uint32_t Function, uint32_t Leaf = 0) {
+    return CTX->RunCPUIDFunction(Function, Leaf);
+  }
+  FEXCore::Context::Context* CTX {};
+#endif
 };
 } // namespace FEX::X86
-#endif

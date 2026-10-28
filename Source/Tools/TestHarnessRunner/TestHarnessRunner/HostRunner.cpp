@@ -221,8 +221,10 @@ public:
   }
 
   void Dispatch(uint64_t InitialRip) {
+#if !defined(VIXL_SIMULATOR) && defined(ARCHITECTURE_x86_64)
     FEX::X86::Features Feature {};
     Dispatcher(InitialRip, &ReturningStackLocation, CodeSegmentEntry, Feature.Feat_fsgsbase);
+#endif
   }
 
 private:
