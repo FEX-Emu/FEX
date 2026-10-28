@@ -298,6 +298,8 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   auto CodeBuffer = CTX.GetLatest();
   auto& LookupCache = *Thread.LookupCache->Shared;
   auto Relocations = Thread.CPUBackend->TakeRelocations(SourceBinary.FileStartVA);
+  // Loading groups relocations by code page, which requires them to be sorted by offset
+  std::ranges::stable_sort(Relocations, std::less {}, [](const CPU::Relocation& Reloc) { return Reloc.Header.Offset; });
 
   // Write file header
   CodeCacheHeader header {};
@@ -425,15 +427,21 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
     std::as_writable_bytes(std::span {NewCodeBuffer->GetBufferBase(), NewCodeBuffer->GetBufferBase() + NewCodeBuffer->UsableSize()})
       .subspan(0, CachedCode.size_bytes());
 
+  fextl::vector<CPU::Relocation> NewRelocations;
   while (!GuestBlocks.empty()) {
     auto [CompiledBlocks, _, _2, _3, _4] = ValidationCTX->CompileCode(ValidationThread.get(), *GuestBlocks.begin(), 0 /* TODO: Set MaxInst? */);
     for (auto& Entry : CompiledBlocks.EntryPoints) {
       GuestBlocks.erase(Entry.first);
     }
+
+    // Relocation offsets are relative to their compile unit; rebase them to the CodeBuffer start
+    for (auto& Reloc : ValidationThread->CPUBackend->TakeRelocations(Section.FileStartVA)) {
+      Reloc.Header.Offset += CompiledBlocks.HostCodeOffset;
+      NewRelocations.push_back(Reloc);
+    }
   }
 
   // Patch FEX-internal function addresses with values from the main Context to ensure the code blocks are comparable
-  auto NewRelocations = ValidationThread->CPUBackend->TakeRelocations(Section.FileStartVA);
   NewRelocations.erase(std::remove_if(NewRelocations.begin(), NewRelocations.end(), [](const CPU::Relocation& Reloc) {
     return Reloc.Header.Type != CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL && Reloc.Header.Type != CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE;
   }));
@@ -616,12 +624,13 @@ bool CodeCache::ApplyPackedCodeRelocations(uint64_t GuestEntry, std::span<std::b
 }
 
 bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
-                                     std::span<const FEXCore::CPU::Relocation> EntryRelocations, bool ForStorage) {
+                                     std::span<const FEXCore::CPU::Relocation> EntryRelocations, bool ForStorage, uint64_t CodeOffset) {
   CPU::Arm64Emitter Emitter(&CTX, Code.data(), Code.size_bytes());
   for (size_t j = 0; j < EntryRelocations.size(); ++j) {
     const FEXCore::CPU::Relocation& Reloc = EntryRelocations[j];
-    LOGMAN_THROW_A_FMT(Reloc.Header.Offset < Code.size_bytes(), "Invalid relocation offset");
-    Emitter.SetCursorOffset(Reloc.Header.Offset);
+    LOGMAN_THROW_A_FMT(Reloc.Header.Offset >= CodeOffset, "Invalid relocation offset");
+    LOGMAN_THROW_A_FMT(Reloc.Header.Offset - CodeOffset < Code.size_bytes(), "Invalid relocation offset");
+    Emitter.SetCursorOffset(Reloc.Header.Offset - CodeOffset);
 
     switch (Reloc.Header.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
@@ -970,7 +979,7 @@ void CodeCache::FinalizeCodePages(MappedCodeCacheFile& Code, std::span<std::byte
   auto StagingSpan = std::span {Staging, Size};
   for (size_t i = StartPage; i < EndPage; ++i) {
     auto PageRelocations = SpanPageRelocations(Code, i);
-    (void)ApplyCodeRelocations(Code.GuestBase, StagingSpan, PageRelocations, false);
+    (void)ApplyCodeRelocations(Code.GuestBase, StagingSpan, PageRelocations, false, StartOffset);
     Code.LoadedPages[i] = true;
   }
 
