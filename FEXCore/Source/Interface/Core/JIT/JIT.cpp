@@ -1135,6 +1135,13 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     memcpy(AllocatedInfo.BufferAllocationOffset, TempCodeBuffer, CodeData.Size);
   }
 
+  // Relocations accumulate across compile units while generating a code cache, so make them relative to the CodeBuffer base
+  if (CTX->GetCodeCache().IsGeneratingCache) {
+    for (auto& Relocation : std::span {Relocations}.subspan(PrevNumAllocations)) {
+      Relocation.Header.Offset += CodeData.HostCodeOffset;
+    }
+  }
+
   TempCodeBufferAllocator.DelayedDisownBuffer();
 
   ClearICache(CodeBegin, CodeOnlySize);
