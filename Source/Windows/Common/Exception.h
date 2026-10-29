@@ -78,7 +78,7 @@ static inline EXCEPTION_RECORD HandleGuestException(FEXCore::Core::CpuStateFrame
       // A page-fault raised by an explicit break in JIT code is always an execute fault
       Dst.NumberParameters = 2;
       Dst.ExceptionInformation[0] = EXCEPTION_EXECUTE_FAULT;
-      Dst.ExceptionInformation[1] = Rip;
+      Dst.ExceptionInformation[1] = Fault.FaultAddress ? Fault.FaultAddress : Rip;
       return Dst;
     default: LogMan::Msg::EFmt("Unknown SIGSEGV trap: {}", Fault.TrapNo); break;
     }

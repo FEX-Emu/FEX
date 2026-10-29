@@ -438,7 +438,11 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
 
     // Overwrite si_code and si_addr
     guest_siginfo->si_code = Thread->CurrentFrame->SynchronousFaultData.si_code;
-    guest_siginfo->si_addr = reinterpret_cast<void*>(ContextBackup->OriginalRIP);
+    if (Frame->SynchronousFaultData.FaultAddress) {
+      guest_siginfo->si_addr = reinterpret_cast<void*>(Frame->SynchronousFaultData.FaultAddress);
+    } else {
+      guest_siginfo->si_addr = reinterpret_cast<void*>(ContextBackup->OriginalRIP);
+    }
     Signal = Frame->SynchronousFaultData.Signal;
   } else {
     guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
@@ -795,7 +799,14 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
   case SigInfoLayout::LAYOUT_FAULT_RIP:
     // Macro expansion to get the si_addr
     // Can't really give a real result here. Pull from the context for now
-    guest_uctx->info._sifields._sigfault.addr = ContextBackup->OriginalRIP;
+    if (ContextBackup->FaultToTopAndGeneratedException && Frame->SynchronousFaultData.FaultAddress &&
+        Frame->SynchronousFaultData.Signal == FEXCore::Core::FAULT_SIGSEGV &&
+        Frame->SynchronousFaultData.TrapNo == FEXCore::X86State::X86_TRAPNO_PF) {
+      // Edge case for a synchronous fault due to partial instruction decode.
+      guest_uctx->info._sifields._sigfault.addr = static_cast<uint32_t>(Frame->SynchronousFaultData.FaultAddress);
+    } else {
+      guest_uctx->info._sifields._sigfault.addr = ContextBackup->OriginalRIP;
+    }
     break;
   case SigInfoLayout::LAYOUT_CHLD:
     guest_uctx->info._sifields._sigchld.pid = HostSigInfo->si_pid;
