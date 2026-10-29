@@ -321,7 +321,7 @@
         "DestSize": "Size",
         "RAOverride": "2"
       },
-      "Break BreakDefinition:$Reason": {
+      "Break BreakDefinition:$Reason, GPR:$FaultAddress": {
         "HasSideEffects": true
       },
       "CallbackReturn": {

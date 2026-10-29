@@ -115,7 +115,10 @@ private:
   void DetectDataMasks(uint64_t OpAddress, DecodedBlocks& Block);
   void PruneInlinedBranchDataMasks();
 
-  bool CheckRangeExecutable(uint64_t Address, uint64_t Size);
+  // Check for the number of bytes that are able to be decoded as executable
+  // Size: Returns Size if able to decode all bytes.
+  // Negative: Number of bytes that failed to decode.
+  int32_t CheckRangeExecutable(uint64_t Address, uint64_t Size);
 
   uint8_t ReadByte();
   std::optional<uint8_t> PeekByte(uint8_t Offset);

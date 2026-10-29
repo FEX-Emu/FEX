@@ -10,7 +10,7 @@
       "FLAGM2",
       "MOPS"
     ],
-    "BinaryCacheVersion": 39
+    "BinaryCacheVersion": 40
   },
   "Instructions": {
     "add bl, cl": {
@@ -2463,7 +2463,7 @@
       ]
     },
     "db 0x66, 0x8D, 0xC0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0x8d",
         "LEA ax, ax illegal register to register encoding"
@@ -2471,14 +2471,16 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0x8D, 0xC0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0x8d",
         "LEA eax, eax illegal register to register encoding"
@@ -2486,14 +2488,16 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0x48, 0x8D, 0xC0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0x8d",
         "LEA rax, rax illegal register to register encoding"
@@ -2501,8 +2505,10 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
