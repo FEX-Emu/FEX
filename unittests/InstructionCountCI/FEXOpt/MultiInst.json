@@ -13,7 +13,7 @@
       "RPRES",
       "AFP"
     ],
-    "BinaryCacheVersion": 38
+    "BinaryCacheVersion": 39
   },
   "Comment": [
     "These are instruction combinations that could be more optimal if FEX optimized for them"
@@ -1719,6 +1719,44 @@
         "ldr q2, [sp, #64]",
         "stp q14, q2, [x28, #192]",
         "add sp, sp, #0xa0 (160)"
+      ]
+    },
+    "cmp with memory and dead flags keeps the load": {
+      "x86InstructionCount": 2,
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Compare against memory with the flags overwritten before any read.",
+        "The compare can go but the load has to stay: it may fault, and HotSpot's C1",
+        "null check is exactly this shape (cmp rax, [reg] with dead flags)."
+      ],
+      "x86Insts": [
+        "cmp rax, [rdx]",
+        "add qword [rsi + 0x128], 1"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x5]",
+        "ldr x27, [x10, #296]",
+        "adds x26, x27, #0x1 (1)",
+        "str x26, [x10, #296]",
+        "cfinv"
+      ]
+    },
+    "test with memory and dead flags keeps the load": {
+      "x86InstructionCount": 2,
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Same as the dead compare, test against memory: the shape of a HotSpot C2 safepoint poll."
+      ],
+      "x86Insts": [
+        "test rax, [rdx]",
+        "add qword [rsi + 0x128], 1"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x5]",
+        "ldr x27, [x10, #296]",
+        "adds x26, x27, #0x1 (1)",
+        "str x26, [x10, #296]",
+        "cfinv"
       ]
     }
   }

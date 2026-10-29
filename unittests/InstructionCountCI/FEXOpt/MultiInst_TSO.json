@@ -14,7 +14,7 @@
       "RPRES",
       "AFP"
     ],
-    "BinaryCacheVersion": 38
+    "BinaryCacheVersion": 39
   },
   "Comment": [
     "These are instruction combinations that could be more optimal if FEX optimized for them"
@@ -76,6 +76,31 @@
         "nop",
         "stlurh w4, [x7, #24]",
         "stlurb w6, [x7, #26]"
+      ]
+    },
+    "cmp with memory and dead flags keeps the load": {
+      "x86InstructionCount": 2,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Compare against memory with the flags overwritten before any read.",
+        "The compare can go but the load has to stay: it may fault, and HotSpot's C1",
+        "null check is exactly this shape (cmp rax, [reg] with dead flags)."
+      ],
+      "x86Insts": [
+        "cmp rax, [rdx]",
+        "add qword [rsi + 0x128], 1"
+      ],
+      "ExpectedArm64ASM": [
+        "ldapur x20, [x5]",
+        "nop",
+        "add x21, x10, #0x128 (296)",
+        "ldapur x27, [x21]",
+        "nop",
+        "adds x26, x27, #0x1 (1)",
+        "add x21, x10, #0x128 (296)",
+        "nop",
+        "stlur x26, [x21]",
+        "cfinv"
       ]
     }
   }
