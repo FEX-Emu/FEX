@@ -1,7 +1,9 @@
 {
   "Features": {
     "Bitness": 64,
-    "EnabledHostFeatures": [],
+    "EnabledHostFeatures": [
+      "CRYPTO"
+    ],
     "DisabledHostFeatures": [
       "AFP",
       "FLAGM",
@@ -64,6 +66,80 @@
         "movi v18.2d, #0x0",
         "stp xzr, xzr, [x28, #224]",
         "str q3, [x28, #192]"
+      ]
+    },
+    "sha256rnds2 + pshufd + sha256rnds2": {
+      "x86InstructionCount": 3,
+      "ExpectedInstructionCount": 22,
+      "Comment": [
+        "This idiom is used by OpenSSL and other crypto libraries, and can be translated more efficiently since the ARM64 SHA instructions do four rounds of SHA, not just two."
+      ],
+      "x86Insts": [
+        "sha256rnds2 xmm2, xmm1",
+        "pshufd xmm0, xmm0, 0xe",
+        "sha256rnds2 xmm1, xmm2"
+      ],
+      "ExpectedArm64ASM": [
+        "zip2 v2.2d, v17.2d, v18.2d",
+        "rev64 v2.4s, v2.4s",
+        "zip1 v3.2d, v17.2d, v18.2d",
+        "rev64 v3.4s, v3.4s",
+        "dup v4.2d, v16.d[0]",
+        "mov v5.16b, v2.16b",
+        "sha256h q5, q3, v4.4s",
+        "sha256h2 q3, q2, v4.4s",
+        "zip2 v2.2d, v3.2d, v5.2d",
+        "rev64 v18.4s, v2.4s",
+        "dup v2.4s, v16.s[0]",
+        "ext v16.16b, v16.16b, v2.16b, #8",
+        "zip2 v2.2d, v18.2d, v17.2d",
+        "rev64 v2.4s, v2.4s",
+        "zip1 v3.2d, v18.2d, v17.2d",
+        "rev64 v3.4s, v3.4s",
+        "dup v4.2d, v16.d[0]",
+        "mov v5.16b, v2.16b",
+        "sha256h q5, q3, v4.4s",
+        "sha256h2 q3, q2, v4.4s",
+        "zip2 v2.2d, v3.2d, v5.2d",
+        "rev64 v17.4s, v2.4s"
+      ]
+    },
+    "sha256rnds2 + psrldq + sha256rnds2": {
+      "x86InstructionCount": 4,
+      "ExpectedInstructionCount": 23,
+      "Comment": [
+        "The same as the pshufd form, with psrldq 8 and an unrelated instruction between."
+      ],
+      "x86Insts": [
+        "sha256rnds2 xmm2, xmm1",
+        "psrldq xmm0, 8",
+        "paddd xmm5, xmm7",
+        "sha256rnds2 xmm1, xmm2"
+      ],
+      "ExpectedArm64ASM": [
+        "zip2 v2.2d, v17.2d, v18.2d",
+        "rev64 v2.4s, v2.4s",
+        "zip1 v3.2d, v17.2d, v18.2d",
+        "rev64 v3.4s, v3.4s",
+        "dup v4.2d, v16.d[0]",
+        "mov v5.16b, v2.16b",
+        "sha256h q5, q3, v4.4s",
+        "sha256h2 q3, q2, v4.4s",
+        "zip2 v2.2d, v3.2d, v5.2d",
+        "rev64 v18.4s, v2.4s",
+        "movi v2.2d, #0x0",
+        "ext v16.16b, v16.16b, v2.16b, #8",
+        "add v21.4s, v21.4s, v23.4s",
+        "zip2 v2.2d, v18.2d, v17.2d",
+        "rev64 v2.4s, v2.4s",
+        "zip1 v3.2d, v18.2d, v17.2d",
+        "rev64 v3.4s, v3.4s",
+        "dup v4.2d, v16.d[0]",
+        "mov v5.16b, v2.16b",
+        "sha256h q5, q3, v4.4s",
+        "sha256h2 q3, q2, v4.4s",
+        "zip2 v2.2d, v3.2d, v5.2d",
+        "rev64 v17.4s, v2.4s"
       ]
     }
   }
