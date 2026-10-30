@@ -158,11 +158,6 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
-  // Hardcoded to XMM0
-  auto XMM0 = LoadXMMRegister(0);
-
   auto shuffle_abcd = [this](Ref Src1, Ref Src2) -> Ref {
     // Generates a suitable SHA256 `abcd` configuration from x86 format.
     auto Tmp = _VZip2(OpSize::i128Bit, OpSize::i64Bit, Src2, Src1);
@@ -175,14 +170,99 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     return _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
   };
 
+  // Peephole: Attempt to identify this pattern:
+  //   sha256rnds2 xmm1, xmm2
+  //   pshufd xmm0, xmm0, 0xe (or psrldq xmm0, 8)
+  //   sha256rnds2 xmm2, xmm1
+  // This is an idiom used by various crypto libraries (OpenSSL etc).
+  // Since the ARM64 SHA256 instructions compute all four rounds,
+  // we can elide the second SHA256RNDS2 and the key shuffle.
+  // Since this matching is done on IR nodes, this is somewhat fragile,
+  // since changes to the translation of the constitiuent instructions
+  // would break the pattern.
+  //
+  // NB: xmm1 and xmm2 are used here as examples, but note that
+  // xmm0 is hardcoded as the key register in SHA256RNDS2.
+
+  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
+    // xmm1 in our example above.
+    const auto X = Op->Src[0].Data.GPR.GPR - X86State::REG_XMM_0;
+    // xmm2 in our example above.
+    const auto Y = Op->Dest.Data.GPR.GPR - X86State::REG_XMM_0;
+
+    const int KeyIndex = FPR0Index;
+    const int XIndex = FPR0Index + X;
+    const int YIndex = FPR0Index + Y;
+
+    // It is helpful to remember that the current Op
+    // is the "second" SHA256RNDS2 in the example, so we are looking
+    // backwards to find the rest of the pattern.
+    const Ref XLastWritten = RegCache.LastDef[XIndex];
+    const auto XLastWrittenIndex = RegCache.LastDefIndex[XIndex];
+    const Ref KeyLastWritten = RegCache.LastDef[KeyIndex];
+    // xmm0 and X must have been written to in in this block.
+    if (!XLastWritten || !KeyLastWritten) {
+      goto no_peephole;
+    }
+
+    // True if no instruction wrote Y after the first SHA256RNDS2.
+    const bool YUnchanged = !RegCache.LastDef[YIndex] || RegCache.LastDefIndex[YIndex] < XLastWrittenIndex;
+    // True if the key shift is after the first SHA256RNDS2, and no instruction wrote XMM0 afterwards.
+    const bool KeyUnchanged = RegCache.LastDefIndex[KeyIndex] > XLastWrittenIndex &&
+                              (!RegCache.PrevDef[KeyIndex] || RegCache.PrevDefIndex[KeyIndex] < XLastWrittenIndex);
+    if (!YUnchanged || !KeyUnchanged) {
+      goto no_peephole;
+    }
+
+    // Now make sure that the op that wrote the key is what we expect.
+    // This should match the translation of a `pshufd xmm0, xmm0, 0xe` or `psrldq xmm0, 8` instruction.
+    const auto KeyShift = GetOpHeader(WrapNode(KeyLastWritten));
+    const bool IsVExtr = KeyShift->Op == OP_VEXTR && KeyShift->Size == OpSize::i128Bit;
+    if (!IsVExtr) {
+      goto no_peephole;
+    }
+
+    // Compute shift in bytes, since pshufd and psrldq use different element sizes.
+    const auto ShiftInBytes = KeyShift->C<IR::IROp_VExtr>()->Index * IR::OpSizeToSize(KeyShift->ElementSize);
+    const bool IsKeyShift = ShiftInBytes == 8 && IsValueLoadRegister(KeyShift->C<IR::IROp_VExtr>()->VectorUpper, RegClass::FPR, 0);
+    if (!IsKeyShift) {
+      goto no_peephole;
+    }
+
+    // Now check that the rest of the OPs match the pattern.
+    const Ref FirstZip = GetArgIfOp(XLastWritten, OP_VREV64, 0);
+    // A and B are the SHA256H and SHA256H2 output of the first SHA256RNDS2 instruction
+    const Ref A = GetArgIfOp(FirstZip, OP_VZIP2, 1);
+    const Ref B = GetArgIfOp(FirstZip, OP_VZIP2, 0);
+    // Figure out based on A what the source of the first SHA256RNDS2 was.
+    const Ref FirstSrc = GetArgIfOp(GetArgIfOp(GetArgIfOp(A, OP_VSHA256H, 0), OP_VREV64, 0), OP_VZIP2, 0);
+    // True if X holds the result of the first SHA256RNDS2, and its source register was Y.
+    const bool IsFirstResult = FirstSrc && IsValueLoadRegister(WrapNode(FirstSrc), RegClass::FPR, Y);
+    if (!IsFirstResult) {
+      goto no_peephole;
+    }
+
+    // The pattern matched, so we can elide the second SHA256RNDS2,
+    // and instead use the result of the first pair of SHA256H and SHA256H2 instructions
+    // to populate the final result.
+    StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, shuffle_efgh(A, B));
+    return;
+  }
+
+no_peephole:
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+  // Hardcoded to XMM0
+  auto XMM0 = LoadXMMRegister(0);
+
   auto ABCD = shuffle_abcd(Dest, Src);
   auto EFGH = shuffle_efgh(Dest, Src);
 
-  // x86 uses only the bottom 64-bits of the key, so duplicate to match ARM64 semantics.
-  auto Key = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, XMM0, 0);
-
-  auto A = _VSha256H(ABCD, EFGH, Key);
-  auto B = _VSha256H2(EFGH, ABCD, Key);
+  // x86 uses only the lower 64 bits of the key for two rounds.
+  // ARM64 does four rounds, so in order to support the peephole optimization,
+  // we use the full key always.
+  auto A = _VSha256H(ABCD, EFGH, XMM0);
+  auto B = _VSha256H2(EFGH, ABCD, XMM0);
   auto Result = shuffle_abcd(A, B);
 
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);

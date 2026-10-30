@@ -41,7 +41,7 @@
       ]
     },
     "sha256rnds2 xmm0, xmm1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0x66 0x0f 0x38 0xcb"
       ],
@@ -50,11 +50,10 @@
         "rev64 v2.4s, v2.4s",
         "zip1 v3.2d, v17.2d, v16.2d",
         "rev64 v3.4s, v3.4s",
-        "dup v4.2d, v16.d[0]",
-        "mov v5.16b, v2.16b",
-        "sha256h q5, q3, v4.4s",
-        "sha256h2 q3, q2, v4.4s",
-        "zip2 v2.2d, v3.2d, v5.2d",
+        "mov v4.16b, v2.16b",
+        "sha256h q4, q3, v16.4s",
+        "sha256h2 q3, q2, v16.4s",
+        "zip2 v2.2d, v3.2d, v4.2d",
         "rev64 v16.4s, v2.4s"
       ]
     },
