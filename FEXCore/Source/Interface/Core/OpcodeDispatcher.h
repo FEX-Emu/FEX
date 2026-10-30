@@ -217,6 +217,8 @@ public:
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
+    ++RegCache.Index;
+
     // If we are switching to a new block and this current block has yet to set a RIP
     // Then we need to insert an unconditional jump from the current block to the one we are going to
     // This happens most frequently when an instruction jumps backwards to another location
@@ -1194,10 +1196,20 @@ public:
     if (!SRAOnly) {
       RectifyCarryInvert(CFInvertedABI);
 
-      // Also we can't trust the LastDef accross block boundaries, so clear that as well.
+      // Also we can't trust the LastDef or PrevDef arrays accross block boundaries, so clear them as well.
       for (auto& Def : RegCache.LastDef) {
         Def = nullptr;
       }
+      for (auto& Def : RegCache.PrevDef) {
+        Def = nullptr;
+      }
+      for (auto& DefIndex : RegCache.LastDefIndex) {
+        DefIndex = 0;
+      }
+      for (auto& DefIndex : RegCache.PrevDefIndex) {
+        DefIndex = 0;
+      }
+      RegCache.Index = 0;
     }
 
     if (!MMXOnly) {
@@ -2035,8 +2047,16 @@ private:
     Ref Value[64];
 
     // Keep track of where each register was last written to within the current block,
-    // for use in peephole optimizations.
+    // for use in peephole optimizations. LastDefIndex is a parallel structure,
+    // which tracks the index of each Op in LastDef.
     Ref LastDef[64];
+    uint32_t LastDefIndex[64];
+    // Similar to LastDef, but tracks the write before LastDef. Think of it as LastDef^2.
+    Ref PrevDef[64];
+    uint32_t PrevDefIndex[64];
+
+    // The index of the current instruction in the current block.
+    uint32_t Index;
   } RegCache {};
 
   void InvalidateReg(uint8_t Index) {
@@ -2159,7 +2179,10 @@ private:
     RegCache.Value[Index] = Value;
     RegCache.Cached |= Bit;
     RegCache.Written |= Bit;
+    RegCache.PrevDef[Index] = RegCache.LastDef[Index];
+    RegCache.PrevDefIndex[Index] = RegCache.LastDefIndex[Index];
     RegCache.LastDef[Index] = Value;
+    RegCache.LastDefIndex[Index] = RegCache.Index;
   }
 
   void InvalidateHighAVXRegisters() {

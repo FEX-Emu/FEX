@@ -350,6 +350,18 @@ public:
     return IROp->Op == OP_VCMPEQ && IROp->Args[0].ID() == IROp->Args[1].ID();
   }
 
+  // Returns true if the value is a load of register Reg of class Class.
+  bool IsValueLoadRegister(OrderedNodeWrapper ssa, RegClass Class, uint32_t Reg) const {
+    auto RealNode = ssa.GetNode(DualListData.ListBegin());
+    const auto* IROp = RealNode->Op(DualListData.DataBegin());
+    if (IROp->Op != OP_LOADREGISTER) {
+      return false;
+    }
+
+    auto Op = IROp->C<IR::IROp_LoadRegister>();
+    return Op->Class == Class && Op->Reg == Reg;
+  }
+
   FEXCore::IR::IROp_Header* GetOpHeader(OrderedNodeWrapper ssa) {
     Ref RealNode = ssa.GetNode(DualListData.ListBegin());
     return RealNode->Op(DualListData.DataBegin());
@@ -361,6 +373,15 @@ public:
 
   OrderedNodeWrapper WrapNode(Ref node) {
     return node->Wrapped(DualListData.ListBegin());
+  }
+
+  // Returns argument Index of Node if the op of Node is Op. Else returns nullptr.
+  Ref GetArgIfOp(Ref Node, IROps Op, unsigned Index) {
+    if (!Node || GetOpHeader(WrapNode(Node))->Op != Op) {
+      return nullptr;
+    }
+
+    return UnwrapNode(GetOpHeader(WrapNode(Node))->Args[Index]);
   }
 
   NodeIterator GetIterator(OrderedNodeWrapper wrapper) {
