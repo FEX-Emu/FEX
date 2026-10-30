@@ -12,7 +12,7 @@
       "FRINTTS",
       "CSSC"
     ],
-    "BinaryCacheVersion": 38
+    "BinaryCacheVersion": 39
   },
   "Instructions": {
     "movss xmm0, xmm1": {
