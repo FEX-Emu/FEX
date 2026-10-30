@@ -182,7 +182,7 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   // would break the pattern.
   //
   // NB: xmm1 and xmm2 are used here as examples, but note that
-  // xmm0 is hardcoded as the key register in sha256rnds2.
+  // xmm0 is hardcoded as the key register in SHA256RNDS2.
 
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
     // xmm1 in our example above.
@@ -217,9 +217,14 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     // Now make sure that the op that wrote the key is what we expect.
     // This should match the translation of a `pshufd xmm0, xmm0, 0xe` or `psrldq xmm0, 8` instruction.
     const auto KeyShift = GetOpHeader(WrapNode(KeyLastWritten));
-    const bool IsKeyShift = KeyShift->Op == OP_VEXTR && KeyShift->Size == OpSize::i128Bit &&
-                            KeyShift->C<IR::IROp_VExtr>()->Index * IR::OpSizeToSize(KeyShift->ElementSize) == 8 &&
-                            IsValueLoadRegister(KeyShift->C<IR::IROp_VExtr>()->VectorUpper, RegClass::FPR, 0);
+    const bool IsVExtr = KeyShift->Op == OP_VEXTR && KeyShift->Size == OpSize::i128Bit;
+    if (!IsVExtr) {
+      goto no_peephole;
+    }
+
+    // Compute shift in bytes, since pshufd and psrldq use different element sizes.
+    const auto ShiftInBytes = KeyShift->C<IR::IROp_VExtr>()->Index * IR::OpSizeToSize(KeyShift->ElementSize);
+    const bool IsKeyShift = ShiftInBytes == 8 && IsValueLoadRegister(KeyShift->C<IR::IROp_VExtr>()->VectorUpper, RegClass::FPR, 0);
     if (!IsKeyShift) {
       goto no_peephole;
     }
