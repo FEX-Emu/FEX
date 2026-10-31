@@ -669,8 +669,8 @@ public:
 
   void VPMADDUBSWOp(OpcodeArgs);
   void VPMADDWDOp(OpcodeArgs);
-  void VPDPBUSDOp(OpcodeArgs, bool Saturating);
-  void VPDPWSSDOp(OpcodeArgs, bool Saturating);
+  void VPDPBxxDOp(OpcodeArgs, bool LHSSigned, bool RHSSigned, bool Saturating);
+  void VPDPWxxDOp(OpcodeArgs, bool LHSSigned, bool RHSSigned, bool Saturating);
 
   void VPMASKMOVOp(OpcodeArgs, bool IsStore);
 
@@ -1045,8 +1045,8 @@ public:
   void AVX128_VPMADDUBSW(OpcodeArgs);
   void AVX128_VPMADDWD(OpcodeArgs);
   void AVX128_VPDPImpl(OpcodeArgs, std::function<Ref(Ref Acc, Ref Src1, Ref Src2)> Helper);
-  void AVX128_VPDPBUSD(OpcodeArgs, bool Saturating);
-  void AVX128_VPDPWSSD(OpcodeArgs, bool Saturating);
+  void AVX128_VPDPBxxD(OpcodeArgs, bool LHSSigned, bool RHSSigned, bool Saturating);
+  void AVX128_VPDPWxxD(OpcodeArgs, bool LHSSigned, bool RHSSigned, bool Saturating);
 
   void AVX128_VBLEND(OpcodeArgs, IR::OpSize ElementSize);
 
@@ -1434,9 +1434,9 @@ private:
 
   Ref PMADDUBSWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 
-  Ref VPDPBUSDOpImpl(IR::OpSize Size, Ref Acc, Ref Src1, Ref Src2, bool Saturating);
+  Ref VPDPBxxDOpImpl(IR::OpSize Size, Ref Acc, Ref Src1, Ref Src2, bool LHSSigned, bool RHSSigned, bool Saturating);
 
-  Ref VPDPWSSDOpImpl(IR::OpSize Size, Ref Acc, Ref Src1, Ref Src2, bool Saturating);
+  Ref VPDPWxxDOpImpl(IR::OpSize Size, Ref Acc, Ref Src1, Ref Src2, bool LHSSigned, bool RHSSigned, bool Saturating);
 
   Ref PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
