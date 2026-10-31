@@ -12,12 +12,12 @@
       "FLAGM2",
       "SVEBITPERM"
     ],
-    "BinaryCacheVersion": 39
+    "BinaryCacheVersion": 40
   },
   "Instructions": {
     "vpdpbusd xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0b01 0x50 128-bit",
         "vpdpbusd xmm0, xmm1, xmm2",
@@ -27,22 +27,12 @@
         "db 0xc4, 0xe2, 0x71, 0x50, 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 v2.8h, v17.8h, v18.8h",
-        "uxtl v3.8h, v2.8b",
-        "sxtl2 v2.8h, v2.16b",
-        "mul v2.8h, v3.8h, v2.8h",
-        "uzp2 v3.8h, v17.8h, v18.8h",
-        "uxtl v4.8h, v3.8b",
-        "sxtl2 v3.8h, v3.16b",
-        "mul v3.8h, v4.8h, v3.8h",
-        "saddlp v2.4s, v2.8h",
-        "sadalp v2.4s, v3.8h",
-        "add v16.4s, v16.4s, v2.4s"
+        "usdot v16.4s, v17.16b, v18.16b"
       ]
     },
     "vpdpbusd ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0b01 0x50 256-bit",
         "vpdpbusd ymm0, ymm1, ymm2",
@@ -52,24 +42,12 @@
         "db 0xc4, 0xe2, 0x75, 0x50, 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 z2.h, z17.h, z18.h",
-        "uunpklo z3.h, z2.b",
-        "sunpkhi z2.h, z2.b",
-        "mul z2.h, z3.h, z2.h",
-        "uzp2 z3.h, z17.h, z18.h",
-        "uunpklo z4.h, z3.b",
-        "sunpkhi z3.h, z3.b",
-        "mul z3.h, z4.h, z3.h",
-        "mov z0.s, #0",
-        "sadalp z0.s, p7/m, z2.h",
-        "mov z2.d, z0.d",
-        "sadalp z2.s, p7/m, z3.h",
-        "add z16.s, z16.s, z2.s"
+        "usdot z16.s, z17.b, z18.b"
       ]
     },
     "vpdpbusds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0b01 0x51 128-bit",
         "vpdpbusds xmm0, xmm1, xmm2",
@@ -79,22 +57,14 @@
         "db 0xc4, 0xe2, 0x71, 0x51, 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 v2.8h, v17.8h, v18.8h",
-        "uxtl v3.8h, v2.8b",
-        "sxtl2 v2.8h, v2.16b",
-        "mul v2.8h, v3.8h, v2.8h",
-        "uzp2 v3.8h, v17.8h, v18.8h",
-        "uxtl v4.8h, v3.8b",
-        "sxtl2 v3.8h, v3.16b",
-        "mul v3.8h, v4.8h, v3.8h",
-        "saddlp v2.4s, v2.8h",
-        "sadalp v2.4s, v3.8h",
+        "movi v2.2d, #0x0",
+        "usdot v2.4s, v17.16b, v18.16b",
         "sqadd v16.4s, v16.4s, v2.4s"
       ]
     },
     "vpdpbusds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0b01 0x51 256-bit",
         "vpdpbusds ymm0, ymm1, ymm2",
@@ -104,273 +74,143 @@
         "db 0xc4, 0xe2, 0x75, 0x51, 0xc2"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 z2.h, z17.h, z18.h",
-        "uunpklo z3.h, z2.b",
-        "sunpkhi z2.h, z2.b",
-        "mul z2.h, z3.h, z2.h",
-        "uzp2 z3.h, z17.h, z18.h",
-        "uunpklo z4.h, z3.b",
-        "sunpkhi z3.h, z3.b",
-        "mul z3.h, z4.h, z3.h",
-        "mov z0.s, #0",
-        "sadalp z0.s, p7/m, z2.h",
-        "mov z2.d, z0.d",
-        "sadalp z2.s, p7/m, z3.h",
+        "movi v2.2d, #0x0",
+        "usdot z2.s, z17.b, z18.b",
         "sqadd z16.s, z16.s, z2.s"
       ]
     },
     "db 0xc4, 0xe2, 0x73, 0x50, 0xc2; {vex} vpdpbssd xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0xf2 0b01 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 v2.8h, v17.8h, v18.8h",
-        "sxtl v3.8h, v2.8b",
-        "sxtl2 v2.8h, v2.16b",
-        "mul v2.8h, v3.8h, v2.8h",
-        "uzp2 v3.8h, v17.8h, v18.8h",
-        "sxtl v4.8h, v3.8b",
-        "sxtl2 v3.8h, v3.16b",
-        "mul v3.8h, v4.8h, v3.8h",
-        "saddlp v2.4s, v2.8h",
-        "sadalp v2.4s, v3.8h",
-        "add v16.4s, v16.4s, v2.4s"
+        "sdot v16.4s, v17.16b, v18.16b"
       ]
     },
     "db 0xc4, 0xe2, 0x77, 0x50, 0xc2 ; {vex} vpdpbssd ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0xf2 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 z2.h, z17.h, z18.h",
-        "sunpklo z3.h, z2.b",
-        "sunpkhi z2.h, z2.b",
-        "mul z2.h, z3.h, z2.h",
-        "uzp2 z3.h, z17.h, z18.h",
-        "sunpklo z4.h, z3.b",
-        "sunpkhi z3.h, z3.b",
-        "mul z3.h, z4.h, z3.h",
-        "mov z0.s, #0",
-        "sadalp z0.s, p7/m, z2.h",
-        "mov z2.d, z0.d",
-        "sadalp z2.s, p7/m, z3.h",
-        "add z16.s, z16.s, z2.s"
+        "sdot z16.s, z17.b, z18.b"
       ]
     },
     "db 0xc4, 0xe2, 0x73, 0x51, 0xc2 ; {vex} vpdpbssds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 2 0xf2 0b01 0x51 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 v2.8h, v17.8h, v18.8h",
-        "sxtl v3.8h, v2.8b",
-        "sxtl2 v2.8h, v2.16b",
-        "mul v2.8h, v3.8h, v2.8h",
-        "uzp2 v3.8h, v17.8h, v18.8h",
-        "sxtl v4.8h, v3.8b",
-        "sxtl2 v3.8h, v3.16b",
-        "mul v3.8h, v4.8h, v3.8h",
-        "saddlp v2.4s, v2.8h",
-        "sadalp v2.4s, v3.8h",
+        "movi v2.2d, #0x0",
+        "sdot v2.4s, v17.16b, v18.16b",
         "neg v2.4s, v2.4s",
         "sqsub v16.4s, v16.4s, v2.4s"
       ]
     },
     "db 0xc4, 0xe2, 0x77, 0x51, 0xc2 ; {vex} vpdpbssds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 2 0xf2 0b01 0x51 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 z2.h, z17.h, z18.h",
-        "sunpklo z3.h, z2.b",
-        "sunpkhi z2.h, z2.b",
-        "mul z2.h, z3.h, z2.h",
-        "uzp2 z3.h, z17.h, z18.h",
-        "sunpklo z4.h, z3.b",
-        "sunpkhi z3.h, z3.b",
-        "mul z3.h, z4.h, z3.h",
-        "mov z0.s, #0",
-        "sadalp z0.s, p7/m, z2.h",
-        "mov z2.d, z0.d",
-        "sadalp z2.s, p7/m, z3.h",
+        "movi v2.2d, #0x0",
+        "sdot z2.s, z17.b, z18.b",
         "neg z2.s, p7/m, z2.s",
         "sqsub z16.s, z16.s, z2.s"
       ]
     },
     "db 0xc4, 0xe2, 0x72, 0x50, 0xc2 ; {vex} vpdpbsud xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0xf3 0b01 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 v2.8h, v17.8h, v18.8h",
-        "sxtl v3.8h, v2.8b",
-        "uxtl2 v2.8h, v2.16b",
-        "mul v2.8h, v3.8h, v2.8h",
-        "uzp2 v3.8h, v17.8h, v18.8h",
-        "sxtl v4.8h, v3.8b",
-        "uxtl2 v3.8h, v3.16b",
-        "mul v3.8h, v4.8h, v3.8h",
-        "saddlp v2.4s, v2.8h",
-        "sadalp v2.4s, v3.8h",
-        "add v16.4s, v16.4s, v2.4s"
+        "usdot v16.4s, v18.16b, v17.16b"
       ]
     },
     "db 0xc4, 0xe2, 0x76, 0x50, 0xc2 ; {vex} vpdpbsud ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0xf3 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 z2.h, z17.h, z18.h",
-        "sunpklo z3.h, z2.b",
-        "uunpkhi z2.h, z2.b",
-        "mul z2.h, z3.h, z2.h",
-        "uzp2 z3.h, z17.h, z18.h",
-        "sunpklo z4.h, z3.b",
-        "uunpkhi z3.h, z3.b",
-        "mul z3.h, z4.h, z3.h",
-        "mov z0.s, #0",
-        "sadalp z0.s, p7/m, z2.h",
-        "mov z2.d, z0.d",
-        "sadalp z2.s, p7/m, z3.h",
-        "add z16.s, z16.s, z2.s"
+        "usdot z16.s, z18.b, z17.b"
       ]
     },
     "db 0xc4, 0xe2, 0x72, 0x51, 0xc2 ; {vex} vpdpbsuds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0xf3 0b01 0x51 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 v2.8h, v17.8h, v18.8h",
-        "sxtl v3.8h, v2.8b",
-        "uxtl2 v2.8h, v2.16b",
-        "mul v2.8h, v3.8h, v2.8h",
-        "uzp2 v3.8h, v17.8h, v18.8h",
-        "sxtl v4.8h, v3.8b",
-        "uxtl2 v3.8h, v3.16b",
-        "mul v3.8h, v4.8h, v3.8h",
-        "saddlp v2.4s, v2.8h",
-        "sadalp v2.4s, v3.8h",
+        "movi v2.2d, #0x0",
+        "usdot v2.4s, v18.16b, v17.16b",
         "sqadd v16.4s, v16.4s, v2.4s"
       ]
     },
     "db 0xc4, 0xe2, 0x76, 0x51, 0xc2 ; {vex} vpdpbsuds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0xf3 0b01 0x51 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 z2.h, z17.h, z18.h",
-        "sunpklo z3.h, z2.b",
-        "uunpkhi z2.h, z2.b",
-        "mul z2.h, z3.h, z2.h",
-        "uzp2 z3.h, z17.h, z18.h",
-        "sunpklo z4.h, z3.b",
-        "uunpkhi z3.h, z3.b",
-        "mul z3.h, z4.h, z3.h",
-        "mov z0.s, #0",
-        "sadalp z0.s, p7/m, z2.h",
-        "mov z2.d, z0.d",
-        "sadalp z2.s, p7/m, z3.h",
+        "movi v2.2d, #0x0",
+        "usdot z2.s, z18.b, z17.b",
         "sqadd z16.s, z16.s, z2.s"
       ]
     },
     "db 0xc4, 0xe2, 0x70, 0x50, 0xc2 ; {vex} vpdpbuud xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0b01 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 v2.8h, v17.8h, v18.8h",
-        "uxtl v3.8h, v2.8b",
-        "uxtl2 v2.8h, v2.16b",
-        "mul v2.8h, v3.8h, v2.8h",
-        "uzp2 v3.8h, v17.8h, v18.8h",
-        "uxtl v4.8h, v3.8b",
-        "uxtl2 v3.8h, v3.16b",
-        "mul v3.8h, v4.8h, v3.8h",
-        "saddlp v2.4s, v2.8h",
-        "sadalp v2.4s, v3.8h",
-        "add v16.4s, v16.4s, v2.4s"
+        "udot v16.4s, v17.16b, v18.16b"
       ]
     },
     "db 0xc4, 0xe2, 0x74, 0x50, 0xc2 ; {vex} vpdpbuud ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 2 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 z2.h, z17.h, z18.h",
-        "uunpklo z3.h, z2.b",
-        "uunpkhi z2.h, z2.b",
-        "mul z2.h, z3.h, z2.h",
-        "uzp2 z3.h, z17.h, z18.h",
-        "uunpklo z4.h, z3.b",
-        "uunpkhi z3.h, z3.b",
-        "mul z3.h, z4.h, z3.h",
-        "mov z0.s, #0",
-        "sadalp z0.s, p7/m, z2.h",
-        "mov z2.d, z0.d",
-        "sadalp z2.s, p7/m, z3.h",
-        "add z16.s, z16.s, z2.s"
+        "udot z16.s, z17.b, z18.b"
       ]
     },
     "db 0xc4, 0xe2, 0x70, 0x51, 0xc2; {vex} vpdpbuuds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0b01 0x51 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 v2.8h, v17.8h, v18.8h",
-        "uxtl v3.8h, v2.8b",
-        "uxtl2 v2.8h, v2.16b",
-        "mul v2.8h, v3.8h, v2.8h",
-        "uzp2 v3.8h, v17.8h, v18.8h",
-        "uxtl v4.8h, v3.8b",
-        "uxtl2 v3.8h, v3.16b",
-        "mul v3.8h, v4.8h, v3.8h",
-        "saddlp v2.4s, v2.8h",
-        "sadalp v2.4s, v3.8h",
-        "sqadd v16.4s, v16.4s, v2.4s"
+        "movi v2.2d, #0x0",
+        "udot v2.4s, v17.16b, v18.16b",
+        "uqadd v16.4s, v16.4s, v2.4s"
       ]
     },
     "db 0xc4, 0xe2, 0x74, 0x51, 0xc2 ; {vex} vpdpbuuds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0b01 0x51 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "uzp1 z2.h, z17.h, z18.h",
-        "uunpklo z3.h, z2.b",
-        "uunpkhi z2.h, z2.b",
-        "mul z2.h, z3.h, z2.h",
-        "uzp2 z3.h, z17.h, z18.h",
-        "uunpklo z4.h, z3.b",
-        "uunpkhi z3.h, z3.b",
-        "mul z3.h, z4.h, z3.h",
-        "mov z0.s, #0",
-        "sadalp z0.s, p7/m, z2.h",
-        "mov z2.d, z0.d",
-        "sadalp z2.s, p7/m, z3.h",
-        "sqadd z16.s, z16.s, z2.s"
+        "movi v2.2d, #0x0",
+        "udot z2.s, z17.b, z18.b",
+        "uqadd z16.s, z16.s, z2.s"
       ]
     },
     "vpdpwssd xmm0, xmm1, xmm2": {

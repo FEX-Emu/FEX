@@ -8,7 +8,7 @@
       "AFP",
       "SVE256"
     ],
-    "BinaryCacheVersion": 39
+    "BinaryCacheVersion": 40
   },
   "Instructions": {
     "vblendvps xmm0, xmm1, xmm2, xmm3": {
