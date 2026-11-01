@@ -875,6 +875,14 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
+  // Threads running the same code miss on the same entry at the same time. If they each compile it, the copies fill the code
+  // buffer and the clear that follows makes all of them miss together again. So take turns, and look again when it's our turn.
+  // No fork can see this held: forking takes CodeInvalidationMutex exclusively.
+  std::lock_guard EntryCompileLock(EntryCompileLocks[(GuestRIP ^ (GuestRIP >> 10) ^ (GuestRIP >> 20)) % EntryCompileLocks.size()]);
+  if (auto HostCode = Thread->LookupCache->FindBlock(Thread, GuestRIP)) {
+    return HostCode;
+  }
+
   Thread->FrontendDecoder->SetupDecodeInstructionsAtEntry(Thread, GuestRIP, MaxInst);
 
   std::optional<ExecutableFileSectionInfo> Region = SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
