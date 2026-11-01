@@ -2,10 +2,10 @@
 {
   "HostFeatures": ["SHA512"],
   "RegData": {
-    "XMM0": ["0", "0", "0", "0"],
-    "XMM1": ["0", "0", "0", "0"],
-    "XMM2": ["0", "0", "0", "0"],
-    "XMM3": ["0", "0", "0", "0"]
+    "XMM0": ["0x6f221b6bfda4acda", "0xb5808945640ef458", "0x36af5f2311e7688f", "0xb2c3a7d2a7dca9d3"],
+    "XMM1": ["0x8febeb2652f67a8b", "0xfd7df914b59ef15b", "0xb117bca3111eb9cc", "0x68d1f83ebccbf141"],
+    "XMM2": ["0x3cb04da6e3ac61ea", "0xf9e3da02d1d0d718", "0xc766d5b99e733da1", "0xeb6bd1ff18bf8bb3"],
+    "XMM3": ["0x14ced4b4619266aa", "0x1c51c6d03d27869c", "0x463b30252d0bd4a0", "0x0a5aaa4a05b50723"]
   }
 }
 %endif
