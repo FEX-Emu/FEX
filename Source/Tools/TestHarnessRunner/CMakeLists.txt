@@ -1,4 +1,4 @@
-list(APPEND LIBS FEXCore Common JemallocLibs ${PTHREAD_LIB})
+list(APPEND LIBS FEXCore Common JemallocLibs Threads::Threads)
 
 set(SRCS TestHarnessRunner.cpp)
 if (NOT MINGW)

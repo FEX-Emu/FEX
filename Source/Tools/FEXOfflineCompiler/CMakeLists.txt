@@ -10,9 +10,11 @@ target_link_libraries(FEXOfflineCompiler PRIVATE
 
 if (MINGW)
   if (ARCHITECTURE_arm64ec)
-    set_target_properties(FEXOfflineCompiler PROPERTIES OUTPUT_NAME "FEXOfflineCompiler64")
+    set_target_properties(FEXOfflineCompiler PROPERTIES OUTPUT_NAME
+      "FEXOfflineCompiler64")
   else()
-    set_target_properties(FEXOfflineCompiler PROPERTIES OUTPUT_NAME "FEXOfflineCompiler32")
+    set_target_properties(FEXOfflineCompiler PROPERTIES OUTPUT_NAME
+      "FEXOfflineCompiler32")
   endif()
   patch_library_wine(FEXOfflineCompiler)
   target_include_directories(FEXOfflineCompiler PRIVATE
@@ -22,7 +24,7 @@ if (MINGW)
   )
   target_link_libraries(FEXOfflineCompiler PRIVATE CommonWindows ntdll_ex)
 else()
-  target_link_libraries(FEXOfflineCompiler PRIVATE ${PTHREAD_LIB} LinuxEmulation)
+  target_link_libraries(FEXOfflineCompiler PRIVATE Threads::Threads LinuxEmulation)
 endif()
 
 LinkerGC(FEXOfflineCompiler)

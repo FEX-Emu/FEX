@@ -8,7 +8,7 @@ add_executable(FEXServer
 
 target_include_directories(FEXServer PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
-target_link_libraries(FEXServer PRIVATE FEXCore Common CommonTools JemallocDummy ${PTHREAD_LIB})
+target_link_libraries(FEXServer PRIVATE FEXCore Common CommonTools JemallocDummy Threads::Threads)
 
 LinkerGC(FEXServer)
 

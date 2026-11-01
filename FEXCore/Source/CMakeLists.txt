@@ -104,9 +104,13 @@ if (ENABLE_ZYDIS)
 endif()
 
 if (ARCHITECTURE_arm64 AND HAS_CLANG_PRESERVE_ALL)
-  list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=__attribute__((preserve_all));-DFEXCORE_HAS_PRESERVE_ALL_ATTR=1")
+  list(APPEND DEFINES
+    "-DFEXCORE_PRESERVE_ALL_ATTR=__attribute__((preserve_all))"
+    "-DFEXCORE_HAS_PRESERVE_ALL_ATTR=1")
 else()
-  list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=;-DFEXCORE_HAS_PRESERVE_ALL_ATTR=0")
+  list(APPEND DEFINES
+    "-DFEXCORE_PRESERVE_ALL_ATTR="
+    "-DFEXCORE_HAS_PRESERVE_ALL_ATTR=0")
 endif()
 
 set(LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
@@ -187,8 +191,8 @@ add_custom_command(
   OUTPUT "${OUTPUT_MAN_NAME}"
   DEPENDS "${INPUT_CONFIG_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py"
-  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py" "${INPUT_CONFIG_NAME}" "${OUTPUT_CONFIG_NAME}" "${OUTPUT_MAN_NAME}"
-  "${OUTPUT_CONFIG_OPTION_NAME}")
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py"
+    "${INPUT_CONFIG_NAME}" "${OUTPUT_CONFIG_NAME}" "${OUTPUT_MAN_NAME}" "${OUTPUT_CONFIG_OPTION_NAME}")
 
 add_custom_command(
   OUTPUT "${OUTPUT_MAN_NAME_COMPRESS}"
@@ -284,8 +288,8 @@ function(AddLibrary Name Type)
   add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
-  # During generation of the import library (dll.a), MinGW needs some extra symbols from libraries
-  # such as fmt, which are propagated by FEXCore_Base. Wonderful.
+  # During generation of the import library (dll.a), MinGW needs some extra
+  # symbols from libraries such as fmt, which are propagated by FEXCore_Base
   if (MINGW)
     target_link_libraries(${Name} PRIVATE FEXCore_Base)
   endif()
@@ -311,7 +315,8 @@ if (ENABLE_FEX_ALLOCATOR)
   target_include_directories(JemallocLibs PRIVATE "${PROJECT_SOURCE_DIR}/include/")
 endif()
 if (ENABLE_JEMALLOC_GLIBC_ALLOC)
-  set_source_files_properties(Interface/HLE/Thunks/Thunks.cpp PROPERTIES COMPILE_DEFINITIONS ENABLE_JEMALLOC_GLIBC=1)
+  set_source_files_properties(Interface/HLE/Thunks/Thunks.cpp
+    PROPERTIES COMPILE_DEFINITIONS ENABLE_JEMALLOC_GLIBC=1)
   target_link_libraries(JemallocLibs INTERFACE FEX_jemalloc_glibc)
 endif()
 

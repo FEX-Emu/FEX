@@ -33,9 +33,11 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/git_version.h.in
 include_directories(${CMAKE_BINARY_DIR}/generated)
 
 # Disable strict aliasing for all build modes
-# See discussion in https://github.com/FEX-Emu/FEX/pull/4494#issuecomment-2800608944
+# See discussion in
+# https://github.com/FEX-Emu/FEX/pull/4494#issuecomment-2800608944
 # for background context.
-add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-strict-aliasing> $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-strict-aliasing>
+  $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
 
 add_subdirectory(Source/)
 

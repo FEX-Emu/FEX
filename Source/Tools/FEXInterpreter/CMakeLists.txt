@@ -1,5 +1,5 @@
 list(APPEND LIBS FEXCore Common JemallocLibs LinuxEmulation
-  CommonTools ${PTHREAD_LIB} fmt::fmt)
+  CommonTools Threads::Threads fmt::fmt)
 
 set(DEFINES)
 if (ENABLE_VIXL_SIMULATOR)
