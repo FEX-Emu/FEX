@@ -852,9 +852,9 @@ CodeBuffer::CodeBufferAllocation Arm64JITCore::AllocateCodeBufferInSharedCache(s
   return AllocatedInfo;
 }
 
-CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
+CPUBackend::CompiledCode Arm64JITCore::EmitJITCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                                    FEXCore::Core::DebugData* DebugData, bool CheckTF) {
-  FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
+  FEXCORE_PROFILE_SCOPED("Arm64::EmitJITCode");
 
   const auto PrevNumAllocations = Relocations.size();
 
