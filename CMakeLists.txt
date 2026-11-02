@@ -652,15 +652,15 @@ if (NOT BUILD_STEAM_SUPPORT)
   add_subdirectory(Data/AppConfig/)
 endif()
 
-# Install the ThunksDB file
-file(GLOB CONFIG_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Data/*.json)
-
-# Any application configuration json file gets installed
-foreach(CONFIG_SRC ${CONFIG_SOURCES})
-  install(FILES ${CONFIG_SRC}
-    DESTINATION ${DATA_DIRECTORY}/
-    COMPONENT Runtime)
-endforeach()
+if (NOT MINGW)
+  # Install the ThunksDB file
+  file(GLOB CONFIG_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Data/*.json)
+  foreach(CONFIG_SRC ${CONFIG_SOURCES})
+    install(FILES ${CONFIG_SRC}
+      DESTINATION ${DATA_DIRECTORY}/
+      COMPONENT Runtime)
+  endforeach()
+endif()
 
 if (BUILD_TESTING)
   add_subdirectory(unittests/)
