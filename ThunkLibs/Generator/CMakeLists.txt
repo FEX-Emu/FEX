@@ -13,11 +13,13 @@ endif()
 
 add_library(thunkgenlib STATIC analysis.cpp data_layout.cpp gen.cpp)
 target_include_directories(thunkgenlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(thunkgenlib SYSTEM PUBLIC ${CLANG_INCLUDE_DIRS} ${LLVM_INCLUDE_DIRS})
+target_include_directories(thunkgenlib SYSTEM PUBLIC
+  ${CLANG_INCLUDE_DIRS} ${LLVM_INCLUDE_DIRS})
 target_link_libraries(thunkgenlib PUBLIC clang-cpp LLVM)
 target_link_libraries(thunkgenlib PRIVATE OpenSSL::Crypto)
 target_link_libraries(thunkgenlib PRIVATE fmt::fmt)
-target_compile_definitions(thunkgenlib INTERFACE -DCLANG_RESOURCE_DIR="${CLANG_RESOURCE_DIR}")
+target_compile_definitions(thunkgenlib INTERFACE
+  -DCLANG_RESOURCE_DIR="${CLANG_RESOURCE_DIR}")
 
 # Clang's libtooling won't compile with libstdc++'s debug mode
 target_compile_options(thunkgenlib PUBLIC "-U_GLIBCXX_DEBUG")

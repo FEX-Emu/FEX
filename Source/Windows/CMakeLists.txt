@@ -6,13 +6,16 @@ function(build_implib name)
     COMMENT "Building lib${name_ex}.a")
 
   add_library(${name_ex} SHARED IMPORTED)
-  set_property(TARGET ${name_ex} PROPERTY IMPORTED_IMPLIB ${CMAKE_CURRENT_BINARY_DIR}/lib${name_ex}.a)
+  set_property(TARGET ${name_ex} PROPERTY
+    IMPORTED_IMPLIB ${CMAKE_CURRENT_BINARY_DIR}/lib${name_ex}.a)
   add_dependencies(${name_ex} ${name_ex}lib)
 endfunction()
 
 function(patch_library_wine target)
   add_custom_command(TARGET ${target} POST_BUILD
-    COMMAND dd bs=32 count=1 seek=2 conv=notrunc if=${CMAKE_SOURCE_DIR}/Source/Windows/wine_builtin.bin of=$<TARGET_FILE:${target}>)
+    COMMAND dd bs=32 count=1 seek=2 conv=notrunc
+      if=${CMAKE_SOURCE_DIR}/Source/Windows/wine_builtin.bin
+      of=$<TARGET_FILE:${target}>)
 endfunction()
 
 separate_arguments(CXX_FLAGS_LIST NATIVE_COMMAND "${CMAKE_CXX_FLAGS}")

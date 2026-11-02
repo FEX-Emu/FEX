@@ -1,5 +1,5 @@
 add_executable(FEXRootFSFetcher Main.cpp XXFileHash.cpp)
-list(APPEND LIBS FEXCore Common JemallocDummy xxHash::xxhash ${PTHREAD_LIB})
+list(APPEND LIBS FEXCore Common JemallocDummy xxHash::xxhash Threads::Threads)
 
 LinkerGC(FEXRootFSFetcher)
 

@@ -61,3 +61,19 @@ jobs:
             --start-rev "$START_REV" \
             --end-rev "$END_REV" \
             --changed-files "$CHANGED_FILES"
+
+      - name: Check long CMake lines
+        if: always()
+        run: |
+          # check lines > 140 chars
+          # unit tests are left alone for now
+          # FEXInterpreter is also left alone until its long echo lines can be removed
+          echo "$CHANGED_FILES" | tr ',' '\n' | grep -ve "unittests\|External\|FEXInterpreter" \
+            | grep -e "CMakeLists.txt\|\.cmake" | xargs -L1 wc -L | while read -r line; do
+            if [ "$(echo "$line" | cut -d' ' -f1)" -gt 140 ]; then
+              echo "$line"
+            fi
+          done | tee lines.txt
+
+          # if any lines were emitted, fail
+          [ ! -s lines.txt ]

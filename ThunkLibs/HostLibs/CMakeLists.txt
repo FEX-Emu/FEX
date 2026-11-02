@@ -7,8 +7,9 @@ option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
 find_package(PkgConfig REQUIRED)
 
-# Helper to add include directories from pkg-config, falling back to global defaults if not available.
-# /usr/include is dropped to avoid mixing foreign-architecture standard library headers.
+# Helper to add include directories from pkg-config, falling back to
+# global defaults if not available. /usr/include is dropped to avoid
+# mixing foreign-architecture standard library headers.
 function(target_include_directories_from_pkgconfig target pkg)
   pkg_check_modules(PKG QUIET ${pkg})
   if (PKG_FOUND)
@@ -39,13 +40,18 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
   # Interface target for the user to add include directories
   add_library(${NAME}-${GUEST_BITNESS}-deps INTERFACE)
   target_include_directories(${NAME}-${GUEST_BITNESS}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+
   if (GUEST_BITNESS EQUAL 32)
-    target_compile_definitions(${NAME}-${GUEST_BITNESS}-deps INTERFACE IS_32BIT_THUNK)
+    target_compile_definitions(${NAME}-${GUEST_BITNESS}-deps INTERFACE
+      IS_32BIT_THUNK)
   endif()
+
   # Shorthand for the include directories added after calling this function.
-  # This is not evaluated directly, hence directories added after return are still picked up
+  # This is not evaluated directly, hence directories added after return
+  # are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-${GUEST_BITNESS}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
   set(compile_prop "$<TARGET_PROPERTY:${NAME}-${GUEST_BITNESS}-deps,INTERFACE_COMPILE_DEFINITIONS>")
+
   if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
     list(APPEND compile_prop ARCHITECTURE_x86_64=1)
   elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
@@ -71,7 +77,8 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
     OUTPUT "${OUTFILE}"
     DEPENDS "${SOURCE_FILE}"
     DEPENDS thunkgen
-    COMMAND thunkgen "${SOURCE_FILE}" "${NAME}" "-host" "${OUTFILE}" "${X86_DEV_ROOTFS}" ${BITNESS_FLAGS} -- -std=c++20
+    COMMAND thunkgen "${SOURCE_FILE}" "${NAME}" "-host"
+      "${OUTFILE}" "${X86_DEV_ROOTFS}" ${BITNESS_FLAGS} -- -std=c++20
       ${THUNKGEN_SYSTEM_INCLUDES}
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
@@ -87,6 +94,7 @@ endfunction()
 function(add_host_lib NAME GUEST_BITNESS)
   set(SOURCE_FILE ../lib${NAME}/lib${NAME}_Host.cpp)
   get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
+
   if (NOT EXISTS "${SOURCE_FILE_ABS}")
     set(SOURCE_FILE ../lib${NAME}/Host.cpp)
     get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
@@ -96,26 +104,31 @@ function(add_host_lib NAME GUEST_BITNESS)
   endif()
 
   add_library(${NAME}-host-${GUEST_BITNESS} SHARED ${SOURCE_FILE} ${GEN_lib${NAME}})
-  set_target_properties(${NAME}-host-${GUEST_BITNESS} PROPERTIES OUTPUT_NAME "${NAME}-host")
-  set_target_properties(${NAME}-host-${GUEST_BITNESS} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/HostLibs_${GUEST_BITNESS}")
+  set_target_properties(${NAME}-host-${GUEST_BITNESS} PROPERTIES
+    OUTPUT_NAME "${NAME}-host"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/HostLibs_${GUEST_BITNESS}")
+
   target_include_directories(${NAME}-host-${GUEST_BITNESS} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen_${GUEST_BITNESS}/")
-  target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE dl)
-  target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE lib${NAME}-${GUEST_BITNESS}-deps)
-  target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE FEX)
+  target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE dl lib${NAME}-${GUEST_BITNESS}-deps FEX)
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${NAME}-host-${GUEST_BITNESS} PRIVATE -fwrapv)
 
   if (NOT ENABLE_ASAN)
-    # generated files forward-declare functions that need to be implemented manually, so pass --no-undefined to make sure errors are detected at compile-time rather than runtime
-    # NOTE: ASan is not compatible with --no-undefined, see https://github.com/google/sanitizers/issues/380 for details
+    # generated files forward-declare functions that need to be implemented
+    # manually, so pass --no-undefined to make sure errors are detected at
+    # compile-time rather than runtime
+    # NOTE: ASan is not compatible with --no-undefined,
+    # see https://github.com/google/sanitizers/issues/380 for details
     target_link_options(${NAME}-host-${GUEST_BITNESS} PRIVATE "LINKER:--no-undefined")
   endif()
 
   if (${GUEST_BITNESS} EQUAL 32)
-    install(TARGETS ${NAME}-host-${GUEST_BITNESS} COMPONENT Runtime DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks_32/)
+    set(thunks_dir HostThunks_32)
   else()
-    install(TARGETS ${NAME}-host-${GUEST_BITNESS} COMPONENT Runtime DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks/)
+    set(thunks_dir HostThunks)
   endif()
+
+  install(TARGETS ${NAME}-host-${GUEST_BITNESS} COMPONENT Runtime DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/${thunks_dir}/)
 endfunction()
 
 set(BITNESS_LIST "64")
@@ -143,7 +156,9 @@ endforeach()
 set(BITNESS_LIST "32;64")
 foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   if (BUILD_FEX_LINUX_TESTS)
-    generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp ${GUEST_BITNESS})
+    generate(libfex_thunk_test
+      ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp
+      ${GUEST_BITNESS})
     add_host_lib(fex_thunk_test ${GUEST_BITNESS})
   endif()
 

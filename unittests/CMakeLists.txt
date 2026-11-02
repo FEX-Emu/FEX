@@ -1,5 +1,6 @@
-# -S skips importing the "site" package which cuts down on interpreter startup time.
-# This means that these scripts can only use the python standard library, since "site"
+# -S skips importing the "site" package which cuts down on
+# interpreter startup time. This means that these scripts
+# can only use the python standard library, since "site"
 # is what resolves third-party packages from pip or apt.
 set(PYTHON_TEST_RUNNER "python3" "-S")
 
@@ -24,6 +25,7 @@ endif()
 add_subdirectory(ASM/)
 add_subdirectory(32Bit_ASM/)
 if (ENABLE_VIXL_DISASSEMBLER)
-  # Tests are only valid to run if the vixl disassembler is enabled and the active JIT is the ARM64 JIT.
+  # Tests are only valid to run if the vixl disassembler
+  # is enabled and the active JIT is the ARM64 JIT.
   add_subdirectory(InstructionCountCI/)
 endif()

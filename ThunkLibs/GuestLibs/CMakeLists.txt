@@ -6,8 +6,9 @@ option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
 find_package(PkgConfig REQUIRED)
 
-# Use include directories from pkg-config and fall back to global defaults if not available.
-# /usr/include is dropped to avoid mixing foreign-architecture standard library headers.
+# Helper to add include directories from pkg-config, falling back to
+# global defaults if not available. /usr/include is dropped to avoid
+# mixing foreign-architecture standard library headers.
 function(target_include_directories_from_pkgconfig target pkg)
   pkg_check_modules(PKG QUIET ${pkg})
   if (PKG_FOUND)
@@ -34,7 +35,8 @@ if (CCACHE_PROGRAM)
 endif()
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-  # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
+  # We've been included using ExternalProject_add, so set up the
+  # actual thunk libraries to be cross-compiled
   set(CMAKE_CXX_STANDARD 20)
 
   # This gets passed in from the main cmake project
@@ -48,7 +50,8 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 
   # uninstall target
   if(NOT TARGET uninstall)
-    configure_file("${FEX_PROJECT_SOURCE_DIR}/Data/CMake/cmake_uninstall.cmake.in"
+    configure_file(
+      "${FEX_PROJECT_SOURCE_DIR}/Data/CMake/cmake_uninstall.cmake.in"
       "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake"
       IMMEDIATE @ONLY)
 
@@ -56,7 +59,8 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
       COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake)
   endif()
 else()
-  # We've been included using add_subdirectory, so set up targets for IDE integration using the host toolchain
+  # We've been included using add_subdirectory, so set up targets
+  # for IDE integration using the host toolchain
   set(GENERATOR_EXE thunkgen)
   set(TARGET_TYPE OBJECT)
   set(GENERATE_GUEST_INSTALL_TARGETS FALSE)
@@ -71,11 +75,14 @@ function(generate NAME SOURCE_FILE)
   # Interface target for the user to add include directories
   add_library(${NAME}-guest-deps INTERFACE)
   target_include_directories(${NAME}-guest-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+
   if (BITNESS EQUAL 32)
     target_compile_definitions(${NAME}-guest-deps INTERFACE IS_32BIT_THUNK)
   endif()
+
   # Shorthand for the include directories added after calling this function.
-  # This is not evaluated directly, hence directories added after return are still picked up
+  # This is not evaluated directly, hence directories added after return
+  # are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-guest-deps,INTERFACE_INCLUDE_DIRECTORIES>")
   set(compile_prop "$<TARGET_PROPERTY:${NAME}-guest-deps,INTERFACE_COMPILE_DEFINITIONS>")
 
@@ -98,7 +105,8 @@ function(generate NAME SOURCE_FILE)
     OUTPUT "${OUTFILE}"
     DEPENDS "${GENERATOR_EXE}"
     DEPENDS "${SOURCE_FILE}"
-    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" "${X86_DEV_ROOTFS}" ${BITNESS_FLAGS} -- -std=c++20 ${BITNESS_FLAGS2}
+    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}"
+      "-guest" "${OUTFILE}" "${X86_DEV_ROOTFS}" ${BITNESS_FLAGS} -- -std=c++20 ${BITNESS_FLAGS2}
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
       # Expand include directories to space-separated list of -isystem parameters
@@ -118,7 +126,8 @@ function(add_guest_lib NAME SONAME)
   get_filename_component(SOURCE_LDS_FILE_ABS "${SOURCE_LDS_FILE}" ABSOLUTE)
 
   set(SOURCE_LDS_32_FILE ../lib${NAME}/lib${NAME}_Guest_32.lds)
-  get_filename_component(SOURCE_LDS_32_FILE_ABS "${SOURCE_LDS_32_FILE}" ABSOLUTE)
+  get_filename_component(SOURCE_LDS_32_FILE_ABS
+    "${SOURCE_LDS_32_FILE}" ABSOLUTE)
 
   if (NOT EXISTS "${SOURCE_FILE_ABS}")
     set(SOURCE_FILE ../lib${NAME}/Guest.cpp)
@@ -160,26 +169,32 @@ function(add_guest_lib NAME SONAME)
 
   # We need to override the soname for the linker.
   # Our guest thunk libraries are named `lib<Thunk>-guest`.
-  # Once we override the loaded name, the guest is free to dlopen again by SONAME rather than filepath.
-  # eg:
-  # dlopen("libGL.so.1", RTLD_GLOBAL | RTLD_NOW); -> We override this `libGL.so.1` to `libGL-guest.so`
+  # Once we override the loaded name, the guest is free to dlopen again by
+  # SONAME rather than filepath. eg:
+  # dlopen("libGL.so.1", RTLD_GLOBAL | RTLD_NOW); ->
+  #   We override this `libGL.so.1` to `libGL-guest.so`
   # Later on in the program, it can do:
   # dlopen("libGL.so.1", RTLD_GLOBAL | RTLD_NOLOAD);
-  # This second dlopen will only check to see if the previous load has made the library resident
+  # This second dlopen will only check to see if the previous
+  # load has made the library resident
   # Searching for SONAME in the process.
   #
   # Additionally, VDSO can only be opened by SONAME.
-  # This means it will only ever open the handle with `dlopen("linux-vdso.so.1", RTLD_GLOBAL | RTLD_NOLOAD);
-  # Note that this doesn't have a lib prefix, and also since it doesn't exist on the filesystem, it can never
+  # This means it will only ever open the handle with
+  # dlopen("linux-vdso.so.1", RTLD_GLOBAL | RTLD_NOLOAD);
+  # Note that this doesn't have a lib prefix, and also since it doesn't
+  # exist on the filesystem, it can never
   # Actually load from a path.
   target_link_options(${NAME}-guest PRIVATE "LINKER:-soname,${SONAME}")
   set_target_properties(${NAME}-guest PROPERTIES NO_SONAME ON)
 
   if (GENERATE_GUEST_INSTALL_TARGETS)
     if (BITNESS EQUAL 64)
-      install(TARGETS ${NAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks/)
+      install(TARGETS ${NAME}-guest DESTINATION
+      ${DATA_DIRECTORY}/GuestThunks/)
     else()
-      install(TARGETS ${NAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks_32/)
+      install(TARGETS ${NAME}-guest DESTINATION
+      ${DATA_DIRECTORY}/GuestThunks_32/)
     endif()
   endif()
 endfunction()
@@ -228,8 +243,8 @@ target_link_options(VDSO-guest PRIVATE "-nostdlib" "LINKER:--no-undefined" "LINK
 if (BITNESS EQUAL 32)
   # 32-bit entrypoint points to __kernel_vsyscall and needs to exist
   target_link_options(VDSO-guest PRIVATE "LINKER:-e,__kernel_vsyscall")
-  # 32-bit VDSO needs to have PIC disabled.
-  # Otherwise GCC/Clang generates GOT prologues on the functions that corrupt vsyscall.
+  # 32-bit VDSO needs to have PIC disabled. Otherwise GCC/Clang generates
+  # GOT prologues on the functions that corrupt vsyscall.
   # Correct:
   # 00000350 <__kernel_vsyscall>:
   #  350:   cd 80                   int    0x80
