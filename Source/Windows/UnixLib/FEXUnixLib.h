@@ -12,6 +12,7 @@ enum class FEXUnixLibFunctions : uint32_t {
   DeleteSHMStatsFile,
   MapFile,
   GetPID,
+  CheckSupportsTPIDRRO_CPU,
   MAX,
 };
 
@@ -65,3 +66,8 @@ struct FEXUnixLib_GetPID {
   uint32_t Result;
 };
 static_assert(sizeof(FEXUnixLib_GetPID) == 4);
+
+struct FEXUnixLib_CheckSupportsTPIDRRO_CPU {
+  uint32_t Result;
+};
+static_assert(sizeof(FEXUnixLib_CheckSupportsTPIDRRO_CPU) == 4);

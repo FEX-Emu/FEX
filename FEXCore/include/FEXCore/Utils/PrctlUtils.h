@@ -53,4 +53,8 @@
 #define PR_GET_MDWE 66
 #endif
 
+#ifndef PR_GET_TPIDRRO_CPU
+#define PR_GET_TPIDRRO_CPU 0x7F1DBB0
+#endif
+
 #endif // ifndef _WIN32

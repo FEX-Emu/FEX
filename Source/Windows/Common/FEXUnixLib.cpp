@@ -210,4 +210,15 @@ uint32_t GetPID() {
   return GetCurrentProcessId();
 }
 
+bool SupportsTPIDRRO_CPU() {
+  if (Available()) {
+    FEXUnixLib_CheckSupportsTPIDRRO_CPU Args {};
+    Call(FEXUnixLibFunctions::CheckSupportsTPIDRRO_CPU, &Args);
+    // 1 means supports, anything else is unsupported.
+    return Args.Result == 1;
+  }
+
+  return false;
+}
+
 } // namespace FEX::Windows::UnixLib
