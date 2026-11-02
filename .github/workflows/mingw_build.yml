@@ -47,7 +47,8 @@ jobs:
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/Data/CMake/toolchain_mingw.cmake \
         -DMINGW_TRIPLE=$MINGW_TRIPLE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DBUILD_TESTING=False \
-        -DCMAKE_INSTALL_PREFIX="$PWD"/build/install
+        -DCMAKE_INSTALL_PREFIX="$PWD"/build/install \
+        -DBUILD_FEX_MINGW_TESTS=True -DLLVM_MINGW="$HOME/llvm-mingw/build/"
 
     - name: Build
       run: cmake --build build

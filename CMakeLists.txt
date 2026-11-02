@@ -5,6 +5,7 @@ include(CheckIncludeFiles)
 check_include_files("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
 
 option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests (requires x86 compiler)" FALSE)
+option(BUILD_FEX_MINGW_TESTS "Build FEXMingwTests (requires llvm-mingw compiler)" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
 option(ENABLE_CLANG_THUNKS "Build thunks with clang" TRUE)
 
@@ -56,6 +57,16 @@ set(X86_32_TOOLCHAIN_FILE
 set(X86_64_TOOLCHAIN_FILE
   "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_64.cmake"
   CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
+
+if (BUILD_FEX_MINGW_TESTS)
+  set(LLVM_MINGW "" CACHE FILEPATH "Path to llvm_mingw")
+  set(X86_32_MINGW_TOOLCHAIN_FILE
+    "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_mingw_x86_32.cmake"
+    CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting mingw_i686")
+  set(X86_64_MINGW_TOOLCHAIN_FILE
+    "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_mingw_x86_64.cmake"
+    CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting mingw_x86_64")
+endif()
 
 set(X86_DEV_ROOTFS "/" CACHE FILEPATH "Path to the sysroot used for cross-compiling for i686 and x86_64")
 set(DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
