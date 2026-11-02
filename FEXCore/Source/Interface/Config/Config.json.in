@@ -110,7 +110,9 @@
           "ENABLEDOTPROD": "enabledotprod",
           "DISABLEDOTPROD": "disabledotprod",
           "ENABLEBF16": "enablebf16",
-          "DISABLEBF16": "disablebf16"
+          "DISABLEBF16": "disablebf16",
+          "ENABLETPIDRRO": "enabletpidrro",
+          "DISABLETPIDRRO": "disabletpidrro"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -138,7 +140,8 @@
           "\t{enable,disable}mops: Will force enable or disable FEAT_MOPS even if the host doesn't support it",
           "\t{enable,disable}i8mm: Will force enable or disable i8mm even if the host doesn't support it",
           "\t{enable,disable}dotprod: Will force enable or disable dotprod even if the host doesn't support it",
-          "\t{enable,disable}bf16: Will force enable or disable bf16 even if the host doesn't support it"
+          "\t{enable,disable}bf16: Will force enable or disable bf16 even if the host doesn't support it",
+          "\t{enable,disable}tpidrro: Will force enable or disable tpidrro for CPU index even if the host doesn't support it"
         ]
       },
       "SmallTSCScale": {

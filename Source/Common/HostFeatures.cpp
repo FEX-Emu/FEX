@@ -8,6 +8,7 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Utils/FileLoading.h>
+#include <FEXCore/Utils/PrctlUtils.h>
 #include <FEXCore/Utils/StringUtils.h>
 
 #include <range/v3/view/split.hpp>
@@ -377,6 +378,7 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   ENABLE_DISABLE_OPTION(SupportsI8MM, I8MM, I8MM);
   ENABLE_DISABLE_OPTION(SupportsDotProd, DOTPROD, DOTPROD);
   ENABLE_DISABLE_OPTION(SupportsBF16, BF16, BF16);
+  ENABLE_DISABLE_OPTION(SupportsCPUIndexInTPIDRRO, TPIDRRO, TPIDRRO);
   GET_SINGLE_OPTION(Crypto, CRYPTO);
 
 #undef ENABLE_DISABLE_OPTION
@@ -601,6 +603,15 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   OverrideFeatures(&HostFeatures, ForceSVEWidth());
 }
 
+#ifndef _WIN32
+namespace TPIDRRO {
+  bool SupportsTPIDRRO_CPU() {
+    // 1 means supports, anything else is unsupported.
+    return prctl(PR_GET_TPIDRRO_CPU, 0, 0, 0, 0) == 1;
+  }
+} // namespace TPIDRRO
+#endif
+
 FEXCore::HostFeatures FetchHostFeatures(bool Is64BitMode) {
   FEX_CONFIG_OPT(CPUFeatureRegisters, CPUFEATUREREGISTERS);
 
@@ -629,16 +640,21 @@ FEXCore::HostFeatures FetchHostFeatures(bool Is64BitMode) {
   __asm volatile("mrs %[midr], midr_el1" : [midr] "=r"(MIDR));
 #endif
 
-  FEXCore::HostFeatures HostFeatures = {};
+  FEXCore::HostFeatures HostFeatures = {
+#ifndef _WIN32
+    // Wine/Windows side sets this elsewhere.
+    .SupportsCPUIndexInTPIDRRO = TPIDRRO::SupportsTPIDRRO_CPU(),
+#endif
+    .ProcessFeatures =
+      {
+        .HostType = FEXCore::HostFeatures::HostTypeEnum::Linux,
+        // Fault free syncronous faults unsupported on Linux for now.
+        .SupportsFaultFreeSynchronousFaults = false,
+        .Is64BitMode = Is64BitMode,
+      },
+    .ProcessPID = static_cast<uint32_t>(::getpid())};
   FillMIDRInformationViaLinux(&HostFeatures);
   FetchHostFeatures(Features, HostFeatures, true, CTR, MIDR);
-
-  HostFeatures.SupportsCPUIndexInTPIDRRO = false;
-  HostFeatures.ProcessFeatures.HostType = FEXCore::HostFeatures::HostTypeEnum::Linux;
-  HostFeatures.ProcessFeatures.Is64BitMode = Is64BitMode;
-  // Fault free syncronous faults unsupported on Linux for now.
-  HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults = false;
-  HostFeatures.ProcessPID = ::getpid();
   return HostFeatures;
 }
 } // namespace FEX

@@ -9,6 +9,7 @@
 #include <windows.h>
 
 #include "CPUFeatures.h"
+#include "FEXUnixLib.h"
 
 namespace {
 
@@ -81,7 +82,7 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
   HostFeatures.SupportsSVE128 = false;
   HostFeatures.SupportsSVE256 = false;
 
-  HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine;
+  HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine || FEX::Windows::UnixLib::SupportsTPIDRRO_CPU();
 
   HostFeatures.ProcessPID = ProcessPID;
 

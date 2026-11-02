@@ -53,4 +53,7 @@ void* MapFile(HANDLE FileHandle, uint64_t MapSize);
 // Or returns the process ID otherwise.
 uint32_t GetPID();
 
+// Returns true if the system supports CPU Index in TPIDRRO
+bool SupportsTPIDRRO_CPU();
+
 } // namespace FEX::Windows::UnixLib
