@@ -60,8 +60,12 @@ set(X86_64_TOOLCHAIN_FILE
 
 if (BUILD_FEX_MINGW_TESTS)
   set(LLVM_MINGW "" CACHE FILEPATH "Path to llvm_mingw")
-  set(X86_32_MINGW_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_mingw_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting mingw_i686")
-  set(X86_64_MINGW_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_mingw_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting mingw_x86_64")
+  set(X86_32_MINGW_TOOLCHAIN_FILE
+    "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_mingw_x86_32.cmake"
+    CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting mingw_i686")
+  set(X86_64_MINGW_TOOLCHAIN_FILE
+    "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_mingw_x86_64.cmake"
+    CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting mingw_x86_64")
 endif()
 
 set(X86_DEV_ROOTFS "/" CACHE FILEPATH "Path to the sysroot used for cross-compiling for i686 and x86_64")
