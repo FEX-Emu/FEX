@@ -186,6 +186,19 @@ DEF_OP(PopRoundingMode) {
   msr(ARMEmitter::SystemRegister::FPCR, GetReg(Op->FPCR));
 }
 
+DEF_OP(ReadFPSR) {
+  auto Dst = GetReg(Node);
+  mrs(Dst, ARMEmitter::SystemRegister::FPSR);
+}
+
+DEF_OP(WriteFPSR) {
+  auto Op = IROp->C<IR::IROp_WriteFPSR>();
+  auto Val = GetReg(Op->FPSR);
+
+  // Write FPSR register
+  msr(ARMEmitter::SystemRegister::FPSR, Val.X());
+}
+
 DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 
