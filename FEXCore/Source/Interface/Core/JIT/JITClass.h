@@ -51,7 +51,7 @@ public:
   ~Arm64JITCore() override;
 
   [[nodiscard]]
-  CPUBackend::CompiledCode CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
+  CPUBackend::CompiledCode EmitJITCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                        FEXCore::Core::DebugData* DebugData, bool CheckTF) override;
 
   [[nodiscard]]
