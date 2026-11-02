@@ -29,3 +29,7 @@ if (ENABLE_VIXL_DISASSEMBLER)
   # is enabled and the active JIT is the ARM64 JIT.
   add_subdirectory(InstructionCountCI/)
 endif()
+
+if (BUILD_FEX_MINGW_TESTS)
+  add_subdirectory(FEXMingwTests/)
+endif()
