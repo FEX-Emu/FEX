@@ -421,16 +421,18 @@ struct CpuStateFrame {
    */
   uint64_t InSyscallInfo {};
 
-  uint32_t SignalHandlerRefCounter {};
-
-  struct alignas(8) SynchronousFaultDataStruct {
+  struct SynchronousFaultDataStruct {
     bool FaultToTopAndGeneratedException {};
     uint8_t Signal;
     uint8_t TrapNo;
     uint8_t si_code;
     uint16_t err_code;
     uint16_t _pad : 16;
+    // Fault address can be different from the FaultRIP so need to distinguish.
+    uint64_t FaultAddress;
   } SynchronousFaultData;
+
+  uint32_t SignalHandlerRefCounter {};
 
   InternalThreadState* Thread;
 
@@ -448,7 +450,7 @@ static_assert(offsetof(CpuStateFrame, Pointers) + sizeof(CpuStateFrame::Pointers
                                                                                             "than architecture maximum 32768");
 
 static_assert(std::is_standard_layout<CpuStateFrame>::value, "This needs to be standard layout");
-static_assert(sizeof(CpuStateFrame::SynchronousFaultData) == 8, "This needs to be 8 bytes");
+static_assert(sizeof(CpuStateFrame::SynchronousFaultData) == 16, "This needs to be 16 bytes");
 static_assert(alignof(CpuStateFrame::SynchronousFaultDataStruct) == 8, "This needs to be 8 bytes");
 static_assert(offsetof(CpuStateFrame, SynchronousFaultData) % 8 == 0, "This needs to be aligned");
 } // namespace FEXCore::Core

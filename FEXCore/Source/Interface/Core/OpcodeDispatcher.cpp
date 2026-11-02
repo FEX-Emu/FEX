@@ -5252,14 +5252,13 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs, bool Reseed) {
   }
 }
 
-void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
+void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition, Ref RelocatedPC) {
   const auto GPRSize = GetGPROpSize();
 
   // We don't actually support this instruction
   // Multiblock may hit it though
   _StoreContextGPR(GPRSize, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, rip));
-  Break(BreakDefinition);
-
+  Break(BreakDefinition, RelocatedPC);
 
   if (Multiblock) {
     auto NextBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -5297,13 +5296,21 @@ void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
               });
 }
 
-void OpDispatchBuilder::NoExecOp(OpcodeArgs) {
-  BreakOp(Op, FEXCore::IR::BreakDefinition {
-                .ErrorRegister = X86State::X86_PF_PROT | X86State::X86_PF_USER | X86State::X86_PF_INSTR,
-                .Signal = Core::FAULT_SIGSEGV,
-                .TrapNumber = X86State::X86_TRAPNO_PF,
-                .si_code = 2, // SEGV_ACCERR
-              });
+void OpDispatchBuilder::NoExecOrPartialOp(OpcodeArgs) {
+  // Partial decoded or fully no-exec instruction.
+  // Get the RIP inside the instruction where it failed to decode.
+  // - Full no-exec will be the first byte.
+  // - Partial will be the first byte that failed to decode.
+  auto RelocatedPC = GetRelocatedPC(Op, 0);
+
+  BreakOp(Op,
+          FEXCore::IR::BreakDefinition {
+            .ErrorRegister = X86State::X86_PF_PROT | X86State::X86_PF_USER | X86State::X86_PF_INSTR,
+            .Signal = Core::FAULT_SIGSEGV,
+            .TrapNumber = X86State::X86_TRAPNO_PF,
+            .si_code = 2, // SEGV_ACCERR
+          },
+          RelocatedPC);
 }
 
 #undef OpcodeArgs

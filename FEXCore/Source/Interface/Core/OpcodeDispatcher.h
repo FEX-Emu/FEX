@@ -207,9 +207,12 @@ public:
     FlushRegisterCache();
     return _ExitFunction(GetOpSize(NewRIP), NewRIP, Hint, CallReturnAddress, CallReturnBlock, PatchSiteAddress, PatchSiteSize);
   }
-  IRPair<IROp_Break> Break(BreakDefinition Reason) {
+  IRPair<IROp_Break> Break(BreakDefinition Reason, Ref RelocatedPC = nullptr) {
     FlushRegisterCache();
-    return _Break(Reason);
+    if (!RelocatedPC) {
+      RelocatedPC = Constant(0);
+    }
+    return _Break(Reason, RelocatedPC);
   }
   IRPair<IROp_Thunk> Thunk(Ref ArgPtr, SHA256Sum ThunkNameHash) {
     FlushRegisterCache();
@@ -897,7 +900,7 @@ public:
   void Extrq(OpcodeArgs);
   void Insertq(OpcodeArgs);
 
-  void BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition);
+  void BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition, Ref RelocatedPC = nullptr);
   void UnimplementedOp(OpcodeArgs);
   void PermissionRestrictedOp(OpcodeArgs);
 
@@ -1143,7 +1146,7 @@ public:
   // End of AVX 256-bit implementation
 
   void InvalidOp(OpcodeArgs);
-  void NoExecOp(OpcodeArgs);
+  void NoExecOrPartialOp(OpcodeArgs);
 
   void SetPackedRFLAG(bool Lower8, Ref Src);
   Ref GetPackedRFLAG(uint32_t FlagsMask = ~0U);

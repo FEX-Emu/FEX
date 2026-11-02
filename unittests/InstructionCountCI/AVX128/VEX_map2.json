@@ -13,7 +13,7 @@
       "I8MM",
       "DOTPROD"
     ],
-    "BinaryCacheVersion": 39
+    "BinaryCacheVersion": 40
   },
   "Instructions": {
     "vpshufb xmm0, xmm1, xmm2": {
@@ -2213,180 +2213,204 @@
     },
     "db 0xc4, 0xe2, 0x73, 0x50, 0xc2; {vex} vpdpbssd xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf2 0b01 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x77, 0x50, 0xc2 ; {vex} vpdpbssd ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf2 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x73, 0x51, 0xc2 ; {vex} vpdpbssds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf2 0b01 0x51 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x77, 0x51, 0xc2 ; {vex} vpdpbssds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf2 0b01 0x51 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x72, 0x50, 0xc2 ; {vex} vpdpbsud xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf3 0b01 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x76, 0x50, 0xc2 ; {vex} vpdpbsud ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf3 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x72, 0x51, 0xc2 ; {vex} vpdpbsuds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf3 0b01 0x51 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x76, 0x51, 0xc2 ; {vex} vpdpbsuds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf3 0b01 0x51 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x70, 0x50, 0xc2 ; {vex} vpdpbuud xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0x50 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x74, 0x50, 0xc2 ; {vex} vpdpbuud ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0x50 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x70, 0x51, 0xc2; {vex} vpdpbuuds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0x51 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x74, 0x51, 0xc2 ; {vex} vpdpbuuds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0x51 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
@@ -6233,57 +6257,65 @@
       ]
     },
     "vpmadd52luq xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0xb4 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "vpmadd52luq ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0xb4 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "vpmadd52huq xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0xb5 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "vpmadd52huq ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0xb5 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
@@ -6414,180 +6446,204 @@
     },
     "db 0xc4, 0xe2, 0x72, 0xd2, 0xc2 ; {vex} vpdpwsud xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf3 0b01 0xd2 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x76, 0xd2, 0xc2 ; {vex} vpdpwsud ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf3 0b01 0xd2 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x72, 0xd3, 0xc2 ; {vex} vpdpwsuds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf3 0b01 0xd3 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x76, 0xd3, 0xc2 ; {vex} vpdpwsuds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0xf3 0b01 0xd3 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x71, 0xd2, 0xc2 ; {vex} vpdpwusd xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0x66 0b01 0xd2 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x75, 0xd2, 0xc2 ; {vex} vpdpwusd ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0x66 0b01 0xd2 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x71, 0xd3, 0xc2 ; {vex} vpdpwusds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0x66 0b01 0xd3 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x75, 0xd3, 0xc2 ; {vex} vpdpwusds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0x66 0b01 0xd3 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x70, 0xd2, 0xc2 ; {vex} vpdpwuud xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0xd2 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x74, 0xd2, 0xc2 ; {vex} vpdpwuud ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0xd2 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x70, 0xd3, 0xc2 ; {vex} vpdpwuuds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0xd3 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]
     },
     "db 0xc4, 0xe2, 0x74, 0xd3, 0xc2 ; {vex} vpdpwuuds ymm0, ymm1, ymm2": {
       "x86InstructionCount": 1,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b01 0xd3 256-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x10000",
         "str x20, [x28, #24]",
+        "mov w20, #0x0",
         "mov w0, #0x401",
-        "str x0, [x28, #1240]",
+        "str x0, [x28, #1232]",
+        "str x20, [x28, #1240]",
         "ldr x0, [x28, #2736]",
         "br x0"
       ]

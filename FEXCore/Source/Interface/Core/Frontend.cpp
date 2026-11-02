@@ -88,30 +88,34 @@ Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
   }
 }
 
-bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
+int32_t Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
   // Check for wraparound
   if (Address + Size < Address) {
-    return false;
+    // Say that any bytes that wrapped around are unreadable
+    return -(Address + Size);
   }
 
-  while (Address < ExecutableRangeBase || Address + Size > ExecutableRangeEnd) {
+  uint64_t RemainingSize = Size;
+  while (Address < ExecutableRangeBase || Address + RemainingSize > ExecutableRangeEnd) {
     auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, Address);
     ExecutableRangeBase = RangeInfo.Base;
     ExecutableRangeEnd = RangeInfo.Base + RangeInfo.Size;
     ExecutableRangeWritable = RangeInfo.Writable;
 
     if (RangeInfo.Size == 0) {
-      return false;
+      // Return the number of bytes that couldn't be decoded.
+      return -(Size - RemainingSize);
     }
 
     uint64_t RangeRemainingSize = ExecutableRangeEnd - Address;
-    if (Size > RangeRemainingSize) {
-      Size -= RangeRemainingSize;
+    if (RemainingSize > RangeRemainingSize) {
+      RemainingSize -= RangeRemainingSize;
       Address += RangeRemainingSize;
     }
   }
 
-  return true;
+  // Say all bytes are readable.
+  return Size;
 }
 
 uint8_t Decoder::ReadByte() {
@@ -129,7 +133,7 @@ uint8_t Decoder::ReadByte() {
 
 std::optional<uint8_t> Decoder::PeekByte(uint8_t Offset) {
   uint64_t ByteAddress = reinterpret_cast<uint64_t>(InstStream.InstStream + InstructionSize + Offset);
-  if (CheckRangeExecutable(ByteAddress, 1)) {
+  if (CheckRangeExecutable(ByteAddress, 1) == 1) {
     return InstStream.AdjustedInstStream[InstructionSize + Offset];
   } else {
     return std::nullopt;
@@ -143,7 +147,8 @@ std::pair<uint64_t, bool> Decoder::ReadData(uint8_t Size) {
   uint64_t Address = reinterpret_cast<uint64_t>(InstStream.InstStream + InstructionSize);
   LastFieldReadOffset = (uint8_t)InstructionSize;
   LastFieldReadSize = Size;
-  if (CheckRangeExecutable(Address, Size)) {
+  auto ReadableSize = CheckRangeExecutable(Address, Size);
+  if (ReadableSize == Size) {
     std::memcpy(&Res, &InstStream.AdjustedInstStream[InstructionSize], Size);
   } else {
     HitNonExecutableRange = true;
@@ -151,13 +156,14 @@ std::pair<uint64_t, bool> Decoder::ReadData(uint8_t Size) {
     Res = 0;
   }
 
-
+  // Skip the number of decoded bytes regardless to get instruction size.
+  // Even partially decoded instruction.
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-  for (size_t i = 0; i < Size; ++i) {
+  for (size_t i = 0; i < std::abs(ReadableSize); ++i) {
     ReadByte();
   }
 #else
-  SkipBytes(Size);
+  SkipBytes(std::abs(ReadableSize));
 #endif
 
   if (Relocations) {
@@ -1084,15 +1090,16 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
   if (ErrorDuringDecoding != DecodedBlockStatus::SUCCESS || HitNonExecutableRange || HitBadRelocation) [[unlikely]] {
     // Put an invalid instruction in the stream so the core can raise SIGILL if hit
     // Error while decoding instruction. We don't know the table or instruction size
-    const auto InstSize = DecodeInst->InstSize;
     DecodeInst->TableInfo = nullptr;
-    DecodeInst->InstSize = 0;
 
     // A decode error can be caused by substituting zero for an inaccessible
     // instruction byte, so the instruction fetch fault takes priority.
     if (HitNonExecutableRange) {
-      return InstSize ? DecodedBlockStatus::PARTIAL_DECODE_INST : DecodedBlockStatus::NOEXEC_INST;
+      return DecodeInst->InstSize ? DecodedBlockStatus::PARTIAL_DECODE_INST : DecodedBlockStatus::NOEXEC_INST;
     }
+
+    // Keep InstSize around for PARTIAL_DECODE_INST so we can get the offset where it partial decoded.
+    DecodeInst->InstSize = 0;
 
     if (HitBadRelocation) {
       return DecodedBlockStatus::BAD_RELOCATION;
