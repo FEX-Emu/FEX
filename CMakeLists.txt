@@ -318,8 +318,8 @@ endif()
 
 if (ENABLE_LIBCXX)
   message(WARNING "This is an unsupported configuration and should only be used for testing")
-  list(APPEND CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
-  list(APPEND CMAKE_EXE_LINKER_FLAGS "-stdlib=libc++ -lc++abi")
+  string(APPEND CMAKE_CXX_FLAGS " -std=c++11 -stdlib=libc++")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -stdlib=libc++ -lc++abi")
 endif()
 
 if (NOT ENABLE_OFFLINE_TELEMETRY)
