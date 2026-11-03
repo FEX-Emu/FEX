@@ -52,7 +52,7 @@
         "Desc": [
           "Allows controlling JIT features in the unified location",
           "\toff: Default JIT features.",
-          "\tenablex86fip: Turns on the x87 FIP emulation feature"
+          "\tenablex87fip: Turns on the x87 FIP emulation feature"
         ]
       },
       "HostFeatures": {
