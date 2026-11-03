@@ -20,11 +20,19 @@ extern "C" int __cdecl vsprintf(char* __restrict__ _Dest, const char* __restrict
 
 static unsigned short CTypeData[256];
 static char Locale[2] = "C";
+static wchar_t wLocale[2] = L"C";
 
 DLLEXPORT_FUNC(char*, _strdup, (const char* Src)) {
   size_t Len = strlen(Src) + 1;
   char* Dst = reinterpret_cast<char*>(malloc(Len));
   memcpy(Dst, Src, Len);
+  return Dst;
+}
+
+DLLEXPORT_FUNC(wchar_t*, _wcsdup, (const wchar_t* Src)) {
+  size_t Len = wcslen(Src) + 1;
+  wchar_t* Dst = reinterpret_cast<wchar_t*>(malloc(Len * sizeof(*Dst)));
+  memcpy(Dst, Src, Len * sizeof(*Dst));
   return Dst;
 }
 
@@ -126,6 +134,10 @@ int snprintf(char* stream, size_t n, const char* format, ...) {
 
 DLLEXPORT_FUNC(char*, setlocale, (int _Category, const char* _Locale)) {
   return Locale;
+}
+
+DLLEXPORT_FUNC(wchar_t*, _wsetlocale, (int _Category, const wchar_t* _Locale)) {
+  return wLocale;
 }
 
 DLLEXPORT_FUNC(int, _configthreadlocale, (int _Flag)) {
