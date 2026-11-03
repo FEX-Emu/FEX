@@ -12,7 +12,7 @@
       "FLAGM2",
       "TPIDRRO"
     ],
-    "BinaryCacheVersion": 41
+    "BinaryCacheVersion": 42
   },
   "Instructions": {
     "sgdt [rax]": {

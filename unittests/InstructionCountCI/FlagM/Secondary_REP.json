@@ -12,7 +12,7 @@
       "AFP",
       "CSSC"
     ],
-    "BinaryCacheVersion": 41
+    "BinaryCacheVersion": 42
   },
   "Instructions": {
     "popcnt ax, bx": {
