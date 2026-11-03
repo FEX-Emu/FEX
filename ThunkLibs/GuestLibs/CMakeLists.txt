@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
 project(guest-thunks)
+
+# Guest thunks register host->guest links with FEX that are never
+# unregistered; unloading them leaves dangling guest code addresses.
+add_link_options("LINKER:-z,nodelete")
 include(${FEX_PROJECT_SOURCE_DIR}/Data/CMake/version_to_variables.cmake)
 
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
