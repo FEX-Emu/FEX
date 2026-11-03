@@ -557,6 +557,7 @@ int main(int argc, char** argv, char** const envp) {
     FEATURE_I8MM = (1U << 18),
     FEATURE_DOTPROD = (1U << 19),
     FEATURE_BF16 = (1U << 20),
+    FEATURE_TPIDRRO = (1U << 21),
   };
 
   uint64_t SVEWidth = 0;
@@ -618,6 +619,9 @@ int main(int argc, char** argv, char** const envp) {
   }
   if (TestHeaderData->EnabledHostFeatures & FEATURE_BF16) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEBF16);
+  }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_TPIDRRO) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLETPIDRRO);
   }
 
   if (TestHeaderData->EnabledHostFeatures & FEATURE_TSO) {
@@ -685,6 +689,9 @@ int main(int argc, char** argv, char** const envp) {
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_BF16) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEBF16);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_TPIDRRO) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLETPIDRRO);
   }
 
   if (TestHeaderData->DisabledHostFeatures & FEATURE_TSO) {
