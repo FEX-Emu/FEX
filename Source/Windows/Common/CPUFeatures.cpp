@@ -76,7 +76,7 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
     RegCloseKey(Key);
   }
 
-  FEX::FetchHostFeatures(Features, HostFeatures, !IsWine, CTR, MIDR);
+  FEX::FetchHostFeatures(Features, HostFeatures, IsWine, CTR, MIDR);
 
   // Force-disable SVE until wine/windows gain support for SVE context save/restore
   HostFeatures.SupportsSVE128 = false;
