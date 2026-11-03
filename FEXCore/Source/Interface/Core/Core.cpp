@@ -715,8 +715,14 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
               LogMan::Msg::EFmt("Invalid or Unknown instruction: {} 0x{:x}", TableInfo->Name ?: "UND", Block.Entry - GuestRIP);
             }
 
-            if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST ||
-                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BAD_RELOCATION) {
+            if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_0 ||
+                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_1 ||
+                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_2 ||
+                Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_3) {
+              Thread->OpDispatcher->BreakpointOp(DecodedInfo, FEXCore::ToUnderlying(Block.BlockStatus) -
+                                                                FEXCore::ToUnderlying(Frontend::Decoder::DecodedBlockStatus::BREAKPOINT_0));
+            } else if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::INVALID_INST ||
+                       Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::BAD_RELOCATION) {
               Thread->OpDispatcher->InvalidOp(DecodedInfo);
             } else if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::UNIMPLEMENTED_INST) {
               Thread->OpDispatcher->UnimplementedOp(DecodedInfo);

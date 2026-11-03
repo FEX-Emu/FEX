@@ -95,6 +95,19 @@ int32_t Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
     return -(Address + Size);
   }
 
+  if (Thread->CurrentFrame->State.Dr7) [[unlikely]] {
+    // If Dr7 has anything enabled then check it.
+    for (size_t i = 0; i < Core::CPUState::NUM_DEBUG_ADDRESSES; ++i) {
+      if (Core::CPUState::IsInstructionBPEnabled(i, Thread->CurrentFrame->State.Dr7)) {
+        size_t DrSize = Core::CPUState::BreakpointSize(i, Thread->CurrentFrame->State.Dr7);
+        if (Address >= Thread->CurrentFrame->State.Dr[i] && (Address + Size - 1) < (Thread->CurrentFrame->State.Dr[i] + DrSize)) {
+          HitBreakpoint = i;
+          return false;
+        }
+      }
+    }
+  }
+
   uint64_t RemainingSize = Size;
   while (Address < ExecutableRangeBase || Address + RemainingSize > ExecutableRangeEnd) {
     auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, Address);
@@ -1085,12 +1098,17 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
   // Will be set if DecodeInstructionImpl tries to read non-executable memory
   HitNonExecutableRange = false;
   HitBadRelocation = false;
+  HitBreakpoint = ~0U;
   auto ErrorDuringDecoding = DecodeInstructionImpl(PC);
 
   if (ErrorDuringDecoding != DecodedBlockStatus::SUCCESS || HitNonExecutableRange || HitBadRelocation) [[unlikely]] {
     // Put an invalid instruction in the stream so the core can raise SIGILL if hit
     // Error while decoding instruction. We don't know the table or instruction size
     DecodeInst->TableInfo = nullptr;
+
+    if (HitBreakpoint != ~0U) {
+      return static_cast<Decoder::DecodedBlockStatus>(FEXCore::ToUnderlying(DecodedBlockStatus::BREAKPOINT_0) + HitBreakpoint);
+    }
 
     // A decode error can be caused by substituting zero for an inaccessible
     // instruction byte, so the instruction fetch fault takes priority.
@@ -1658,6 +1676,10 @@ void Decoder::DecodeLoop(const uint8_t* _InstStream, uint64_t GuestSizePause) {
           EraseBlock = true;
         } else {
           LogMan::Msg::EFmt("{} instruction in entry block: {:X}",
+                            BlockIt->BlockStatus == DecodedBlockStatus::BREAKPOINT_0       ? "Breakpoint" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::BREAKPOINT_1       ? "Breakpoint" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::BREAKPOINT_2       ? "Breakpoint" :
+                            BlockIt->BlockStatus == DecodedBlockStatus::BREAKPOINT_3       ? "Breakpoint" :
                             BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST       ? "Invalid" :
                             BlockIt->BlockStatus == DecodedBlockStatus::NOEXEC_INST        ? "NoExec" :
                             BlockIt->BlockStatus == DecodedBlockStatus::BAD_RELOCATION     ? "BadRelocation" :

@@ -188,11 +188,40 @@ struct alignas(64) CPUState {
     GDT->Limit1 = Limit >> 16;
   }
 
+  static bool IsInstructionBPEnabled(unsigned BPIndex, uint64_t Dr7) {
+    LOGMAN_THROW_A_FMT(BPIndex < NUM_DEBUG_ADDRESSES, "Too large of an index");
+
+    // If the GE/LE flags and Transaction type is instruction then it is enabled.
+    uint64_t GELEEnabledMask = 0b11ULL << (2 * BPIndex);
+    uint64_t TransactionTypeMask = 0b11ULL << (16 + (4 * BPIndex));
+    return (Dr7 & GELEEnabledMask) && (Dr7 & TransactionTypeMask) == 0;
+  };
+
+  static size_t BreakpointSize(unsigned BPIndex, uint64_t Dr7) {
+    LOGMAN_THROW_A_FMT(BPIndex < NUM_DEBUG_ADDRESSES, "Too large of an index");
+
+    switch ((Dr7 >> (18 + (4 * BPIndex))) & 0b11) {
+    case 0: return 1;
+    case 1: return 2;
+    case 2: return 8;
+    case 3: return 4;
+    default: FEX_UNREACHABLE;
+    }
+  }
+
   uint16_t FCW {0x37F};
   uint8_t AbridgedFTW {};
 
   uint8_t _pad2[5];
   uint64_t FIP {};
+
+  // Debug registers 0-3 are addresses.
+  static constexpr size_t NUM_DEBUG_ADDRESSES = 4;
+  uint64_t Dr[NUM_DEBUG_ADDRESSES] {};
+  // Debug register 6 is a status return register.
+  uint64_t Dr6 {};
+  // Debug register 7 is the control register.
+  uint64_t Dr7 {};
 
   // PF/AF are statically mapped as-if they were r16/r17 (which do not exist in
   // x86 otherwise). This allows a straightforward mapping for SRA.
