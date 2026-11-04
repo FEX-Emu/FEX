@@ -597,7 +597,7 @@ static int GenerateCache(int argc, const char** argv) {
   }
 
   if (!Data.contains(ProgramName)) {
-    throw std::runtime_error(fmt::format("Input code map {} did not contain {} ({:016x})", CodeMapPath, ProgramName.Filename, ProgramName.FileId));
+    ERROR_AND_DIE_FMT("Input code map {} did not contain {} ({:016x})", CodeMapPath, ProgramName.Filename, ProgramName.FileId);
   }
 
   fextl::string OutDir(Options.get("outdir"));

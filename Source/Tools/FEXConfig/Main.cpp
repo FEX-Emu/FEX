@@ -107,7 +107,7 @@ void ConfigModel::erase(const QString& Name) {
 bool ConfigModel::getBool(const QString& Name, bool) const {
   auto ret = LoadedConfig->Get(NameToConfigLookup.at(Name.toStdString()));
   if (!ret || !*ret) {
-    throw std::runtime_error("Could not find setting");
+    ERROR_AND_DIE_FMT("Could not find setting");
   }
   return **ret == "1";
 }
@@ -139,7 +139,7 @@ void ConfigModel::setInt(const QString& Name, int Value) {
 QString ConfigModel::getString(const QString& Name, bool) const {
   auto ret = LoadedConfig->Get(NameToConfigLookup.at(Name.toStdString()));
   if (!ret || !*ret) {
-    throw std::runtime_error("Could not find setting");
+    ERROR_AND_DIE_FMT("Could not find setting");
   }
   return QString::fromUtf8((*ret)->c_str());
 }
@@ -159,12 +159,12 @@ QStringList ConfigModel::getStringList(const QString& Name, bool) const {
 int ConfigModel::getInt(const QString& Name, bool) const {
   auto ret = LoadedConfig->Get(NameToConfigLookup.at(Name.toStdString()));
   if (!ret || !*ret) {
-    throw std::runtime_error("Could not find setting");
+    ERROR_AND_DIE_FMT("Could not find setting");
   }
   int value;
   auto res = std::from_chars(&*(*ret)->begin(), &*(*ret)->end(), value);
   if (res.ptr != &*(*ret)->end()) {
-    throw std::runtime_error("Could not parse integer");
+    ERROR_AND_DIE_FMT("Could not parse integer");
   }
   return value;
 }
