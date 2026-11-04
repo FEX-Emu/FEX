@@ -235,6 +235,11 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
   return -1;
 }
 
+void UnlinkServerSocketPath() {
+  ::unlink(GetServerSocketPath(false).c_str());
+  ::unlink(GetServerSocketPath(true).c_str());
+}
+
 bool SetupClient(std::string_view InterpreterPath) {
   ServerFD = FEXServerClient::ConnectToAndStartServer(InterpreterPath);
   if (ServerFD == -1) {
