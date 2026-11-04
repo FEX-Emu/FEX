@@ -3,7 +3,7 @@ import os
 import sys
 # NB: This script is run with the "-S" flag, and therefore it can only use the Python standard library.
 
-def DoesFEXSupportAVX(mode):
+def DoesFEXSupportAVX():
     # Check if FEX indicates support for AVX
     
     # Import this here lazily to save on startup time
@@ -95,7 +95,7 @@ fexecutable = sys.argv[7]
 StartingFEXArgsOffset = 8
 
 # If the test requires AVX and FEX doesn't support it, just pass the test and move on
-if TestRequiresAVXSupport() and not DoesFEXSupportAVX(mode):
+if mode == "guest" and TestRequiresAVXSupport() and not DoesFEXSupportAVX():
     sys.exit(0)
 
 # Open test expected information files and load in to dictionaries.
