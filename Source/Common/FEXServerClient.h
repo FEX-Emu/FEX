@@ -65,6 +65,7 @@ fextl::string GetTempFolder();
 fextl::string GetServerMountFolder();
 fextl::string GetServerSocketName();
 fextl::string GetServerSocketPath(bool ForceTmp);
+void UnlinkServerSocketPath();
 int GetServerFD();
 
 bool SetupClient(std::string_view InterpreterPath);

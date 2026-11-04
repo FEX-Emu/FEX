@@ -39,6 +39,25 @@ PipesType get_pipe() {
   return pipes;
 }
 
+void WaitForFDEnd(int fd) {
+  while (true) {
+    char buf[4096];
+    auto read_len = ::read(STDIN_FILENO, buf, sizeof(buf));
+    if (read_len < 0) {
+      if (errno == EINTR || errno == EAGAIN) {
+        // Interrupted, try again.
+        continue;
+      } else {
+        // Error on read.
+        break;
+      }
+    } else if (read_len == 0) {
+      // EOF
+      break;
+    }
+  }
+}
+
 int main(int argc, const char** argv, char** const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
@@ -84,28 +103,19 @@ int main(int argc, const char** argv, char** const envp) {
   close(pipes.read_pipe);
   pipes.read_pipe = -1;
 
-  // Now that the server is started and watching our pipe, we can close the returned FD, as it'll stay open as long as the pipe is open.
+  // Do a blocking read, discarding any written data and wait for EOF.
+  WaitForFDEnd(STDIN_FILENO);
+
+  // Terminate the write pipe to say we're shutting down.
+  close(pipes.write_pipe);
+  pipes.write_pipe = -1;
+
+  // Wait for the server to clean-up.
+  WaitForFDEnd(ServerFD);
   close(ServerFD);
   ServerFD = -1;
 
-  // Do a blocking read, discarding any written data and wait for EOF.
-  while (true) {
-    char buf[4096];
-    auto read_len = ::read(STDIN_FILENO, buf, sizeof(buf));
-    if (read_len < 0) {
-      if (errno == EINTR || errno == EAGAIN) {
-        // Interrupted, try again.
-        continue;
-      } else {
-        // Error on read.
-        break;
-      }
-    } else if (read_len == 0) {
-      // EOF
-      break;
-    }
-  }
-
-  // Terminating will clean-up.
+  // Unlink the FEXServer socket files so they don't become stale.
+  FEXServerClient::UnlinkServerSocketPath();
   return 0;
 }
