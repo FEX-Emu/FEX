@@ -40,7 +40,7 @@ constexpr std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableO
 
     // REG /2
     {((1 << 3) | 0), 1, X86InstInfo{"XGETBV",   TYPE_INST,    FLAGS_NONE, 0}},
-    {((1 << 3) | 1), 1, X86InstInfo{"XSETBV",   TYPE_PRIV,    FLAGS_NONE, 0}},
+    {((1 << 3) | 1), 1, X86InstInfo{"XSETBV",   TYPE_INST,    FLAGS_NONE, 0}},
     {((1 << 3) | 2), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
     {((1 << 3) | 3), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
     {((1 << 3) | 4), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},

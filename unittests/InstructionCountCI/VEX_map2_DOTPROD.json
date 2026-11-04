@@ -13,7 +13,7 @@
       "SVEBITPERM",
       "I8MM"
     ],
-    "BinaryCacheVersion": 41
+    "BinaryCacheVersion": 42
   },
   "Instructions": {
     "vpdpbusd xmm0, xmm1, xmm2": {
