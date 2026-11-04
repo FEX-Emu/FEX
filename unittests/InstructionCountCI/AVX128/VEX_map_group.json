@@ -9,7 +9,7 @@
       "SVE256",
       "SVE128"
     ],
-    "BinaryCacheVersion": 41
+    "BinaryCacheVersion": 42
   },
   "Instructions": {
     "vpsrlw xmm0, xmm1, 0": {
