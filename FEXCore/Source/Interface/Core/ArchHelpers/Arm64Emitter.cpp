@@ -1129,4 +1129,9 @@ void Arm64Emitter::Align16B() {
   }
 }
 
+ARMEmitter::Register Arm64Emitter::GetX86GPRMapping(FEXCore::X86State::X86Reg Reg) {
+  LOGMAN_THROW_A_FMT(Reg <= FEXCore::X86State::X86Reg::REG_R15, "Incorrect register");
+  return StaticRegisters[Reg];
+}
+
 } // namespace FEXCore::CPU
