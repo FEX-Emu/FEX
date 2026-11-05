@@ -409,6 +409,12 @@ namespace DiskCache {
       uint64_t HostFeaturesHash;
     } MachineBucketData = {FormatVersion, HostFeatureHash.HostFeaturesHash};
 
+    uint8_t ProcessFeaturesHash {};
+    memcpy(&ProcessFeaturesHash, &HostFeatureHash.ProcessFeaturesHash, sizeof(ProcessFeaturesHash));
+    LogMan::Msg::IFmt("Disk Cache features:");
+    LogMan::Msg::IFmt("HostFeatures Hash: 0x{:016x}", HostFeatureHash.HostFeaturesHash);
+    LogMan::Msg::IFmt("ProcessFeaturesHash: 0x{:02x}", ProcessFeaturesHash);
+
     fextl::vector<uint8_t> BucketBytes(sizeof(MachineBucketData) + sizeof(HostFeatureHash.ProcessFeaturesHash) + SerializedConfig.size());
     memcpy(BucketBytes.data(), &MachineBucketData, sizeof(MachineBucketData));
 
