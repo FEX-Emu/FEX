@@ -3025,7 +3025,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
     StoreIfFlagSet(1, [this, Op] { SaveSSEState(XSaveBase(Op)); });
   }
   // AVX
-  if (CTX->HostFeatures.SupportsAVX) {
+  if (CTX->HostFeatures.SupportsAVX()) {
     StoreIfFlagSet(2, [this, Op] { std::invoke(SaveAVXStateFunc, this, XSaveBase(Op)); });
   }
 
@@ -3232,7 +3232,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     RestoreIfFlagSetOrDefault(1, [this, Op] { RestoreSSEState(XSaveBase(Op)); }, [this] { DefaultSSEState(); });
   }
   // AVX
-  if (CTX->HostFeatures.SupportsAVX) {
+  if (CTX->HostFeatures.SupportsAVX()) {
     RestoreIfFlagSetOrDefault(
       2, [this, Op] { std::invoke(RestoreAVXStateFunc, this, XSaveBase(Op)); }, [this] { std::invoke(DefaultAVXStateFunc, this); });
   }

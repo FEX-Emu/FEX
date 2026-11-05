@@ -4752,11 +4752,11 @@ OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx, FEXCore
   : IREmitter {ctx->OpDispatcherAllocator, ctx->HostFeatures.SupportsTSOImm9 != 0}
   , CTX {ctx}
   , Thread {Thread} {
-  if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {
+  if (CTX->HostFeatures.SupportsAVX() && CTX->HostFeatures.SupportsSVE256()) {
     SaveAVXStateFunc = &OpDispatchBuilder::SaveAVXState;
     RestoreAVXStateFunc = &OpDispatchBuilder::RestoreAVXState;
     DefaultAVXStateFunc = &OpDispatchBuilder::DefaultAVXState;
-  } else if (CTX->HostFeatures.SupportsAVX) {
+  } else if (CTX->HostFeatures.SupportsAVX()) {
     SaveAVXStateFunc = &OpDispatchBuilder::AVX128_SaveAVXState;
     RestoreAVXStateFunc = &OpDispatchBuilder::AVX128_RestoreAVXState;
     DefaultAVXStateFunc = &OpDispatchBuilder::AVX128_DefaultAVXState;

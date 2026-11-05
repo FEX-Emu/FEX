@@ -354,8 +354,8 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;   \
   LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive");
 
-  ENABLE_DISABLE_OPTION(SupportsAVX, AVX, AVX);
-  ENABLE_DISABLE_OPTION(SupportsSVE128, SVE, SVE);
+  ENABLE_DISABLE_OPTION(ProcessFeatures.SupportsAVX, AVX, AVX);
+  ENABLE_DISABLE_OPTION(ProcessFeatures.SupportsSVE128, SVE, SVE);
   ENABLE_DISABLE_OPTION(SupportsAFP, AFP, AFP);
   ENABLE_DISABLE_OPTION(SupportsRCPC, LRCPC, LRCPC);
   ENABLE_DISABLE_OPTION(SupportsTSOImm9, LRCPC2, LRCPC2);
@@ -399,7 +399,7 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   }
 
   ///< Only force enable SVE256 if SVE is already enabled and ForceSVEWidth is set to >= 256.
-  Features->SupportsSVE256 = ForceSVEWidth && ForceSVEWidth >= 256;
+  Features->ProcessFeatures.SupportsSVE256 = ForceSVEWidth && ForceSVEWidth >= 256;
 }
 
 static void HandleErrata(FEXCore::HostFeatures* HostFeatures, uint64_t MIDR) {
@@ -515,15 +515,15 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
 
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.
-  HostFeatures.SupportsSVE128 = ForceSVEWidth() ? ForceSVEWidth() >= 128 : true;
-  HostFeatures.SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
+  HostFeatures.ProcessFeatures.SupportsSVE128 = ForceSVEWidth() ? ForceSVEWidth() >= 128 : true;
+  HostFeatures.ProcessFeatures.SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
   HostFeatures.SupportsMOPS = true;
 
   // Simulator has a hardcoded ZVA size of 64-bytes.
   HostFeatures.SupportsCLZERO = true;
   HostFeatures.SupportsAES = true;
   HostFeatures.SupportsCRC = true;
-  HostFeatures.SupportsAVX = true;
+  HostFeatures.ProcessFeatures.SupportsAVX = true;
   HostFeatures.SupportsSHA = true;
   HostFeatures.SupportsPMULL_128Bit = true;
   HostFeatures.SupportsAES256 = true;
@@ -532,8 +532,8 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsRPRES = false;
   HostFeatures.SupportsAFP = false;
 #else
-  HostFeatures.SupportsSVE128 = Features.Supports(CPUFeatures::Feature::SVE2);
-  HostFeatures.SupportsSVE256 = Features.Supports(CPUFeatures::Feature::SVE2) && Features.GetSVEVectorLengthInBits() >= 256;
+  HostFeatures.ProcessFeatures.SupportsSVE128 = Features.Supports(CPUFeatures::Feature::SVE2);
+  HostFeatures.ProcessFeatures.SupportsSVE256 = Features.Supports(CPUFeatures::Feature::SVE2) && Features.GetSVEVectorLengthInBits() >= 256;
   HostFeatures.SupportsMOPS = Features.Supports(CPUFeatures::Feature::MOPS);
 
   // Check if we can support cacheline clears
@@ -546,8 +546,8 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
 #endif
 
   HostFeatures.Supports3DNow = true;
-  HostFeatures.SupportsAVX = true;
-  HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX && HostFeatures.SupportsAES;
+  HostFeatures.ProcessFeatures.SupportsAVX = true;
+  HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX() && HostFeatures.SupportsAES;
   HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
   HostFeatures.PreferZVAForVZero = false;
 
@@ -589,7 +589,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsRAND = Feature.Feat_rand;
   HostFeatures.SupportsRCPC = true;
   HostFeatures.SupportsTSOImm9 = true;
-  HostFeatures.SupportsAVX = Feature.Feat_avx;
+  HostFeatures.ProcessFeatures.SupportsAVX = Feature.Feat_avx;
   HostFeatures.SupportsSHA = Feature.Feat_sha;
   HostFeatures.SupportsPMULL_128Bit = Feature.Feat_pclmulqdq;
   HostFeatures.SupportsAES256 = Feature.Feat_aes;

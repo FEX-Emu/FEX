@@ -79,15 +79,15 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
   FEX::FetchHostFeatures(Features, HostFeatures, IsWine, CTR, MIDR);
 
   // Force-disable SVE until wine/windows gain support for SVE context save/restore
-  HostFeatures.SupportsSVE128 = false;
-  HostFeatures.SupportsSVE256 = false;
+  HostFeatures.ProcessFeatures.SupportsSVE128 = false;
+  HostFeatures.ProcessFeatures.SupportsSVE256 = false;
 
   HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine || FEX::Windows::UnixLib::SupportsTPIDRRO_CPU();
 
   HostFeatures.ProcessPID = ProcessPID;
 
   // AVX is unsupported for WOW64
-  HostFeatures.SupportsAVX = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
+  HostFeatures.ProcessFeatures.SupportsAVX = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
 
   HostFeatures.ProcessFeatures.HostType = HostType;
   HostFeatures.ProcessFeatures.Is64BitMode = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;

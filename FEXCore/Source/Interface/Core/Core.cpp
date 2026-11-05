@@ -264,8 +264,8 @@ uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadSt
 void ContextImpl::ReconstructXMMRegisters(const FEXCore::Core::InternalThreadState* Thread, __uint128_t* XMM_Low, __uint128_t* YMM_High) {
   const size_t MaximumRegisters = Config.Is64BitMode ? FEXCore::Core::CPUState::NUM_XMMS : 8;
 
-  if (YMM_High != nullptr && HostFeatures.SupportsAVX) {
-    const bool SupportsConvergedRegisters = HostFeatures.SupportsSVE256;
+  if (YMM_High != nullptr && HostFeatures.SupportsAVX()) {
+    const bool SupportsConvergedRegisters = HostFeatures.SupportsSVE256();
 
     if (SupportsConvergedRegisters) {
       ///< Output wants to de-interleave
@@ -288,8 +288,8 @@ void ContextImpl::ReconstructXMMRegisters(const FEXCore::Core::InternalThreadSta
 
 void ContextImpl::SetXMMRegistersFromState(FEXCore::Core::InternalThreadState* Thread, const __uint128_t* XMM_Low, const __uint128_t* YMM_High) {
   const size_t MaximumRegisters = Config.Is64BitMode ? FEXCore::Core::CPUState::NUM_XMMS : 8;
-  if (YMM_High != nullptr && HostFeatures.SupportsAVX) {
-    const bool SupportsConvergedRegisters = HostFeatures.SupportsSVE256;
+  if (YMM_High != nullptr && HostFeatures.SupportsAVX()) {
+    const bool SupportsConvergedRegisters = HostFeatures.SupportsSVE256();
 
     if (SupportsConvergedRegisters) {
       ///< Output wants to de-interleave
