@@ -1370,6 +1370,8 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
+  BlockSetRIP = true;
+
   // Calculate flags early.
   CalculateDeferredFlags();
 
