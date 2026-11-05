@@ -1370,20 +1370,17 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
-  Ref Src = LoadGPRRegister(X86State::REG_RAX);
-  Ref Leaf = LoadGPRRegister(X86State::REG_RCX);
+  // Calculate flags early.
+  CalculateDeferredFlags();
 
-  Ref RAX = _AllocateGPR(false);
-  Ref RBX = _AllocateGPR(false);
-  Ref RCX = _AllocateGPR(false);
-  Ref RDX = _AllocateGPR(false);
+  // Similar to Syscall. Store the RIP to the start of the instruction.
+  // CPUID operation will modify the RIP itself.
+  const auto GPRSize = GetGPROpSize();
+  auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
+  _StoreContextGPR(GPRSize, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
 
-  _CPUID(Src, Leaf, RAX, RBX, RCX, RDX);
-
-  StoreGPRRegister(X86State::REG_RAX, RAX);
-  StoreGPRRegister(X86State::REG_RBX, RBX);
-  StoreGPRRegister(X86State::REG_RCX, RCX);
-  StoreGPRRegister(X86State::REG_RDX, RDX);
+  FlushRegisterCache();
+  _CPUID(Op->InstSize);
 }
 
 uint32_t OpDispatchBuilder::GetConstantShift(X86Tables::DecodedOp Op, bool Is1Bit) {

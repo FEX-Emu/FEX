@@ -337,9 +337,8 @@
         "HasSideEffects": true
       },
 
-      "GPR:$EAX, GPR:$EBX, GPR:$ECX, GPR:$EDX = CPUID GPR:$Function, GPR:$Leaf": {
+      "CPUID i8:$InstSize": {
         "Desc": ["Calls in to the CPUID handler function to return emulated CPUID"],
-        "DestSize": "OpSize::i32Bit",
         "HasSideEffects": true
       },
       "GPR:$EAX, GPR:$EDX = XGetBV GPR:$Function": {

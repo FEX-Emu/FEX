@@ -21,6 +21,7 @@ static bool IsFragmentExit(FEXCore::IR::IROps Op) {
   switch (Op) {
   case OP_THREADREMOVECODEENTRY:
   case OP_SYSCALL:
+  case OP_CPUID:
   case OP_EXITFUNCTION:
   case OP_BREAK: return true;
   default: return false;
