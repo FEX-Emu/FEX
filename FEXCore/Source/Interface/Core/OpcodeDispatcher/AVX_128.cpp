@@ -2067,7 +2067,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpcodeArgs, Op
     BaseAddr = Invalid();
   }
 
-  if (CTX->HostFeatures.SupportsSVE128) {
+  if (CTX->HostFeatures.SupportsSVE128()) {
     if (ElementLoadSize == OpSize::i64Bit && AddrElementSize == OpSize::i32Bit) {
       // In the case that FEX is loading double the amount of data than the number of address bits then we can optimize this case.
       // For 256-bits of data we need to sign extend all four 32-bit address elements to be 64-bit.
@@ -2170,7 +2170,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherQPSImpl(OpcodeArgs,
 
   bool NeedsSVEScale = (VSIB.Scale == 2 || VSIB.Scale == 8) || (BaseAddr == Invalid() && VSIB.Scale != 1);
 
-  if (CTX->HostFeatures.SupportsSVE128 && NeedsSVEScale) {
+  if (CTX->HostFeatures.SupportsSVE128() && NeedsSVEScale) {
     // SVE gather instructions don't support scaling their vector elements by anything other than 1 or the address element size.
     // Pre-scale 64-bit addresses in the case that scale doesn't match in-order to hit SVE code paths more frequently.
     // Only hit this path if the host supports SVE. Otherwise it's a degradation for the ASIMD codepath.
@@ -2236,7 +2236,7 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs, OpSize AddrElementSize) {
   bool NeedsSVEScale = (VSIB.Scale == 2 || VSIB.Scale == 8) || (VSIB.BaseAddr == Invalid() && VSIB.Scale != 1);
 
   const bool NeedsExplicitSVEPath =
-    CTX->HostFeatures.SupportsSVE128 && AddrElementSize == OpSize::i32Bit && ElementLoadSize == OpSize::i32Bit && NeedsSVEScale;
+    CTX->HostFeatures.SupportsSVE128() && AddrElementSize == OpSize::i32Bit && ElementLoadSize == OpSize::i32Bit && NeedsSVEScale;
 
   RefPair Result {};
   if (NeedsExplicitSVEPath) {

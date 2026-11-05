@@ -27,7 +27,7 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   Ref Result {};
-  if (CTX->HostFeatures.SupportsSVE128) {
+  if (CTX->HostFeatures.SupportsSVE128()) {
     auto ZeroVec = LoadZeroVector(OpSize::i128Bit);
     auto Tmp = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, ZeroVec, Dest);
     auto Xar = _VXar(OpSize::i128Bit, OpSize::i32Bit, ZeroVec, Tmp, 2);

@@ -443,7 +443,7 @@ void CPUIDEmu::SetupHostHybridFlag() {}
 
 
 void CPUIDEmu::SetupFeatures() {
-  if (CTX->HostFeatures.SupportsAVX) {
+  if (CTX->HostFeatures.SupportsAVX()) {
     XCR0 |= XCR0_AVX;
   }
 

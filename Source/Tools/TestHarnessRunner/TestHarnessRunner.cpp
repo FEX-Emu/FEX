@@ -247,7 +247,7 @@ int main(int argc, char** argv, char** const envp) {
   auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
 
 #ifndef _WIN32
-  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {}, HostFeatures.SupportsAVX, HostFeatures.SupportsSVE256);
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {}, HostFeatures.SupportsAVX(), HostFeatures.SupportsSVE256());
 #else
   // Enable exit on HLT while Wine's longjump is broken.
   //
@@ -257,7 +257,7 @@ int main(int argc, char** argv, char** const envp) {
 #endif
 
   // Skip any tests that the host doesn't support features for
-  SupportsAVX = HostFeatures.SupportsAVX;
+  SupportsAVX = HostFeatures.SupportsAVX();
 
   bool TestUnsupported = (!SupportsAVX && Loader.RequiresAVX()) || (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
                          (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) || (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||

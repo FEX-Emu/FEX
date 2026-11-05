@@ -1330,7 +1330,7 @@ protected:
       /* On ASIMD platforms, the emulation happens to preserve NZCV, unlike the
        * more optimal SVE implementation that clobbers.
        */
-      if (!CTX->HostFeatures.SupportsSVE128 && !CTX->HostFeatures.SupportsSVE256) {
+      if (!CTX->HostFeatures.SupportsSVE()) {
         return;
       }
 
@@ -1677,7 +1677,7 @@ private:
   }
 
   constexpr OpSize GetGuestVectorLength() const {
-    return (CTX->HostFeatures.SupportsSVE256 && CTX->HostFeatures.SupportsAVX) ? OpSize::i256Bit : OpSize::i128Bit;
+    return (CTX->HostFeatures.SupportsSVE256() && CTX->HostFeatures.SupportsAVX()) ? OpSize::i256Bit : OpSize::i128Bit;
   }
 
   [[nodiscard]]

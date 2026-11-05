@@ -79,10 +79,10 @@ Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
     X87Table = &FEXCore::X86Tables::X87F80Ops;
   }
 
-  if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {
+  if (CTX->HostFeatures.SupportsAVX() && CTX->HostFeatures.SupportsSVE256()) {
     VEXTable = &FEXCore::X86Tables::VEXTableOps;
     VEXTableGroup = &FEXCore::X86Tables::VEXTableGroupOps;
-  } else if (CTX->HostFeatures.SupportsAVX) {
+  } else if (CTX->HostFeatures.SupportsAVX()) {
     VEXTable = &FEXCore::X86Tables::VEXTableOps_AVX128;
     VEXTableGroup = &FEXCore::X86Tables::VEXTableGroupOps_AVX128;
   }
