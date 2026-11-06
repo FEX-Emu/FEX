@@ -1162,14 +1162,14 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) con
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res {};
-  auto& Data = PerCPUData[CPU];
+  auto& Data = PerCPUData[std::min<uint32_t>(CPU, PerCPUData.size() - 1)];
   memcpy(&Res, Data.ProductName, std::min(strlen(Data.ProductName), sizeof(FEXCore::CPUID::FunctionResults)));
   return Res;
 }
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res {};
-  auto& Data = PerCPUData[CPU];
+  auto& Data = PerCPUData[std::min<uint32_t>(CPU, PerCPUData.size() - 1)];
   const auto RemainingStringSize = std::max<ssize_t>(0, strlen(Data.ProductName) - 16);
   memcpy(&Res, Data.ProductName + 16, std::min<size_t>(RemainingStringSize, sizeof(FEXCore::CPUID::FunctionResults)));
   return Res;
@@ -1177,7 +1177,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf, uin
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf, uint32_t CPU) const {
   FEXCore::CPUID::FunctionResults Res {};
-  auto& Data = PerCPUData[CPU];
+  auto& Data = PerCPUData[std::min<uint32_t>(CPU, PerCPUData.size() - 1)];
   const auto RemainingStringSize = std::max<ssize_t>(0, strlen(Data.ProductName) - 32);
   memcpy(&Res, Data.ProductName + 32, std::min<size_t>(RemainingStringSize, sizeof(FEXCore::CPUID::FunctionResults)));
   return Res;
