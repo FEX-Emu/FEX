@@ -182,20 +182,23 @@ FEXCore::ExecutableFileSectionInfo ImageTracker::HandleImageMap(std::string_view
     }
   }
 
-  uint64_t EndAddress = Address + Nt->OptionalHeader.SizeOfImage;
-  fextl::set<uint64_t> VolatileInstructions {};
-  FEXCore::IntervalList<uint64_t> VolatileValidRanges {};
-  LoadImageVolatileMetadata(VolatileInstructions, VolatileValidRanges, Module, Nt, Address, EndAddress);
-  if (auto It = ExtendedMetaData.find(ID); It != ExtendedMetaData.end()) {
-    FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(It->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
-  }
-  if (auto It = ExtendedMetaData.find(fextl::string {ModuleName}); It != ExtendedMetaData.end()) {
-    FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(It->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
-  }
 
-  if (!VolatileInstructions.empty() || !VolatileValidRanges.Empty()) {
-    LogMan::Msg::DFmt("Loaded volatile metadata for {:X}: {} entries", Address, VolatileInstructions.size());
-    CTX.AddForceTSOInformation(VolatileValidRanges, std::move(VolatileInstructions));
+  if (FEXCore::Config::Get_VOLATILEMETADATA()) {
+    uint64_t EndAddress = Address + Nt->OptionalHeader.SizeOfImage;
+    fextl::set<uint64_t> VolatileInstructions {};
+    FEXCore::IntervalList<uint64_t> VolatileValidRanges {};
+    LoadImageVolatileMetadata(VolatileInstructions, VolatileValidRanges, Module, Nt, Address, EndAddress);
+    if (auto It = ExtendedMetaData.find(ID); It != ExtendedMetaData.end()) {
+      FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(It->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
+    }
+    if (auto It = ExtendedMetaData.find(fextl::string {ModuleName}); It != ExtendedMetaData.end()) {
+      FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(It->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
+    }
+
+    if (!VolatileInstructions.empty() || !VolatileValidRanges.Empty()) {
+      LogMan::Msg::DFmt("Loaded volatile metadata for {:X}: {} entries", Address, VolatileInstructions.size());
+      CTX.AddForceTSOInformation(VolatileValidRanges, std::move(VolatileInstructions));
+    }
   }
 
   return ImageInfo->SectionInfo;
