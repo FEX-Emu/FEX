@@ -903,6 +903,11 @@ bool ResetToConsistentStateImpl(const ThreadCPUArea CPUArea, EXCEPTION_RECORD* E
     return true;
   }
 
+  if (NativeContext->Pc == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
+    LogMan::Msg::DFmt("FEX: Forced assert");
+    NtTerminateProcess(NtCurrentProcess(), 0x42);
+  }
+
   if (!IsJIT && !IsDispatcherAddress(NativeContext->Pc)) {
     LogMan::Msg::DFmt("Passing through exception");
     return false;

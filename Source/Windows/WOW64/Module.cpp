@@ -833,6 +833,11 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
     }
   }
 
+  if (Context->Pc == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
+    LogMan::Msg::DFmt("FEX: Forced assert");
+    NtTerminateProcess(NtCurrentProcess(), 0x42);
+  }
+
   if (!Thread || !IsAddressInJit(Context->Pc)) {
     return false;
   }
