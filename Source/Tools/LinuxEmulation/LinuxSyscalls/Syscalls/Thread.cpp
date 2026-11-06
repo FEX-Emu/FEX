@@ -546,11 +546,16 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
       Result = -EINVAL; // We don't support CET, return EINVAL
       break;
     case 0x1011: // ARCH_GET_CPUID
-      return 1;
-      break;
-    case 0x1012:      // ARCH_SET_CPUID
-      return -ENODEV; // Claim we don't support faulting on CPUID
-      break;
+      return (Frame->State.CoreFlags & FEXCore::Core::CoreFlagsEnum::CPUID_ENABLED) == FEXCore::Core::CoreFlagsEnum::CPUID_ENABLED ? 1 : 0;
+    case 0x1012: // ARCH_SET_CPUID
+      if (addr == 0) {
+        // Disable CPUID (thus enabling CPUID faulting)
+        Frame->State.CoreFlags = Frame->State.CoreFlags & ~FEXCore::Core::CoreFlagsEnum::CPUID_ENABLED;
+      } else {
+        // Enable CPUID (thus disabling CPUID faulting)
+        Frame->State.CoreFlags = Frame->State.CoreFlags | FEXCore::Core::CoreFlagsEnum::CPUID_ENABLED;
+      }
+      return 0;
     default:
       LogMan::Msg::EFmt("Unknown prctl: 0x{:x}", code);
       Result = -EINVAL;

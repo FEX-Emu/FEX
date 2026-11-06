@@ -235,6 +235,8 @@ protected:
 
   void Align16B();
 
+  ARMEmitter::Register GetX86GPRMapping(FEXCore::X86State::X86Reg Reg);
+
 #ifdef VIXL_SIMULATOR
   // Generates a vixl simulator runtime call.
   //

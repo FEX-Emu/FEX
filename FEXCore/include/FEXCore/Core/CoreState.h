@@ -71,6 +71,12 @@ static_assert(std::is_standard_layout_v<NonAtomicRefCounter<uint64_t>>, "Needs t
 static_assert(std::is_trivially_copyable_v<NonAtomicRefCounter<uint64_t>>, "needs to be trivially copyable");
 static_assert(sizeof(NonAtomicRefCounter<uint64_t>) == sizeof(uint64_t), "Needs to be correct size");
 
+// Flags about the core state that the JIT can query.
+enum class CoreFlagsEnum : uint64_t {
+  CPUID_ENABLED = (1ULL << 0),
+};
+FEX_DEF_NUM_OPS(CoreFlagsEnum)
+
 struct alignas(64) CPUState {
   // Allows more efficient handling of the register
   // file in the event AVX is not supported.
@@ -107,7 +113,9 @@ struct alignas(64) CPUState {
   uint64_t L1Pointer {};
   uint64_t L1Mask {};
   uint64_t callret_sp {};
-  uint64_t _pad1 {};
+
+  // CPUID is default enabled.
+  CoreFlagsEnum CoreFlags {CoreFlagsEnum::CPUID_ENABLED};
 
   // Cacheline: 1,2,3,4
   // The high 128-bits of AVX registers when not being emulated by SVE256.
@@ -406,6 +414,7 @@ struct JITPointers {
   uint64_t ThreadStopHandlerSpillSRA {};
   uint64_t ThreadPauseHandlerSpillSRA {};
   uint64_t ThreadDispatchSyscallHandler {};
+  uint64_t ThreadDispatchCPUIDHandler {};
   uint64_t ThreadDispatchRemoveCodeEntry {};
   uint64_t GuestSignal_SIGILL {};
   uint64_t GuestSignal_SIGTRAP {};

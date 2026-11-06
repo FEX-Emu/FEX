@@ -19,30 +19,6 @@
     "These are instruction combinations that could be more optimal if FEX optimized for them"
   ],
   "Instructions": {
-    "cpuid constant": {
-      "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 11,
-      "Comment": [
-        "CPUID function call with constant function id"
-      ],
-      "x86Insts": [
-        "mov rax, 0",
-        "cpuid"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w4, #0x0",
-        "isb",
-        "mov w20, #0x16",
-        "mov w6, #0x6547",
-        "movk w6, #0x756e, lsl #16",
-        "mov w21, #0x746e",
-        "movk w21, #0x6c65, lsl #16",
-        "mov w5, #0x6e69",
-        "movk w5, #0x4965, lsl #16",
-        "mov x7, x21",
-        "mov x4, x20"
-      ]
-    },
     "xgetbv constant": {
       "x86InstructionCount": 2,
       "ExpectedInstructionCount": 3,

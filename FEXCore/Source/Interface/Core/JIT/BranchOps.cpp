@@ -395,45 +395,12 @@ DEF_OP(ThreadRemoveCodeEntry) {
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
-  isb();
-  mov(ARMEmitter::Size::i64Bit, TMP2, GetReg(Op->Function));
-  mov(ARMEmitter::Size::i64Bit, TMP3, GetReg(Op->Leaf));
+  SpillStaticRegs(TMP1);
 
-  PushDynamicRegs(TMP4);
-  SpillStaticRegs(TMP4);
-
-  // x0 = CPUID Handler
-  // x1 = CPUID Function
-  // x2 = CPUID Leaf
-  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.CPUIDObj));
-  ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.CPUIDFunction));
-
-  if (!TMP_ABIARGS) {
-    mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, TMP2);
-    mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, TMP3);
-  }
-
-  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-    GenerateIndirectRuntimeCall<__uint128_t, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
-  } else {
-    blr(ARMEmitter::Reg::r3);
-  }
-
-  if (!TMP_ABIARGS) {
-    mov(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::r0);
-    mov(ARMEmitter::Size::i64Bit, TMP2, ARMEmitter::Reg::r1);
-  }
-
-  FillStaticRegs();
-
-  PopDynamicRegs();
-
-  // Results are in x0, x1
-  // Results want to be 4xi32 scalars
-  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutEAX), TMP1);
-  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutECX), TMP2);
-  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEBX), TMP1, 32, 32);
-  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEDX), TMP2, 32, 32);
+  LoadConstant(ARMEmitter::Size::i32Bit, TMP1, Op->InstSize);
+  // Jump to the syscall dispatch handler. We won't return after this.
+  ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.ThreadDispatchCPUIDHandler));
+  br(TMP2);
 }
 
 DEF_OP(XGetBV) {
