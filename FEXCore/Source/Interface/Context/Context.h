@@ -122,11 +122,13 @@ public:
    *
    * @param GuestDelta Guest address offset to apply to RIP-relative data
    * @param ForStorage True for serializing data (producing deterministic output); false for de-serializing it (resolving dynamic symbols)
+   * @param CodeOffset Offset of Code within the buffer that relocation offsets are relative to
    *
    * @return Returns true on success
    */
   [[nodiscard]]
-  bool ApplyCodeRelocations(uint64_t GuestDelta, std::span<std::byte> Code, std::span<const CPU::Relocation> Relocations, bool ForStorage);
+  bool ApplyCodeRelocations(uint64_t GuestDelta, std::span<std::byte> Code, std::span<const CPU::Relocation> Relocations, bool ForStorage,
+                            uint64_t CodeOffset = 0);
 
   // Same but on disk cache packed relocations
   [[nodiscard]]

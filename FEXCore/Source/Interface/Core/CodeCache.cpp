@@ -51,7 +51,7 @@ MappedCodeCacheFile::~MappedCodeCacheFile() {
   if (!CodeBuffer.empty()) {
     FEXCore::Allocator::munmap(CodeBuffer.data(), CodeBuffer.size_bytes());
   }
-#elif defined(_M_ARM64EC)
+#else
   if (!CodeBuffer.empty()) {
     FEXCore::Allocator::VirtualFree(CodeBuffer.data(), CodeBuffer.size_bytes());
   }
@@ -298,6 +298,8 @@ bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const Execut
   auto CodeBuffer = CTX.GetLatest();
   auto& LookupCache = *Thread.LookupCache->Shared;
   auto Relocations = Thread.CPUBackend->TakeRelocations(SourceBinary.FileStartVA);
+  // Loading groups relocations by code page, which requires them to be sorted by offset
+  std::ranges::stable_sort(Relocations, std::less {}, [](const CPU::Relocation& Reloc) { return Reloc.Header.Offset; });
 
   // Write file header
   CodeCacheHeader header {};
@@ -393,9 +395,12 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
     ValidationCTX->SetSignalDelegator(CTX.SignalDelegation);
     ValidationCTX->SetSyscallHandler(CTX.SyscallHandler);
     ValidationCTX->SetThunkHandler(CTX.ThunkHandler);
+    // InitCore points the shared SignalDelegator at the validation context's dispatcher; keep the main one
+    const auto SignalConfig = CTX.SignalDelegation->GetConfig();
     if (!ValidationCTX->InitCore()) {
       ERROR_AND_DIE_FMT("Failed to create cache load validation context");
     }
+    CTX.SignalDelegation->SetConfig(SignalConfig);
 
     ValidationThread.reset(ValidationCTX->CreateThread(nullptr));
 
@@ -425,15 +430,21 @@ void CodeCache::Validate(const ExecutableFileSectionInfo& Section, fextl::set<ui
     std::as_writable_bytes(std::span {NewCodeBuffer->GetBufferBase(), NewCodeBuffer->GetBufferBase() + NewCodeBuffer->UsableSize()})
       .subspan(0, CachedCode.size_bytes());
 
+  fextl::vector<CPU::Relocation> NewRelocations;
   while (!GuestBlocks.empty()) {
     auto [CompiledBlocks, _, _2, _3, _4] = ValidationCTX->CompileCode(ValidationThread.get(), *GuestBlocks.begin(), 0 /* TODO: Set MaxInst? */);
     for (auto& Entry : CompiledBlocks.EntryPoints) {
       GuestBlocks.erase(Entry.first);
     }
+
+    // Relocation offsets are relative to their compile unit; rebase them to the CodeBuffer start
+    for (auto& Reloc : ValidationThread->CPUBackend->TakeRelocations(Section.FileStartVA)) {
+      Reloc.Header.Offset += CompiledBlocks.HostCodeOffset;
+      NewRelocations.push_back(Reloc);
+    }
   }
 
   // Patch FEX-internal function addresses with values from the main Context to ensure the code blocks are comparable
-  auto NewRelocations = ValidationThread->CPUBackend->TakeRelocations(Section.FileStartVA);
   NewRelocations.erase(std::remove_if(NewRelocations.begin(), NewRelocations.end(), [](const CPU::Relocation& Reloc) {
     return Reloc.Header.Type != CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL && Reloc.Header.Type != CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE;
   }));
@@ -616,12 +627,13 @@ bool CodeCache::ApplyPackedCodeRelocations(uint64_t GuestEntry, std::span<std::b
 }
 
 bool CodeCache::ApplyCodeRelocations(uint64_t GuestEntry, std::span<std::byte> Code,
-                                     std::span<const FEXCore::CPU::Relocation> EntryRelocations, bool ForStorage) {
+                                     std::span<const FEXCore::CPU::Relocation> EntryRelocations, bool ForStorage, uint64_t CodeOffset) {
   CPU::Arm64Emitter Emitter(&CTX, Code.data(), Code.size_bytes());
   for (size_t j = 0; j < EntryRelocations.size(); ++j) {
     const FEXCore::CPU::Relocation& Reloc = EntryRelocations[j];
-    LOGMAN_THROW_A_FMT(Reloc.Header.Offset < Code.size_bytes(), "Invalid relocation offset");
-    Emitter.SetCursorOffset(Reloc.Header.Offset);
+    LOGMAN_THROW_A_FMT(Reloc.Header.Offset >= CodeOffset, "Invalid relocation offset");
+    LOGMAN_THROW_A_FMT(Reloc.Header.Offset - CodeOffset < Code.size_bytes(), "Invalid relocation offset");
+    Emitter.SetCursorOffset(Reloc.Header.Offset - CodeOffset);
 
     switch (Reloc.Header.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
@@ -709,18 +721,16 @@ CodeCache::LoadCache(std::span<std::byte> CacheFile, const ExecutableFileInfo& F
     return nullptr;
   }
   auto CodeBuffer = std::span {static_cast<std::byte*>(CodeBufferAllocation), header.CodeBufferSize};
-#elif defined(_M_ARM64EC)
+#else
   // TODO: Implement lazy mapping on Windows
-  // NOTE: The executed code must have MEM_EXTENDED_PARAMETER_EC_CODE set, so we can't operate on the mapped cache file directly
+  // NOTE: The cache file is mapped read-only, so relocations must be applied to a separate buffer.
+  //       On ARM64EC, the executed code must also have MEM_EXTENDED_PARAMETER_EC_CODE set.
   void* CodeBufferAllocation = Allocator::VirtualAlloc(header.CodeBufferSize, true);
   if (!CodeBufferAllocation) {
     LogMan::Msg::EFmt("Failed to allocate code cache memory");
     return nullptr;
   }
   auto CodeBuffer = std::span {reinterpret_cast<std::byte*>(CodeBufferAllocation), header.CodeBufferSize};
-#else // WoW64
-  // TODO: Implement lazy mapping on Windows
-  auto CodeBuffer = CodeDataInFile;
 #endif
 
   // Group relocations by page
@@ -970,7 +980,7 @@ void CodeCache::FinalizeCodePages(MappedCodeCacheFile& Code, std::span<std::byte
   auto StagingSpan = std::span {Staging, Size};
   for (size_t i = StartPage; i < EndPage; ++i) {
     auto PageRelocations = SpanPageRelocations(Code, i);
-    (void)ApplyCodeRelocations(Code.GuestBase, StagingSpan, PageRelocations, false);
+    (void)ApplyCodeRelocations(Code.GuestBase, StagingSpan, PageRelocations, false, StartOffset);
     Code.LoadedPages[i] = true;
   }
 
@@ -988,9 +998,7 @@ void CodeCache::FinalizeCodePages(MappedCodeCacheFile& Code, std::span<std::byte
   Allocator::VirtualDontNeed(Code.CodeBufferInFile.data() + StartOffset, Size);
 #else
   // TODO: Implement lazy mapping on Windows
-#ifdef _M_ARM64EC
   memcpy(Code.CodeBuffer.data() + StartOffset, Code.CodeBufferInFile.data() + StartOffset, Size);
-#endif
   for (size_t i = StartPage; i < EndPage; ++i) {
     auto PageRelocations = SpanPageRelocations(Code, i);
     (void)ApplyCodeRelocations(Code.GuestBase, Code.CodeBuffer, PageRelocations, false);
