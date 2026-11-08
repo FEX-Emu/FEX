@@ -2,6 +2,7 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include "Common/cpp-optparse/OptionParser.h"
 #include "Common/JSONPool.h"
@@ -1050,6 +1051,11 @@ bool ValidateDownloadSelection(const WebFileFetcher::FileTargets& Target) {
 
 namespace ConfigSetter {
 void SetRootFSAsDefault(const fextl::string& RootFS) {
+  // Create config diectory.
+  if (!FHU::Filesystem::CreateDirectories(FEXCore::Config::GetConfigDirectory(false))) {
+    ExecWithInfo(fextl::fmt::format("Failed to create config directory: {}", FEXCore::Config::GetConfigDirectory(false)));
+  }
+
   fextl::string Filename = FEXCore::Config::GetConfigFileLocation();
   auto LoadedConfig = FEX::Config::CreateMainLayer(&Filename);
   LoadedConfig->Load();
@@ -1146,6 +1152,12 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   FEX_CONFIG_OPT(LDPath, ROOTFS);
+  const fextl::string RootFSPath = FEXCore::Config::GetDataDirectory() + "RootFS/";
+
+  // Create the rootfs path as early as possible.
+  if (!FHU::Filesystem::CreateDirectories(RootFSPath)) {
+    ExecWithInfo(fextl::fmt::format("Failed to create RootFS directory: {}", RootFSPath));
+  }
 
   std::error_code ec;
   fextl::string Question {};
@@ -1172,9 +1184,8 @@ int main(int argc, char** argv, char** const envp) {
     int32_t DistroIndex = AskForDistroSelection(Targets);
     if (DistroIndex != -1) {
       const auto& Target = Targets[DistroIndex];
-      fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
       auto filename = Target.URL.substr(Target.URL.find_last_of('/') + 1);
-      auto PathName = RootFS + filename;
+      auto PathName = RootFSPath + filename;
 
       if (!ValidateCheckExists(Target)) {
         // Keep going
@@ -1295,7 +1306,7 @@ int main(int argc, char** argv, char** const envp) {
 
       if (UseImageAs == ArgOptions::CompressedImageOption::OPTION_EXTRACT) {
         auto FolderName = filename.substr(0, filename.find_last_of('.'));
-        if (ExtractHelper(RootFS, PathName, FolderName)) {
+        if (ExtractHelper(RootFSPath, PathName, FolderName)) {
           // Remove the image file suffix since we extracted to that.
           filename = std::move(FolderName);
         }
