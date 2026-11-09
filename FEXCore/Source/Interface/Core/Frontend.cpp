@@ -390,6 +390,10 @@ Decoder::DecodedBlockStatus Decoder::NormalOp(const FEXCore::X86Tables::X86InstI
     return DecodedBlockStatus::INVALID_INST;
   }
 
+  if (Info->Type == FEXCore::X86Tables::TYPE_UNIMPLEMENTED) {
+    return DecodedBlockStatus::UNIMPLEMENTED_INST;
+  }
+
   if (!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SUPPORTS_LOCK) && (DecodeInst->Flags & DecodeFlags::FLAG_LOCK)) {
     // Instruction has lock prefix but doesn't support lock.
     return DecodedBlockStatus::UNIMPLEMENTED_INST;
@@ -699,6 +703,10 @@ Decoder::DecodedBlockStatus Decoder::NormalOpHeader(const FEXCore::X86Tables::X8
     return DecodedBlockStatus::INVALID_INST;
   }
 
+  if (Info->Type == FEXCore::X86Tables::TYPE_UNIMPLEMENTED) {
+    return DecodedBlockStatus::UNIMPLEMENTED_INST;
+  }
+
   LOGMAN_THROW_A_FMT(Info->Type != FEXCore::X86Tables::TYPE_REX_PREFIX, "REX PREFIX should have been decoded before this!");
 
   // A normal instruction is the most likely.
@@ -749,7 +757,7 @@ Decoder::DecodedBlockStatus Decoder::NormalOpHeader(const FEXCore::X86Tables::X8
     if (LocalInfo->Type == FEXCore::X86Tables::TYPE_SECOND_GROUP_MODRM && ModRM.mod == 0b11) {
       // Everything in this group is privileged instructions aside from XGETBV
       constexpr std::array<uint8_t, 8> RegToField = {
-        255, 0, 1, 2, 255, 255, 255, 3,
+        255, 0, 1, 2, 255, 3, 255, 4,
       };
       uint8_t Field = RegToField[ModRM.reg];
       if (Field == 255) {
@@ -758,6 +766,9 @@ Decoder::DecodedBlockStatus Decoder::NormalOpHeader(const FEXCore::X86Tables::X8
 
       LocalOp = (Field << 3) | ModRM.rm;
       return NormalOp(&SecondModRMTableOps[LocalOp], LocalOp);
+    } else if (LocalInfo->Type == FEXCore::X86Tables::TYPE_SECOND_GROUP_MODRM && ModRM.reg == 5) {
+      // Special case 0x0F 0x01 /5 group as they are currently all reserved.
+      return DecodedBlockStatus::UNIMPLEMENTED_INST;
     } else {
       return NormalOp(&SecondInstGroupOps[LocalOp], LocalOp);
     }
