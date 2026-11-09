@@ -28,7 +28,7 @@ static void SIGSEGV_Handler(int signal, siginfo_t* siginfo, void* context) {
 TEST_CASE("Signals: Test No-Exec") {
   struct sigaction act {};
   act.sa_sigaction = SIGSEGV_Handler;
-  act.sa_flags = SA_SIGINFO;
+  act.sa_flags = SA_SIGINFO | SA_NODEFER;
 
   sigaction(SIGSEGV, &act, nullptr);
   auto PageSize = sysconf(_SC_PAGESIZE);
@@ -71,7 +71,7 @@ TEST_CASE("Signals: Test No-Exec") {
 TEST_CASE("Signals: Partial decode") {
   struct sigaction act {};
   act.sa_sigaction = SIGSEGV_Handler;
-  act.sa_flags = SA_SIGINFO;
+  act.sa_flags = SA_SIGINFO | SA_NODEFER;
 
   sigaction(SIGSEGV, &act, nullptr);
   auto PageSize = sysconf(_SC_PAGESIZE);
