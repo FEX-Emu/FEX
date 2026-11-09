@@ -10,7 +10,7 @@
       "SVE128",
       "SVE256"
     ],
-    "BinaryCacheVersion": 43
+    "BinaryCacheVersion": 44
   },
   "Instructions": {
     "FMOD scalar loop": {
