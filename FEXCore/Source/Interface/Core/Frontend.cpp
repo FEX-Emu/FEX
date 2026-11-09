@@ -749,7 +749,7 @@ Decoder::DecodedBlockStatus Decoder::NormalOpHeader(const FEXCore::X86Tables::X8
     if (LocalInfo->Type == FEXCore::X86Tables::TYPE_SECOND_GROUP_MODRM && ModRM.mod == 0b11) {
       // Everything in this group is privileged instructions aside from XGETBV
       constexpr std::array<uint8_t, 8> RegToField = {
-        255, 0, 1, 2, 255, 255, 255, 3,
+        255, 0, 1, 2, 255, 4, 255, 3,
       };
       uint8_t Field = RegToField[ModRM.reg];
       if (Field == 255) {
@@ -758,6 +758,9 @@ Decoder::DecodedBlockStatus Decoder::NormalOpHeader(const FEXCore::X86Tables::X8
 
       LocalOp = (Field << 3) | ModRM.rm;
       return NormalOp(&SecondModRMTableOps[LocalOp], LocalOp);
+    } else if (LocalInfo->Type == FEXCore::X86Tables::TYPE_SECOND_GROUP_MODRM && ModRM.reg == 5) {
+      // 0F 01 /5 has register forms only (SERIALIZE and friends); the unprefixed memory form is reserved: #UD.
+      return DecodedBlockStatus::INVALID_INST;
     } else {
       return NormalOp(&SecondInstGroupOps[LocalOp], LocalOp);
     }

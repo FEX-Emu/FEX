@@ -67,6 +67,15 @@ constexpr std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableO
     {((3 << 3) | 5), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
     {((3 << 3) | 6), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
     {((3 << 3) | 7), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    // REG /5
+    {((4 << 3) | 0), 1, X86InstInfo{"SERIALIZE", TYPE_INST,    FLAGS_NONE, 0}},
+    {((4 << 3) | 1), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    {((4 << 3) | 2), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    {((4 << 3) | 3), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    {((4 << 3) | 4), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    {((4 << 3) | 5), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    {((4 << 3) | 6), 1, X86InstInfo{"RDPKRU",   TYPE_INVALID, FLAGS_NONE, 0}}, // #UD: PKU is not advertised
+    {((4 << 3) | 7), 1, X86InstInfo{"WRPKRU",   TYPE_INVALID, FLAGS_NONE, 0}},
   };
 
   GenerateTable(Table.data(), SecondaryModRMExtensionOpTable, std::size(SecondaryModRMExtensionOpTable));
