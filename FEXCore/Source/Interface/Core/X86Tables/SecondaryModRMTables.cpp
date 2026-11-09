@@ -13,12 +13,12 @@ $end_info$
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
 enum ModRM_LUT {
-  ENTRY_3_0,
+  ENTRY_7_0,
   ENTRY_MAX,
 };
 
 constexpr std::array<X86InstInfo[2], ENTRY_MAX> ModRM_ArchSelect_LUT = {{
-  // ENTRY_3_0
+  // ENTRY_7_0
   {
     {"SWAPGS",   TYPE_INST,    FLAGS_NONE, 0, { .OpDispatch = &IR::OpDispatchBuilder::UnimplementedOp }},
     {"SWAPGS",   TYPE_INST,    FLAGS_NONE, 0, { .OpDispatch = &IR::OpDispatchBuilder::PermissionRestrictedOp }},
@@ -58,15 +58,25 @@ constexpr std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableO
     {((2 << 3) | 6), 1, X86InstInfo{"SKINIT",   TYPE_PRIV,    FLAGS_NONE, 0}},
     {((2 << 3) | 7), 1, X86InstInfo{"INVLPGA",  TYPE_INST,    FLAGS_NONE, 0}},
 
+    // REG /5
+    {((3 << 3) | 0), 1, X86InstInfo{"SERIALIZE", TYPE_INST,          FLAGS_NONE, 0}},
+    {((3 << 3) | 1), 1, X86InstInfo{"",          TYPE_UNIMPLEMENTED, FLAGS_NONE, 0}},
+    {((3 << 3) | 2), 1, X86InstInfo{"",          TYPE_UNIMPLEMENTED, FLAGS_NONE, 0}},
+    {((3 << 3) | 3), 1, X86InstInfo{"",          TYPE_UNIMPLEMENTED, FLAGS_NONE, 0}},
+    {((3 << 3) | 4), 1, X86InstInfo{"",          TYPE_UNIMPLEMENTED, FLAGS_NONE, 0}},
+    {((3 << 3) | 5), 1, X86InstInfo{"",          TYPE_UNIMPLEMENTED, FLAGS_NONE, 0}},
+    {((3 << 3) | 6), 1, X86InstInfo{"RDPKRU",    TYPE_UNIMPLEMENTED, FLAGS_NONE, 0}},
+    {((3 << 3) | 7), 1, X86InstInfo{"WRPKRU",    TYPE_UNIMPLEMENTED, FLAGS_NONE, 0}},
+
     // REG /7
-    {((3 << 3) | 0), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = ModRM_ArchSelect_LUT[ENTRY_3_0] }}},
-    {((3 << 3) | 1), 1, X86InstInfo{"RDTSCP",   TYPE_INST,    FLAGS_NONE, 0}},
-    {((3 << 3) | 2), 1, X86InstInfo{"MONITORX", TYPE_PRIV,    FLAGS_NONE, 0}},
-    {((3 << 3) | 3), 1, X86InstInfo{"MWAITX",   TYPE_PRIV,    FLAGS_NONE, 0}},
-    {((3 << 3) | 4), 1, X86InstInfo{"CLZERO",   TYPE_INST,    GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS, 0}},
-    {((3 << 3) | 5), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
-    {((3 << 3) | 6), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
-    {((3 << 3) | 7), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    {((4 << 3) | 0), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = ModRM_ArchSelect_LUT[ENTRY_7_0] }}},
+    {((4 << 3) | 1), 1, X86InstInfo{"RDTSCP",   TYPE_INST,    FLAGS_NONE, 0}},
+    {((4 << 3) | 2), 1, X86InstInfo{"MONITORX", TYPE_PRIV,    FLAGS_NONE, 0}},
+    {((4 << 3) | 3), 1, X86InstInfo{"MWAITX",   TYPE_PRIV,    FLAGS_NONE, 0}},
+    {((4 << 3) | 4), 1, X86InstInfo{"CLZERO",   TYPE_INST,    GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS, 0}},
+    {((4 << 3) | 5), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    {((4 << 3) | 6), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
+    {((4 << 3) | 7), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0}},
   };
 
   GenerateTable(Table.data(), SecondaryModRMExtensionOpTable, std::size(SecondaryModRMExtensionOpTable));
