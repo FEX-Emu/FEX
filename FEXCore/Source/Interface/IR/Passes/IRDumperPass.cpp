@@ -12,6 +12,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/IR/IR.h>
 
 namespace FEXCore::IR::Debug {

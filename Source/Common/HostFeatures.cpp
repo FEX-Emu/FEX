@@ -7,10 +7,12 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/HostFeatures.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/PrctlUtils.h>
 #include <FEXCore/Utils/StringUtils.h>
 
+#include <charconv>
 #include <range/v3/view/split.hpp>
 #include <range/v3/view/transform.hpp>
 

@@ -12,6 +12,7 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
+#include <charconv>
 #include <sys/stat.h>
 
 namespace CodeSize {

@@ -18,6 +18,7 @@
 #include <FEXHeaderUtils/Filesystem.h>
 
 #include <array>
+#include <charconv>
 #include <cstdlib>
 #include <optional>
 #include <stddef.h>
@@ -556,6 +557,38 @@ fextl::string SerializeForCache() {
 FEX_DEFAULT_VISIBILITY bool CheckConfigMatches(std::string_view Config) {
   // Serialize current config and just check if it matches.
   return SerializeForCache() == Config;
+}
+
+std::optional<fextl::string> EnumParser(std::span<const StringEnumPairType> EnumPairs, const std::string_view View) {
+  uint64_t EnumMask {};
+  auto Results = std::from_chars(View.data(), View.data() + View.size(), EnumMask);
+  if (Results.ec == std::errc()) {
+    // If the data is a valid number, just pass it through.
+    return std::nullopt;
+  }
+
+  auto Begin = 0;
+  auto End = View.find_first_of(',');
+  std::string_view Option = View.substr(Begin, End);
+  while (Option.size() != 0) {
+    auto EnumValue =
+      std::find_if(EnumPairs.begin(), EnumPairs.end(), [Option](const StringEnumPairType& Value) -> bool { return Value.first == Option; });
+
+    if (EnumValue == EnumPairs.end()) {
+      LogMan::Msg::IFmt("Skipping Unknown option: {}", Option);
+    } else {
+      EnumMask |= EnumValue->second;
+    }
+
+    if (End == std::string::npos) {
+      break;
+    }
+    Begin = End + 1;
+    End = View.find_first_of(',', Begin);
+    Option = View.substr(Begin, End - Begin);
+  }
+
+  return fextl::fmt::format("{}", EnumMask);
 }
 
 } // namespace FEXCore::Config

@@ -12,6 +12,7 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
