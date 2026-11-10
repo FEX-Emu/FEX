@@ -823,7 +823,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0U << 14) |             // Reserved
               (0U << 15) |             // Reserved
               (0U << 16) |             // Reserved
-              (0U << 17) |             // FRED (Flexible Return and Event Delivery)
+              (1U << 17) |             // FRED (Flexible Return and Event Delivery)
               (0U << 18) |             // LKGS (Load into Kernel GS Base)
               (0U << 19) |             // WRMSRNS
               (0U << 20) |             // NMI_SRC
