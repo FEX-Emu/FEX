@@ -541,6 +541,13 @@ void Dispatcher::EmitDispatcher() {
     // L1 lookup after syscall. Mirrors the implementation in `ExitFunction`.
     // Most syscall instructions just return to the following RIP, so it is highly likely to be in the L1 in tight loops.
     ldr(TMP3, STATE_PTR(CpuStateFrame, State.rip));
+
+    // TF may be set: a single-stepped SYSCALL or CPUID. An L1 hit would jump into a block compiled without the
+    // per-instruction single-step trap, and the trap would only be raised at the next dispatcher entry, instructions
+    // later. The loop top checks TF and compiles single-step blocks.
+    ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+    (void)cbnz(ARMEmitter::Size::i32Bit, TMP1, &LoopTop);
+
     ldp<ARMEmitter::IndexType::OFFSET>(TMP1, TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.L1Pointer));
 
     if (rip_offset) {
