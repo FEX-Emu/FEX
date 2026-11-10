@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <limits.h>
 
 #include "Common/Config.h"
+
+#include <charconv>
+#include <limits.h>
+#include <unistd.h>
 
 namespace FEX {
 static inline std::optional<fextl::string> GetSelfPath() {

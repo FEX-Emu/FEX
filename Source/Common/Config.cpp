@@ -13,6 +13,8 @@
 #include <FEXCore/Utils/WildcardMatcher.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
+
+#include <charconv>
 #include <cstring>
 #include <fmt/format.h>
 #include <functional>

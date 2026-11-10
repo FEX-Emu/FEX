@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "PortabilityInfo.h"
 #include "Common/FEXServerClient.h"
+#include <FEXCore/fextl/fmt.h>
 
 #include <cstdio>
 #include <errno.h>

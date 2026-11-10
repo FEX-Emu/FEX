@@ -7,6 +7,8 @@ $end_info$
 
 #include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
 
+#include <FEXCore/fextl/fmt.h>
+
 #include <linux/bpf_common.h>
 #include <linux/filter.h>
 #include <linux/seccomp.h>

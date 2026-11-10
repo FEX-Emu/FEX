@@ -9,6 +9,7 @@ $end_info$
 #include "CodeLoader.h"
 #include "GdbServer/Info.h"
 
+#include <charconv>
 #include <cstdlib>
 #include <cstdio>
 #include <iomanip>
