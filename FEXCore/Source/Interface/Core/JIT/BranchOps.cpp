@@ -285,6 +285,9 @@ DEF_OP(CondJump) {
 DEF_OP(Syscall) {
   SpillStaticRegs(TMP1);
 
+  // Not coming back.
+  ResetStack();
+
   // Jump to the syscall dispatch handler. We won't return after this.
   ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.ThreadDispatchSyscallHandler));
   br(TMP1);
@@ -376,6 +379,9 @@ DEF_OP(ThreadRemoveCodeEntry) {
 
   SpillStaticRegs(TMP1);
 
+  // Not coming back.
+  ResetStack();
+
   // Store the new RIP to go to.
   str(GetReg(Op->NewRIP).X(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
 
@@ -396,6 +402,9 @@ DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
   SpillStaticRegs(TMP1);
+
+  // Not coming back.
+  ResetStack();
 
   LoadConstant(ARMEmitter::Size::i32Bit, TMP1, Op->InstSize);
   // Jump to the syscall dispatch handler. We won't return after this.
