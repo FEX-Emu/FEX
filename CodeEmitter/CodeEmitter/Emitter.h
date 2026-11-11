@@ -87,6 +87,13 @@ constexpr size_t SubRegSizeInBits(SubRegSize size) {
   return size_t {8} << FEXCore::ToUnderlying(size);
 }
 
+// Some operations require a smaller sub-subregister size to be calculated.
+[[nodiscard]]
+constexpr SubRegSize SubRegSizeShiftDown(SubRegSize size, const uint32_t shift) {
+  const uint32_t raw = FEXCore::ToUnderlying(size) - shift;
+  return static_cast<SubRegSize>(raw);
+}
+
 // Many floating point operations constrain their element sizes to the
 // main three float sizes half, single, and double precision. This just
 // combines all the checks together for brevity.
