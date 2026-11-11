@@ -63,6 +63,8 @@
         "Enums": {
           "ENABLESVE": "enablesve",
           "DISABLESVE": "disablesve",
+          "ENABLESVE2P1": "enablesve2p1",
+          "DISABLESVE2P1": "disablesve2p1",
           "ENABLEAVX": "enableavx",
           "DISABLEAVX": "disableavx",
           "ENABLEAFP": "enableafp",

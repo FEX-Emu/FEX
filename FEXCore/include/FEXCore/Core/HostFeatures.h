@@ -119,9 +119,10 @@ struct HostFeatures {
   uint32_t SupportsFloatExceptions     : 1 {}; // [33]
   uint32_t SupportsBF16                : 1 {}; // [34]
   uint32_t SupportsAVXInst             : 1 {}; // [35]
+  uint32_t SupportsSVE2_1              : 1 {}; // [36]
   // Flag if this is InstCountCI
-  uint32_t IsInstCountCI : 1 {};  // [36]
-  uint32_t pad           : 27 {}; // [63:37]
+  uint32_t IsInstCountCI : 1 {};  // [37]
+  uint32_t pad           : 26 {}; // [63:38]
 
   // This affects codegen, but it isn't machine state
   ProcessFeaturesHash ProcessFeatures {};

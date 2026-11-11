@@ -2063,7 +2063,7 @@
         "ElementSize": "ElementSize >> 1",
         "EmitValidation": [
           "ElementSize >= FEXCore::IR::OpSize::i16Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
-          "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
+          "BitShift <= IR::OpSizeAsBits(ElementSize)"
         ]
       },
 
@@ -2402,37 +2402,64 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
-      "FPR = VUDot OpSize:#RegisterSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
-        "Desc": ["Unsigned 8-bit dot product, accumulating four products in to each 32-bit element of Acc.",
-                 "Requires FEAT_DotProd."
+      "FPR = VUDot4 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Unsigned 8- or 16-bit dot product, accumulating four products into each 32- or 64-bit element of Acc.",
+                 "Requires FEAT_DotProd for 8->32 version or FEAT_SVE for 16->64 version."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "OpSize::i32Bit",
+        "ElementSize": "ElementSize",
         "TiedSource": 0,
         "EmitValidation": [
-          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
+          "ElementSize == FEXCore::IR::OpSize::i32Bit || ElementSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "FPR = VUSDot OpSize:#RegisterSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
-        "Desc": ["Unsigned by signed 8-bit dot product, accumulating four products in to each 32-bit element of Acc.",
+      "FPR = VUDot2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Unsigned 8- or 16-bit dot product, accumulating two products into each 16- or 32-bit element of Acc.",
+                 "Requires FEAT_SVE2p1 for 16->32 version or FEAT_SVE2p3 for 8->16 version."
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize",
+        "TiedSource": 0,
+        "EmitValidation": [
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
+          "ElementSize == FEXCore::IR::OpSize::i16Bit || ElementSize == FEXCore::IR::OpSize::i32Bit"
+        ]
+      },
+      "FPR = VUSDot4 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Unsigned by signed 8-bit dot product, accumulating four products into each 32-bit element of Acc.",
                  "Requires FEAT_I8MM."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "OpSize::i32Bit",
+        "ElementSize": "ElementSize",
         "TiedSource": 0,
         "EmitValidation": [
-          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
+          "ElementSize == FEXCore::IR::OpSize::i32Bit"
         ]
       },
-      "FPR = VSDot OpSize:#RegisterSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
-        "Desc": ["Signed 8-bit dot product, accumulating four products in to each 32-bit element of Acc.",
-                 "Requires FEAT_DotProd."
+      "FPR = VSDot4 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Signed 8- or 16-bit dot product, accumulating four products into each 32- or 64-bit element of Acc.",
+                 "Requires FEAT_DotProd for 8->32 version or FEAT_SVE for 16->64 version."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "OpSize::i32Bit",
+        "ElementSize": "ElementSize",
         "TiedSource": 0,
         "EmitValidation": [
-          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
+          "ElementSize == FEXCore::IR::OpSize::i32Bit || ElementSize == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
+      "FPR = VSDot2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Acc, FPR:$Vector1, FPR:$Vector2": {
+        "Desc": ["Signed 8- or 16-bit dot product, accumulating two products into each 16- or 32-bit element of Acc.",
+                 "Requires FEAT_SVE2p1 for 16->32 version or FEAT_SVE2p3 for 8->16 version."
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize",
+        "TiedSource": 0,
+        "EmitValidation": [
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
+          "ElementSize == FEXCore::IR::OpSize::i16Bit || ElementSize == FEXCore::IR::OpSize::i32Bit"
         ]
       },
       "FPR = VUAddLP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
