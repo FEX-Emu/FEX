@@ -545,7 +545,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
             (1 << 25) | // SSE
             (1 << 26) | // SSE2
             (0 << 27) | // Self Snoop
-            (0 << 28) | // (HTT) Max APIC IDs reserved field is valid
+            (1 << 28) | // (HTT) Max APIC IDs reserved field is valid
             (1 << 29) | // Thermal monitor
             (0 << 30) | // Reserved
             (0 << 31);  // Pending break enable
@@ -572,6 +572,10 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h(uint32_t Leaf) const {
 // 4: Deterministic cache parameters for each level
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res {};
+#ifdef CPUID_AMD
+  // CPUID function 4h is Intel exclusive.
+  return Res;
+#endif
   constexpr uint32_t CacheType_Data = 1;
   constexpr uint32_t CacheType_Instruction = 2;
   constexpr uint32_t CacheType_Unified = 3;
@@ -1264,9 +1268,9 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) con
             (CTX->HostFeatures.SupportsCLZERO << 0); // CLZERO support
 
   uint32_t CoreCount = Cores - 1;
-  Res.ecx = (0 << 16) |                    // PerfTscSize: Performance timestamp count size
-            (std::bit_ceil(Cores) << 12) | // ApicIdSize: Number of bits in ApicID
-            (CoreCount << 0);              // Count count subtract one
+  Res.ecx = (0 << 16) |                                    // PerfTscSize: Performance timestamp count size
+            (FEXCore::ilog2(std::bit_ceil(Cores)) << 12) | // ApicIdSize: Number of bits in ApicID
+            (CoreCount << 0);                              // Count count subtract one
 
   return Res;
 }

@@ -16,7 +16,7 @@ struct core_info {
   uint32_t max_addressible_ids;
   uint32_t cores;
   uint32_t threads;
-  bool HTT;
+  bool SMT;
 };
 
 struct cpuid_fn {
@@ -42,7 +42,7 @@ std::optional<core_info> cpuid_calculate_core_info() {
   const auto cpuid_fn_1 = get_cpuid(1);
 
   info.local_apicid = cpuid_fn_1.ebx >> 24;
-  info.HTT = (cpuid_fn_1.edx >> 28) & 1;
+  bool HTT = (cpuid_fn_1.edx >> 28) & 1;
 
   const auto cpuid_fn_8000_0000 = get_cpuid(0x8000'0000U);
 
@@ -50,8 +50,10 @@ std::optional<core_info> cpuid_calculate_core_info() {
     return std::nullopt;
   }
 
+  const auto cpuid_fn_8000_0001 = get_cpuid(0x8000'0001U);
   const auto cpuid_fn_8000_0008 = get_cpuid(0x8000'0008U);
   const uint32_t apic_id_size = (cpuid_fn_8000_0008.ecx >> 12) & 0xF;
+  const bool CmpLegacy = cpuid_fn_8000_0001.ecx & 0b10;
 
   // E.5.2: MNLP (Maximum Number of Logical Processors)
   uint32_t MNLP {};
@@ -67,18 +69,24 @@ std::optional<core_info> cpuid_calculate_core_info() {
   info.max_addressible_ids = MNLP;
 
   const auto cpuid_fn_4 = get_cpuid(4);
-  if (cpuid_fn_4.eax & 0xF) {
+  if (CmpLegacy && HTT) {
+    // For CMPLegacy with HTT, number of "logical" cores is just func_1h_ebx[LogicalProcessorCount]
+    info.threads = (cpuid_fn_1.ebx >> 16) & 0xFF;
+    // Physical cores is just func_8000_0008.ecx[NC] + 1
+    info.cores = (cpuid_fn_8000_0008.ecx & 0xFF) + 1;
+    info.SMT = info.threads != info.cores;
+  } else if (cpuid_fn_4.eax & 0xF) {
     // Intel exclusive cpuid function, AMD returns zero as unsupported.
     // `Maximum number of addressable IDs for processor cores in the physical package`
     info.cores = (cpuid_fn_4.eax >> 26) + 1;
-    if (info.HTT) {
+    if (HTT) {
       // `A value of 1 for HTT indicates the value in CPUID.1.EBX[23:16] (the Maximum number of addressable IDs for logical processors in
       // this package) is valid for the package. `Maximum number of addressable IDs for logical processors in this physical package`
       info.threads = (cpuid_fn_1.ebx >> 16) & 0xFF;
     } else {
       info.threads = info.cores;
     }
-  } else if (info.HTT) {
+  } else if (HTT) {
     info.cores = (cpuid_fn_1.ebx >> 16) & 0xFF;
     info.threads = info.cores * 2;
   } else {
@@ -96,7 +104,7 @@ TEST_CASE("cpu count - cpuid") {
   CHECK(core_info->local_apicid < hw_concurrency);
   CHECK(core_info->local_apicid < core_info->max_addressible_ids);
   CHECK(core_info->max_addressible_ids >= hw_concurrency);
-  if (core_info->HTT) {
+  if (core_info->SMT) {
     // May not be entirely correct on systems that mix HTT and non-HTT cpu cores.
     CHECK((core_info->cores * 2) == core_info->threads);
   } else {
