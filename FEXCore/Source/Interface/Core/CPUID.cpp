@@ -545,7 +545,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) const {
             (1 << 25) | // SSE
             (1 << 26) | // SSE2
             (0 << 27) | // Self Snoop
-            (0 << 28) | // (HTT) Max APIC IDs reserved field is valid
+            (1 << 28) | // (HTT) Max APIC IDs reserved field is valid
             (1 << 29) | // Thermal monitor
             (0 << 30) | // Reserved
             (0 << 31);  // Pending break enable
