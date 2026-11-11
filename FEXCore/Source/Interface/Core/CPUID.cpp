@@ -1264,9 +1264,9 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) con
             (CTX->HostFeatures.SupportsCLZERO << 0); // CLZERO support
 
   uint32_t CoreCount = Cores - 1;
-  Res.ecx = (0 << 16) |                    // PerfTscSize: Performance timestamp count size
-            (std::bit_ceil(Cores) << 12) | // ApicIdSize: Number of bits in ApicID
-            (CoreCount << 0);              // Count count subtract one
+  Res.ecx = (0 << 16) |                                    // PerfTscSize: Performance timestamp count size
+            (FEXCore::ilog2(std::bit_ceil(Cores)) << 12) | // ApicIdSize: Number of bits in ApicID
+            (CoreCount << 0);                              // Count count subtract one
 
   return Res;
 }
