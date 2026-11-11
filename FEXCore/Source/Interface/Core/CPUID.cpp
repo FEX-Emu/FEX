@@ -572,6 +572,10 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h(uint32_t Leaf) const {
 // 4: Deterministic cache parameters for each level
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) const {
   FEXCore::CPUID::FunctionResults Res {};
+#ifdef CPUID_AMD
+  // CPUID function 4h is Intel exclusive.
+  return Res;
+#endif
   constexpr uint32_t CacheType_Data = 1;
   constexpr uint32_t CacheType_Instruction = 2;
   constexpr uint32_t CacheType_Unified = 3;
