@@ -549,11 +549,6 @@ static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThrea
   ARM64_NT_CONTEXT ECContext {};
 
   ECContext.ContextFlags = CONTEXT_ARM64_FULL;
-  if (CPUFeatures->IsFeaturePresent(PF_AVX2_INSTRUCTIONS_AVAILABLE)) {
-    // This is a FEX extension and requires corresponding wine-side patches to be of use, however it is harmless to set
-    // even if those patches are not used.
-    ECContext.ContextFlags |= CONTEXT_ARM64_FEX_YMMSTATE;
-  }
 
   auto& State = Thread->CurrentFrame->State;
 

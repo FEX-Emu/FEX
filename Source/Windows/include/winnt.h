@@ -209,9 +209,6 @@ typedef struct _IMAGE_VOLATILE_RANGE_METADATA {
 
 NTSYSAPI DWORD WINAPI RtlRunOnceExecuteOnce(PRTL_RUN_ONCE, PRTL_RUN_ONCE_INIT_FN, PVOID, PVOID*);
 
-// This is a FEX extension, and requires corresponding wine patches
-#define CONTEXT_ARM64_FEX_YMMSTATE (CONTEXT_ARM64 | 0x00000040)
-
 #ifdef __cplusplus
 }
 #endif
