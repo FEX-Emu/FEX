@@ -2119,6 +2119,18 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize << 1"
       },
+      "FPR = VUSHLL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
+        "Desc": ["Zero extends elements from the source element size to the next size up"],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize << 1"
+      },
+      "FPR = VUSHLL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
+        "Desc": ["Zero extends elements from the source element size to the next size up",
+                 "Source elements come from the upper half of the register"
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize << 1"
+      },
       "FPR = VUXTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Zero extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
