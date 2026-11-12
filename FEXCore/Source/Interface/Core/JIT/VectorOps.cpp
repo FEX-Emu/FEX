@@ -3564,6 +3564,50 @@ DEF_OP(VUXTL2) {
   }
 }
 
+DEF_OP(VUSHLL) {
+  const auto Op = IROp->C<IR::IROp_VUSHLL>();
+  const auto OpSize = IROp->Size;
+
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector);
+  const auto BitShift = Op->BitShift;
+  LOGMAN_THROW_A_FMT(BitShift < IR::OpSizeAsBits(IROp->ElementSize / 2), "Bitshift size too large for source element size: {} < {}",
+                     BitShift, IR::OpSizeAsBits(IROp->ElementSize / 2));
+
+  if (Is256Bit) {
+    uunpklo(SubRegSize, Dst.Z(), Vector.Z());
+    lsl(SubRegSize, Dst.Z(), Dst.Z(), BitShift);
+  } else {
+    ushll(SubRegSize, Dst.D(), Vector.D(), BitShift);
+  }
+}
+
+DEF_OP(VUSHLL2) {
+  const auto Op = IROp->C<IR::IROp_VUSHLL2>();
+  const auto OpSize = IROp->Size;
+
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector);
+  const auto BitShift = Op->BitShift;
+  LOGMAN_THROW_A_FMT(BitShift < IR::OpSizeAsBits(IROp->ElementSize / 2), "Bitshift size too large for source element size: {} < {}",
+                     BitShift, IR::OpSizeAsBits(IROp->ElementSize / 2));
+
+  if (Is256Bit) {
+    uunpkhi(SubRegSize, Dst.Z(), Vector.Z());
+    lsl(SubRegSize, Dst.Z(), Dst.Z(), BitShift);
+  } else {
+    ushll2(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+  }
+}
+
 DEF_OP(VSQXTN) {
   const auto Op = IROp->C<IR::IROp_VSQXTN>();
   const auto OpSize = IROp->Size;
