@@ -249,7 +249,7 @@ namespace DiskCache {
   // The current version of the diskcache.
   // This must be changed any time codegen changes occur!
   // Be aware of the impact of changing this frequently!
-  static constexpr uint16_t FormatVersion = 44;
+  static constexpr uint16_t FormatVersion = 45;
 
   static constexpr uint32_t LOOKUP_KEY_MAX_BUCKET_DEPTH = 500;
 
