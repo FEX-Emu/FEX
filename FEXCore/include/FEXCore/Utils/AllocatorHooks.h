@@ -80,6 +80,10 @@ inline void VirtualDontNeed(void* Ptr, size_t Size, bool Recommit = true) {
   }
 }
 
+inline bool VirtualCommit(void* Ptr, size_t Size) {
+  return ::VirtualAlloc(Ptr, Size, MEM_COMMIT, PAGE_READWRITE) != nullptr;
+}
+
 inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
   DWORD prot {PAGE_NOACCESS};
 
@@ -111,21 +115,32 @@ FEX_DEFAULT_VISIBILITY extern MMAP_Hook mmap;
 FEX_DEFAULT_VISIBILITY extern MUNMAP_Hook munmap;
 FEX_DEFAULT_VISIBILITY extern void VirtualName(const char* Name, void* Ptr, size_t Size);
 
-// All commit parameters are ignored here, they are unnecessary as Linux supports overcommit
-
-inline void* VirtualAlloc(size_t Size, bool Execute = false, bool Commit = true) {
-  return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-}
+// Linux supports overcommit, which generally speaking means we can allocate
+// memory without bound, however some apps expect VmData to be roughly accurate,
+// so we we should only commit memory when actually needed, and just reserve it otehrwise.
 
 inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Commit = true) {
-  return FEXCore::Allocator::mmap(Base, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  int Prot = PROT_READ | (Commit ? PROT_WRITE : 0);
+  Prot |= (Commit && Execute) ? PROT_EXEC : 0;
+  return FEXCore::Allocator::mmap(Base, Size, Prot, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+}
+
+inline void* VirtualAlloc(size_t Size, bool Execute = false, bool Commit = true) {
+  return VirtualAlloc(nullptr, Size, Execute, Commit);
 }
 
 inline void VirtualFree(void* Ptr, size_t Size) {
   FEXCore::Allocator::munmap(Ptr, Size);
 }
 inline void VirtualDontNeed(void* Ptr, size_t Size, bool Recommit = true) {
+  if (!Recommit) {
+    // Decommit the pages.
+    ::mprotect(Ptr, Size, PROT_READ);
+  }
   ::madvise(reinterpret_cast<void*>(Ptr), Size, MADV_DONTNEED);
+}
+inline bool VirtualCommit(void* Ptr, size_t Size) {
+  return ::mprotect(Ptr, Size, PROT_READ | PROT_WRITE) == 0;
 }
 inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
   int prot {PROT_NONE};
