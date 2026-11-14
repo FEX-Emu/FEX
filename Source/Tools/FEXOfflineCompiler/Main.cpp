@@ -387,6 +387,28 @@ static LONG ExceptionHandler(_EXCEPTION_POINTERS* ExceptionInfo) {
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
+// _spawnv joins its arguments with spaces without quoting them
+static std::string QuoteCommandLineArgument(std::string_view Arg) {
+  if (!Arg.empty() && Arg.find_first_of(" \t\n\v\"") == Arg.npos) {
+    return std::string {Arg};
+  }
+
+  std::string Quoted = "\"";
+  size_t NumBackslashes = 0;
+  for (char C : Arg) {
+    if (C == '\\') {
+      ++NumBackslashes;
+      continue;
+    }
+    Quoted.append(C == '"' ? NumBackslashes * 2 + 1 : NumBackslashes, '\\');
+    Quoted += C;
+    NumBackslashes = 0;
+  }
+  Quoted.append(NumBackslashes * 2, '\\');
+  Quoted += '"';
+  return Quoted;
+}
+
 struct winsize {
   int ws_col;
 };
@@ -827,8 +849,18 @@ static int ProcessAll() {
       }
 #else
       GenerateArgs.insert(GenerateArgs.begin(), SelfPath.c_str());
-      GenerateArgs.push_back(nullptr);
-      auto Status = _spawnv(_P_WAIT, SelfPath.c_str(), GenerateArgs.data());
+      std::vector<std::string> QuotedArgs;
+      QuotedArgs.reserve(GenerateArgs.size());
+      for (auto* Arg : GenerateArgs) {
+        QuotedArgs.push_back(QuoteCommandLineArgument(Arg));
+      }
+      std::vector<const char*> SpawnArgs;
+      SpawnArgs.reserve(QuotedArgs.size() + 1);
+      for (auto& Arg : QuotedArgs) {
+        SpawnArgs.push_back(Arg.c_str());
+      }
+      SpawnArgs.push_back(nullptr);
+      auto Status = _spawnv(_P_WAIT, SelfPath.c_str(), SpawnArgs.data());
       if (Status) {
         fmt::println("ERROR: Cache generation failed for {}", BinaryName);
       }
@@ -844,6 +876,10 @@ int main(int argc, char** argv) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 #else
+  {
+    char* envp[] = {nullptr};
+    FEX::Config::LoadConfig("", envp, FEX::ReadPortabilityInformation());
+  }
   FEX::Windows::Logging::Init();
 #endif
 
