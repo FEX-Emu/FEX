@@ -37,6 +37,10 @@ target_link_libraries(rlimit_data_pthread.${BITNESS} PRIVATE pthread)
 
 target_link_options(smc-1-dynamic.${BITNESS} PRIVATE -z execstack)
 
+if(BITNESS EQUAL 64)
+  target_link_libraries(concurrent_compile.${BITNESS} PRIVATE pthread)
+endif()
+
 target_link_libraries(smc-mt-1.${BITNESS} PRIVATE pthread)
 
 target_link_libraries(smc-mt-2.${BITNESS} PRIVATE pthread)
