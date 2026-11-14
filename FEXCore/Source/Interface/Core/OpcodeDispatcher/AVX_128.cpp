@@ -1489,14 +1489,16 @@ void OpDispatchBuilder::AVX128_VPDPImpl(OpcodeArgs, std::function<Ref(Ref Acc, R
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-void OpDispatchBuilder::AVX128_VPDPBUSD(OpcodeArgs, bool Saturating) {
-  AVX128_VPDPImpl(Op,
-                  [this, Saturating](Ref Acc, Ref Src1, Ref Src2) { return VPDPBUSDOpImpl(OpSize::i128Bit, Acc, Src1, Src2, Saturating); });
+void OpDispatchBuilder::AVX128_VPDPBxxD(OpcodeArgs, bool LHSSigned, bool RHSSigned, bool Saturating) {
+  AVX128_VPDPImpl(Op, [this, LHSSigned, RHSSigned, Saturating](Ref Acc, Ref Src1, Ref Src2) {
+    return VPDPBxxDOpImpl(OpSize::i128Bit, Acc, Src1, Src2, LHSSigned, RHSSigned, Saturating);
+  });
 }
 
-void OpDispatchBuilder::AVX128_VPDPWSSD(OpcodeArgs, bool Saturating) {
-  AVX128_VPDPImpl(Op,
-                  [this, Saturating](Ref Acc, Ref Src1, Ref Src2) { return VPDPWSSDOpImpl(OpSize::i128Bit, Acc, Src1, Src2, Saturating); });
+void OpDispatchBuilder::AVX128_VPDPWxxD(OpcodeArgs, bool LHSSigned, bool RHSSigned, bool Saturating) {
+  AVX128_VPDPImpl(Op, [this, LHSSigned, RHSSigned, Saturating](Ref Acc, Ref Src1, Ref Src2) {
+    return VPDPWxxDOpImpl(OpSize::i128Bit, Acc, Src1, Src2, LHSSigned, RHSSigned, Saturating);
+  });
 }
 
 void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs, IR::OpSize ElementSize) {

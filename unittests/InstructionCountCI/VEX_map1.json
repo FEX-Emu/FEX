@@ -13,7 +13,7 @@
       "FLAGM2",
       "FRINTTS"
     ],
-    "BinaryCacheVersion": 44
+    "BinaryCacheVersion": 45
   },
   "Instructions": {
     "vmovups xmm0, xmm0": {
@@ -5344,22 +5344,26 @@
       ]
     },
     "vpmaddwd ymm0, ymm1, ymm2": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "Map 1 0b01 0xf5 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "smullb z0.s, z17.h, z18.h",
-        "smullt z1.s, z17.h, z18.h",
-        "zip1 z2.s, z0.s, z1.s",
-        "smullb z0.s, z17.h, z18.h",
-        "smullt z1.s, z17.h, z18.h",
-        "zip2 z3.s, z0.s, z1.s",
-        "movprfx z0, z2",
-        "addp z0.s, p7/m, z0.s, z3.s",
-        "uzp2 z1.s, z0.s, z0.s",
-        "uzp1 z16.s, z0.s, z0.s",
-        "splice z16.d, p6, z16.d, z1.d"
+        "uunpklo z2.d, z17.s",
+        "uunpkhi z3.d, z17.s",
+        "uunpklo z4.d, z18.s",
+        "uunpkhi z5.d, z18.s",
+        "movi v6.2d, #0x0",
+        "mov z0.d, z6.d",
+        "sdot z0.d, z2.h, z4.h",
+        "mov z2.d, z0.d",
+        "sdot z6.d, z3.h, z5.h",
+        "mov z0.d, #0",
+        "uzp1 z2.s, z2.s, z0.s",
+        "mov z1.d, #0",
+        "uzp1 z1.s, z6.s, z1.s",
+        "movprfx z16, z2",
+        "splice z16.s, p6, z16.s, z1.s"
       ]
     },
     "vpsadbw xmm0, xmm1, xmm2": {
