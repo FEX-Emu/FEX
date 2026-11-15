@@ -362,6 +362,22 @@ void HandleImageUnmap(uint64_t Address, uint64_t Size) {
 }
 } // namespace
 
+class ScopedCallbackDisable {
+private:
+  bool Prev;
+
+public:
+  ScopedCallbackDisable() {
+    const auto CPUArea = GetCPUArea();
+    Prev = CPUArea.Area->InSyscallCallback;
+    CPUArea.Area->InSyscallCallback = true;
+  }
+
+  ~ScopedCallbackDisable() {
+    GetCPUArea().Area->InSyscallCallback = Prev;
+  }
+};
+
 namespace Exception {
 static std::optional<FEX::Windows::TSOHandlerConfig> HandlerConfig;
 static uintptr_t KiUserExceptionDispatcher;
@@ -685,12 +701,21 @@ static void SynchronousExceptionHandler(FEXCore::Context::Context* CTX, FEXCore:
   ERROR_AND_DIE_FMT("This should always noreturn");
 }
 
+// Work queued by other processes (or by ntdll on behalf of a system call) is applied with code invalidations that hold
+// CodeInvalidationMutex, and the allocator can free memory while it is held. ntdll only skips its memory notifications
+// for calls made inside a syscall callback, so without this the nested NtFreeVirtualMemory calls back into
+// NotifyMemoryFree on the same thread and locks the mutex a second time.
+static void ProcessPendingCrossProcessWork() {
+  ScopedCallbackDisable Guard;
+  ProcessPendingCrossProcessEmulatorWork();
+}
+
 class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
   ECSyscallHandler() = default;
 
   void HandleSyscall(FEXCore::Core::CpuStateFrame* Frame) override {
-    ProcessPendingCrossProcessEmulatorWork();
+    ProcessPendingCrossProcessWork();
 
     // Manually raise an exeption with the current JIT state packed into a native context, ntdll handles this and
     // reenters the JIT (see dlls/ntdll/signal_arm64ec.c in wine).
@@ -732,13 +757,13 @@ public:
   }
 
   void PreCompile() override {
-    ProcessPendingCrossProcessEmulatorWork();
+    ProcessPendingCrossProcessWork();
   }
 };
 } // namespace Exception
 
 extern "C" void SyncThreadContext(CONTEXT* Context) {
-  ProcessPendingCrossProcessEmulatorWork();
+  Exception::ProcessPendingCrossProcessWork();
   auto* Thread = GetCPUArea().ThreadState();
   // All other EFlags bits are lost when converting to/from an ARM64EC context, so merge them in from the current JIT state.
   // This is advisable over dropping their values as thread suspend/resume uses this function, and that can happen at any point in guest code.
@@ -881,22 +906,6 @@ void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {
     SuspendAllThreads();
   }
 }
-
-class ScopedCallbackDisable {
-private:
-  bool Prev;
-
-public:
-  ScopedCallbackDisable() {
-    const auto CPUArea = GetCPUArea();
-    Prev = CPUArea.Area->InSyscallCallback;
-    CPUArea.Area->InSyscallCallback = true;
-  }
-
-  ~ScopedCallbackDisable() {
-    GetCPUArea().Area->InSyscallCallback = Prev;
-  }
-};
 
 // Returns true if exception dispatch should be halted and the execution context restored to NativeContext
 bool ResetToConsistentStateImpl(const ThreadCPUArea CPUArea, EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
