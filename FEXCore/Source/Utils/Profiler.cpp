@@ -9,34 +9,63 @@
 
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/SpinWaitLock.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 
 #ifdef ENABLE_FEXCORE_PROFILER
-#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
-#include <array>
-#include <limits.h>
-#include <time.h>
+namespace FEXCore::Profiler {
+constexpr static uint64_t NanosecondsInSecond = 1'000'000'000ULL;
+
+#ifdef ARCHITECTURE_arm64
+static uint64_t NanosecondPerCycleMultipler {1};
+static uint64_t NanosecondPerCycleDivisor {1};
+
+static void InitCycleCountConversion() {
+  // Only scale inside the range of one hour.
+  constexpr static uint64_t HoursInRange = 1;
+  constexpr static uint64_t SecondsInRange = HoursInRange * 60 * 60;
+  const static uint64_t CyclesInRange = FEXCore::Utils::SpinWaitLock::CycleCounterFrequency * SecondsInRange;
+
+  const uint64_t MultiplyAmount = UINT64_MAX / CyclesInRange;
+  const double CyclesPerNanosecond =
+    static_cast<double>(FEXCore::Utils::SpinWaitLock::CycleCounterFrequency) / static_cast<double>(NanosecondsInSecond);
+
+  NanosecondPerCycleMultipler = MultiplyAmount;
+  NanosecondPerCycleDivisor = MultiplyAmount * CyclesPerNanosecond;
+}
+
+static inline uint64_t GetCycleTime() {
+  // Just use the SpinWaitLock cycle counter.
+  return FEXCore::Utils::SpinWaitLock::GetCycleCounter();
+}
+
+static inline uint64_t ConvertTimescale(uint64_t Cycles) {
+  return Cycles * NanosecondPerCycleMultipler / NanosecondPerCycleDivisor;
+}
+#else
+static void InitCycleCountConversion() {
+  // NOP
+}
+
+// Return nanoseconds if not on arm64.
 #ifndef _WIN32
-static inline uint64_t GetTime() {
+static inline uint64_t GetCycleTime() {
   // We want the time in the least amount of overhead possible
   // clock_gettime will do a VDSO call with the least amount of overhead
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return ts.tv_sec * 1'000'000'000ULL + ts.tv_nsec;
+  return ts.tv_sec * NanosecondsInSecond + ts.tv_nsec;
 }
 #else
-
-static inline uint64_t GetTime() {
-  // GetTime needs to return nanoseconds, query the interface.
+static inline uint64_t GetCycleTime() {
+  // GetCycleTime needs to return nanoseconds, query the interface.
   static uint64_t FrequencyScale = {};
   if (!FrequencyScale) [[unlikely]] {
     LARGE_INTEGER Frequency {};
     while (!QueryPerformanceFrequency(&Frequency))
       ;
-    constexpr uint64_t NanosecondsInSecond = 1'000'000'000ULL;
-
     // On WINE this will always result in a scale of 100.
     FrequencyScale = NanosecondsInSecond / Frequency.QuadPart;
   }
@@ -45,20 +74,25 @@ static inline uint64_t GetTime() {
     ;
   return ticks.QuadPart * FrequencyScale;
 }
-
+#endif
+static inline uint64_t ConvertTimescale(uint64_t Cycles) {
+  // Already in nanoseconds.
+  return Cycles;
+}
 #endif
 
-namespace FEXCore::Profiler {
 ProfilerBlock::ProfilerBlock(const std::string_view Format)
-  : DurationBegin {GetTime()}
+  : DurationBegin {GetCycleTime()}
   , Format {Format} {}
 
 ProfilerBlock::~ProfilerBlock() {
-  auto Duration = GetTime() - DurationBegin;
+  auto Duration = ConvertTimescale(GetCycleTime() - DurationBegin);
   TraceObject(Format, Duration);
 }
+
 } // namespace FEXCore::Profiler
 
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
 namespace GPUVis {
 // ftrace FD for writing trace data.
 // Needs to be a raw FD since we hold this open for the entire application execution.
@@ -88,6 +122,7 @@ void Init() {
       break;
     }
   }
+  FEXCore::Profiler::InitCycleCountConversion();
 }
 
 void Shutdown() {
