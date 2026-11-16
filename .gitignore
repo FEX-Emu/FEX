@@ -13,3 +13,4 @@ out/
 .cache
 .idea/
 CMakeLists.txt.user
+result
