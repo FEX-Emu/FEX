@@ -5,7 +5,18 @@
       "XMM2": ["0x6868C3F3AAED56E0", "0xF0FCE9E294E6E6DE"],
       "XMM3": ["0xA8B3BD15FA04D6D7", "0xDE761956A1F750B1"],
       "XMM4": ["0xCFBBDFA4E5E4712D", "0x76AD0D46447127D3"],
-      "XMM5": ["0x9BDCA44510E70C65", "0x4474BFAA2B70A524"]
+      "XMM5": ["0x9BDCA44510E70C65", "0x4474BFAA2B70A524"],
+      "XMM6": ["0x66CACF9DB74FA403", "0x22A844FD479BDBF0"],
+      "XMM7": ["0x72D5DB00DA5396E1", "0x5BD6429DD83298CD"],
+      "XMM8": ["0xA5E1EC3918BE0C95", "0xA3F7BF0143303AFB"],
+      "XMM9": ["0x66CACF9DB74FA403", "0x22A844FD479BDBF0"],
+      "XMM10": ["0x3DAF34FAC0302CEA", "0xA5454C78B5CD99D0"],
+      "XMM11": ["0x66CACF9DB74FA403", "0x22A844FD479BDBF0"],
+      "XMM12": ["0xAD606DCDAD9C632E", "0xC3B217085A1A21F4"],
+      "XMM13": ["0x04666E3839095BFB", "0xEDDFF2380CF1B599"],
+      "XMM14": ["0x5822A18A2B16EF23", "0x4E31F3E32A4509D5"],
+      "XMM15": ["0x66CACF9DB74FA403", "0x22A844FD479BDBF0"],
+      "XMM0": ["0x6868C3F3AAED56E0", "0x59FAD9A294E6E6DE"]
   },
   "HostFeatures": ["SHA"]
 }
@@ -33,6 +44,46 @@ sha1rnds4 xmm4, xmm2, 2
 ; With imm = 3
 movaps xmm5, [rdx + 16 * 0]
 sha1rnds4 xmm5, xmm2, 3
+
+; Now do the patterns present in some crypto libraries
+; to excercise the SHA1 peephole optimizations.
+movaps xmm6, [rdx + 16 * 0]
+sha1rnds4 xmm6, xmm2, 0
+sha1rnds4 xmm6, xmm2, 1
+
+movaps xmm8, [rdx + 16 * 0]
+sha1rnds4 xmm8, xmm2, 0
+movaps xmm9, xmm8
+sha1rnds4 xmm9, xmm2, 1
+
+movaps xmm10, [rdx + 16 * 0]
+sha1rnds4 xmm10, xmm2, 0
+movaps xmm11, xmm10
+sha1rnds4 xmm10, xmm2, 2
+sha1rnds4 xmm11, xmm2, 1
+
+movaps xmm12, [rdx + 16 * 0]
+sha1rnds4 xmm12, xmm2, 0
+movaps xmm13, xmm12
+sha1rnds4 xmm12, xmm2, 0
+sha1nexte xmm13, xmm2
+movaps xmm0, xmm13
+movaps xmm13, xmm12
+sha1rnds4 xmm12, xmm0, 1
+
+; Now cases where the peephole optimization
+; must NOT be applied for correctness.
+movaps xmm14, [rdx + 16 * 0]
+sha1rnds4 xmm14, xmm2, 0
+movaps xmm15, xmm14
+sha1rnds4 xmm14, xmm2, 2
+sha1rnds4 xmm14, xmm2, 3
+sha1rnds4 xmm15, xmm2, 1
+
+movaps xmm7, [rdx + 16 * 0]
+sha1rnds4 xmm7, xmm2, 0
+pxor xmm7, xmm2
+sha1rnds4 xmm7, xmm2, 1
 
 hlt
 
