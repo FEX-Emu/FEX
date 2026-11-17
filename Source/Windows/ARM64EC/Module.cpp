@@ -1090,8 +1090,15 @@ void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot, BOOL 
   if (!After) {
     ThreadCreationMutex.lock();
   } else {
-    // MEM_RESET(_UNDO) ignores the passed permissions
-    if (!Status && !(Type & (MEM_RESET | MEM_RESET_UNDO))) {
+    // MEM_RESET(_UNDO) ignores the passed permissions.
+    // MEM_RESERVE doesn't actually allow anything to use the memory.
+    const bool WasSuccess = Status == STATUS_SUCCESS;
+    const bool IsNotReset = (Type & (MEM_RESET | MEM_RESET_UNDO)) == 0;
+    // (Type & MEM_COMMIT) = Need to track
+    // (Type & (MEM_COMMIT | MEM_RESERVE)) = Need to track
+    // (TYPE & MEM_RESERVE) = No need to track
+    const bool IsNotReserveWithoutCommit = (Type & (MEM_COMMIT | MEM_RESERVE)) != MEM_RESERVE;
+    if (WasSuccess && IsNotReset && IsNotReserveWithoutCommit) {
       InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
     }
     ThreadCreationMutex.unlock();
