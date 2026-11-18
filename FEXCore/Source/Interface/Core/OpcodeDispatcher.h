@@ -956,6 +956,7 @@ public:
   // patterns necessary for some peephole optimizations.
   Ref LastDefFollowCopy(const X86Tables::DecodedOperand& Operand) {
     // Currently only XMM registers are supported by this helper.
+    // TODO: Support YMM, and GPRs as well when needed.
     if (!Operand.IsGPR()) {
       return nullptr;
     }
