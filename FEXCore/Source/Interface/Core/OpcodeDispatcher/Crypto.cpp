@@ -11,12 +11,17 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include "Interface/Core/OpcodeDispatcher.h"
 
+#include <array>
 #include <cstdint>
 
 namespace FEXCore::IR {
 class OrderedNode;
 
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
+
+// These lists are used for identifying an already emitted SHADataShuffle operation.
+constexpr std::array Sha1RoundOps = {OP_VSHA1C, OP_VSHA1P, OP_VSHA1M};
+constexpr std::array Sha1MessageOps = {OP_VSHA1SU1};
 
 void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   if (!CTX->HostFeatures.SupportsSHA) {
@@ -26,8 +31,28 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
+  // Peephole: Attempt to identify this pattern:
+  //   sha1rnds4 xmm1, xmm2, imm
+  //   movaps xmm3, xmm1
+  //   sha1nexte xmm3, xmm4
+  //    OR
+  //   sha1rnds4 xmm1, xmm2, imm
+  //   sha1nexte xmm1, xmm4
+  const Ref DestLastWrite = LastDefFollowCopy(Op->Dest);
+  const Ref PrevRoundInstruction = IsSHADataShuffle(DestLastWrite, Sha1RoundOps) ? GetArgIfOp(DestLastWrite, OP_VTBL1, 0) : nullptr;
+
+  // Peephole: Attempt to identify this pattern:
+  //   sha1msg2 xmm4, xmm3
+  //   sha1nexte xmm1, xmm4
+  // Use the IR value that sha1msg2 wrote to xmm4 as the message, instead of loading xmm4 again.
+  // This will save us a shuffle if another sha1rnds4 comes next.
+  const Ref SrcLastWrite = LastDefFollowCopy(Op->Src[0]);
+  if (IsSHADataShuffle(SrcLastWrite, Sha1MessageOps)) {
+    Src = SrcLastWrite;
+  }
+
   Ref Result {};
-  if (CTX->HostFeatures.SupportsSVE128()) {
+  if (CTX->HostFeatures.SupportsSVE128() && !PrevRoundInstruction) {
     auto ZeroVec = LoadZeroVector(OpSize::i128Bit);
     auto Tmp = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, ZeroVec, Dest);
     auto Xar = _VXar(OpSize::i128Bit, OpSize::i32Bit, ZeroVec, Tmp, 2);
@@ -37,7 +62,7 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
     // This only operates on element 0 rather than element 3. We don't have the luxury of rewriting the x86 SHA algorithm to take advantage of this.
     // Move the element to zero, rotate, and then move back (Using duplicates).
     // Saves one instruction versus that path that doesn't support SHA extension.
-    auto Duplicated = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
+    auto Duplicated = PrevRoundInstruction ? PrevRoundInstruction : _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
     auto Sha1HRotated = _VSha1H(Duplicated);
     auto RotatedNode = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Sha1HRotated, 0);
     auto Tmp = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src, RotatedNode);
@@ -73,7 +98,14 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
 
   // ARM SHA1 mostly matches x86 semantics, except the input and outputs are both flipped from elements 0,1,2,3 to 3,2,1,0.
   auto Src1 = SHADataShuffle(Dest);
-  auto Src2 = SHADataShuffle(Src);
+
+  // Peephole: Attempt to identify this pattern:
+  //   sha1msg2 xmm3, xmm2
+  //   sha1msg2 xmm4, xmm3
+  // In this case we can elide one of the shuffles between the two instructions,
+  // and just pass the result of the first one to the second.
+  const Ref SrcLastWrite = LastDefFollowCopy(Op->Src[0]);
+  auto Src2 = IsSHADataShuffle(SrcLastWrite, Sha1MessageOps) ? GetArgIfOp(SrcLastWrite, OP_VTBL1, 0) : SHADataShuffle(Src);
 
   // The result is swizzled differently than expected
   auto Result = SHADataShuffle(_VSha1SU1(Src1, Src2));
@@ -109,15 +141,38 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
 
   const auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
 
-  Ref Src1 = SHADataShuffle(Dest);
-  Ref Src2 = SHADataShuffle(Src);
-  Src2 = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src2, ConstantVector);
+  // Peephole: Attempt to identify this pattern:
+  //   sha1rnds4 xmm1, xmm2, imm
+  //   sha1nexte xmm2, xmm3
+  //   sha1rnds4 xmm1, xmm2, imm
+
+  // Peephole: If Dest is the shuffled result of a SHA1RNDS4, we can elide one of the shuffles between the two instructions,
+  // and just pass the result of the first one to the second.
+  const Ref StateLastWrite = LastDefFollowCopy(Op->Dest);
+  const Ref RoundState = IsSHADataShuffle(StateLastWrite, Sha1RoundOps) ? GetArgIfOp(StateLastWrite, OP_VTBL1, 0) : SHADataShuffle(Dest);
+
+  // Peephole: If Src is the result of a SHA1NEXTE, we can directly use the E value
+  // from that instruction, instead of reconstructing it.
+  const Ref SrcLastWrite = LastDefFollowCopy(Op->Src[0]);
+  const Ref Sha1NextEMessage = GetArgIfOp(SrcLastWrite, OP_VINSELEMENT, 0);
+  const Ref Sha1NextEMessagePlusE = GetArgIfOp(SrcLastWrite, OP_VINSELEMENT, 1);
+  const Ref Sha1NextERotatedA = GetArgIfOp(GetArgIfOp(Sha1NextEMessagePlusE, OP_VADD, 1), OP_VDUPELEMENT, 0);
+  const bool SrcIsSha1NextE = Sha1NextERotatedA && GetOpHeader(WrapNode(Sha1NextERotatedA))->Op == OP_VSHA1H &&
+                              GetArgIfOp(Sha1NextEMessagePlusE, OP_VADD, 0) == Sha1NextEMessage;
+  const Ref RoundE = SrcIsSha1NextE ? Sha1NextERotatedA : ZeroRegister;
+  const Ref RoundMessage = SrcIsSha1NextE ? Sha1NextEMessage : Src;
+
+  // Peephole: If RoundMessage is the shuffled result of a SHA1MSG2,
+  // we can reuse the result from that instruction and elide a shuffle.
+  const Ref RoundMessageArm =
+    IsSHADataShuffle(RoundMessage, Sha1MessageOps) ? GetArgIfOp(RoundMessage, OP_VTBL1, 0) : SHADataShuffle(RoundMessage);
+  const Ref RoundMessagePlusK = _VAdd(OpSize::i128Bit, OpSize::i32Bit, RoundMessageArm, ConstantVector);
 
   switch (Imm8) {
-  case 0: Result = SHADataShuffle(_VSha1C(Src1, ZeroRegister, Src2)); break;
-  case 2: Result = SHADataShuffle(_VSha1M(Src1, ZeroRegister, Src2)); break;
+  case 0: Result = SHADataShuffle(_VSha1C(RoundState, RoundE, RoundMessagePlusK)); break;
+  case 2: Result = SHADataShuffle(_VSha1M(RoundState, RoundE, RoundMessagePlusK)); break;
   case 1:
-  case 3: Result = SHADataShuffle(_VSha1P(Src1, ZeroRegister, Src2)); break;
+  case 3: Result = SHADataShuffle(_VSha1P(RoundState, RoundE, RoundMessagePlusK)); break;
   }
 
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, Result);

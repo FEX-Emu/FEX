@@ -19,9 +19,11 @@
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
+#include <algorithm>
 #include <bit>
 #include <cstdint>
 #include <fmt/format.h>
+#include <span>
 #include <stddef.h>
 #include <utility>
 #include <xxhash.h>
@@ -931,6 +933,66 @@ public:
     auto LookupIndexes =
       LoadAndCacheIndexedNamedVectorConstant(OpSize::i128Bit, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD, Shuffle * 16);
     return _VTBL1(OpSize::i128Bit, Src, LookupIndexes);
+  }
+
+  // Returns true if Value == SHADataShuffle(X), and X is the result of one of Ops.
+  bool IsSHADataShuffle(Ref Value, std::span<const IROps> Ops) {
+    const Ref X = GetArgIfOp(Value, OP_VTBL1, 0);
+    if (!X) {
+      return false;
+    }
+
+    const auto XOp = GetOpHeader(WrapNode(X))->Op;
+    return std::any_of(Ops.begin(), Ops.end(), [XOp](auto Op) { return XOp == Op; });
+  }
+
+  // Helper that determine the last "real" definition of a register,
+  // following through up to a single copy. This is useful for detecting
+  // patterns necessary for some peephole optimizations.
+  Ref LastDefFollowCopy(const X86Tables::DecodedOperand& Operand) {
+    // Currently only XMM registers are supported by this helper.
+    // TODO: Support YMM, and GPRs as well when needed.
+    if (!Operand.IsGPR()) {
+      return nullptr;
+    }
+
+    const auto Reg = Operand.Data.GPR.GPR;
+    LOGMAN_THROW_A_FMT(Reg >= X86State::REG_XMM_0 && Reg <= X86State::REG_XMM_15, "LastDefFollowCopy only supports XMM registers");
+
+    const int RegisterIndex = FPR0Index + Reg - X86State::REG_XMM_0;
+    const Ref LastWrite = RegCache.LastDef[RegisterIndex];
+    const auto Header = LastWrite ? GetOpHeader(WrapNode(LastWrite)) : nullptr;
+
+    if (!Header || Header->Op != OP_LOADREGISTER) {
+      return LastWrite;
+    }
+
+    // Check if the last write was a copy of a different XMM.
+    const auto Copy = Header->C<IROp_LoadRegister>();
+    if (Copy->Class != RegClass::FPR || Copy->Reg > FPR15Index - FPR0Index) {
+      return LastWrite;
+    }
+
+    // If the last write was a copy, check if the source of the copy was written in this block,
+    // and if so, return the source instruction instead.
+    const int CopyRegister = FPR0Index + Copy->Reg;
+    const auto CopyInstructionIndex = RegCache.LastDefIndex[RegisterIndex];
+
+    if (!RegCache.LastDef[CopyRegister]) {
+      return nullptr;
+    }
+
+    if (RegCache.LastDefIndex[CopyRegister] < CopyInstructionIndex) {
+      return RegCache.LastDef[CopyRegister];
+    }
+
+    if (RegCache.LastDefIndex[CopyRegister] > CopyInstructionIndex && RegCache.PrevDef[CopyRegister] &&
+        RegCache.PrevDefIndex[CopyRegister] < CopyInstructionIndex) {
+
+      return RegCache.PrevDef[CopyRegister];
+    }
+
+    return nullptr;
   }
 
   RefPair AVX128_LoadSource_WithOpSize(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
