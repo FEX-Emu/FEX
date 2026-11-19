@@ -19,6 +19,7 @@
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
+#include <algorithm>
 #include <bit>
 #include <cstdint>
 #include <fmt/format.h>
@@ -942,13 +943,7 @@ public:
     }
 
     const auto XOp = GetOpHeader(WrapNode(X))->Op;
-    for (const auto Op : Ops) {
-      if (XOp == Op) {
-        return true;
-      }
-    }
-
-    return false;
+    return std::any_of(Ops.begin(), Ops.end(), [XOp](auto Op) { return XOp == Op; });
   }
 
   // Helper that determine the last "real" definition of a register,

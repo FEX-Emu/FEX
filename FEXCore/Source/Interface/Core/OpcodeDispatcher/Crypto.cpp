@@ -11,6 +11,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include "Interface/Core/OpcodeDispatcher.h"
 
+#include <array>
 #include <cstdint>
 
 namespace FEXCore::IR {
@@ -19,8 +20,8 @@ class OrderedNode;
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
 // These lists are used for identifying an already emitted SHADataShuffle operation.
-constexpr IROps Sha1RoundOps[] = {OP_VSHA1C, OP_VSHA1P, OP_VSHA1M};
-constexpr IROps Sha1MessageOps[] = {OP_VSHA1SU1};
+constexpr std::array Sha1RoundOps = {OP_VSHA1C, OP_VSHA1P, OP_VSHA1M};
+constexpr std::array Sha1MessageOps = {OP_VSHA1SU1};
 
 void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   if (!CTX->HostFeatures.SupportsSHA) {
