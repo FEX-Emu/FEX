@@ -489,11 +489,11 @@ public:
   WowSyscallHandler() = default;
 
   static void HandleSyscallImpl(FEXCore::Core::CpuStateFrame* Frame) {
-    const uint64_t ReturnRIP = *(uint32_t*)(Frame->State.gregs[FEXCore::X86State::REG_RSP]); // Return address from the stack
-    uint64_t ReturnRSP = Frame->State.gregs[FEXCore::X86State::REG_RSP] + 4;                 // Stack pointer after popping return address
-    uint64_t ReturnRAX = 0;
+    const uint32_t ReturnRIP = *(uint32_t*)(Frame->State.gregs[FEXCore::X86State::REG_RSP]); // Return address from the stack
+    uint32_t ReturnRSP = Frame->State.gregs[FEXCore::X86State::REG_RSP] + 4;                 // Stack pointer after popping return address
+    uint32_t ReturnRAX = 0;
 
-    if (Frame->State.rip == (uint64_t)BridgeInstrs::UnixCall) {
+    if (Frame->State.rip == static_cast<uint32_t>(reinterpret_cast<uintptr_t>(BridgeInstrs::UnixCall))) {
       struct StackLayout {
         unixlib_handle_t Handle;
         UINT32 ID;
@@ -505,11 +505,11 @@ public:
 
       Context::FlushThreadStateContext();
       Context::UnlockJITContext();
-      ReturnRAX = static_cast<uint64_t>(WineUnixCall(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
+      ReturnRAX = static_cast<uint32_t>(WineUnixCall(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
       Context::LockJITContext();
       Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
-    } else if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall) {
-      const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
+    } else if (Frame->State.rip == static_cast<uint32_t>(reinterpret_cast<uintptr_t>(BridgeInstrs::Syscall))) {
+      const uint32_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
 
       Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP;
       Frame->State.rip = ReturnRIP;
@@ -517,7 +517,7 @@ public:
       Context::FlushThreadStateContext();
       Context::UnlockJITContext();
       Wow64ProcessPendingCrossProcessItems();
-      ReturnRAX = static_cast<uint64_t>(Wow64SystemServiceEx(static_cast<UINT>(EntryRAX), reinterpret_cast<UINT*>(ReturnRSP + 4)));
+      ReturnRAX = static_cast<uint32_t>(Wow64SystemServiceEx(static_cast<UINT>(EntryRAX), reinterpret_cast<UINT*>(ReturnRSP + 4)));
       Context::LockJITContext();
       Frame->State.gregs[FEXCore::X86State::REG_RAX] = ReturnRAX;
     }
