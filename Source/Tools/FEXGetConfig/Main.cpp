@@ -23,6 +23,7 @@ struct TSOEmulationFacts {
   bool LSE {}, LSE2 {};
   bool HardwareTSO {};
   bool LRCPC1 {}, LRCPC2 {}, LRCPC3 {};
+  uint32_t LSE2Size {};
 };
 
 bool CheckForHardwareTSO() {
@@ -43,6 +44,9 @@ bool CheckForHardwareTSO() {
   }
   return false;
 }
+enum CTR_FIELDS {
+  LSE2Size = 40,
+};
 
 enum ISAR0_FIELDS {
   LSE = 20,
@@ -57,6 +61,12 @@ enum MMFR2_FIELDS {
 };
 
 constexpr static uint32_t IDFIELDMASK = 0b1111;
+uint64_t GetCTR() {
+  uint64_t Result {};
+  asm("mrs %0, CTR_EL0;" : "=r"(Result));
+  return Result;
+}
+
 uint64_t GetISAR0() {
   uint64_t Result {};
   asm("mrs %0, ID_AA64ISAR0_EL1;" : "=r"(Result));
@@ -76,18 +86,47 @@ uint64_t GetMMFR2() {
 }
 
 TSOEmulationFacts GetTSOEmulationFacts() {
+  const auto CTR = GetCTR();
   const auto ISAR0 = GetISAR0();
   const auto ISAR1 = GetISAR1();
   const auto MMFR2 = GetMMFR2();
 
+  const bool HasLSE2 = ((MMFR2 >> MMFR2_FIELDS::AT) & IDFIELDMASK) >= 0b0001;
+  uint32_t LSE2Size = 1;
+  if (HasLSE2) {
+    // CTR_EL0[43:40] == LSE2Size.
+    // LSE2Size is size of LSE2 granularity with: 2^(4+LSE2Size) up to 2^16 (0b1100).
+    // 0b1101/0b1110 = reserved.
+    // 0b1111 = unbounded
+    const uint32_t LSE2SizeLog2 = ((CTR >> CTR_FIELDS::LSE2Size) & IDFIELDMASK);
+    if (LSE2SizeLog2 == 0b1111) {
+      LSE2Size = ~0U;
+    } else if (LSE2SizeLog2 == 0b1101 || LSE2SizeLog2 == 0b1110) {
+      // Reserved.
+      LSE2Size = 0;
+    } else {
+      LSE2Size = 1U << (LSE2SizeLog2 + 4);
+    }
+  }
+
   return {
     .LSE = ((ISAR0 >> ISAR0_FIELDS::LSE) & IDFIELDMASK) >= 0b0010,
-    .LSE2 = ((MMFR2 >> MMFR2_FIELDS::AT) & IDFIELDMASK) >= 0b0001,
+    .LSE2 = HasLSE2,
     .HardwareTSO = CheckForHardwareTSO(),
     .LRCPC1 = ((ISAR1 >> ISAR1_FIELDS::LRCPC) & IDFIELDMASK) >= 0b0001,
     .LRCPC2 = ((ISAR1 >> ISAR1_FIELDS::LRCPC) & IDFIELDMASK) >= 0b0010,
     .LRCPC3 = ((ISAR1 >> ISAR1_FIELDS::LRCPC) & IDFIELDMASK) >= 0b0011,
+    .LSE2Size = LSE2Size,
   };
+}
+
+std::string LSE2SizeAsString(uint32_t Size) {
+  if (Size == 0) {
+    return "Reserved";
+  } else if (Size == ~0U) {
+    return "Unbounded";
+  }
+  return fmt::format("{}", Size);
 }
 } // namespace
 
@@ -358,16 +397,28 @@ static void PrintTSOInfo() {
   }
 
   if (FFInfo.LoadStoreFaultAlignment != 1) {
-    UnalignedMemoryLoadStoreAlignmentGranularity = fmt::format("\e[32m{}-byte\e[0m", FFInfo.LoadStoreFaultAlignment);
+    std::string Expected {};
+    if (FFInfo.LoadStoreFaultAlignment != TSOFacts.LSE2Size) {
+      Expected = fmt::format(" (Expected \e[31m{}-byte\e[0m)", LSE2SizeAsString(TSOFacts.LSE2Size));
+    }
+
+    UnalignedMemoryLoadStoreAlignmentGranularity = fmt::format("\e[32m{}-byte\e[0m{}", FFInfo.LoadStoreFaultAlignment, Expected);
   } else {
-    UnalignedMemoryLoadStoreAlignmentGranularity = TSOFacts.LSE2 ? "\e[32m16-byte\e[0m" : "\e[31mNatural alignment\e[0m";
+    UnalignedMemoryLoadStoreAlignmentGranularity =
+      TSOFacts.LSE2 ? fmt::format("\e[32m{}-byte\e[0m", LSE2SizeAsString(TSOFacts.LSE2Size)) : "\e[31mNatural alignment\e[0m";
   }
 
   if (FFInfo.LoadStoreFaultAlignment != FFInfo.RMWFaultAlignment) {
-    if (FFInfo.LoadStoreFaultAlignment != 1) {
-      UnalignedRMWAlignmentGranularity = fmt::format("\e[32m{}-byte\e[0m", FFInfo.RMWFaultAlignment);
+    std::string Expected {};
+    if (FFInfo.RMWFaultAlignment != TSOFacts.LSE2Size) {
+      Expected = fmt::format(" (Expected \e[31m{}-byte\e[0m)", LSE2SizeAsString(TSOFacts.LSE2Size));
+    }
+
+    if (FFInfo.RMWFaultAlignment != 1) {
+      UnalignedRMWAlignmentGranularity = fmt::format("\e[32m{}-byte\e[0m{}", FFInfo.RMWFaultAlignment, Expected);
     } else {
-      UnalignedRMWAlignmentGranularity = TSOFacts.LSE2 ? "\e[32m16-byte\e[0m" : "\e[31mNatural alignment\e[0m";
+      UnalignedRMWAlignmentGranularity =
+        TSOFacts.LSE2 ? fmt::format("\e[32m{}-byte\e[0m", LSE2SizeAsString(TSOFacts.LSE2Size)) : "\e[31mNatural alignment\e[0m";
     }
   }
 
