@@ -580,12 +580,17 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 #endif
 
       bool BlockInForceTSOValidRange = false;
+      bool BlockInTSODisabledRange = false;
       auto InstForceTSOIt = ForceTSOInstructions.end();
       if (ForceTSOValidRanges.Contains({Block.Entry, Block.Entry + Block.Size})) {
         if (auto It = ForceTSOInstructions.lower_bound(Block.Entry); It != ForceTSOInstructions.end() && *It < Block.Entry + Block.Size) {
           InstForceTSOIt = It;
           BlockInForceTSOValidRange = true;
         }
+      }
+      if (!BlockInForceTSOValidRange && TSODisabledRanges.Contains({Block.Entry, Block.Entry + Block.Size})) {
+        InstForceTSOIt = ForceTSOInstructions.lower_bound(Block.Entry);
+        BlockInTSODisabledRange = true;
       }
 
       // Set the block entry point
@@ -683,6 +688,13 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
               ForceTSO = IR::ForceTSOMode::ForceEnabled;
             } else {
               ForceTSO = IR::ForceTSOMode::ForceDisabled;
+            }
+          } else if (BlockInTSODisabledRange) {
+            if ((InstForceTSOIt != ForceTSOInstructions.end() && *InstForceTSOIt == InstAddress) ||
+                (DecodedInfo->Flags & X86Tables::DecodeFlags::FLAG_FORCE_TSO)) {
+              ForceTSO = IR::ForceTSOMode::ForceEnabled;
+            } else {
+              ForceTSO = IR::ForceTSOMode::ForceDisabledGPR;
             }
           } else if (DecodedInfo->Flags & X86Tables::DecodeFlags::FLAG_FORCE_TSO) {
             ForceTSO = IR::ForceTSOMode::ForceEnabled;
@@ -1153,10 +1165,16 @@ void ContextImpl::AddForceTSOInformation(const IntervalList<uint64_t>& ValidRang
   ForceTSOInstructions.merge(std::move(Instructions));
 }
 
+void ContextImpl::AddTSODisabledRanges(const IntervalList<uint64_t>& Ranges) {
+  LogMan::Throw::AFmt(CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
+  TSODisabledRanges.Insert(Ranges);
+}
+
 void ContextImpl::RemoveForceTSOInformation(uint64_t Address, uint64_t Size) {
   LogMan::Throw::AFmt(CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
 
   ForceTSOValidRanges.Remove({Address, Address + Size});
+  TSODisabledRanges.Remove({Address, Address + Size});
   ForceTSOInstructions.erase(ForceTSOInstructions.lower_bound(Address), ForceTSOInstructions.upper_bound(Address + Size));
 }
 

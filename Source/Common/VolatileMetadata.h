@@ -48,4 +48,23 @@ inline void ApplyFEXExtendedVolatileMetadata(FEX::VolatileMetadata::ExtendedVola
   }
 }
 
+// Ranges and whole-module entries from the option list no instructions, so they are applied separately from volatile
+// metadata ranges, which only take effect for blocks that contain a listed instruction.
+inline void ApplyFEXExtendedTSODisabledRanges(const FEX::VolatileMetadata::ExtendedVolatileMetadata& ExtendedMetaData,
+                                              FEXCore::IntervalList<uint64_t>& TSODisabledRanges, uint64_t Address, uint64_t EndAddress) {
+  if (ExtendedMetaData.ModuleTSODisabled) {
+    TSODisabledRanges.Insert({Address, EndAddress});
+    return;
+  }
+
+  for (const auto it_ranges : ExtendedMetaData.VolatileValidRanges) {
+    if (it_ranges.Offset < it_ranges.End && it_ranges.End <= EndAddress - Address) {
+      TSODisabledRanges.Insert({Address + it_ranges.Offset, Address + it_ranges.End});
+    } else {
+      LogMan::Msg::DFmt("Volatile range 0x{:x}-0x{:x} couldn't fit in to module range [0x{:x}, 0x{:x}). Inspect your config!",
+                        it_ranges.Offset, it_ranges.End, Address, EndAddress);
+    }
+  }
+}
+
 } // namespace FEX::VolatileMetadata
