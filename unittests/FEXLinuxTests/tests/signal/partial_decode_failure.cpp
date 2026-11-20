@@ -9,6 +9,7 @@
 
 // FEX-Emu had a bug where partially decoded instruction faults weren't returning the correct data in the signal handler.
 // Simple test that pushes a 7-byte NOP and a RET instruction across a RWX+RW page boundary to ensure correct fault addresses.
+// also this test checks partially decoded instruction cross RWX+NonPresent page boundary
 extern "C" {
 __attribute__((naked, nocf_check)) void Ret() {
   __asm volatile(R"(
@@ -59,15 +60,13 @@ TEST_CASE("Partial Fault requires correct data") {
   const auto PageSize = sysconf(_SC_PAGESIZE);
   REQUIRE(PageSize > 0);
 
-  void* Ptr = mmap(nullptr, PageSize * 2, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  REQUIRE(Ptr != MAP_FAILED);
-
-  REQUIRE(mprotect(static_cast<uint8_t*>(Ptr) + PageSize, PageSize, PROT_READ | PROT_WRITE) == 0);
-
   constexpr std::array<uint8_t, 8> NOPData = {
     0x0f, 0x18, 0x25, 0, 0, 0, 0, // nop dword [rip + Index]
     0xc3,                         // ret
   };
+
+  void* Ptr = mmap(nullptr, PageSize * 2, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  REQUIRE(Ptr != MAP_FAILED);
 
   struct ResultsStruct {
     bool ShouldFault {};
@@ -132,24 +131,37 @@ TEST_CASE("Partial Fault requires correct data") {
      }},
   }};
 
-  for (size_t i = 0; i < TestResults.size(); ++i) {
-    auto& TestResult = TestResults[i];
-    uint8_t* Code = static_cast<uint8_t*>(Ptr) + PageSize - NOPData.size() + i;
-    memcpy(Code, NOPData.data(), NOPData.size());
+  auto execute_test = [&](bool PageNonPresent) {
+    for (size_t i = 0; i < TestResults.size(); ++i) {
+      auto& TestResult = TestResults[i];
+      uint8_t* Code = static_cast<uint8_t*>(Ptr) + PageSize - NOPData.size() + i;
 
-    using FuncPtr = void (*)();
-    auto Func = reinterpret_cast<FuncPtr>(Code);
+      // The page must be present until the memory copy finished, so mprotect call comes here
+      REQUIRE(mprotect(static_cast<uint8_t*>(Ptr) + PageSize, PageSize, PROT_READ | PROT_WRITE) == 0);
 
-    SignalReturnData.reset();
-    Func();
+      memcpy(Code, NOPData.data(), NOPData.size());
 
-    auto Result = SignalReturnData;
+      using FuncPtr = void (*)();
+      auto Func = reinterpret_cast<FuncPtr>(Code);
 
-    REQUIRE(TestResult.ShouldFault == Result.has_value());
-    if (TestResult.ShouldFault) {
-      CHECK(TestResult.Result->Signal == Result->Signal);
-      CHECK(TestResult.Result->FaultRIP == Result->FaultRIP);
-      CHECK(TestResult.Result->FaultAddr == Result->FaultAddr);
+      if (PageNonPresent) {
+        REQUIRE(mprotect(static_cast<uint8_t*>(Ptr) + PageSize, PageSize, PROT_NONE) == 0);
+      }
+
+      SignalReturnData.reset();
+      Func();
+
+      auto Result = SignalReturnData;
+
+      REQUIRE(TestResult.ShouldFault == Result.has_value());
+      if (TestResult.ShouldFault) {
+        CHECK(TestResult.Result->Signal == Result->Signal);
+        CHECK(TestResult.Result->FaultRIP == Result->FaultRIP);
+        CHECK(TestResult.Result->FaultAddr == Result->FaultAddr);
+      }
     }
-  }
+  };
+
+  execute_test(false);
+  execute_test(true);
 }
