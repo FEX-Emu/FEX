@@ -58,6 +58,9 @@ function(AddTests Tests BinDirectory Bitness)
       "${BIN_PATH}")
 
     set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_OUTPUTLOG=stderr;FEX_SILENTLOG=0;FEX_MAXINST=500")
+    if(TEST_NAME STREQUAL "concurrent_compile")
+      set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_PROFILESTATS=1")
+    endif()
 
     if(TEST_NAME STREQUAL "thunk_testlib")
       set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/FEXLinuxTestsThunks.json")
