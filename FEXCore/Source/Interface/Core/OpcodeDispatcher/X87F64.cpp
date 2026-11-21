@@ -111,6 +111,12 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   const auto Size = OpSizeFromSrc(Op);
 
   Ref data = _ReadStackValue(0);
+
+  // Clear FPSR.IOC so that we can detect invalid op errors below.
+  Ref FPSR = _ReadFPSR();
+  FPSR = _Andn(OpSize::i32Bit, FPSR, Constant(0x1));
+  _WriteFPSR(OpSize::i32Bit, FPSR);
+
   bool CanUseFloatReg = Size == OpSize::i64Bit;
   if (CanUseFloatReg) {
     // If possible, it's faster to keep the data in an FPR than doing a GPR transfer.
@@ -119,13 +125,63 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
     } else {
       data = _Vector_FToS(OpSize::i128Bit, OpSize::i64Bit, data);
     }
+
+    // Check FPSR.IOC for NaN/overflow and set X87 invalid op flag from it.
+    FPSR = _ReadFPSR();
+    Ref InvalidFlag = _Bfe(OpSize::i32Bit, 1, 0, FPSR);
+    SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(InvalidFlag);
+
+    // On non-truncate invalid op, write the integer indefinite value.
+    if (!Truncate) {
+      Ref MaxI = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NAMED_VECTOR_CVTMAX_I64);
+
+      SaveNZCV();
+      _TestZ(OpSize::i64Bit, InvalidFlag, Constant(0x1));
+      data = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, data, MaxI);
+    }
+
     StoreResultFPR_WithOpSize(Op, Op->Dest, data, OpSize::i64Bit, OpSize::i8Bit);
   } else {
-    if (Truncate) {
-      data = _Float_ToGPR_ZS(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
-    } else {
-      data = _Float_ToGPR_S(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+    Ref InvalidFlag {};
+    if (Size == OpSize::i16Bit) {
+      // We need to manually check for overflow since Float_ToGPR_S doesn't
+      // signal overflow in 16-bit integer cases.
+      // This is the check from OpDispatchBuilder::FIST adapted for 64-bit floats.
+      Ref Gpr = _VExtractToGPR(OpSize::i64Bit, OpSize::i64Bit, data, 0);
+      Ref BiasedExp = _Bfe(OpSize::i64Bit, 11, 52, Gpr);
+
+      SaveNZCV();
+      SubWithFlags(OpSize::i64Bit, BiasedExp, 0x7ff);
+      Ref IsSpecial = _NZCVSelect01(CondClass::EQ);
+
+      // For overflow detection, check if exponent indicates a value >= 2^(n-1)
+      // Biased exponent for 2^15 is 0x3ff + 15 = 0x40e
+      SubWithFlags(OpSize::i64Bit, BiasedExp, 0x40e);
+      Ref IsOverflow = _NZCVSelect01(CondClass::UGE);
+
+      InvalidFlag = _Or(OpSize::i64Bit, IsSpecial, IsOverflow);
+      SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(InvalidFlag);
     }
+
+    if (Truncate) {
+      data = _Float_ToGPR_ZS(Size == OpSize::i16Bit ? OpSize::i32Bit : Size, OpSize::i64Bit, data);
+    } else {
+      data = _Float_ToGPR_S(Size == OpSize::i16Bit ? OpSize::i32Bit : Size, OpSize::i64Bit, data);
+    }
+
+    if (Size == OpSize::i32Bit) {
+      // Check FPSR.IOC for NaN/overflow and set X87 invalid op flag from it.
+      FPSR = _ReadFPSR();
+      InvalidFlag = _Bfe(OpSize::i32Bit, 1, 0, FPSR);
+      SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(InvalidFlag);
+    }
+
+    // On non-truncate invalid op, write the integer indefinite value.
+    if (!Truncate) {
+      Ref MaxI = Size == OpSize::i16Bit ? Constant(0x8000) : Constant(0x80000000);
+      data = _Select(Size, OpSize::i32Bit, CondClass::EQ, Constant(0), InvalidFlag, data, MaxI);
+    }
+
     StoreResultGPR_WithOpSize(Op, Op->Dest, data, Size, OpSize::i8Bit,
                               CTX->IsVectorAtomicTSOEnabled() ? MemoryAccessType::DEFAULT : MemoryAccessType::NONTSO);
   }
