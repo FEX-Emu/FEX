@@ -247,6 +247,18 @@ private:
   }
 
   [[nodiscard]]
+  static ARMEmitter::SubRegSize ConvertSubRegSize48(const IR::IROp_Header* Op) {
+    LOGMAN_THROW_A_FMT(Op->ElementSize != IR::OpSize::i16Bit, "Invalid size");
+    return ConvertSubRegSize248(Op);
+  }
+
+  [[nodiscard]]
+  static ARMEmitter::SubRegSize ConvertSubRegSize24(const IR::IROp_Header* Op) {
+    LOGMAN_THROW_A_FMT(Op->ElementSize != IR::OpSize::i64Bit, "Invalid size");
+    return ConvertSubRegSize248(Op);
+  }
+
+  [[nodiscard]]
   static ARMEmitter::VectorRegSizePair ConvertSubRegSizePair16(const IR::IROp_Header* Op) {
     return ARMEmitter::ToVectorSizePair(ConvertSubRegSize16(Op));
   }

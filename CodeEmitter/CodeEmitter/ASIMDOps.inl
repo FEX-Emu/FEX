@@ -306,11 +306,13 @@ public:
 
   // Advanced SIMD three-register extension
   template<IsQOrDRegister T>
-  void sdot(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
+  void sdot(ARMEmitter::SubRegSize vecsize, ARMEmitter::SubRegSize elemsize, T rd, T rn, T rm) {
+    LOGMAN_THROW_A_FMT(elemsize != ARMEmitter::SubRegSize::i16Bit, "16-bit internal element size not supported");
+    LOGMAN_THROW_A_FMT(vecsize != ARMEmitter::SubRegSize::i16Bit, "16-bit subregsize not supported");
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+      LOGMAN_THROW_A_FMT(vecsize != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    ASIMDThreeRegisterExt(0, 0b0010, size, rm, rn, rd);
+    ASIMDThreeRegisterExt(0, 0b0010, vecsize, rm, rn, rd);
   }
 
   template<IsQOrDRegister T>
@@ -333,11 +335,13 @@ public:
     ASIMDThreeRegisterExt(1, 0b0001, size, rm, rn, rd);
   }
   template<IsQOrDRegister T>
-  void udot(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
+  void udot(ARMEmitter::SubRegSize vecsize, ARMEmitter::SubRegSize elemsize, T rd, T rn, T rm) {
+    LOGMAN_THROW_A_FMT(elemsize != ARMEmitter::SubRegSize::i16Bit, "16-bit internal element size not supported");
+    LOGMAN_THROW_A_FMT(vecsize != ARMEmitter::SubRegSize::i16Bit, "16-bit subregsize not supported");
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+      LOGMAN_THROW_A_FMT(vecsize != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    ASIMDThreeRegisterExt(1, 0b0010, size, rm, rn, rd);
+    ASIMDThreeRegisterExt(1, 0b0010, vecsize, rm, rn, rd);
   }
 
   template<IsQOrDRegister T>

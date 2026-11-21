@@ -1598,11 +1598,19 @@ public:
   }
 
   // SVE integer dot product (unpredicated)
-  void sdot(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
-    SVEIntegerDotProduct(0b0000, size, zda, zn, zm, Rotation::ROTATE_0);
+  void sdot(SubRegSize vecsize, SubRegSize elemsize, ZRegister zda, ZRegister zn, ZRegister zm) {
+    if (vecsize == SubRegSize::i32Bit && elemsize == SubRegSize::i16Bit) {
+      SVETwoWayDotProduct(vecsize, zda, zn, zm, Rotation::ROTATE_180);
+    } else {
+      SVEIntegerDotProduct(0b0000, vecsize, zda, zn, zm, Rotation::ROTATE_0);
+    }
   }
-  void udot(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
-    SVEIntegerDotProduct(0b0000, size, zda, zn, zm, Rotation::ROTATE_90);
+  void udot(SubRegSize vecsize, SubRegSize elemsize, ZRegister zda, ZRegister zn, ZRegister zm) {
+    if (vecsize == SubRegSize::i32Bit && elemsize == SubRegSize::i16Bit) {
+      SVETwoWayDotProduct(vecsize, zda, zn, zm, Rotation::ROTATE_270);
+    } else {
+      SVEIntegerDotProduct(0b0000, vecsize, zda, zn, zm, Rotation::ROTATE_90);
+    }
   }
 
   // SVE2 saturating multiply-add interleaved long
@@ -5029,8 +5037,9 @@ private:
   }
 
   void SVEIntegerDotProduct(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Dot product must only use 32-bit or 64-bit element "
-                                                                                 "sizes");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Dot product must only use "
+                                                                                                               "16-bit, 32-bit, or 64-bit "
+                                                                                                               "element sizes");
     SVEIntegerComplexMulAdd(op, size, zda, zn, zm, rot);
   }
 
@@ -5046,6 +5055,20 @@ private:
 
   void SVE2IntegerMulAddLong(uint32_t op0, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
     SVE2SaturatingMulAddInterleaved(op0, size, zda, zn, zm);
+  }
+
+  void SVETwoWayDotProduct(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit, "Must use 32-bit element size");
+    LOGMAN_THROW_A_FMT(rot >= Rotation::ROTATE_180, "Must use rotation of 180 or 270");
+
+    const uint32_t SanitizedRot = rot == Rotation::ROTATE_180 ? 0 : 1;
+
+    uint32_t Instr = 0b0100'0100'0000'0000'1100'1100'0000'0000;
+    Instr |= zm.Idx() << 16;
+    Instr |= SanitizedRot << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
+    dc32(Instr);
   }
 
   void SVE2WideningIntegerArithmetic(uint32_t op, uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {

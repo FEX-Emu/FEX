@@ -381,6 +381,8 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   ENABLE_DISABLE_OPTION(SupportsDotProd, DOTPROD, DOTPROD);
   ENABLE_DISABLE_OPTION(SupportsBF16, BF16, BF16);
   ENABLE_DISABLE_OPTION(SupportsCPUIndexInTPIDRRO, TPIDRRO, TPIDRRO);
+  ENABLE_DISABLE_OPTION(SupportsSVE2, SVE2, SVE2);
+  ENABLE_DISABLE_OPTION(SupportsSVE2_1, SVE2P1, SVE2P1);
   GET_SINGLE_OPTION(Crypto, CRYPTO);
 
 #undef ENABLE_DISABLE_OPTION
@@ -514,6 +516,8 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsI8MM = Features.Supports(CPUFeatures::Feature::I8MM);
   HostFeatures.SupportsDotProd = Features.Supports(CPUFeatures::Feature::DotProd);
   HostFeatures.SupportsBF16 = Features.Supports(CPUFeatures::Feature::BF16);
+  HostFeatures.SupportsSVE2 = Features.Supports(CPUFeatures::Feature::SVE2);
+  HostFeatures.SupportsSVE2_1 = Features.Supports(CPUFeatures::Feature::SVE2_1);
 
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.

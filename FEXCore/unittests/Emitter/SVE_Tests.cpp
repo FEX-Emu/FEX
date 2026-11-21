@@ -2523,11 +2523,18 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Integer Multiply-Add - Unp
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer dot product (unpredicated)") {
-  TEST_SINGLE(sdot(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sdot z30.s, z29.b, z28.b");
-  TEST_SINGLE(sdot(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sdot z30.d, z29.h, z28.h");
+  // TODO: re-enable the 16->32 versions once SVE2.1 support is available
+  // TODO: re-enable the 8->16 versions once SVE2.3 support is available
 
-  TEST_SINGLE(udot(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "udot z30.s, z29.b, z28.b");
-  TEST_SINGLE(udot(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "udot z30.d, z29.h, z28.h");
+  TEST_SINGLE(sdot(SubRegSize::i32Bit, SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sdot z30.s, z29.b, z28.b");
+  TEST_SINGLE(sdot(SubRegSize::i64Bit, SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sdot z30.d, z29.h, z28.h");
+  // TEST_SINGLE(sdot(SubRegSize::i16Bit, SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sdot z30.h, z29.b, z28.b");
+  // TEST_SINGLE(sdot(SubRegSize::i32Bit, SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sdot z30.s, z29.h, z28.h");
+
+  TEST_SINGLE(udot(SubRegSize::i32Bit, SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28), "udot z30.s, z29.b, z28.b");
+  TEST_SINGLE(udot(SubRegSize::i64Bit, SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "udot z30.d, z29.h, z28.h");
+  // TEST_SINGLE(udot(SubRegSize::i16Bit, SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28), "udot z30.h, z29.b, z28.b");
+  // TEST_SINGLE(udot(SubRegSize::i32Bit, SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "udot z30.s, z29.h, z28.h");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating multiply-add interleaved long") {
