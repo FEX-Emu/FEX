@@ -237,7 +237,14 @@ void LoadStateFromWowContext(FEXCore::Core::InternalThreadState* Thread) {
   // Floating-point register state
   const auto* XSave = reinterpret_cast<XSAVE_FORMAT*>(Context->ExtendedRegisters);
 
-  CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(XSave->XmmRegisters), nullptr);
+  const __uint128_t* Ymm = nullptr;
+  if ((Context->ContextFlags & CONTEXT_I386_XSTATE) == CONTEXT_I386_XSTATE) {
+    auto ContextEx = reinterpret_cast<CONTEXT_EX*>(Context + 1);
+    XSTATE* XState = reinterpret_cast<XSTATE*>(reinterpret_cast<char*>(ContextEx) + ContextEx->XState.Offset);
+    static const __uint128_t ZeroYmm[8] {};
+    Ymm = (XState->Mask & XSTATE_MASK_AVX) ? reinterpret_cast<__uint128_t*>(&XState->YmmContext) : ZeroYmm;
+  }
+  CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(XSave->XmmRegisters), Ymm);
   memcpy(State.mm, XSave->FloatRegisters, sizeof(State.mm));
 
   State.FCW = XSave->ControlWord;
@@ -335,7 +342,14 @@ void StoreWowContextFromState(WOW64_CONTEXT* Context) {
 
   auto* XSave = reinterpret_cast<XSAVE_FORMAT*>(Context->ExtendedRegisters);
 
-  CTX->ReconstructXMMRegisters(Thread, reinterpret_cast<__uint128_t*>(XSave->XmmRegisters), nullptr);
+  __uint128_t* Ymm = nullptr;
+  if ((Context->ContextFlags & CONTEXT_I386_XSTATE) == CONTEXT_I386_XSTATE) {
+    auto ContextEx = reinterpret_cast<CONTEXT_EX*>(Context + 1);
+    XSTATE* XState = reinterpret_cast<XSTATE*>(reinterpret_cast<char*>(ContextEx) + ContextEx->XState.Offset);
+    XState->Mask = XSTATE_MASK_AVX;
+    Ymm = reinterpret_cast<__uint128_t*>(&XState->YmmContext);
+  }
+  CTX->ReconstructXMMRegisters(Thread, reinterpret_cast<__uint128_t*>(XSave->XmmRegisters), Ymm);
   memcpy(XSave->FloatRegisters, State.mm, sizeof(State.mm));
 
   XSave->ControlWord = State.FCW;

@@ -86,9 +86,6 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
 
   HostFeatures.ProcessPID = ProcessPID;
 
-  // AVX is unsupported for WOW64
-  HostFeatures.ProcessFeatures.SupportsAVX = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
-
   HostFeatures.ProcessFeatures.HostType = HostType;
   HostFeatures.ProcessFeatures.Is64BitMode = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
   // arm64ec supports synchronous faults without a double-fault dance.
