@@ -15,9 +15,9 @@ static void* ThreadFunc(void* Arg) {
 }
 
 // NB: At present, empirical testing shows that we can
-// actually set this to ~45, and still pass. To give us wiggle room for
+// actually set this to ~230, and still pass. To give us wiggle room for
 // any other per thread overhead let's set it to a nice round number instead.
-#define NUM_THREADS 32
+#define NUM_THREADS 128
 
 // Chromium's sandbox lowers RLIMIT_DATA to 16GB and then spawns threads.
 // Historically, FEX would allocate a several TB writtable region
