@@ -98,6 +98,10 @@ private:
 
   static void DumpProgram(const sock_fprog* prog);
 
+  const sock_fprog* GetStrictModeFilter() const;
+  void KillProcess(ThreadStateObject* Thread);
+  void KillThread(FEXCore::Core::CpuStateFrame* Thread);
+
   // Multiple filter instruction count penalty.
   // When multiple filters are installed there is a penalty per filter counted towards the maximum number of instructions.
   constexpr static size_t BPF_MULTIFILTERPENALTY = 4;
