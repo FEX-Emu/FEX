@@ -9,6 +9,28 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 
 namespace FEX::Windows {
+
+static inline EXCEPTION_RECORD ReconstructExceptionRecordFromSynchronousFault(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& Fault) {
+  LOGMAN_THROW_A_FMT(Fault.FaultToTopAndGeneratedException, "Can't reconstruct ExceptionRecord without synchronous fault!");
+  EXCEPTION_RECORD Record = {};
+
+  // Need to translate exception record in synchronous fault handler.
+  switch (Fault.Signal) {
+  case FEXCore::Core::FAULT_SIGILL: Record.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; break;
+  case FEXCore::Core::FAULT_SIGTRAP:
+    switch (Fault.TrapNo) {
+    case FEXCore::X86State::X86_TRAPNO_DB: Record.ExceptionCode = EXCEPTION_SINGLE_STEP; break;
+    case FEXCore::X86State::X86_TRAPNO_BP: Record.ExceptionCode = EXCEPTION_BREAKPOINT; break;
+    default: LogMan::Msg::EFmt("Unknown SIGTRAP trap: {}", Fault.TrapNo); break;
+    }
+    break;
+  case FEXCore::Core::FAULT_SIGSEGV: Record.ExceptionCode = EXCEPTION_ACCESS_VIOLATION; break;
+  default: ERROR_AND_DIE_FMT("Unknown fault signal"); break;
+  }
+
+  return Record;
+}
+
 template<typename TReg>
 static inline EXCEPTION_RECORD HandleGuestException(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& Fault,
                                                     const EXCEPTION_RECORD& Src, TReg& Rip, TReg Rax, TReg Cx, BOOL& FirstChance) {
