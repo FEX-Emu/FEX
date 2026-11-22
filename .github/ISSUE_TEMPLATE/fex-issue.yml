@@ -1,0 +1,32 @@
+name: "FEX Bug"
+description: "A general bug in FEX-Emu"
+title: "[Short Problem Description]"
+
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: "Describe the bug"
+      description: "Also please describe what the expected behavior should be."
+      placeholder: |
+              **Describe the bug**
+              A clear and *concise* description of what the bug is.
+
+              **To Reproduce**
+              Steps to reproduce the behavior:
+              1. Go to '...'
+              2. Click on '....'
+              3. Scroll down to '....'
+              4. See error
+
+              **Expected behavior**
+              A clear and concise description of what you expected to happen.
+
+  - type: checkboxes
+    attributes:
+      label: "Cleanliness"
+      description: "Did you write this report in your own words?"
+      options:
+        - label: "I did not copy and paste the output of an LLM and fire it over the fence. I realize my issue might be closed without a response if I have done so."
+          required: true
+
