@@ -25,15 +25,20 @@ mov esp, 0x41424344
 mov ebp, 0x41424344
 
 smsw eax
-smsw bx
+
+; Newer nasm doesn't encode 16-bit smsw with 16-bit register argument anymore.
+db 0x66
+smsw ebx
 
 smsw [esi]
 mov ecx, [esi]
 
-o16 smsw dx
+db 0x66
+smsw edx
 repe smsw edi
 repne smsw esp
 
-o16 smsw bp
+db 0x66
+smsw ebp
 
 hlt
