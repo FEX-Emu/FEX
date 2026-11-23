@@ -196,7 +196,6 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Core::CPUState State;
 
   auto HostFeatures = FEX::FetchHostFeatures(Loader.Is64BitMode());
-  HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults = true;
   auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
 
 #ifndef _WIN32

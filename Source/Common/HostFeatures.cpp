@@ -650,7 +650,6 @@ FEXCore::HostFeatures FetchHostFeatures(bool Is64BitMode) {
     .ProcessFeatures =
       {
         .HostType = FEXCore::HostFeatures::HostTypeEnum::Linux,
-        .SupportsFaultFreeSynchronousFaults = true,
         .Is64BitMode = Is64BitMode,
       },
     .ProcessPID = static_cast<uint32_t>(::getpid())};

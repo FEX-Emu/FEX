@@ -416,9 +416,6 @@ struct JITPointers {
   uint64_t ThreadDispatchSyscallHandler {};
   uint64_t ThreadDispatchCPUIDHandler {};
   uint64_t ThreadDispatchRemoveCodeEntry {};
-  uint64_t GuestSignal_SIGILL {};
-  uint64_t GuestSignal_SIGTRAP {};
-  uint64_t GuestSignal_SIGSEGV {};
   uint64_t GuestSignal_SynchronousFault {};
   uint64_t SignalReturnHandler {};
   uint64_t SignalReturnHandlerRT {};
