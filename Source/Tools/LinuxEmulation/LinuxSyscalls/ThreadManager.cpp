@@ -180,6 +180,7 @@ ThreadManager::CreateThread(const FEXCore::Core::CPUState* NewThreadState, uint6
 
   ThreadStateObject->Thread = CTX->CreateThread(NewThreadState);
   auto Frame = ThreadStateObject->Thread->CurrentFrame;
+  Frame->Pointers.SynchronousExceptionHandler = reinterpret_cast<uintptr_t>(&FEX::HLE::SynchronousExceptionHandler);
 
   // Allocate the call-ret stack with guard pages on both sides
   auto AllocBase =
