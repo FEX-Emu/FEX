@@ -659,27 +659,13 @@ static void RethrowGuestException(FEXCore::Core::InternalThreadState* Thread, co
 static void SynchronousExceptionHandler(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {
   // Coming in to this function, the guest state is synchronized and the host thread is in a safe location.
   auto Thread = Frame->Thread;
-  auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
 
   uint64_t FPCR, FPSR;
   __asm volatile("mrs %[fpcr], fpcr" : [fpcr] "=r"(FPCR));
   __asm volatile("mrs %[fpsr], fpsr" : [fpsr] "=r"(FPSR));
 
   auto Context = StoreStateToPackedECContext(Thread, static_cast<uint32_t>(FPCR), static_cast<uint32_t>(FPSR));
-  EXCEPTION_RECORD Record = {};
-
-  switch (Fault.Signal) {
-  case FEXCore::Core::FAULT_SIGILL: Record.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; break;
-  case FEXCore::Core::FAULT_SIGTRAP:
-    switch (Fault.TrapNo) {
-    case FEXCore::X86State::X86_TRAPNO_DB: Record.ExceptionCode = EXCEPTION_SINGLE_STEP; break;
-    case FEXCore::X86State::X86_TRAPNO_BP: Record.ExceptionCode = EXCEPTION_BREAKPOINT; break;
-    default: LogMan::Msg::EFmt("Unknown SIGTRAP trap: {}", Fault.TrapNo); break;
-    }
-    break;
-  case FEXCore::Core::FAULT_SIGSEGV: Record.ExceptionCode = EXCEPTION_ACCESS_VIOLATION; break;
-  default: ERROR_AND_DIE_FMT("Unknown fault signal"); break;
-  }
+  EXCEPTION_RECORD Record = FEX::Windows::ReconstructExceptionRecordFromSynchronousFault(Thread->CurrentFrame->SynchronousFaultData);
 
   RaiseException(Thread, Record, Context);
   ERROR_AND_DIE_FMT("This should always noreturn");

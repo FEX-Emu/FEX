@@ -116,6 +116,7 @@ WOW64_CONTEXT* GetWow64Context() {
 
 struct FrontendThreadData {
   FEX::Windows::ScopedHandle ThreadHandle;
+  EXCEPTION_RECORD TmpRecord {};
   bool InLockedRWXRead {};
   CHPE_V2_CPU_AREA_INFO CpuArea {};
 
@@ -470,6 +471,42 @@ bool HandleSuspendInterrupt(CONTEXT* Context) {
 }
 } // namespace Context
 
+namespace Exception {
+static void RaiseException(FEXCore::Core::InternalThreadState* Thread, const PEXCEPTION_RECORD Rec, WOW64_CONTEXT* GuestContext,
+                           FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& Fault) {
+  auto FrontendData = GetFrontendThreadData(Thread);
+  BOOL FirstChance = TRUE;
+
+  // Needs to be stored in not a stack-variable otherwise WINE can overwrite it on NtRaiseException.
+  FrontendData->TmpRecord = FEX::Windows::HandleGuestException(Fault, *Rec, GuestContext->Eip, GuestContext->Eax, GuestContext->Ecx, FirstChance);
+  if (Rec->ExceptionCode == EXCEPTION_SINGLE_STEP) {
+    GuestContext->EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
+  }
+  // wow64.dll will handle adjusting PC in the dispatched context after a breakpoint
+
+  Context::UnlockJITContext();
+  NtRaiseException(&FrontendData->TmpRecord, GetTLS().EntryContext(), FirstChance);
+}
+
+[[noreturn]]
+static void SynchronousExceptionHandler(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {
+  auto Thread = Frame->Thread;
+  WOW64_CONTEXT* WowContext = GetWow64Context();
+  auto* XSave = reinterpret_cast<XSAVE_FORMAT*>(WowContext->ExtendedRegisters);
+  XSave->ControlWord = 0x27f;
+  XSave->MxCsr = 0x1f80;
+
+  Context::StoreWowContextFromState(WowContext);
+
+  EXCEPTION_RECORD Record = FEX::Windows::ReconstructExceptionRecordFromSynchronousFault(Frame->SynchronousFaultData);
+
+  // wow64.dll will handle adjusting PC in the dispatched context after a breakpoint
+  RaiseException(Thread, &Record, WowContext, Frame->SynchronousFaultData);
+
+  ERROR_AND_DIE_FMT("This should always noreturn");
+}
+} // namespace Exception
+
 // Calls a 1-argument function `Func` setting the parent unwind frame information to the given SP and PC
 __attribute__((naked)) extern "C" uint64_t SEHFrameTrampoline1Args(void* Arg0, void* Func, uint64_t Sp, uint64_t Pc) {
   asm(".seh_proc SEHFrameTrampoline1Args;"
@@ -737,6 +774,8 @@ void BTCpuThreadInit() {
 
   FEX::Windows::CallRetStack::InitializeThread(Thread);
 
+  Frame->Pointers.SynchronousExceptionHandler = reinterpret_cast<uintptr_t>(&Exception::SynchronousExceptionHandler);
+
   const auto TLS = GetTLS();
   TLS.ThreadState() = Thread;
 
@@ -924,19 +963,9 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   LogMan::Msg::DFmt("Reconstructing context");
 
   WOW64_CONTEXT* WowContext = Context::ReconstructWowContext(Context);
+
   LogMan::Msg::DFmt("pc: {:X} eip: {:X} code: {:X}", Context->Pc, WowContext->Eip, Exception->ExceptionCode);
-
-  auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
-  BOOL FirstChance = TRUE;
-  EXCEPTION_RECORD GuestException =
-    FEX::Windows::HandleGuestException(Fault, *Exception, WowContext->Eip, WowContext->Eax, WowContext->Ecx, FirstChance);
-  if (GuestException.ExceptionCode == EXCEPTION_SINGLE_STEP) {
-    WowContext->EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
-  }
-  // wow64.dll will handle adjusting PC in the dispatched context after a breakpoint
-
-  Context::UnlockJITContext();
-  NtRaiseException(&GuestException, GetTLS().EntryContext(), FirstChance);
+  Exception::RaiseException(Thread, Ptrs->ExceptionRecord, WowContext, Thread->CurrentFrame->SynchronousFaultData);
   return false;
 }
 

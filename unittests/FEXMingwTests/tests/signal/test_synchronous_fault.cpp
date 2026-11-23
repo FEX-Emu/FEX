@@ -145,38 +145,39 @@ TEST_CASE("Synchronous faults") {
 
   using PtrType = void (*)();
   struct ResultsStruct {
+    const char* TestName {};
     PtrType Code {};
     ReturnDataStruct Result;
   };
 
   ResultsStruct TestResults[] = {
-    {Do_UD2,
+    {"UD2", Do_UD2,
      ReturnDataStruct {
        .Signal = STATUS_ILLEGAL_INSTRUCTION,
        .FaultRIP = reinterpret_cast<size_t>(&PREFIX(Inst_UD2)),
        .FaultAddr = 0, // No fault addr here.
      }},
-    {Do_INT1,
+    {"Int1", Do_INT1,
      ReturnDataStruct {
        .Signal = STATUS_SINGLE_STEP,
        // Fault RIP is RIP+Size
        .FaultRIP = reinterpret_cast<size_t>(&PREFIX(Inst_INT1)) + 1,
        .FaultAddr = 0, // No fault addr here.
      }},
-    {Do_Long_INT1,
+    {"Long Int1", Do_Long_INT1,
      ReturnDataStruct {
        .Signal = STATUS_SINGLE_STEP,
        // Fault RIP is RIP+Size
        .FaultRIP = reinterpret_cast<size_t>(&PREFIX(Inst_Long_INT1)) + 7,
        .FaultAddr = 0, // No fault addr here.
      }},
-    {Do_INT3,
+    {"Int3", Do_INT3,
      ReturnDataStruct {
        .Signal = STATUS_BREAKPOINT,
        .FaultRIP = reinterpret_cast<size_t>(&PREFIX(Inst_INT3)),
        .FaultAddr = 0, // No fault addr here.
      }},
-    {Do_Long_INT3,
+    {"Long Int3", Do_Long_INT3,
      ReturnDataStruct {
        .Signal = STATUS_BREAKPOINT,
        // Fault RIP is at the fault instruction after the prefixes?
@@ -184,19 +185,19 @@ TEST_CASE("Synchronous faults") {
        .FaultRIP = reinterpret_cast<size_t>(&PREFIX(Inst_Long_INT3)) + 6,
        .FaultAddr = 0, // No fault addr here.
      }},
-    {Do_HLT,
+    {"Hlt", Do_HLT,
      ReturnDataStruct {
        .Signal = STATUS_PRIVILEGED_INSTRUCTION,
        .FaultRIP = reinterpret_cast<size_t>(&PREFIX(Inst_HLT)),
        .FaultAddr = 0, // No fault addr here.
      }},
-    {Do_Invalid_D6,
+    {"Invalid D6", Do_Invalid_D6,
      ReturnDataStruct {
        .Signal = STATUS_ILLEGAL_INSTRUCTION,
        .FaultRIP = reinterpret_cast<size_t>(&PREFIX(Inst_Invalid_D6)),
        .FaultAddr = 0, // No fault addr here.
      }},
-    {Do_MOVCS,
+    {"Mov CS", Do_MOVCS,
      ReturnDataStruct {
        .Signal = STATUS_ILLEGAL_INSTRUCTION,
        .FaultRIP = reinterpret_cast<size_t>(&PREFIX(Inst_MOVCS)),
@@ -205,6 +206,7 @@ TEST_CASE("Synchronous faults") {
   };
 
   for (auto& TestResult : TestResults) {
+    INFO("Test: " << TestResult.TestName);
     SignalReturnData.reset();
 
     // Execute it. This will fault and return.
