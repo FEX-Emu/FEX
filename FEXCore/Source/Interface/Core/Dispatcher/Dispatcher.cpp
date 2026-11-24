@@ -399,51 +399,6 @@ void Dispatcher::EmitDispatcher() {
   }
 
   {
-    // Guest SIGILL handler
-    // Needs to be distinct from the SignalHandlerReturnAddress
-    GuestSignal_SIGILL = GetCursorAddress<uint64_t>();
-
-    SpillStaticRegs(TMP1);
-
-    hlt(0);
-  }
-
-  {
-    // Guest SIGTRAP handler
-    // Needs to be distinct from the SignalHandlerReturnAddress
-    GuestSignal_SIGTRAP = GetCursorAddress<uint64_t>();
-
-    SpillStaticRegs(TMP1);
-
-    brk(0);
-  }
-
-  ARMEmitter::BackwardLabel GuestSIGSEGVLabelPostSpill;
-  {
-    // Guest Overflow handler
-    // Needs to be distinct from the SignalHandlerReturnAddress
-    GuestSignal_SIGSEGV = GetCursorAddress<uint64_t>();
-
-    SpillStaticRegs(TMP1);
-
-    (void)Bind(&GuestSIGSEGVLabelPostSpill);
-
-    // hlt/udf = SIGILL
-    // brk = SIGTRAP
-    // ??? = SIGSEGV
-    // Force a SIGSEGV by loading zero
-    if (CTX->ExitOnHLTEnabled()) {
-      ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, ReturningStackLocation));
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::r0, 0);
-      PopCalleeSavedRegisters();
-      ret();
-    } else {
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, 0);
-      ldr(ARMEmitter::XReg::x1, ARMEmitter::Reg::r1);
-    }
-  }
-
-  {
     // Faultless synchronous signal.
     // Some games abuse SIGILL/SIGTRAP/SIGSEGV heavily and the fault overhead is visible.
     // Instead of double faulting, clean up state and jump to the frontend to handle this.
@@ -682,7 +637,8 @@ void Dispatcher::EmitDispatcher() {
     ldr(TMP2, STATE_PTR(CpuStateFrame, State.rip));
     str(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData) + 8);
 
-    (void)b(&GuestSIGSEGVLabelPostSpill);
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SynchronousFault));
+    br(TMP1);
   }
 
   {
@@ -2785,9 +2741,6 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     Ptrs.ThreadDispatchSyscallHandler = ThreadDispatchSyscallHandler;
     Ptrs.ThreadDispatchCPUIDHandler = ThreadDispatchCPUIDHandler;
     Ptrs.ThreadDispatchRemoveCodeEntry = ThreadDispatchRemoveCodeEntry;
-    Ptrs.GuestSignal_SIGILL = GuestSignal_SIGILL;
-    Ptrs.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
-    Ptrs.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
     Ptrs.GuestSignal_SynchronousFault = GuestSignal_SynchronousFault;
     Ptrs.SignalReturnHandler = SignalHandlerReturnAddress;
     Ptrs.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;

@@ -44,6 +44,9 @@ using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalTh
 using HostSignalDelegatorFunctionForGuest =
   std::function<bool(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext, GuestSigAction* GuestAction, stack_t* GuestStack)>;
 
+[[noreturn]]
+void SynchronousExceptionHandler(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame);
+
 class SignalDelegator final : public FEXCore::SignalDelegator, public FEXCore::Allocator::FEXAllocOperators {
 public:
   constexpr static size_t MAX_SIGNALS {64};

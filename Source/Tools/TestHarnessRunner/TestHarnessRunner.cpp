@@ -110,81 +110,33 @@ private:
 };
 } // namespace
 
-namespace LongJumpHandler {
+namespace SynchronousException {
 static jmp_buf LongJump {};
 static bool DidFault {};
 
-#ifndef _WIN32
-void RegisterLongJumpHandler(FEX::HLE::SignalDelegator* Handler) {
-  Handler->RegisterFrontendHostSignalHandler(
-    SIGSEGV,
-    [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
-      constexpr uint8_t HLT = 0xF4;
-      if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
-        DidFault = true;
-        return false;
-      }
+[[noreturn]]
+void SynchronousExceptionHandler(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
 
-      longjmp(LongJumpHandler::LongJump, 1);
-      return false;
-    },
-    true);
-}
-#else
-FEX::DummyHandlers::DummySignalDelegator* Handler;
+  auto& Fault = ThreadObject->Thread->CurrentFrame->SynchronousFaultData;
+  LOGMAN_THROW_A_FMT(Fault.FaultToTopAndGeneratedException, "Synchronous fault needs fault data!");
 
-static void LongJumpHandler() {
-  longjmp(LongJump, 1);
-}
+  // Expecting a SIGSEGV.
+  DidFault = Fault.Signal != FEXCore::Core::FAULT_SIGSEGV;
 
-LONG WINAPI VectoredExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) {
-  auto Thread = Handler->GetBackingTLSThread();
-  PCONTEXT Context;
-  Context = ExceptionInfo->ContextRecord;
-
-  switch (ExceptionInfo->ExceptionRecord->ExceptionCode) {
-  case STATUS_DATATYPE_MISALIGNMENT: {
-    const auto PC = FEX::ArchHelpers::Context::GetPc(Context);
-    if (!Thread->CTX->IsAddressInCodeBuffer(Thread, PC)) {
-      // Wasn't a sigbus in JIT code
-      return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(true, PC, FEX::ArchHelpers::Context::GetArmGPRs(Context));
-    FEX::ArchHelpers::Context::SetPc(Context, PC + Result.value_or(0));
-    return Result ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
-  }
-  case STATUS_ACCESS_VIOLATION: {
-    constexpr uint8_t HLT = 0xF4;
-    if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
-      DidFault = true;
-      return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    FEX::ArchHelpers::Context::SetPc(Context, reinterpret_cast<uint64_t>(LongJumpHandler));
-    return EXCEPTION_CONTINUE_EXECUTION;
-  }
-  default: break;
+  constexpr uint8_t HLT = 0xF4;
+  if (reinterpret_cast<uint8_t*>(ThreadObject->Thread->CurrentFrame->State.rip)[0] != HLT) {
+    // If the instruction wasn't a hlt then it's also a fault.
+    DidFault = true;
   }
 
-  printf("!Fault!\n");
-  printf("\tExceptionCode: 0x%lx\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
-  printf("\tExceptionFlags: 0x%lx\n", ExceptionInfo->ExceptionRecord->ExceptionFlags);
-  printf("\tExceptionRecord: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionRecord);
-  printf("\tExceptionAddress: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
-  printf("\tNumberParameters: 0x%lx\n", ExceptionInfo->ExceptionRecord->NumberParameters);
+  // Leave the test now regardless of state.
+  longjmp(SynchronousException::LongJump, 1);
 
-  return EXCEPTION_CONTINUE_SEARCH;
+  ERROR_AND_DIE_FMT("This should always noreturn");
 }
 
-void RegisterLongJumpHandler(FEX::DummyHandlers::DummySignalDelegator* Handler) {
-  // Install VEH handler.
-  AddVectoredExceptionHandler(0, VectoredExceptionHandler);
-
-  LongJumpHandler::Handler = Handler;
-}
-#endif
-} // namespace LongJumpHandler
+} // namespace SynchronousException
 
 int main(int argc, char** argv, char** const envp) {
 #ifndef _WIN32
@@ -249,10 +201,6 @@ int main(int argc, char** argv, char** const envp) {
 #ifndef _WIN32
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {}, HostFeatures.SupportsAVX(), HostFeatures.SupportsSVE256());
 #else
-  // Enable exit on HLT while Wine's longjump is broken.
-  //
-  // Once they fix longjump, we can remove this.
-  CTX->EnableExitOnHLT();
   auto SignalDelegation = FEX::WindowsHandlers::CreateSignalDelegator();
 #endif
 
@@ -338,8 +286,6 @@ int main(int argc, char** argv, char** const envp) {
   };
 
 #else
-  auto SyscallHandler = FEX::WindowsHandlers::CreateSyscallHandler();
-
   auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
     void* Result = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Address), Size, true);
     LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
@@ -355,8 +301,6 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   if (!IsHostRunner) {
-    LongJumpHandler::RegisterLongJumpHandler(SignalDelegation.get());
-
     // Run through FEX
     if (!Loader.MapMemory(DoMmap)) {
       // failed to map
@@ -365,6 +309,8 @@ int main(int argc, char** argv, char** const envp) {
     }
 
     auto ParentThread = SyscallHandler->TM.CreateThread();
+    ParentThread->Thread->CurrentFrame->Pointers.SynchronousExceptionHandler =
+      reinterpret_cast<uintptr_t>(&SynchronousException::SynchronousExceptionHandler);
     ParentThread->Thread->CurrentFrame->State.rip = Loader.DefaultRIP();
     SyscallHandler->TM.TrackThread(ParentThread);
     SignalDelegation->RegisterTLSState(ParentThread);
@@ -373,7 +319,7 @@ int main(int argc, char** argv, char** const envp) {
       return 1;
     }
 
-    int LongJumpVal = setjmp(LongJumpHandler::LongJump);
+    int LongJumpVal = setjmp(SynchronousException::LongJump);
     if (!LongJumpVal) {
       CTX->ExecuteThread(ParentThread->Thread);
     }
@@ -424,9 +370,9 @@ int main(int argc, char** argv, char** const envp) {
 
   SyscallHandler.reset();
 
-  bool Passed = !LongJumpHandler::DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
+  bool Passed = !SynchronousException::DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 
-  LogMan::Msg::IFmt("Faulted? {}", LongJumpHandler::DidFault ? "Yes" : "No");
+  LogMan::Msg::IFmt("Faulted? {}", SynchronousException::DidFault ? "Yes" : "No");
   LogMan::Msg::IFmt("Passed? {}", Passed ? "Yes" : "No");
 
 

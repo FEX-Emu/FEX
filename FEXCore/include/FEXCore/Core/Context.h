@@ -167,14 +167,6 @@ public:
   FEX_DEFAULT_VISIBILITY virtual void SetHardwareTSOSupport(bool HardwareTSOSupported) = 0;
 
   /**
-   * @brief Enable exiting the JIT when HLT is hit.
-   *
-   * This is to workaround a bug in Wine's longjump function which breaks our unittests.
-   *
-   */
-  FEX_DEFAULT_VISIBILITY virtual void EnableExitOnHLT() = 0;
-
-  /**
    * @brief Adds a new Thunk trampoline handler
    *
    * @param Entrypoint The guest PC that the custom thunk trampoline IR handler will be installed at.

@@ -765,7 +765,7 @@ void Arm64JITCore::EmitTFCheck() {
   str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
   str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData) + 8);
 
-  ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
+  ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SynchronousFault));
   br(TMP1);
 
   (void)Bind(&l_TFBlocked);

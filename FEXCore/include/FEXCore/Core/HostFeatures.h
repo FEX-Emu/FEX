@@ -52,8 +52,7 @@ struct HostFeatures {
    * Unlike the `HostFeaturesHash` below, this data changes codegen depending on if the process is Linux, Arm64EC, or Wow64.
    */
   struct ProcessFeaturesHash {
-    HostTypeEnum HostType                      : 2 {};
-    uint8_t SupportsFaultFreeSynchronousFaults : 1 {};
+    HostTypeEnum HostType : 2 {};
     // This only determines the starting mode a process started in.
     // The process can technically long jump to-from the other modes.
     uint8_t Is64BitMode : 1 {};
@@ -62,7 +61,7 @@ struct HostFeatures {
     uint8_t SupportsSVE128 : 1 {};
     uint8_t SupportsSVE256 : 1 {};
 
-    uint8_t pad : 2 {};
+    uint8_t pad : 3 {};
   };
   static_assert(sizeof(ProcessFeaturesHash) == 1);
 

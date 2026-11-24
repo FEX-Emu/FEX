@@ -82,29 +82,8 @@ DEF_OP(Break) {
   str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
   str(FaultGPR.X(), STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData) + 8);
 
-  if (CTX->HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults) {
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SynchronousFault));
-    br(TMP1);
-  } else {
-    switch (Op->Reason.Signal) {
-    case Core::FAULT_SIGILL:
-      ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGILL));
-      br(TMP1);
-      break;
-    case Core::FAULT_SIGTRAP:
-      ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
-      br(TMP1);
-      break;
-    case Core::FAULT_SIGSEGV:
-      ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGSEGV));
-      br(TMP1);
-      break;
-    default:
-      ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SIGTRAP));
-      br(TMP1);
-      break;
-    }
-  }
+  ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.GuestSignal_SynchronousFault));
+  br(TMP1);
 }
 
 DEF_OP(GetRoundingMode) {

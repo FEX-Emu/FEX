@@ -88,7 +88,6 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine, FEXCore::HostF
 
   HostFeatures.ProcessFeatures.HostType = HostType;
   HostFeatures.ProcessFeatures.Is64BitMode = HostType == FEXCore::HostFeatures::HostTypeEnum::Arm64ec;
-  HostFeatures.ProcessFeatures.SupportsFaultFreeSynchronousFaults = true;
 
   return HostFeatures;
 }
