@@ -9,7 +9,7 @@
       "SVE256",
       "SVE128"
     ],
-    "BinaryCacheVersion": 49
+    "BinaryCacheVersion": 50
   },
   "Instructions": {
     "vaddsubpd xmm0, xmm1, xmm2": {

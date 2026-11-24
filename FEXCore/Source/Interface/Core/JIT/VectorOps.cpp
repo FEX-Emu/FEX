@@ -1372,11 +1372,7 @@ DEF_OP(VFDiv) {
       // destination register. We can just divide by Vector2 and be done with it.
       fdiv(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector2.Z());
     } else if (Dst == Vector2) {
-      // If the destination aliases the second vector, then we need
-      // to use a temp.
-      movprfx(VTMP1.Z(), Vector1.Z());
-      fdiv(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), Vector2.Z());
-      mov(Dst.Z(), VTMP1.Z());
+      fdivr(SubRegSize, Dst.Z(), Mask, Dst.Z(), Vector1.Z());
     } else {
       // If no registers alias the destination, then we can move directly
       // into the destination and then divide.
