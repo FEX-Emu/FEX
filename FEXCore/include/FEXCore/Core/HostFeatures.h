@@ -39,7 +39,7 @@ struct HostFeatures {
 
   [[nodiscard]]
   bool SupportsAVX() const {
-    return ProcessFeatures.SupportsAVX;
+    return SupportsAVXInst;
   }
 
   [[nodiscard]]
@@ -59,11 +59,10 @@ struct HostFeatures {
     uint8_t Is64BitMode : 1 {};
 
     // These are technically HostFeatures, but they differ between Linux, wow64, arm64.
-    uint8_t SupportsAVX    : 1 {};
     uint8_t SupportsSVE128 : 1 {};
     uint8_t SupportsSVE256 : 1 {};
 
-    uint8_t pad : 1 {};
+    uint8_t pad : 2 {};
   };
   static_assert(sizeof(ProcessFeaturesHash) == 1);
 
@@ -120,9 +119,10 @@ struct HostFeatures {
   uint32_t SupportsAFP                 : 1 {}; // [32]
   uint32_t SupportsFloatExceptions     : 1 {}; // [33]
   uint32_t SupportsBF16                : 1 {}; // [34]
+  uint32_t SupportsAVXInst             : 1 {}; // [35]
   // Flag if this is InstCountCI
-  uint32_t IsInstCountCI : 1 {};  // [38]
-  uint32_t pad           : 28 {}; // [63:35]
+  uint32_t IsInstCountCI : 1 {};  // [36]
+  uint32_t pad           : 27 {}; // [63:37]
 
   // This affects codegen, but it isn't machine state
   ProcessFeaturesHash ProcessFeatures {};

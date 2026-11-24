@@ -356,7 +356,7 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   const bool Enable##name = (HostFeatures() & FEXCore::Config::HostFeatures::ENABLE##enum_name) != 0;   \
   LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive");
 
-  ENABLE_DISABLE_OPTION(ProcessFeatures.SupportsAVX, AVX, AVX);
+  ENABLE_DISABLE_OPTION(SupportsAVXInst, AVX, AVX);
   ENABLE_DISABLE_OPTION(ProcessFeatures.SupportsSVE128, SVE, SVE);
   ENABLE_DISABLE_OPTION(SupportsAFP, AFP, AFP);
   ENABLE_DISABLE_OPTION(SupportsRCPC, LRCPC, LRCPC);
@@ -525,7 +525,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsCLZERO = true;
   HostFeatures.SupportsAES = true;
   HostFeatures.SupportsCRC = true;
-  HostFeatures.ProcessFeatures.SupportsAVX = true;
+  HostFeatures.SupportsAVXInst = true;
   HostFeatures.SupportsSHA = true;
   HostFeatures.SupportsPMULL_128Bit = true;
   HostFeatures.SupportsAES256 = true;
@@ -548,7 +548,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
 #endif
 
   HostFeatures.Supports3DNow = true;
-  HostFeatures.ProcessFeatures.SupportsAVX = true;
+  HostFeatures.SupportsAVXInst = true;
   HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX() && HostFeatures.SupportsAES;
   HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
   HostFeatures.PreferZVAForVZero = false;
@@ -591,7 +591,7 @@ void FetchHostFeatures(FEX::CPUFeatures& Features, FEXCore::HostFeatures& HostFe
   HostFeatures.SupportsRAND = Feature.Feat_rand;
   HostFeatures.SupportsRCPC = true;
   HostFeatures.SupportsTSOImm9 = true;
-  HostFeatures.ProcessFeatures.SupportsAVX = Feature.Feat_avx;
+  HostFeatures.SupportsAVXInst = Feature.Feat_avx;
   HostFeatures.SupportsSHA = Feature.Feat_sha;
   HostFeatures.SupportsPMULL_128Bit = Feature.Feat_pclmulqdq;
   HostFeatures.SupportsAES256 = Feature.Feat_aes;
