@@ -9,7 +9,7 @@
       "SVE256",
       "AFP"
     ],
-    "BinaryCacheVersion": 46
+    "BinaryCacheVersion": 47
   },
   "Instructions": {
     "addsubps xmm0, xmm1": {
