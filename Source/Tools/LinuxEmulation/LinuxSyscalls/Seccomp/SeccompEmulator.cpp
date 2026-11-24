@@ -325,6 +325,11 @@ SeccompEmulator::ExecuteFilter(FEXCore::Core::CpuStateFrame* Frame, uint64_t JIT
   auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
   const uint64_t RIP = Thread->Thread->CTX->RestoreRIPFromHostPC(Frame->Thread, JITPC);
 
+  if (Thread->PrctlSetPending) {
+    Thread->PrctlSetPending = false;
+    ::prctl(PR_SET_NO_NEW_PRIVS, 1L, 0, 0, 0);
+  }
+
   const auto Arch = Is64BitMode() ? AUDIT_ARCH_X86_64 : AUDIT_ARCH_I386;
   bool ShouldLog {};
   uint32_t SeccompResult {};
@@ -596,6 +601,10 @@ void SeccompEmulator::TSyncFilters(FEXCore::Core::CpuStateFrame* Frame) {
       std::atomic_ref<uint64_t>(Filter->RefCount)++;
     }
     Thread->SeccompMode = ParentThread->SeccompMode;
+
+    // If the thread NO_NEW_PRIVS is not set it must be synced. But here we can not check is it set or set it.
+    // Thus do it at next syscall
+    Thread->PrctlSetPending = true;
   }
 }
 
@@ -692,30 +701,35 @@ uint64_t SeccompEmulator::SetModeFilter(FEXCore::Core::CpuStateFrame* Frame, uin
 
   if (DoingTsync) {
     auto TSyncThread = CanDoTSync(Frame);
+
     if (TSyncThread != 0) {
       if (flags & SECCOMP_FILTER_FLAG_TSYNC_ESRCH) {
         // This flag explicitly ensures that if TSYNC can't sync then it won't return a TID.
         return -ESRCH;
-      } else {
-        // Return the TID that caused a tsync problem.
-        return TSyncThread;
       }
+
+      // Return the TID that caused a tsync problem.
+      return TSyncThread;
     }
   }
 
   BPFEmitter emit {};
   const bool LoggingEnabled = flags & SECCOMP_FILTER_FLAG_LOG;
   auto Result = emit.JITFilter(flags, prog);
-  if (Result == 0) {
-    auto& it = Filters.emplace_back(SeccompFilterInfo {(SeccompFilterFunc)emit.GetFunc(), 1, emit.AllocationSize(), prog->len, LoggingEnabled});
-    TotalFilterInstructions += prog->len;
 
-    // Append the filter to the thread.
-    Thread->Filters.emplace_back(&it);
-    Thread->SeccompMode = SECCOMP_MODE_FILTER;
-    if (flags & SECCOMP_FILTER_FLAG_TSYNC) {
-      TSyncFilters(Frame);
-    }
+  if (Result) {
+    return Result;
+  }
+
+  auto& it = Filters.emplace_back(SeccompFilterInfo {(SeccompFilterFunc)emit.GetFunc(), 1, emit.AllocationSize(), prog->len, LoggingEnabled});
+  TotalFilterInstructions += prog->len;
+
+  // Append the filter to the thread.
+  Thread->Filters.emplace_back(&it);
+  Thread->SeccompMode = SECCOMP_MODE_FILTER;
+
+  if (flags & SECCOMP_FILTER_FLAG_TSYNC) {
+    TSyncFilters(Frame);
   }
 
   return Result;
