@@ -1263,12 +1263,14 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
     case FEXCore::X86State::REG_RCX: // CS
     case FEXCore::X86State::REG_R9:  // CS
       // CPL3 can't write to this
-      Break(FEXCore::IR::BreakDefinition {
-        .ErrorRegister = 0,
-        .Signal = SIGILL,
-        .TrapNumber = 0,
-        .si_code = 0,
-      });
+      Break(
+        FEXCore::IR::BreakDefinition {
+          .ErrorRegister = 0,
+          .Signal = SIGILL,
+          .TrapNumber = 0,
+          .si_code = 0,
+        },
+        GetRelocatedPC(Op, -Op->InstSize));
       break;
     case FEXCore::X86State::REG_RDX: // SS
     case FEXCore::X86State::REG_R10: // SS
@@ -4909,6 +4911,7 @@ void OpDispatchBuilder::LSLOp(OpcodeArgs) {
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
   IR::BreakDefinition Reason;
   bool SetRIPToNext = false;
+  bool SetsSignalAddr = false;
 
   switch (Op->OP) {
   case 0xCD: { // INT imm8
@@ -4964,6 +4967,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     Reason.TrapNumber = X86State::X86_TRAPNO_DB;
     Reason.si_code = 1;
     SetRIPToNext = true;
+    SetsSignalAddr = true;
     break;
   case 0xF4: { // HLT
     Reason.ErrorRegister = 0;
@@ -4977,6 +4981,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     Reason.Signal = Core::FAULT_SIGILL;
     Reason.TrapNumber = X86State::X86_TRAPNO_UD;
     Reason.si_code = 2;
+    SetsSignalAddr = true;
     break;
   case 0xCC: // INT3
     Reason.ErrorRegister = 0;
@@ -4993,14 +4998,16 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
   const auto GPRSize = GetGPROpSize();
 
+  Ref NewRIP {};
+
   if (SetRIPToNext) {
     BlockSetRIP = SetRIPToNext;
 
     // We want to set RIP to the next instruction after INT3/INT1
-    auto NewRIP = GetRelocatedPC(Op);
+    NewRIP = GetRelocatedPC(Op);
     _StoreContextGPR(GPRSize, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
   } else if (Op->OP != 0xCE) {
-    auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
+    NewRIP = GetRelocatedPC(Op, -Op->InstSize);
     _StoreContextGPR(GPRSize, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
   }
 
@@ -5026,7 +5033,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     StartNewBlock();
   } else {
     BlockSetRIP = true;
-    Break(Reason);
+    Break(Reason, SetsSignalAddr ? NewRIP : 0);
   }
 }
 
@@ -5288,30 +5295,36 @@ void OpDispatchBuilder::BreakpointOp(OpcodeArgs, uint32_t BP) {
 }
 
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
-  BreakOp(Op, FEXCore::IR::BreakDefinition {
-                .ErrorRegister = 0,
-                .Signal = SIGILL,
-                .TrapNumber = X86State::X86_TRAPNO_UD,
-                .si_code = 2, ///< ILL_ILLOPN
-              });
+  BreakOp(Op,
+          FEXCore::IR::BreakDefinition {
+            .ErrorRegister = 0,
+            .Signal = SIGILL,
+            .TrapNumber = X86State::X86_TRAPNO_UD,
+            .si_code = 2, ///< ILL_ILLOPN
+          },
+          GetRelocatedPC(Op));
 }
 
 void OpDispatchBuilder::PermissionRestrictedOp(OpcodeArgs) {
-  BreakOp(Op, FEXCore::IR::BreakDefinition {
-                .ErrorRegister = 0,
-                .Signal = SIGSEGV,
-                .TrapNumber = X86State::X86_TRAPNO_GP,
-                .si_code = 0x80,
-              });
+  BreakOp(Op,
+          FEXCore::IR::BreakDefinition {
+            .ErrorRegister = 0,
+            .Signal = SIGSEGV,
+            .TrapNumber = X86State::X86_TRAPNO_GP,
+            .si_code = 0x80,
+          },
+          GetRelocatedPC(Op));
 }
 
 void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
-  BreakOp(Op, FEXCore::IR::BreakDefinition {
-                .ErrorRegister = 0,
-                .Signal = SIGILL,
-                .TrapNumber = 0,
-                .si_code = 0,
-              });
+  BreakOp(Op,
+          FEXCore::IR::BreakDefinition {
+            .ErrorRegister = 0,
+            .Signal = SIGILL,
+            .TrapNumber = 0,
+            .si_code = 0,
+          },
+          GetRelocatedPC(Op));
 }
 
 void OpDispatchBuilder::NoExecOrPartialOp(OpcodeArgs) {
