@@ -789,7 +789,6 @@ if (BUILD_THUNKS)
     CODE "
       execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest)"
-    DEPENDS guest-libs
     COMPONENT Runtime)
 
   install(
@@ -797,7 +796,6 @@ if (BUILD_THUNKS)
     CODE "
       execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32)"
-    DEPENDS guest-libs-32
     COMPONENT Runtime)
 
   add_custom_target(uninstall_guest-libs
