@@ -162,12 +162,6 @@ void* MemAllocator32Bit::Mmap(void* addr, size_t length, int prot, int flags, in
     return reinterpret_cast<void*>(-EINVAL);
   }
 
-  if (!Fixed) {
-    // If we aren't mapping fixed the ignore the address input
-    Addr = 0;
-    PageAddr = 0;
-  }
-
   bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
 
   // Remove the MAP_32BIT flag if it exists now
@@ -229,18 +223,40 @@ restart: {
   // Find a region that fits our address
   if (Addr == 0) {
     return AllocateNoHint();
-  } else {
-    void* MappedPtr = ::mmap(reinterpret_cast<void*>(PageAddr << FEXCore::Utils::FEX_PAGE_SHIFT),
-                             PagesLength << FEXCore::Utils::FEX_PAGE_SHIFT, prot, flags, fd, offset);
-
-    if (MappedPtr != MAP_FAILED) {
-      SetUsedPages(PageAddr, PagesLength);
-      return MappedPtr;
-    } else {
-      return reinterpret_cast<void*>(-errno);
-    }
   }
-  return 0;
+
+  void* const RequestedPtr = reinterpret_cast<void*>(PageAddr << FEXCore::Utils::FEX_PAGE_SHIFT);
+
+  if (!Fixed) {
+    // Try to honor the hint as what Linux kernel would do.
+    bool HintSatisfiesMap32Bit = !Map32Bit || (PageAddr + PagesLength) <= (TOP_KEY32BIT + 1);
+
+    if (HintSatisfiesMap32Bit) {
+      void* MappedPtr =
+        ::mmap(RequestedPtr, PagesLength << FEXCore::Utils::FEX_PAGE_SHIFT, prot, flags | FEX_MAP_FIXED_NOREPLACE, fd, offset);
+
+      if (MappedPtr == RequestedPtr) {
+        SetUsedPages(PageAddr, PagesLength);
+        return MappedPtr;
+      }
+
+      if (MappedPtr != MAP_FAILED) {
+        // Kernel mapped the range elsewhere. For simplicity, unmap the range and let AllocateNoHint() handle the allocation.
+        ::munmap(MappedPtr, PagesLength << FEXCore::Utils::FEX_PAGE_SHIFT);
+      }
+    }
+
+    return AllocateNoHint();
+  }
+
+  void* MappedPtr = ::mmap(RequestedPtr, PagesLength << FEXCore::Utils::FEX_PAGE_SHIFT, prot, flags, fd, offset);
+
+  if (MappedPtr != MAP_FAILED) {
+    SetUsedPages(PageAddr, PagesLength);
+    return MappedPtr;
+  } else {
+    return reinterpret_cast<void*>(-errno);
+  }
 }
 
 int MemAllocator32Bit::Munmap(void* addr, size_t length) {
