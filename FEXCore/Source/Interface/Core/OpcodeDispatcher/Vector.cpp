@@ -1796,8 +1796,13 @@ Ref OpDispatchBuilder::SHUFOpImpl(IR::OpSize DstSize, IR::OpSize ElementSize, Re
   const uint8_t ShiftAmount = std::popcount(SelectionMask);
 
   const auto SingleLane = [&](Ref LHS, Ref RHS, uint32_t LaneShuffle) -> Ref {
+    if (LHS == RHS && ElementSize == OpSize::i32Bit) {
+      // With matching sources SHUFPS is PSHUFD: every immediate has a single-source implementation, e.g. a broadcast
+      // is one DUP instead of DUP+DUP+ZIP1, and the TBL fallback needs one table register instead of two.
+      // Compilers emit this a lot for float data, where PSHUFD would cross into the integer domain on x86.
+      return Single128Bit4ByteVectorShuffle(LHS, LaneShuffle);
+    }
     if (LHS == RHS && LaneShuffle == 0) {
-      // TODO: We can optimize significantly more shuffles when we know the sources match.
       // Special case broadcast element 0.
       return _VDupElement(DstSize, ElementSize, LHS, LaneShuffle & SelectionMask);
     }
