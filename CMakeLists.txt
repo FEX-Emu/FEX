@@ -810,6 +810,13 @@ if (BUILD_THUNKS)
   add_dependencies(uninstall uninstall_guest-libs-32)
 endif()
 
-if (NOT MINGW AND BUILD_STEAM_SUPPORT)
-  add_subdirectory(Source/Steam/)
+if (BUILD_STEAM_SUPPORT)
+  if (NOT MINGW)
+    add_subdirectory(Source/Steam/)
+  endif()
+
+  # AppConfig shared between Linux and Mingw steam.
+  # Captures the edge-case of running Proton x86 under FEX.
+  # If necessary this can be split between 'common', 'Linux', 'Proton'.
+  add_subdirectory(Source/Steam/AppConfig/)
 endif()

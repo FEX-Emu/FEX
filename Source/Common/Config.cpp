@@ -491,10 +491,17 @@ void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInfo
   if (!IsPortable) {
     FEXCore::Config::AddLayer(CreateGlobalMainLayer());
   }
+#ifdef FEX_STEAM_SUPPORT
+  // When Steam support is compiled in, load configs from "global" which is actually the FEX-Emu depot path.
+  constexpr bool SteamPortableConfig = true;
+#else
+  const bool SteamPortableConfig = !IsPortable;
+#endif
+
   FEXCore::Config::AddLayer(CreateMainLayer(nullptr, ProgramName.empty() ? std::nullopt : std::optional {ProgramName}));
 
   if (!ProgramName.empty()) {
-    if (!IsPortable) {
+    if (SteamPortableConfig) {
       FEXCore::Config::AddLayer(CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
     }
     FEXCore::Config::AddLayer(CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
@@ -504,7 +511,7 @@ void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInfo
       // If a SteamID exists then let's search for Steam application configs as well.
       // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
       fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, ProgramName);
-      if (!IsPortable) {
+      if (SteamPortableConfig) {
         FEXCore::Config::AddLayer(CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
       }
       FEXCore::Config::AddLayer(CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));

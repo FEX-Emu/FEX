@@ -1,0 +1,8 @@
+{
+  "Comment": [
+    "Scimitar/Anvil engine is sensitive to x87 precision"
+  ],
+  "Config": {
+    "X87ReducedPrecision": "0"
+  }
+}
