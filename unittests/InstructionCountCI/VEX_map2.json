@@ -12,7 +12,8 @@
       "FLAGM2",
       "SVEBITPERM",
       "I8MM",
-      "DOTPROD"
+      "DOTPROD",
+      "SVE2_1"
     ],
     "BinaryCacheVersion": 50
   },

@@ -9,7 +9,8 @@
       "FLAGM",
       "FLAGM2",
       "SVE128",
-      "SVE256"
+      "SVE256",
+      "SVE2_1"
     ],
     "BinaryCacheVersion": 50
   },
