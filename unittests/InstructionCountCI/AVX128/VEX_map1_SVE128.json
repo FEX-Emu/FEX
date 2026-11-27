@@ -11,7 +11,7 @@
       "SVE256",
       "SVE2_1"
     ],
-    "BinaryCacheVersion": 50
+    "BinaryCacheVersion": 51
   },
   "Instructions": {
     "vmovntps [rax], xmm0": {
