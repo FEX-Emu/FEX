@@ -156,3 +156,41 @@ TEST_CASE("Basic - Double - offset") {
     }
   }
 }
+
+TEST_CASE("TSO disabled ranges - offsets") {
+  const auto Result = FEX::VolatileMetadata::ParseExtendedVolatileMetadata("hl2_linux;1000-1800,3000-3010,1fff0-20010");
+  FEXCore::IntervalList<uint64_t> Ranges {};
+  FEX::VolatileMetadata::ApplyFEXExtendedTSODisabledRanges(Result.at("hl2_linux"), Ranges, 0x7ff800000000, 0x7ff800020000);
+
+  CHECK(Ranges.Contains({0x7ff800001000, 0x7ff800001800}));
+  CHECK(Ranges.Contains({0x7ff800003000, 0x7ff800003010}));
+  // A block crossing a range boundary is not covered.
+  CHECK_FALSE(Ranges.Contains({0x7ff8000017f0, 0x7ff800001810}));
+  CHECK_FALSE(Ranges.Contains({0x7ff800000ff0, 0x7ff800001010}));
+  CHECK_FALSE(Ranges.Contains({0x7ff800002000, 0x7ff800002010}));
+  // A range past the end of the module is dropped.
+  CHECK_FALSE(Ranges.Intersect({0x7ff80001fff0, 0x7ff800020000}));
+}
+
+TEST_CASE("TSO disabled ranges - whole module") {
+  const auto Result = FEX::VolatileMetadata::ParseExtendedVolatileMetadata("hl2_linux");
+  FEXCore::IntervalList<uint64_t> Ranges {};
+  FEX::VolatileMetadata::ApplyFEXExtendedTSODisabledRanges(Result.at("hl2_linux"), Ranges, 0x180000000, 0x181e65000);
+
+  CHECK(Ranges.Contains({0x180000000, 0x181e65000}));
+  CHECK_FALSE(Ranges.Contains({0x181e64ff0, 0x181e65010}));
+}
+
+TEST_CASE("TSO disabled ranges - instructions keep their volatile metadata form") {
+  const auto Result = FEX::VolatileMetadata::ParseExtendedVolatileMetadata("hl2_linux;1000-2000;1010");
+  fextl::set<uint64_t> Instructions {};
+  FEXCore::IntervalList<uint64_t> ValidRanges {};
+  FEXCore::IntervalList<uint64_t> Ranges {};
+  auto Entry = Result.at("hl2_linux");
+  FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(Entry, Instructions, ValidRanges, 0x10000, 0x20000);
+  FEX::VolatileMetadata::ApplyFEXExtendedTSODisabledRanges(Entry, Ranges, 0x10000, 0x20000);
+
+  CHECK(Instructions.contains(0x11010));
+  CHECK(ValidRanges.Contains({0x11000, 0x12000}));
+  CHECK(Ranges.Contains({0x11000, 0x12000}));
+}

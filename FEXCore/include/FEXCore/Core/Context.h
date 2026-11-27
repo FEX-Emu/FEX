@@ -182,6 +182,16 @@ public:
    */
   FEX_DEFAULT_VISIBILITY virtual void AddForceTSOInformation(const IntervalList<uint64_t>& ValidRanges, fextl::set<uint64_t>&& Instructions) = 0;
 
+  /**
+   * @brief Adds address ranges whose integer loads and stores need no TSO emulation, without per-instruction information.
+   *
+   * A block that lies entirely inside these ranges is translated without TSO for its integer accesses, except for
+   * instructions listed through AddForceTSOInformation. A block that crosses a range boundary keeps TSO.
+   *
+   * @param Ranges The address ranges, end exclusive
+   */
+  FEX_DEFAULT_VISIBILITY virtual void AddTSODisabledRanges(const IntervalList<uint64_t>& Ranges) = 0;
+
   FEX_DEFAULT_VISIBILITY virtual void RemoveForceTSOInformation(uint64_t Address, uint64_t Size) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void MarkMonoDetected() = 0;

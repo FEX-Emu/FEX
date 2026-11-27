@@ -751,7 +751,10 @@
           "  * Disable TSO for a part of the module, but enable TSO for some instructions within the module",
           "      `hl2_linux;<offset begin>-<offset-end>;<instruction offset>,<instruction offset>`",
           "  * Disable TSO for multiple modules",
-          "      `hl2_linux:libsdl2.so`"
+          "      `hl2_linux:libsdl2.so`",
+          "On WoW64/arm64ec a range or whole-module entry takes effect on its own: a block that lies entirely inside it",
+          "is translated without TSO for integer loads and stores, except for the listed instructions. A block that",
+          "crosses a range boundary keeps TSO. Ranges are end exclusive."
         ]
       }
     }

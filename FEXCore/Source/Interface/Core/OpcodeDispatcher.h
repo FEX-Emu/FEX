@@ -87,6 +87,7 @@ enum class BTAction {
 enum class ForceTSOMode {
   NoOverride,
   ForceDisabled,
+  ForceDisabledGPR,
   ForceEnabled,
 };
 
@@ -2643,6 +2644,8 @@ private:
     if (ForceTSO == ForceTSOMode::ForceEnabled) {
       return true;
     } else if (ForceTSO == ForceTSOMode::ForceDisabled) {
+      return false;
+    } else if (ForceTSO == ForceTSOMode::ForceDisabledGPR && Class == RegClass::GPR) {
       return false;
     } else if (Class == RegClass::FPR) {
       return CTX->IsVectorAtomicTSOEnabled();
