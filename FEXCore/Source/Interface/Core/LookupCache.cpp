@@ -40,6 +40,8 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   // At 64GB of virtual memory this will allocate 128MB of virtual memory space
   PagePointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::VirtualAlloc(TotalCacheSize, false, false));
   LOGMAN_THROW_A_FMT(PagePointer != -1ULL, "Failed to allocate PagePointer");
+  LOGMAN_THROW_A_FMT((TotalCacheSize % CACHE_COMMIT_SIZE) == 0, "LookupCache size must be a multiple of CACHE_COMMIT_SIZE");
+  CommittedGranules.resize(TotalCacheSize / CACHE_COMMIT_SIZE);
 
   // Disable THP on the Lookup cache.
   FEXCore::Allocator::VirtualTHPControl(reinterpret_cast<const void*>(PagePointer), TotalCacheSize, FEXCore::Allocator::THPControl::Disable);
@@ -68,6 +70,8 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
     // Start at maximum instead.
     L1PointerMask = MAX_L1_ENTRIES - 1;
   }
+
+  CommitBackingMemory(L1Pointer, (L1PointerMask + 1) * sizeof(LookupCacheEntry));
 }
 
 LookupCache::~LookupCache() {
@@ -81,15 +85,15 @@ LookupCache::~LookupCache() {
 void LookupCache::ClearL2Cache(const FEXCore::LookupCacheBaseLockToken& lk) {
   // Clear out the page memory
   // PagePointer and PageMemory are sequential with each other. Clear both at once.
-  FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer),
-                                      ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE, false);
+  DecommitBackingMemory(PagePointer, ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE);
   AllocateOffset = 0;
 }
 
 void LookupCache::ClearThreadLocalCaches(const LookupCacheWriteLockToken&) {
   // TODO: Preserve code cache entries?
   // Clear L1 and L2 by clearing the full cache.
-  FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), TotalCacheSize, false);
+  DecommitBackingMemory(PagePointer, TotalCacheSize);
+  CommitBackingMemory(L1Pointer, (L1PointerMask + 1) * sizeof(LookupCacheEntry));
 
   // TODO: Rename this member to avoid confusion with code caching
   CachedCodePages.clear();
