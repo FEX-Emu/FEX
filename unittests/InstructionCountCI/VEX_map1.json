@@ -13,7 +13,7 @@
       "FLAGM2",
       "FRINTTS"
     ],
-    "BinaryCacheVersion": 49
+    "BinaryCacheVersion": 50
   },
   "Instructions": {
     "vmovups xmm0, xmm0": {
@@ -3843,15 +3843,13 @@
       ]
     },
     "vdivps ymm0, ymm1, ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b00 0x5e 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z0, z17",
-        "fdiv z0.s, p7/m, z0.s, z16.s",
-        "mov z16.d, z0.d"
+        "fdivr z16.s, p7/m, z16.s, z17.s"
       ]
     },
     "vdivps ymm0, ymm1, ymm2": {
@@ -3874,15 +3872,13 @@
       ]
     },
     "vdivpd ymm0, ymm1, ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Aliasing source and destination",
         "Map 1 0b01 0x5e 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movprfx z0, z17",
-        "fdiv z0.d, p7/m, z0.d, z16.d",
-        "mov z16.d, z0.d"
+        "fdivr z16.d, p7/m, z16.d, z17.d"
       ]
     },
     "vdivpd ymm0, ymm0, ymm2": {
