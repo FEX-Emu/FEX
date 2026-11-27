@@ -813,12 +813,15 @@ void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize) {
-  const auto Size = OpSizeFromSrc(Op);
+  const auto DstSize = OpSizeFromDst(Op);
+
+  // MMX only ever uses an m32 for the memory operand variant.
+  const auto SrcSize = (!Op->Src[0].IsGPR() && DstSize == OpSize::i64Bit) ? OpSize::i32Bit : DstSize;
 
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
 
-  auto ALUOp = _VZip(Size, ElementSize, Dest, Src);
+  auto ALUOp = _VZip(DstSize, ElementSize, Dest, Src);
   StoreResult_WithAVXInsert(VectorOpType::SSE, RegClass::FPR, Op, ALUOp);
 }
 
