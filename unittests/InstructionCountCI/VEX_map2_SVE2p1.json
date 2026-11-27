@@ -1,0 +1,485 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE256",
+      "SVE128",
+      "DOTPROD",
+      "I8MM",
+      "SVE2_1"
+    ],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2",
+      "SVEBITPERM"
+    ],
+    "BinaryCacheVersion": 51
+  },
+  "Instructions": {
+    "vpdpbusd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0x50 128-bit",
+        "vpdpbusd xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x50, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "usdot v16.4s, v17.16b, v18.16b"
+      ]
+    },
+    "vpdpbusd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0x50 256-bit",
+        "vpdpbusd ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x50, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "usdot z16.s, z17.b, z18.b"
+      ]
+    },
+    "vpdpbusds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0x51 128-bit",
+        "vpdpbusds xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x51, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "usdot v2.4s, v17.16b, v18.16b",
+        "sqadd v16.4s, v16.4s, v2.4s"
+      ]
+    },
+    "vpdpbusds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0x51 256-bit",
+        "vpdpbusds ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x51, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "usdot z2.s, z17.b, z18.b",
+        "sqadd z16.s, z16.s, z2.s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x73, 0x50, 0xc2; {vex} vpdpbssd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0xf2 0b01 0x50 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sdot v16.4s, v17.16b, v18.16b"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x77, 0x50, 0xc2 ; {vex} vpdpbssd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0xf2 0b01 0x50 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sdot z16.s, z17.b, z18.b"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x73, 0x51, 0xc2 ; {vex} vpdpbssds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0xf2 0b01 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "sdot v2.4s, v17.16b, v18.16b",
+        "neg v2.4s, v2.4s",
+        "sqsub v16.4s, v16.4s, v2.4s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x77, 0x51, 0xc2 ; {vex} vpdpbssds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0xf2 0b01 0x51 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "sdot z2.s, z17.b, z18.b",
+        "neg z2.s, p7/m, z2.s",
+        "sqsub z16.s, z16.s, z2.s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x72, 0x50, 0xc2 ; {vex} vpdpbsud xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0xf3 0b01 0x50 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "usdot v16.4s, v18.16b, v17.16b"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x76, 0x50, 0xc2 ; {vex} vpdpbsud ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0xf3 0b01 0x50 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "usdot z16.s, z18.b, z17.b"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x72, 0x51, 0xc2 ; {vex} vpdpbsuds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0xf3 0b01 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "usdot v2.4s, v18.16b, v17.16b",
+        "sqadd v16.4s, v16.4s, v2.4s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x76, 0x51, 0xc2 ; {vex} vpdpbsuds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0xf3 0b01 0x51 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "usdot z2.s, z18.b, z17.b",
+        "sqadd z16.s, z16.s, z2.s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x70, 0x50, 0xc2 ; {vex} vpdpbuud xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0x50 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "udot v16.4s, v17.16b, v18.16b"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x74, 0x50, 0xc2 ; {vex} vpdpbuud ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0x50 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "udot z16.s, z17.b, z18.b"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x70, 0x51, 0xc2; {vex} vpdpbuuds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "udot v2.4s, v17.16b, v18.16b",
+        "uqadd v16.4s, v16.4s, v2.4s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x74, 0x51, 0xc2 ; {vex} vpdpbuuds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0x51 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "udot z2.s, z17.b, z18.b",
+        "uqadd z16.s, z16.s, z2.s"
+      ]
+    },
+    "vpdpwssd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0x52 128-bit",
+        "vpdpwssd xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x52, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "unallocated (Unallocated)"
+      ]
+    },
+    "vpdpwssd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0x52 256-bit",
+        "vpdpwssd ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x52, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "unallocated (Unallocated)"
+      ]
+    },
+    "vpdpwssds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x53 128-bit",
+        "vpdpwssds xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x53, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unallocated (Unallocated)",
+        "neg v2.4s, v2.4s",
+        "sqsub v16.4s, v16.4s, v2.4s"
+      ]
+    },
+    "vpdpwssds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x53 256-bit",
+        "vpdpwssds ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x53, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unallocated (Unallocated)",
+        "neg z2.s, p7/m, z2.s",
+        "sqsub z16.s, z16.s, z2.s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x72, 0xd2, 0xc2 ; {vex} vpdpwsud xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 11,
+      "Comment": [
+        "Map 2 0xf3 0b01 0xd2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "movi v3.16b, #0x80",
+        "zip1 v3.16b, v2.16b, v3.16b",
+        "eor v3.16b, v17.16b, v3.16b",
+        "movi v4.16b, #0x40",
+        "zip1 v2.16b, v2.16b, v4.16b",
+        "mov z4.d, z16.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "mov z16.d, z4.d",
+        "unallocated (Unallocated)"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x76, 0xd2, 0xc2 ; {vex} vpdpwsud ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 11,
+      "Comment": [
+        "Map 2 0xf3 0b01 0xd2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z3.b, #-128",
+        "zip1 z3.b, z2.b, z3.b",
+        "eor z3.d, z17.d, z3.d",
+        "mov z4.b, #64",
+        "zip1 z2.b, z2.b, z4.b",
+        "mov z4.d, z16.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "mov z16.d, z4.d",
+        "unallocated (Unallocated)"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x72, 0xd3, 0xc2 ; {vex} vpdpwsuds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Map 2 0xf3 0b01 0xd3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "movi v3.16b, #0x80",
+        "zip1 v3.16b, v2.16b, v3.16b",
+        "eor v3.16b, v17.16b, v3.16b",
+        "movi v4.16b, #0x40",
+        "zip1 v4.16b, v2.16b, v4.16b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd v16.4s, v16.4s, v2.4s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x76, 0xd3, 0xc2 ; {vex} vpdpwsuds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Map 2 0xf3 0b01 0xd3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z3.b, #-128",
+        "zip1 z3.b, z2.b, z3.b",
+        "eor z3.d, z17.d, z3.d",
+        "mov z4.b, #64",
+        "zip1 z4.b, z2.b, z4.b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd z16.s, z16.s, z2.s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x71, 0xd2, 0xc2 ; {vex} vpdpwusd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 11,
+      "Comment": [
+        "Map 2 0x66 0b01 0xd2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "movi v3.16b, #0x80",
+        "zip1 v3.16b, v2.16b, v3.16b",
+        "eor v3.16b, v18.16b, v3.16b",
+        "movi v4.16b, #0x40",
+        "zip1 v2.16b, v2.16b, v4.16b",
+        "mov z4.d, z16.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "mov z16.d, z4.d",
+        "unallocated (Unallocated)"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x75, 0xd2, 0xc2 ; {vex} vpdpwusd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 11,
+      "Comment": [
+        "Map 2 0x66 0b01 0xd2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z3.b, #-128",
+        "zip1 z3.b, z2.b, z3.b",
+        "eor z3.d, z18.d, z3.d",
+        "mov z4.b, #64",
+        "zip1 z2.b, z2.b, z4.b",
+        "mov z4.d, z16.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "mov z16.d, z4.d",
+        "unallocated (Unallocated)"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x71, 0xd3, 0xc2 ; {vex} vpdpwusds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Map 2 0x66 0b01 0xd3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "movi v3.16b, #0x80",
+        "zip1 v3.16b, v2.16b, v3.16b",
+        "eor v3.16b, v18.16b, v3.16b",
+        "movi v4.16b, #0x40",
+        "zip1 v4.16b, v2.16b, v4.16b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd v16.4s, v16.4s, v2.4s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x75, 0xd3, 0xc2 ; {vex} vpdpwusds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Map 2 0x66 0b01 0xd3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z3.b, #-128",
+        "zip1 z3.b, z2.b, z3.b",
+        "eor z3.d, z18.d, z3.d",
+        "mov z4.b, #64",
+        "zip1 z4.b, z2.b, z4.b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd z16.s, z16.s, z2.s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x70, 0xd2, 0xc2 ; {vex} vpdpwuud xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0xd2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "unallocated (Unallocated)"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x74, 0xd2, 0xc2 ; {vex} vpdpwuud ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 1,
+      "Comment": [
+        "Map 2 0b01 0xd2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "unallocated (Unallocated)"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x70, 0xd3, 0xc2 ; {vex} vpdpwuuds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xd3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unallocated (Unallocated)",
+        "uqadd v16.4s, v16.4s, v2.4s"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x74, 0xd3, 0xc2 ; {vex} vpdpwuuds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xd3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unallocated (Unallocated)",
+        "uqadd z16.s, z16.s, z2.s"
+      ]
+    }
+  }
+}

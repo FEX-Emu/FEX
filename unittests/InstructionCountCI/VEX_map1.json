@@ -11,9 +11,10 @@
       "AFP",
       "FLAGM",
       "FLAGM2",
-      "FRINTTS"
+      "FRINTTS",
+      "SVE2_1"
     ],
-    "BinaryCacheVersion": 50
+    "BinaryCacheVersion": 51
   },
   "Instructions": {
     "vmovups xmm0, xmm0": {

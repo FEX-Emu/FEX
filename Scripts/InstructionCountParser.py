@@ -64,6 +64,7 @@ class HostFeatures(Flag) :
     FEATURE_DOTPROD = (1 << 19)
     FEATURE_BF16    = (1 << 20)
     FEATURE_TPIDRRO = (1 << 21)
+    FEATURE_SVE2_1  = (1 << 22)
 
 HostFeaturesLookup = {
     "SVE128"  : HostFeatures.FEATURE_SVE128,
@@ -88,6 +89,7 @@ HostFeaturesLookup = {
     "DOTPROD" : HostFeatures.FEATURE_DOTPROD,
     "BF16" : HostFeatures.FEATURE_BF16,
     "TPIDRRO" : HostFeatures.FEATURE_TPIDRRO,
+    "SVE2_1" : HostFeatures.FEATURE_SVE2_1,
 }
 
 def GetHostFeatures(data):

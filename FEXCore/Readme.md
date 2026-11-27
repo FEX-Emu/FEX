@@ -9,7 +9,7 @@ This project aims to provide a fast and functional x86-64 emulation library that
   * Support offline compilation and offline tooling for inspection and performance analysis
   * Support threaded emulation. Including emulating x86-64's strong memory model on weak memory model architectures
 * Support a majority of the x86-64 instruction space.
-  * Including MMX, SSE, SSE2, SSE3, SSSE3, SSE4*, AVX, AVX2, F16C, and AVX-VNNI
+  * Including MMX, SSE, SSE2, SSE3, SSSE3, SSE4\*, AVX, AVX2, F16C, and AVX-VNNI\*
 * Support fallback routines for uncommonly used x86-64 instructions
   * Including x87 and 3DNow!
 * Only support userspace emulation.

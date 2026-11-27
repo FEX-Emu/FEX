@@ -1,0 +1,47 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128",
+      "SVE2_1",
+      "DOTPROD",
+      "I8MM"
+    ],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2",
+      "SVE256"
+    ],
+    "BinaryCacheVersion": 51
+  },
+  "Instructions": {
+    "vpmaddwd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 1 0b01 0xf5 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov z16.d, z2.d",
+        "unallocated (Unallocated)",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpmaddwd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Comment": [
+        "Map 1 0b01 0xf5 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #208]",
+        "ldr q3, [x28, #224]",
+        "movi v4.2d, #0x0",
+        "mov z16.d, z4.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "str q4, [x28, #192]"
+      ]
+    }
+  }
+}

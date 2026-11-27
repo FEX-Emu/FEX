@@ -1,0 +1,626 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE128",
+      "SVE2_1",
+      "DOTPROD",
+      "I8MM"
+    ],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2",
+      "SVE256"
+    ],
+    "BinaryCacheVersion": 51
+  },
+  "Instructions": {
+    "vpdpbusd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b01 0x50 128-bit",
+        "vpdpbusd xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x50, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "usdot v16.4s, v17.16b, v18.16b",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpbusd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0x50 256-bit",
+        "vpdpbusd ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x50, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "usdot v16.4s, v17.16b, v18.16b",
+        "usdot v2.4s, v3.16b, v4.16b",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "vpdpbusds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x51 128-bit",
+        "vpdpbusds xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x51, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "usdot v2.4s, v17.16b, v18.16b",
+        "sqadd v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpbusds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Map 2 0b01 0x51 256-bit",
+        "vpdpbusds ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x51, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "mov v6.16b, v5.16b",
+        "usdot v6.4s, v17.16b, v18.16b",
+        "sqadd v16.4s, v16.4s, v6.4s",
+        "usdot v5.4s, v3.16b, v4.16b",
+        "sqadd v2.4s, v2.4s, v5.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x73, 0x50, 0xc2; {vex} vpdpbssd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0xf2 0b01 0x50 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "sdot v16.4s, v17.16b, v18.16b",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x77, 0x50, 0xc2 ; {vex} vpdpbssd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0xf2 0b01 0x50 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "sdot v16.4s, v17.16b, v18.16b",
+        "sdot v2.4s, v3.16b, v4.16b",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x73, 0x51, 0xc2 ; {vex} vpdpbssds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 2 0xf2 0b01 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "sdot v2.4s, v17.16b, v18.16b",
+        "neg v2.4s, v2.4s",
+        "sqsub v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x77, 0x51, 0xc2 ; {vex} vpdpbssds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 12,
+      "Comment": [
+        "Map 2 0xf2 0b01 0x51 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "mov v6.16b, v5.16b",
+        "sdot v6.4s, v17.16b, v18.16b",
+        "neg v6.4s, v6.4s",
+        "sqsub v16.4s, v16.4s, v6.4s",
+        "sdot v5.4s, v3.16b, v4.16b",
+        "neg v3.4s, v5.4s",
+        "sqsub v2.4s, v2.4s, v3.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x72, 0x50, 0xc2 ; {vex} vpdpbsud xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0xf3 0b01 0x50 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "usdot v16.4s, v18.16b, v17.16b",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x76, 0x50, 0xc2 ; {vex} vpdpbsud ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0xf3 0b01 0x50 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "usdot v16.4s, v18.16b, v17.16b",
+        "usdot v2.4s, v4.16b, v3.16b",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x72, 0x51, 0xc2 ; {vex} vpdpbsuds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0xf3 0b01 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "usdot v2.4s, v18.16b, v17.16b",
+        "sqadd v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x76, 0x51, 0xc2 ; {vex} vpdpbsuds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Map 2 0xf3 0b01 0x51 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "mov v6.16b, v5.16b",
+        "usdot v6.4s, v18.16b, v17.16b",
+        "sqadd v16.4s, v16.4s, v6.4s",
+        "usdot v5.4s, v4.16b, v3.16b",
+        "sqadd v2.4s, v2.4s, v5.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x70, 0x50, 0xc2 ; {vex} vpdpbuud xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b01 0x50 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "udot v16.4s, v17.16b, v18.16b",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x74, 0x50, 0xc2 ; {vex} vpdpbuud ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0x50 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "udot v16.4s, v17.16b, v18.16b",
+        "udot v2.4s, v3.16b, v4.16b",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x70, 0x51, 0xc2; {vex} vpdpbuuds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x51 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "udot v2.4s, v17.16b, v18.16b",
+        "uqadd v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x74, 0x51, 0xc2 ; {vex} vpdpbuuds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Map 2 0b01 0x51 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "mov v6.16b, v5.16b",
+        "udot v6.4s, v17.16b, v18.16b",
+        "uqadd v16.4s, v16.4s, v6.4s",
+        "udot v5.4s, v3.16b, v4.16b",
+        "uqadd v2.4s, v2.4s, v5.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "vpdpwssd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b01 0x52 128-bit",
+        "vpdpwssd xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x52, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "unallocated (Unallocated)",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpwssd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0x52 256-bit",
+        "vpdpwssd ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x52, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "vpdpwssds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 2 0b01 0x53 128-bit",
+        "vpdpwssds xmm0, xmm1, xmm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x71, 0x53, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unallocated (Unallocated)",
+        "neg v2.4s, v2.4s",
+        "sqsub v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "vpdpwssds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 12,
+      "Comment": [
+        "Map 2 0b01 0x53 256-bit",
+        "vpdpwssds ymm0, ymm1, ymm2",
+        "NASM only emits the EVEX encoding, hand encode the VEX form"
+      ],
+      "x86Insts": [
+        "db 0xc4, 0xe2, 0x75, 0x53, 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "mov z6.d, z5.d",
+        "unallocated (Unallocated)",
+        "neg v6.4s, v6.4s",
+        "sqsub v16.4s, v16.4s, v6.4s",
+        "unallocated (Unallocated)",
+        "neg v3.4s, v5.4s",
+        "sqsub v2.4s, v2.4s, v3.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x72, 0xd2, 0xc2 ; {vex} vpdpwsud xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 12,
+      "Comment": [
+        "Map 2 0xf3 0b01 0xd2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "movi v3.16b, #0x80",
+        "zip1 v3.16b, v2.16b, v3.16b",
+        "eor v3.16b, v17.16b, v3.16b",
+        "movi v4.16b, #0x40",
+        "zip1 v2.16b, v2.16b, v4.16b",
+        "mov z4.d, z16.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "mov z16.d, z4.d",
+        "unallocated (Unallocated)",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x76, 0xd2, 0xc2 ; {vex} vpdpwsud ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 23,
+      "Comment": [
+        "Map 2 0xf3 0b01 0xd2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "movi v6.16b, #0x80",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "eor v6.16b, v17.16b, v6.16b",
+        "movi v7.16b, #0x40",
+        "zip1 v7.16b, v5.16b, v7.16b",
+        "mov z8.d, z16.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "mov z16.d, z8.d",
+        "unallocated (Unallocated)",
+        "movi v6.16b, #0x80",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "eor v3.16b, v3.16b, v6.16b",
+        "movi v6.16b, #0x40",
+        "zip1 v5.16b, v5.16b, v6.16b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x72, 0xd3, 0xc2 ; {vex} vpdpwsuds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 11,
+      "Comment": [
+        "Map 2 0xf3 0b01 0xd3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "movi v3.16b, #0x80",
+        "zip1 v3.16b, v2.16b, v3.16b",
+        "eor v3.16b, v17.16b, v3.16b",
+        "movi v4.16b, #0x40",
+        "zip1 v4.16b, v2.16b, v4.16b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x76, 0xd3, 0xc2 ; {vex} vpdpwsuds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 24,
+      "Comment": [
+        "Map 2 0xf3 0b01 0xd3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "movi v6.16b, #0x80",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "eor v6.16b, v17.16b, v6.16b",
+        "movi v7.16b, #0x40",
+        "zip1 v7.16b, v5.16b, v7.16b",
+        "mov z8.d, z5.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd v16.4s, v16.4s, v8.4s",
+        "movi v6.16b, #0x80",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "eor v3.16b, v3.16b, v6.16b",
+        "movi v6.16b, #0x40",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd v2.4s, v2.4s, v5.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x71, 0xd2, 0xc2 ; {vex} vpdpwusd xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 12,
+      "Comment": [
+        "Map 2 0x66 0b01 0xd2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "movi v3.16b, #0x80",
+        "zip1 v3.16b, v2.16b, v3.16b",
+        "eor v3.16b, v18.16b, v3.16b",
+        "movi v4.16b, #0x40",
+        "zip1 v2.16b, v2.16b, v4.16b",
+        "mov z4.d, z16.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "mov z16.d, z4.d",
+        "unallocated (Unallocated)",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x75, 0xd2, 0xc2 ; {vex} vpdpwusd ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 23,
+      "Comment": [
+        "Map 2 0x66 0b01 0xd2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "movi v6.16b, #0x80",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "eor v6.16b, v18.16b, v6.16b",
+        "movi v7.16b, #0x40",
+        "zip1 v7.16b, v5.16b, v7.16b",
+        "mov z8.d, z16.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "mov z16.d, z8.d",
+        "unallocated (Unallocated)",
+        "movi v6.16b, #0x80",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "eor v4.16b, v4.16b, v6.16b",
+        "movi v6.16b, #0x40",
+        "zip1 v5.16b, v5.16b, v6.16b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x71, 0xd3, 0xc2 ; {vex} vpdpwusds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 11,
+      "Comment": [
+        "Map 2 0x66 0b01 0xd3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "movi v3.16b, #0x80",
+        "zip1 v3.16b, v2.16b, v3.16b",
+        "eor v3.16b, v18.16b, v3.16b",
+        "movi v4.16b, #0x40",
+        "zip1 v4.16b, v2.16b, v4.16b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x75, 0xd3, 0xc2 ; {vex} vpdpwusds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 24,
+      "Comment": [
+        "Map 2 0x66 0b01 0xd3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "movi v6.16b, #0x80",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "eor v6.16b, v18.16b, v6.16b",
+        "movi v7.16b, #0x40",
+        "zip1 v7.16b, v5.16b, v7.16b",
+        "mov z8.d, z5.d",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd v16.4s, v16.4s, v8.4s",
+        "movi v6.16b, #0x80",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "eor v4.16b, v4.16b, v6.16b",
+        "movi v6.16b, #0x40",
+        "zip1 v6.16b, v5.16b, v6.16b",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "sqadd v2.4s, v2.4s, v5.4s",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x70, 0xd2, 0xc2 ; {vex} vpdpwuud xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 2,
+      "Comment": [
+        "Map 2 0b01 0xd2 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "unallocated (Unallocated)",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x74, 0xd2, 0xc2 ; {vex} vpdpwuud ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "Map 2 0b01 0xd2 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "unallocated (Unallocated)",
+        "unallocated (Unallocated)",
+        "str q2, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x70, 0xd3, 0xc2 ; {vex} vpdpwuuds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xd3 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "unallocated (Unallocated)",
+        "uqadd v16.4s, v16.4s, v2.4s",
+        "stp xzr, xzr, [x28, #192]"
+      ]
+    },
+    "db 0xc4, 0xe2, 0x74, 0xd3, 0xc2 ; {vex} vpdpwuuds ymm0, ymm1, ymm2": {
+      "x86InstructionCount": 1,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Map 2 0b01 0xd3 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #192]",
+        "ldr q3, [x28, #208]",
+        "ldr q4, [x28, #224]",
+        "movi v5.2d, #0x0",
+        "mov z6.d, z5.d",
+        "unallocated (Unallocated)",
+        "uqadd v16.4s, v16.4s, v6.4s",
+        "unallocated (Unallocated)",
+        "uqadd v2.4s, v2.4s, v5.4s",
+        "str q2, [x28, #192]"
+      ]
+    }
+  }
+}
