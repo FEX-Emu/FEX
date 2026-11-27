@@ -236,6 +236,21 @@
                 ],
         "HasSideEffects": true
       },
+      "GPR = ReadFPSR": {
+        "Desc": ["Reads the ARM64 FPSR register for floating-point exception flags"
+                ],
+        "DestSize": "OpSize::i32Bit",
+        "HasSideEffects": false
+      },
+      "WriteFPSR OpSize:#Size, GPR:$FPSR": {
+        "Desc": [
+          "Writes to the ARM64 FPSR register for floating-point exception flags"
+        ],
+        "EmitValidation": [
+          "Size == OpSize::i32Bit"
+        ],
+        "HasSideEffects": true
+      },
       "Print SSA:$Value": {
         "HasSideEffects": true,
         "Desc": ["Debug operation that prints an SSA value to the console",
